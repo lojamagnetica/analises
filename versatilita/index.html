@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta property="og:title" content="Análise do Perfil — Versatilità">
+<meta property="og:description" content="Método Loja Magnética · Diagnóstico de Perfil por Camilla Ribeiro">
+<title>Diagnóstico Versatilità</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}
+/* Layout: página longa estilo "análise do perfil" — cabeçalho centralizado com título em degradê, seções com ícone + título, cartões brancos arredondados. Tema claro único, de propósito. */
+:root{
+  color-scheme:light;
+  --bg:#FAF7F2; --card:#FFFFFF; --line:#ECE4D8; --soft:#F6F1E9;
+  --ink:#1F1A17; --text:#4A413B; --muted:#8A7F76;
+  --g1:#08163A; --g2:#6F2F18; --g3:#BC4914; --g4:#E08A3C;
+  --accent:#BC4914; --accentbg:#FBEDE5;
+  --bad:#C2341B; --badbg:#FCEBE6; --good:#1F8A5B; --goodbg:#E6F4EC;
+  --navy:#08163A; --navybg:#E8EBF3; --choco:#511E0C;
+  --f-head:"Montserrat","Avenir Next","Avenir","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --grad:linear-gradient(90deg,var(--g1),var(--g2) 35%,var(--g3) 70%,var(--g4));
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:15.5px;line-height:1.65;padding-inline:20px;padding-block:0 60px}
+.topbar{position:fixed;top:0;left:0;right:0;height:4px;background:var(--grad);z-index:5}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--f-head);color:var(--ink);margin:0;text-wrap:balance}
+p{margin:0}
+b,strong{color:var(--ink);font-weight:700}
+
+/* hero */
+.hero{padding-block:56px 20px;display:grid;justify-items:center;text-align:center;gap:18px}
+.pill-top{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;font-family:var(--f-head);font-weight:800;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:8px 18px;border-radius:999px}
+.hero h1{font-size:clamp(30px,5.2vw,50px);line-height:1.12;font-weight:900;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lede{max-width:640px;font-size:17px;color:var(--text)}
+.video{width:100%;max-width:680px;aspect-ratio:16/9;border-radius:18px;padding:3px;background:var(--grad)}
+.video iframe{display:block;width:100%;height:100%;border:0;border-radius:15px;background:#120c09}
+.video a{display:grid;place-items:center;align-content:center;gap:14px;width:100%;height:100%;border-radius:15px;background:radial-gradient(circle at 30% 20%,#2a1a12,#120c09);color:#fff;text-decoration:none}
+.video .play{width:72px;height:50px;border-radius:14px;background:var(--g3);display:grid;place-items:center}
+.video .play::after{content:"";border-left:18px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:4px}
+.video span{font-family:var(--f-head);font-weight:800;letter-spacing:.06em;text-transform:uppercase;font-size:14px}
+.video small{opacity:.7;font-size:12.5px}
+.video a:focus-visible{outline:3px solid var(--g4);outline-offset:3px}
+.metarow{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text)}
+.stats{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 12px;display:grid;gap:4px;box-shadow:0 1px 2px rgba(60,30,10,.04)}
+.stat .n{font-family:var(--f-head);font-weight:900;font-size:30px;line-height:1.1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+.stat .l{font-size:13px;color:var(--muted);font-weight:500}
+@media (max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* seção */
+section{padding-top:56px;display:grid;gap:16px}
+.sh{display:flex;gap:16px;align-items:center;margin-bottom:6px}
+.ico{flex:none;width:48px;height:48px;border-radius:14px;display:grid;place-items:center}
+.ico svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.i-or{background:var(--accentbg);color:var(--g3)} .i-gr{background:var(--goodbg);color:var(--good)} .i-nv{background:var(--navybg);color:var(--navy)} .i-rd{background:var(--badbg);color:var(--bad)}
+.sh h2{font-size:clamp(21px,3vw,27px);font-weight:800;line-height:1.2}
+.sh p{color:var(--muted);font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 3px rgba(60,30,10,.05)}
+
+/* correções */
+.fix{display:grid;grid-template-columns:38px 1fr auto;gap:16px;padding:20px 24px;align-items:start}
+.fix .num{width:34px;height:34px;border-radius:10px;background:var(--accentbg);color:var(--g3);display:grid;place-items:center;font-family:var(--f-head);font-weight:800;font-size:15px}
+.fix h3{font-size:16.5px;font-weight:700;margin-bottom:6px}
+.fix .body{min-width:0}
+.tag{white-space:nowrap;font-family:var(--f-head);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:6px 12px;border-radius:999px}
+.tag.now{background:var(--accentbg);color:var(--g3)}
+.tag.week{background:var(--navybg);color:var(--navy)}
+.fix .num.wk{background:var(--navybg);color:var(--navy)}
+@media (max-width:640px){.fix{grid-template-columns:34px 1fr}.fix .tag{grid-column:2;justify-self:start}}
+
+/* antes/depois */
+.case{overflow:hidden}
+.case header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:16px 24px;background:var(--soft);border-bottom:1px solid var(--line)}
+.vchip{font-family:var(--f-head);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:var(--navybg);color:var(--navy);padding:5px 10px;border-radius:8px}
+.case h3{font-size:16px;font-weight:700}
+.case .views{margin-left:auto;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.cols{display:grid;grid-template-columns:1fr 1fr}
+.cols>div{padding:20px 24px;display:grid;gap:8px;align-content:start;min-width:0}
+.cols>div+div{border-left:1px solid var(--line)}
+.k{font-family:var(--f-head);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.k.bad{color:var(--bad)} .k.good{color:var(--good)}
+@media (max-width:700px){.cols{grid-template-columns:1fr}.cols>div+div{border-left:0;border-top:1px solid var(--line)}}
+
+/* certo x errado */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.list{padding:24px}
+.list h3{display:flex;gap:10px;align-items:center;font-size:17px;padding-bottom:14px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.list.stop h3{color:var(--bad)} .list.go h3{color:var(--good)}
+.list ul{margin:0;padding:0;list-style:none;display:grid;gap:12px}
+.list li{display:grid;grid-template-columns:18px 1fr;gap:10px;font-size:15px}
+.list.stop li::before{content:"✕";color:var(--muted)}
+.list.go li::before{content:"✓";color:var(--good);font-weight:700}
+@media (max-width:700px){.two{grid-template-columns:1fr}}
+
+/* regras */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.rule{padding:26px 22px;text-align:center;display:grid;gap:8px;justify-items:center}
+.rule .em{font-size:30px;line-height:1}
+.rule h3{font-size:16px}
+.rule p{font-size:14.5px;color:var(--text)}
+@media (max-width:860px){.grid3{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.grid3{grid-template-columns:1fr}}
+
+/* roteiros */
+.script{padding:24px}
+.script>h3{font-size:16.5px;margin-bottom:12px}
+.row{display:grid;grid-template-columns:130px 1fr;gap:16px;padding:12px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row .lb{font-family:var(--f-head);font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding-top:3px}
+.lb.c1{color:var(--g2)} .lb.c2{color:var(--g3)} .lb.c3{color:var(--navy)} .lb.c4{color:var(--good)} .lb.c5{color:var(--ink)}
+.row q{quotes:"“" "”";color:var(--ink)}
+.row em{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+@media (max-width:600px){.row{grid-template-columns:1fr;gap:4px}}
+
+/* workflow */
+.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.step{padding:22px 16px;text-align:center;display:grid;gap:8px;justify-items:center;align-content:start}
+.step .n{width:38px;height:38px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:var(--f-head);font-weight:800}
+.step h4{font-size:14.5px}
+.step p{font-size:13.5px;color:var(--text)}
+@media (max-width:900px){.flow{grid-template-columns:1fr 1fr}}
+@media (max-width:520px){.flow{grid-template-columns:1fr}}
+
+/* ganchos */
+.hooks{display:grid;gap:12px}
+.hook{display:grid;grid-template-columns:38px 1fr;gap:14px;padding:16px 20px;align-items:start}
+.hook .n{width:32px;height:32px;border-radius:9px;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:var(--f-head);font-weight:800;font-size:14px}
+.hook i{color:var(--g3);font-weight:600;font-style:italic}
+
+/* ideias */
+.ideas{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.idea{padding:20px;display:grid;gap:8px;align-content:start}
+.fchip{justify-self:start;font-family:var(--f-head);font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--accentbg);color:var(--g3)}
+.fchip.n2{background:var(--navybg);color:var(--navy)} .fchip.n3{background:var(--goodbg);color:var(--good)}
+.idea h4{font-size:15px}
+.idea p{font-size:14px}
+@media (max-width:860px){.ideas{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.ideas{grid-template-columns:1fr}}
+
+/* ctas */
+.cta{padding:20px 24px;display:grid;gap:8px}
+.cta .s{font-family:var(--f-head);font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--g3)}
+.cta blockquote{margin:0;padding-left:14px;border-left:3px solid var(--g3);font-size:17px;font-weight:600;color:var(--ink)}
+.cta p{font-size:14px;color:var(--muted)}
+
+/* callout */
+.callout{padding:26px;display:grid;grid-template-columns:48px 1fr;gap:18px;background:linear-gradient(135deg,#FFF4EC,#FBEDE5);border-color:#F2D4C2}
+.callout .bang{width:44px;height:44px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-family:var(--f-head);font-weight:900;font-size:20px}
+.callout h3{font-size:17px;margin-bottom:8px}
+
+/* checklist */
+.check{padding:24px}
+.check h3{font-size:17px;margin-bottom:12px}
+.check label{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);cursor:pointer}
+.check label:first-of-type{border-top:0}
+.check input{width:19px;height:19px;margin-top:3px;accent-color:var(--g3);flex:none}
+.check input:checked+span{color:var(--muted);text-decoration:line-through}
+.prog{font-weight:700;color:var(--g3)}
+
+/* números */
+.data{padding:24px;display:grid;gap:18px}
+.bars{display:grid;gap:8px}
+.bar{display:grid;grid-template-columns:minmax(0,230px) 1fr 54px;gap:12px;align-items:center;font-size:13.5px}
+.bar .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .tr{height:12px;border-radius:99px;background:var(--soft);position:relative;overflow:hidden}
+.bar .fl{position:absolute;inset:0 auto 0 0;border-radius:99px}
+.bar.face .fl{background:var(--grad)} .bar.prod .fl{background:#CDBFAE}
+.bar .v{text-align:right;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.leg{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmp div{border-radius:12px;padding:16px;display:grid;gap:2px;background:var(--soft)}
+.cmp .n{font-family:var(--f-head);font-weight:900;font-size:28px;color:var(--ink);font-variant-numeric:tabular-nums}
+.cmp .face .n{color:var(--g3)}
+.cmp .l{font-size:13px;color:var(--muted)}
+@media (max-width:560px){.bar{grid-template-columns:minmax(0,1fr) 48px}.bar .tr{grid-column:1/-1;grid-row:2}}
+
+/* bio */
+.bio{padding:24px;display:grid;gap:14px}
+.bio pre{margin:0;white-space:pre-wrap;font-family:var(--f-body);font-size:15.5px;line-height:1.7;color:var(--ink);background:var(--soft);border-radius:12px;padding:16px 18px}
+.bio .bt{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.bio small{color:var(--muted);font-size:13px}
+button{font-family:var(--f-head);font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;border:0;border-radius:999px;padding:10px 18px;background:var(--grad);color:#fff;cursor:pointer}
+button:focus-visible{outline:3px solid var(--g4);outline-offset:2px}
+
+/* destaques */
+.hl{display:flex;flex-wrap:wrap;gap:14px;padding-top:6px}
+.hl div{display:grid;justify-items:center;gap:6px;width:72px;text-align:center}
+.hl span{width:58px;height:58px;border-radius:50%;padding:2px;background:var(--grad);display:grid;place-items:center}
+.hl span b{width:100%;height:100%;border-radius:50%;background:#fff;display:grid;place-items:center;font-family:var(--f-head);font-size:13px;color:var(--g2)}
+.hl small{font-size:11px;font-weight:600;line-height:1.3}
+
+/* cronograma */
+.tl{display:grid;gap:14px}
+.when{display:grid;grid-template-columns:130px 1fr;gap:18px;padding:20px 24px}
+.when .d{justify-self:start;align-self:start;font-family:var(--f-head);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--grad);padding:7px 14px;border-radius:999px;white-space:nowrap}
+.when h3{font-size:16px;margin-bottom:6px}
+@media (max-width:600px){.when{grid-template-columns:1fr;gap:10px}}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px}
+.tools span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 16px;font-size:14px;font-weight:500}
+
+.close{margin-top:56px;border-radius:20px;padding:34px 28px;background:linear-gradient(135deg,var(--g1),var(--choco) 55%,var(--g3));color:#fff;display:grid;gap:10px;text-align:center;justify-items:center}
+.close h2{color:#fff;font-size:24px}
+.close p{max-width:640px;color:#fff;opacity:.92}
+.close b{color:#fff}
+.foot{text-align:center;padding-top:26px;font-size:13px;color:var(--muted)}
+.close .eyebrow-w{font-family:var(--f-head);font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#fff;opacity:.75}
+.gains{list-style:none;margin:6px 0 4px;padding:0;display:grid;gap:10px;text-align:left;max-width:560px}
+.gains li{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;font-size:15.5px;color:#fff}
+.gains li span{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;font-weight:800;font-size:13px}
+.apply{display:inline-block;margin-top:10px;background:#fff;color:var(--g3);font-family:var(--f-head);font-weight:900;font-size:15px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;padding:16px 30px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.apply:hover{background:var(--accentbg)}
+.apply:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.close .fine{font-size:13px;color:#fff;opacity:.8;max-width:520px}
+.foot b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="topbar" aria-hidden="true"></div>
+<div class="wrap">
+
+<header class="hero" data-document-role="page" data-label="Capa">
+  <span class="pill-top">★ Método Loja Magnética — Diagnóstico de Perfil</span>
+  <h1>Análise do Perfil<br>Versatilità — Pedra Azul</h1>
+  <p class="lede">Multimarca em Pedra Azul (ES) com moda feminina, masculina, fitness, semijoias e, agora, calçados artesanais em couro. Tudo o que precisa ajustar para o Instagram mostrar o que a cliente encontra, quanto custa e como compra.</p>
+  <div class="video"><iframe src="https://www.youtube.com/embed/QU_CNYHikuY?rel=0" title="Análise do perfil — Versatilità" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="lazy"></iframe></div>
+  <div class="metarow"><span class="chip">3 de Outubro, 2026</span><span class="chip">Análise com Camilla Ribeiro</span><span class="chip">Nicho: Multimarca de Moda</span></div>
+  <div class="stats">
+    <div class="stat"><span class="n">6</span><span class="l">Correções no Perfil</span></div>
+    <div class="stat"><span class="n">14→7</span><span class="l">Destaques</span></div>
+    <div class="stat"><span class="n">1/dia</span><span class="l">Nova Frequência de Reels</span></div>
+    <div class="stat"><span class="n">1.000+</span><span class="l">Meta de Views por Reels</span></div>
+  </div>
+</header>
+
+<section data-document-role="page" data-label="Correções">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><div><h2>Correções Imediatas do Perfil</h2><p>A bio e o link são a porta da loja no Instagram — comece por eles</p></div></div>
+
+  <div class="card fix"><span class="num">1</span><div class="body"><h3>Primeira linha da bio = o que a cliente ganha</h3><p>“Estilo, versatilidade e autenticidade” brinca com o nome, mas não diz nada concreto. A primeira linha responde uma pergunta só: <b>“o que eu encontro aqui?”</b>. Algo simples como <b>“Seu look completo e autêntico”</b>.</p></div><span class="tag now">Fazer agora</span></div>
+
+  <div class="card fix"><span class="num">2</span><div class="body"><h3>Tirar a ideia de presente da bio</h3><p>“Encante-se com as nossas opções de presentes” rotula a Versatilità como <b>loja de presente</b>. Só que a cliente compra muito mais para si do que para presentear. Use essa linha para dizer <b>como a pessoa compra</b>: <b>“Compre pelo WhatsApp 👇🏻”</b>, apontando para o link logo abaixo.</p></div><span class="tag now">Fazer agora</span></div>
+
+  <div class="card fix"><span class="num">3</span><div class="body"><h3>Endereço com motivo para vir</h3><p>Pedra Azul recebe turista o ano todo. Coloque o horário junto do endereço para quem está passando decidir na hora. A sugestão completa fica assim:<br><b>📍 Loja física | Pedra Azul-ES<br>Seg-sex · 10h às 18h</b></p></div><span class="tag now">Fazer agora</span></div>
+
+  <div class="card fix"><span class="num">4</span><div class="body"><h3>Categoria: loja, não marca</h3><p>Embaixo do nome aparece <b>“Vestuário (marca)”</b>. A Versatilità é uma loja com curadoria de várias marcas. Vá em <b>Editar perfil → Categoria</b> e troque para “Loja de roupas”, ou desative “Exibir no perfil”.</p></div><span class="tag now">Fazer agora</span></div>
+
+  <div class="card fix"><span class="num wk">5</span><div class="body"><h3>Link da bio: botão logo de cara</h3><p>Hoje o link abre com uma foto grande da fachada e os botões só aparecem depois de rolar. Quem clicou quer falar com alguém ou ver produto. Inverta: <b>botões no topo</b> — Falar com a loja (WhatsApp), Novidades no Grupo VIP, Versatilità Fitness — e a foto da loja embaixo. Troque a foto do botão do WhatsApp pelo logo.</p></div><span class="tag week">Esta semana</span></div>
+
+  <div class="card fix"><span class="num wk">6</span><div class="body"><h3>Destaques: de 14 para 7, na ordem da compra</h3><p>Quase todos usam a mesma capa do “V” e vários já passaram da data (Copa, Reinauguração, Rebranding). Deixe só o que ajuda a decidir a compra, cada um com uma capa diferente:</p>
+    <div class="hl"><div><span><b>01</b></span><small>Novidades</small></div><div><span><b>02</b></span><small>Calçados</small></div><div><span><b>03</b></span><small>Looks</small></div><div><span><b>04</b></span><small>Fitness</small></div><div><span><b>05</b></span><small>Clientes</small></div><div><span><b>06</b></span><small>Como comprar</small></div><div><span><b>07</b></span><small>Onde estamos</small></div></div></div><span class="tag week">Esta semana</span></div>
+
+  <div class="card bio">
+    <h3>Bio pronta para colar</h3>
+<pre id="bioText">VERSATILITÀ | Moda Feminina, Masculina & Fitness
+Seu look completo e autêntico
+Curadoria @uyaraendlichuliana
+📍 Loja física | Pedra Azul-ES
+Seg-sex · 10h às 18h
+Compre pelo WhatsApp 👇🏻</pre>
+    <div class="bt"><small>134 de 150 caracteres · a primeira linha é o campo de nome do perfil.</small><button type="button" id="copyBio">Copiar bio</button></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Números">
+  <div class="sh"><span class="ico i-nv"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span><div><h2>O Que os Números Dizem</h2><p>Os últimos reels separados em dois grupos: com você no vídeo e só com produto ou loja</p></div></div>
+  <div class="card data">
+    <div class="leg"><span><i style="background:linear-gradient(90deg,#6F2F18,#BC4914)"></i>Com você no vídeo</span><span><i style="background:#CDBFAE"></i>Só produto ou loja</span></div>
+    <div class="bars" id="bars"></div>
+    <div class="cmp"><div class="face"><span class="n">831</span><span class="l">média de views com você no vídeo</span></div><div><span class="n">343</span><span class="l">média de views só com produto ou loja</span></div></div>
+    <p><b>A cliente segue a curadoria, não a prateleira.</b> Você no espelho, no showroom e no dia a dia rende mais que o dobro. Isso não quer dizer parar de mostrar produto — quer dizer mostrar o produto <b>no corpo e na sua mão</b>. O reels da vitrine de calçados é o mais recente e ainda pode crescer.</p>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Antes vs Depois">
+  <div class="sh"><span class="ico i-rd"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg></span><div><h2>Antes vs Depois — Seus Conteúdos Analisados</h2><p>O que travou cada post e como ele ficaria corrigido</p></div></div>
+
+  <article class="card case"><header><span class="vchip">Post 1</span><h3>Lançamento dos calçados — pilha de caixas</h3><span class="views">278 views</span></header>
+    <div class="cols"><div><span class="k bad">✕ O que estava errado</span><p>A linha nova de calçados em couro é uma notícia grande, mas <b>chegou de surpresa</b>. Caixas fechadas não mostram o produto e a legenda (“mais um capítulo”) não diz o que muda para a cliente. Lançamento sem espera vira só mais um post.</p></div>
+    <div><span class="k good">✓ Como deveria ser</span><p>Construa a espera de <b>3 a 5 dias antes</b>: stories com a caixa chegando, um detalhe do salto de madeira, enquete “qual cor você quer ver primeiro?”. No dia, mostre <b>o calçado no pé, andando</b>, com faixa de preço e “o Grupo VIP vê primeiro”.</p></div></div></article>
+
+  <article class="card case"><header><span class="vchip">Post 2</span><h3>Série “Nova coleção primavera/verão”</h3><span class="views">5 posts seguidos</span></header>
+    <div class="cols"><div><span class="k bad">✕ O que estava errado</span><p>Cinco posts em sequência com <b>a mesma legenda</b>. Na grade, parecem repetidos. Nenhum diz preço, tamanho ou ocasião, e nenhum pede uma ação. A cliente gosta, rola e esquece.</p></div>
+    <div><span class="k good">✓ Como deveria ser</span><p>Junte num carrossel: <b>“5 looks da coleção nova, do mais básico ao mais arrumado”</b>, um look por slide, numerado. Legenda com a ocasião de cada um, faixa de preço e <b>“comenta o número do seu look que eu te mando tamanho e valor”</b>.</p></div></div></article>
+
+  <article class="card case"><header><span class="vchip">Post 3</span><h3>Vitrine de calçados na prateleira</h3><span class="views">59 views</span></header>
+    <div class="cols"><div><span class="k bad">✕ O que estava errado</span><p><b>Produto parado</b>, sem pessoa e sem texto na tela. Nos primeiros segundos não acontece nada que faça a pessoa parar de rolar.</p></div>
+    <div><span class="k good">✓ Como deveria ser</span><p>Pegue um par, calce e ande no provador. Texto na tela com o benefício concreto: <b>“O salto de madeira que aguenta o dia inteiro”</b>. Feche com a ocasião: “trabalho de dia, jantar à noite”.</p></div></div></article>
+
+  <article class="card case"><header><span class="vchip">Post 4</span><h3>Bolsa de paetê — “Um acessório indispensável”</h3><span class="views">336 views</span></header>
+    <div class="cols"><div><span class="k bad">✕ O que estava errado</span><p>“Um acessório indispensável para essa estação” serve para qualquer bolsa de qualquer loja. <b>Texto genérico</b> não desperta interesse.</p></div>
+    <div><span class="k good">✓ Como deveria ser</span><p>Mostre a transformação: o mesmo jeans com camiseta, primeiro sem a bolsa, depois com ela. Gancho: <b>“A bolsa que leva o jeans básico pro jantar”</b>.</p></div></div></article>
+
+  <article class="card case"><header><span class="vchip">Post 5</span><h3>“A cabeça de uma empreendedora”</h3><span class="views">1.055 views · o maior</span></header>
+    <div class="cols"><div><span class="k good">✓ O que já está bom</span><p>Você no vídeo, <b>texto forte na tela</b> e uma pergunta na legenda. Foi o mais visto. Os comentários, porém, vieram de outras lojistas: o tema fala com quem empreende, não com quem compra.</p></div>
+    <div><span class="k good">✓ O que melhorar</span><p>Mantenha o formato e troque o tema para a cliente: <b>“A cabeça de quem vai a um casamento e não tem o que vestir”</b>, terminando com 3 looks da loja.</p></div></div></article>
+
+  <article class="card case"><header><span class="vchip">Post 6</span><h3>“Um dia de showroom comigo”</h3><span class="views">805 views</span></header>
+    <div class="cols"><div><span class="k good">✓ O que já está bom</span><p>Bastidor de curadoria com você aparecendo. Mostra que as peças são <b>escolhidas a dedo</b> — e isso gera desejo.</p></div>
+    <div><span class="k good">✓ O que melhorar</span><p>O vídeo termina sem próximo passo. Feche com: <b>“Essas peças chegam na loja sexta. Quem está no Grupo VIP vê antes, link na bio.”</b></p></div></div></article>
+</section>
+
+<section data-document-role="page" data-label="Certo vs Errado">
+  <div class="sh"><span class="ico i-gr"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><div><h2>Certo vs Errado — Guia Visual</h2><p>Referência rápida do que parar e do que começar a fazer</p></div></div>
+  <div class="two">
+    <div class="card list stop"><h3>✕ Pare de fazer</h3><ul>
+      <li>Legenda só com emoji</li><li>A mesma legenda em vários posts seguidos</li><li>Produto parado na prateleira, sem ninguém</li><li>Lançar novidade sem criar espera antes</li><li>Esconder preço, tamanho e como comprar</li><li>Texto genérico (“indispensável”, “encante-se”)</li><li>Destaques com a mesma capa e assunto vencido</li><li>Conteúdo que fala com lojista em vez da cliente</li></ul></div>
+    <div class="card list go"><h3>✓ Comece a fazer</h3><ul>
+      <li>Produto no corpo: vestido, calçado, andando</li><li>Você no vídeo em pelo menos metade dos reels</li><li>Legenda com ocasião, faixa de preço e como comprar</li><li>Carrossel de looks numerados</li><li>3 a 5 dias de espera antes de cada novidade</li><li>CTA que pede ação: “comenta o número”</li><li>Usar Pedra Azul a seu favor (turista e moradora)</li><li>Postar 1 reels por dia, sem falha</li><li>Vídeos de até 30 segundos, com música em alta</li></ul></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Estratégia">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg></span><div><h2>Estratégia de Conteúdo</h2><p>As regras de ouro para cada post daqui pra frente</p></div></div>
+  <div class="grid3">
+    <div class="card rule"><span class="em">👗</span><h3>A cliente compra a ocasião</h3><p>Ninguém procura “camisa listrada”. Procura o que vestir no almoço de domingo. Diga sempre para onde a peça vai.</p></div>
+    <div class="card rule"><span class="em">🤳</span><h3>A curadoria tem rosto</h3><p>Com você no vídeo, mais que o dobro de views. A loja vende confiança no seu olhar.</p></div>
+    <div class="card rule"><span class="em">🏷️</span><h3>Toda peça responde 3 perguntas</h3><p>Quanto custa, tem meu tamanho, como eu compro. Se o post não responde, a cliente só sai.</p></div>
+    <div class="card rule"><span class="em">⏳</span><h3>Novidade se constrói antes</h3><p>Coleção e linha nova ganham alguns dias de espera. Quem esperou, compra no lançamento.</p></div>
+    <div class="card rule"><span class="em">📍</span><h3>Pedra Azul é vitrine</h3><p>Turista que passa e moradora que volta. Fale com as duas, em posts diferentes.</p></div>
+    <div class="card rule"><span class="em">💬</span><h3>O Grupo VIP é o caixa</h3><p>O Instagram atrai e o grupo vende. Toda novidade termina levando para o grupo.</p></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Algoritmo">
+  <div class="sh"><span class="ico i-nv"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></span><div><h2>O Que o Algoritmo Precisa Ver</h2><p>Três regras para quem quer crescer — valem para todo post, sem exceção</p></div></div>
+  <div class="grid3">
+    <div class="card rule"><span class="em">⏱️</span><h3>Vídeos de no máximo 30 segundos</h3><p>Vídeo curto é assistido até o fim, e o Instagram entrega mais o que as pessoas assistem inteiro. Passou de 30 segundos, corte.</p></div>
+    <div class="card rule"><span class="em">🎵</span><h3>Música em alta</h3><p>Use os áudios que estão em alta no Reels, com a seta ↗ ao lado do nome. Mesmo nos vídeos falados, deixe a música de fundo em volume baixo.</p></div>
+    <div class="card rule"><span class="em">💬</span><h3>Comente e interaja</h3><p>Responda todos os comentários dos seus posts e interaja nas publicações de outros perfis. O algoritmo entrega mais para quem conversa.</p></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Roteiros">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span><div><h2>Roteiros-Modelo Prontos</h2><p>Templates “preencha os espaços” baseados na sua análise · até 30 segundos</p></div></div>
+
+  <div class="card script"><h3>📋 Modelo 1 — “Uma peça, três ocasiões”</h3>
+    <div class="row"><span class="lb c1">Gancho</span><div><q>Uma peça só e três lugares pra ir com ela.</q><em>Você no provador segurando a peça. Texto na tela igual à fala.</em></div></div>
+    <div class="row"><span class="lb c2">Ocasião 1</span><div><q>Pro trabalho: com [calça de alfaiataria] e [mocassim].</q><em>Corte rápido, look vestido.</em></div></div>
+    <div class="row"><span class="lb c3">Ocasiões 2 e 3</span><div><q>Pro fim de semana: [jeans]. E pro jantar, a minha preferida: [saia + salto].</q><em>A melhor por último segura até o fim.</em></div></div>
+    <div class="row"><span class="lb c5">CTA</span><div><q>Comenta qual dos três você usaria que eu te mando o tamanho e o valor.</q></div></div>
+  </div>
+
+  <div class="card script"><h3>📋 Modelo 2 — “Chegou na loja” (com espera)</h3>
+    <div class="row"><span class="lb c1">3 dias antes</span><div><q>Chega sexta uma coisa que vocês me pedem há meses.</q><em>Stories com a caixa fechada ou um detalhe da peça.</em></div></div>
+    <div class="row"><span class="lb c2">1 dia antes</span><div><q>Amanhã abro primeiro pro Grupo VIP. Link na bio.</q><em>Enquete: qual cor você quer ver primeiro?</em></div></div>
+    <div class="row"><span class="lb c3">No dia</span><div><q>Chegou. E é por isso que valeu esperar.</q><em>Reels com a peça no corpo, andando.</em></div></div>
+    <div class="row"><span class="lb c5">CTA</span><div><q>As primeiras unidades vão pro grupo. Corre lá, link na bio.</q></div></div>
+  </div>
+
+  <div class="card script"><h3>📋 Modelo 3 — “A curadoria da semana” (carro-chefe)</h3>
+    <div class="row"><span class="lb c1">Gancho</span><div><q>Separei os 5 looks que mais vão sair essa semana. O 5º é o meu favorito.</q><em>Você no espelho do provador, como nos reels que mais performaram.</em></div></div>
+    <div class="row"><span class="lb c2">Sequência</span><div><q>Look 1: [peça + ocasião]. Look 2: [...]. Look 3: [...].</q><em>Um look a cada 4 ou 5 segundos, com o número na tela.</em></div></div>
+    <div class="row"><span class="lb c4">Fechamento</span><div><q>E o 5º: [o mais desejado], que chegou ontem e já tem pouca grade.</q><em>Escassez real, só quando for verdade.</em></div></div>
+    <div class="row"><span class="lb c5">CTA</span><div><q>Comenta o número do seu look.</q></div></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Workflow">
+  <div class="sh"><span class="ico i-nv"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><div><h2>Workflow de Produção Semanal</h2><p>Da peça ao post publicado — o sistema que garante 1 reels por dia</p></div></div>
+  <div class="flow">
+    <div class="card step"><span class="n">1</span><h4>Separe as peças</h4><p>Segunda: 7 a 10 peças da semana, novidades e o que precisa girar.</p></div>
+    <div class="card step"><span class="n">2</span><h4>Grave em bloco</h4><p>Uma hora no provador e no showroom com luz natural. 5 a 7 reels de uma vez.</p></div>
+    <div class="card step"><span class="n">3</span><h4>Legende tudo</h4><p>Terça: ocasião, faixa de preço, como comprar e CTA. Deixe programado.</p></div>
+    <div class="card step"><span class="n">4</span><h4>Publique e responda</h4><p>Todo dia: 1 reels + stories. Responda os comentários do “número” no mesmo dia.</p></div>
+    <div class="card step"><span class="n">5</span><h4>Leve pro grupo</h4><p>Sexta: resumo das novidades no Grupo VIP com fotos e valores.</p></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Ganchos">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span><div><h2>Fórmulas de Gancho Prontas</h2><p>Copie e adapte — feitas para prender nos primeiros 3 segundos</p></div></div>
+  <div class="hooks">
+    <div class="card hook"><span class="n">1</span><p><i>Ocasião:</i> “Casamento no fim de semana e nada pra vestir? Separei 3 opções.”</p></div>
+    <div class="card hook"><span class="n">2</span><p><i>Transformação:</i> “A peça que leva o jeans básico pro jantar.”</p></div>
+    <div class="card hook"><span class="n">3</span><p><i>Erro comum:</i> “O erro que faz o look parecer mais barato do que é.”</p></div>
+    <div class="card hook"><span class="n">4</span><p><i>Bastidor:</i> “Vem comigo escolher o que chega na loja semana que vem.”</p></div>
+    <div class="card hook"><span class="n">5</span><p><i>Escassez real:</i> “Chegaram 6 pares. Mostro quais números ainda tem.”</p></div>
+    <div class="card hook"><span class="n">6</span><p><i>Turista:</i> “Vai passar por Pedra Azul? Não volta pra casa sem ver isso.”</p></div>
+    <div class="card hook"><span class="n">7</span><p><i>Ele e ela:</i> “Look de casal pra almoço de domingo, sem parecer combinado.”</p></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Banco de Ideias">
+  <div class="sh"><span class="ico i-gr"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg></span><div><h2>Banco de Ideias de Conteúdo</h2><p>Formatos e temas prontos para gravar já na próxima semana</p></div></div>
+  <div class="ideas">
+    <div class="card idea"><span class="fchip">Reels</span><h4>O salto de madeira no pé</h4><p>Calce, ande e mostre o conforto. Relança a linha de calçados do jeito certo.</p></div>
+    <div class="card idea"><span class="fchip n2">Carrossel</span><h4>5 looks da primavera/verão</h4><p>Substitui os 5 posts repetidos. Do básico ao arrumado, com número em cada slide.</p></div>
+    <div class="card idea"><span class="fchip n3">Série</span><h4>Uma peça, três ocasiões</h4><p>Toda segunda. Vira o quadro fixo da loja.</p></div>
+    <div class="card idea"><span class="fchip">Reels</span><h4>Semijoia que muda o look</h4><p>Mesmo look, com e sem a semijoia. Mostra o valor do acessório.</p></div>
+    <div class="card idea"><span class="fchip n2">Stories</span><h4>Contagem para novidade</h4><p>Caixa chegando, detalhe, enquete de cor. Três dias antes de cada lançamento.</p></div>
+    <div class="card idea"><span class="fchip">Reels</span><h4>Look masculino em 30 segundos</h4><p>A linha masculina quase não aparece. Um look por semana já mostra que existe.</p></div>
+    <div class="card idea"><span class="fchip n3">Bastidor</span><h4>Um dia de showroom</h4><p>Seu formato que já funciona, agora fechando com o Grupo VIP.</p></div>
+    <div class="card idea"><span class="fchip">Reels</span><h4>Passando por Pedra Azul?</h4><p>A fachada à noite com um motivo: horário, o que tem dentro e por que vale parar.</p></div>
+    <div class="card idea"><span class="fchip n2">Prova social</span><h4>Cliente que voltou</h4><p>Repost de cliente com o look, contando o que comprou e para qual ocasião.</p></div>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="CTAs">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><div><h2>Guia de CTAs por Situação</h2><p>O que falar no final de cada tipo de post</p></div></div>
+  <div class="card cta"><span class="s">Look ou carrossel</span><blockquote>“Comenta o número do seu look que eu te mando tamanho e valor.”</blockquote><p>Gera comentário e entrega o contato quente. O algoritmo distribui mais.</p></div>
+  <div class="card cta"><span class="s">Novidade</span><blockquote>“Quem está no Grupo VIP vê primeiro. Link na bio.”</blockquote><p>Leva para onde a venda acontece.</p></div>
+  <div class="card cta"><span class="s">Turista</span><blockquote>“Salva pra quando vier a Pedra Azul.”</blockquote><p>Salvamento conta para o alcance e lembra a pessoa na hora da viagem.</p></div>
+</section>
+
+<section data-document-role="page" data-label="Vender sem parecer catálogo">
+  <div class="sh"><span class="ico i-nv"><svg viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/></svg></span><div><h2>Como Vender sem Parecer Catálogo</h2><p>A técnica que aproxima a cliente da compra</p></div></div>
+  <div class="card callout"><span class="bang">!</span><div><h3>Regra: mostre a peça vivendo, diga para onde ela vai e abra a porta da compra</h3><p>Foto de produto parado é catálogo — a cliente olha e passa. O que vende é a <b>peça no corpo, numa ocasião que ela reconhece</b>, com a sua opinião de curadora. Termine sempre com uma porta aberta e fácil: “comenta o número”, “chama no WhatsApp do link”, “o Grupo VIP vê primeiro”. A venda vem do volume de clientes bem atendidas no conteúdo, nunca de um anúncio longo.</p></div></div>
+</section>
+
+<section data-document-role="page" data-label="Checklist">
+  <div class="sh"><span class="ico i-gr"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></span><div><h2>Checklist Antes de Publicar</h2><p>Passe por cada item antes de soltar o post <span class="prog" id="prog"></span></p></div></div>
+  <div class="card check" id="checks"><h3>✅ Confira tudo antes de postar</h3>
+    <label><input type="checkbox" id="c1"><span>O gancho prende nos 3 primeiros segundos?</span></label>
+    <label><input type="checkbox" id="c2"><span>A peça aparece no corpo, e não parada?</span></label>
+    <label><input type="checkbox" id="c3"><span>Dá pra saber para qual ocasião é a peça?</span></label>
+    <label><input type="checkbox" id="c4"><span>A legenda diz faixa de preço e como comprar?</span></label>
+    <label><input type="checkbox" id="c5"><span>A legenda é diferente das dos últimos posts?</span></label>
+    <label><input type="checkbox" id="c6"><span>Tem um CTA que pede uma ação concreta?</span></label>
+    <label><input type="checkbox" id="c7"><span>Se é novidade, teve espera nos stories antes?</span></label>
+    <label><input type="checkbox" id="c8"><span>Cabe em até 30 segundos?</span></label>
+    <label><input type="checkbox" id="c9"><span>Tem música em alta?</span></label>
+    <label><input type="checkbox" id="c10"><span>Separei um tempo depois de postar para responder e interagir?</span></label>
+  </div>
+</section>
+
+<section data-document-role="page" data-label="Ferramentas">
+  <div class="sh"><span class="ico i-or"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></span><div><h2>Ferramentas Recomendadas</h2><p>O kit mínimo para produzir com consistência</p></div></div>
+  <div class="tools"><span>CapCut — edição rápida com texto na tela</span><span>Luz natural do provador ou da vitrine</span><span>Tripé com espelho — looks em sequência</span><span>Grupo VIP no WhatsApp — onde a venda fecha</span><span>Agendador do Instagram — legendas programadas</span><span>Beacons — link da bio com botões no topo</span></div>
+</section>
+
+<section data-document-role="page" data-label="Cronograma">
+  <div class="sh"><span class="ico i-nv"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div><h2>Cronograma de Execução</h2><p>Passo a passo para implementar tudo sem se perder</p></div></div>
+  <div class="tl">
+    <div class="card when"><span class="d">Hoje</span><div><h3>Arrumar o perfil</h3><p>Colar a bio nova, trocar a categoria para loja e arquivar os destaques vencidos (Copa, Reinauguração, Rebranding).</p></div></div>
+    <div class="card when"><span class="d">Semana 1</span><div><h3>Link, destaques e primeiro bloco de gravação</h3><p>Reorganizar o link com botões no topo. Montar os 7 destaques com capas diferentes. Gravar em bloco e publicar 1 reels por dia, começando pelo calçado no pé e pelo carrossel dos 5 looks.</p></div></div>
+    <div class="card when"><span class="d">Semana 2-3</span><div><h3>Formatos fixos e CTA em tudo</h3><p>Rodar a série “uma peça, três ocasiões”. Todo post com ocasião, faixa de preço e CTA. Primeira novidade lançada com 3 dias de espera nos stories.</p></div></div>
+    <div class="card when"><span class="d">Mês 1+</span><div><h3>Medir o que vende</h3><p>Comparar views, comentários do “número” e mensagens no WhatsApp por formato. Repetir o que gera conversa e venda. Meta: média acima de 1.000 views por reels e o Grupo VIP crescendo toda semana.</p></div></div>
+  </div>
+</section>
+
+<div class="close" data-document-role="page" data-label="Mentoria">
+  <span class="eyebrow-w">Próximo passo</span>
+  <h2>Você já sabe o que ajustar. Agora imagine fazer isso com alguém do seu lado.</h2>
+  <p>Este diagnóstico olhou só o Instagram, que é a vitrine da sua loja. Quando ele começar a trazer mais gente, a equipe, o atendimento e a loja física precisam estar prontos para transformar essa procura em venda. É isso que construímos na <b>Mentoria Loja Magnética</b>:</p>
+  <ul class="gains">
+    <li><span>✓</span>Loja atraindo clientes todos os dias, com um time preparado e processos claros de conversão</li>
+    <li><span>✓</span>Análise de dados que dá direção para as suas compras</li>
+    <li><span>✓</span>Construção da jornada do cliente que vira fã</li>
+  </ul>
+  <a class="apply" id="applyLink" href="https://form.respondi.app/Y3bcRt35" target="_blank" rel="noopener">Quero aplicar para a mentoria</a>
+  <small class="fine">Vagas limitadas. Depois da sua aplicação, nosso time analisa e entra em contato para agendar uma call com quem estiver qualificado.</small>
+</div>
+<p class="foot">Análise do perfil — <b>Método Loja Magnética</b> com Camilla Ribeiro — Outubro 2026</p>
+</div>
+
+<script>
+(function(){
+  var data=[["A cabeça de uma empreendedora",1055,"face"],["Semijoias no look (espelho)",848,"face"],["Um dia de showroom comigo",805,"face"],["Look no espelho (camisa listrada)",784,"face"],["Look no espelho (camisa vinho)",663,"face"],["Expositor de looks",727,"prod"],["Bolsa de paetê",336,"prod"],["Fachada à noite",315,"prod"],["Chegada dos calçados (caixas)",278,"prod"],["Vitrine de calçados",59,"prod"]];
+  var box=document.getElementById("bars");
+  data.forEach(function(d){var r=document.createElement("div");r.className="bar "+d[2];
+    r.innerHTML='<span class="lbl"></span><span class="tr"><span class="fl"></span></span><span class="v"></span>';
+    r.querySelector(".lbl").textContent=d[0];r.querySelector(".fl").style.width=(d[1]/1100*100)+"%";r.querySelector(".v").textContent=d[1].toLocaleString("pt-BR");box.appendChild(r)});
+  ["applyLink"].forEach(function(id){document.getElementById(id).addEventListener("click",function(e){if(this.getAttribute("href")==="#")e.preventDefault()})});
+  if(0)document.getElementById("videoLink").addEventListener("click",function(e){if(this.getAttribute("href")==="#")e.preventDefault()});
+  var btn=document.getElementById("copyBio"),txt=document.getElementById("bioText");
+  btn.addEventListener("click",function(){var ok=function(){btn.textContent="Copiada";setTimeout(function(){btn.textContent="Copiar bio"},1800)};var fb=function(){var r=document.createRange();r.selectNodeContents(txt);var s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent="Texto selecionado"};try{navigator.clipboard.writeText(txt.textContent).then(ok,fb)}catch(e){fb()}});
+  var boxes=[].slice.call(document.querySelectorAll("#checks input")),prog=document.getElementById("prog"),K="versatilita-check2",sv={};
+  try{sv=JSON.parse(localStorage.getItem(K)||"{}")}catch(e){}
+  function u(){var n=boxes.filter(function(b){return b.checked}).length;prog.textContent="· "+n+" de "+boxes.length;var o={};boxes.forEach(function(b){o[b.id]=b.checked});try{localStorage.setItem(K,JSON.stringify(o))}catch(e){}}
+  boxes.forEach(function(b){b.checked=!!sv[b.id];b.addEventListener("change",u)});u();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hub Loja Magnética</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF7F2;--card:#FFFFFF;--soft:#F6F1E9;--line:#ECE4D8;
+  --ink:#1F1A17;--text:#4A413B;--muted:#8A7F76;
+  --accent:#BC4914;--accentbg:#FBEDE5;--choco:#511E0C;--navy:#08163A;--navybg:#E8EBF3;
+  --good:#1F8A5B;--goodbg:#E6F4EC;--bad:#C2341B;--badbg:#FCEBE6;--warn:#B7791F;--warnbg:#FDF3E1;
+  --side:#1E120D;--side2:#2B1A13;--sidetext:#E9DED6;--sidemuted:#9C8B80;
+  --grad:linear-gradient(90deg,#08163A,#6F2F18 35%,#BC4914 70%,#E08A3C);
+  --f-body:"Inter","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --f-head:"Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --r:14px;--fs:15px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15100D;--card:#211915;--soft:#2A201B;--line:#3A2E27;
+    --ink:#F5EEE8;--text:#D9CCC2;--muted:#A3958A;
+    --accentbg:#3A2117;--navybg:#1C2236;--goodbg:#15302A;--badbg:#3A1A14;--warnbg:#36291A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15100D;--card:#211915;--soft:#2A201B;--line:#3A2E27;
+  --ink:#F5EEE8;--text:#D9CCC2;--muted:#A3958A;
+  --accentbg:#3A2117;--navybg:#1C2236;--goodbg:#15302A;--badbg:#3A1A14;--warnbg:#36291A;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:var(--fs);line-height:1.5}
+h1,h2,h3,h4{font-family:var(--f-head);color:var(--ink);margin:0 0 .4em;line-height:1.2}
+h1{font-size:1.6em;font-weight:800}h2{font-size:1.2em;font-weight:700}h3{font-size:1.02em;font-weight:700}
+a{color:var(--accent)}
+button,input,textarea,select{font:inherit;color:inherit}
+.app{display:flex;min-height:100vh}
+/* Sidebar */
+.side{width:268px;flex-shrink:0;background:var(--side);color:var(--sidetext);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:10px;align-items:center;padding:18px 18px 14px}
+.logo{width:38px;height:38px;border-radius:11px;background:var(--grad);display:grid;place-items:center;color:#fff;font-family:var(--f-head);font-weight:800;font-size:15px}
+.brand b{font-family:var(--f-head);display:block;font-size:15px;color:#fff}
+.brand small{color:var(--sidemuted);font-size:12px}
+.role{margin:0 14px 10px;display:flex;background:var(--side2);border-radius:10px;padding:3px}
+.role button{flex:1;border:0;background:none;color:var(--sidemuted);padding:7px 4px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer}
+.role button.on{background:#fff;color:var(--side)}
+.nav{flex:1;overflow-y:auto;padding:4px 10px 10px}
+.nav .grp{font-family:var(--f-head);font-size:11px;letter-spacing:.08em;color:var(--sidemuted);font-weight:700;margin:14px 10px 4px;text-transform:uppercase}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;color:var(--sidetext);text-decoration:none;font-size:14px}
+.nav a:hover{background:var(--side2)}
+.nav a.on{background:var(--side2);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 var(--accent)}
+.nav a.ai{border:1px solid #6F2F18;background:linear-gradient(90deg,#2B1A13,#3a1d10)}
+.nav svg{width:17px;height:17px;flex-shrink:0;opacity:.85}
+.tag{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:#E0B43C;color:#3a2a00;white-space:nowrap}
+.dot{margin-left:auto;width:8px;height:8px;border-radius:50%;background:#E5533D}
+.me{border-top:1px solid #33241c;padding:12px 16px;display:flex;gap:10px;align-items:center}
+.avatar{width:36px;height:36px;border-radius:50%;background:#E08A3C;color:#fff;display:grid;place-items:center;font-weight:700;font-family:var(--f-head)}
+.me b{color:#fff;font-size:14px;display:block}.me small{color:var(--sidemuted);font-size:12px}
+.online{display:inline-block;width:7px;height:7px;border-radius:50%;background:#3ccf7a;margin-left:4px}
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.banner{background:var(--accent);color:#fff;text-align:center;font-size:13.5px;padding:8px 14px;font-weight:600}
+.banner a{color:#fff;border:1px solid rgba(255,255,255,.7);border-radius:99px;padding:2px 10px;margin-left:8px;text-decoration:none;white-space:nowrap}
+.top{display:flex;align-items:center;gap:8px;padding:12px 28px;border-bottom:1px solid var(--line);background:var(--card)}
+.top .burger{display:none}
+.search{flex:1;max-width:420px;display:flex;align-items:center;gap:8px;background:var(--soft);border-radius:10px;padding:7px 12px;color:var(--muted)}
+.search input{border:0;background:none;outline:none;width:100%}
+.tools{margin-left:auto;display:flex;gap:6px}
+.ib{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;cursor:pointer;color:var(--text)}
+.ib svg{width:17px;height:17px}
+.content{padding:26px 28px 60px;max-width:1180px;width:100%}
+.sub{color:var(--muted);margin:-2px 0 20px}
+.proto{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;background:var(--navybg);color:var(--navy);padding:3px 8px;border-radius:6px;margin-bottom:10px}
+:root[data-theme="dark"] .proto{color:#AFC0EE}
+/* Cards & grids */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.hero{background:var(--grad);color:#fff;border-radius:18px;padding:24px 26px;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.hero h1{color:#fff}.hero p{margin:0;opacity:.9}
+.hero .meet{margin-left:auto;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:12px 16px;min-width:230px}
+.hero .meet small{opacity:.8;display:block}
+.btn{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:10px;padding:9px 16px;font-weight:600;cursor:pointer;text-decoration:none;font-size:14px}
+.btn.p{background:var(--accent);color:#fff}.btn.s{background:var(--soft);color:var(--ink)}.btn.w{background:#fff;color:var(--choco)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.shortcuts{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+.sc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 6px;text-align:center;text-decoration:none;color:var(--ink);font-size:13px;font-weight:600}
+.sc:hover{border-color:var(--accent)}
+.sc .ic{width:40px;height:40px;border-radius:12px;margin:0 auto 8px;display:grid;place-items:center;background:var(--accentbg);color:var(--accent)}
+.sc .ic svg{width:20px;height:20px}
+.sectitle{font-family:var(--f-head);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--soft);border-radius:99px;padding:4px 11px;font-size:13px;text-decoration:none;color:var(--text)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:99px}
+.pill.ok{background:var(--goodbg);color:var(--good)}.pill.go{background:var(--accentbg);color:var(--accent)}
+.pill.no{background:var(--soft);color:var(--muted)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.wa{background:var(--warnbg);color:var(--warn)}
+.bar{height:8px;background:var(--soft);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--grad);border-radius:99px}
+.steps{display:grid;gap:10px}
+.step{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.num{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-family:var(--f-head);font-weight:800;background:var(--soft);color:var(--ink);flex-shrink:0}
+.step.done .num{background:var(--goodbg);color:var(--good)}.step.now .num{background:var(--accent);color:#fff}
+.step p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.step .r{margin-left:auto;text-align:right}
+/* Scripts */
+.scard{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;text-decoration:none;color:var(--ink)}
+.scard:hover{box-shadow:0 4px 18px rgba(81,30,12,.08)}
+.scard .ic{width:40px;height:40px;border-radius:12px;margin:0 auto 8px;display:grid;place-items:center;background:var(--soft);color:var(--c,var(--accent))}
+.scard .ic svg{width:20px;height:20px}
+.scard b{font-family:var(--f-head);display:block}.scard small{color:var(--muted)}
+.scard.new{border:1.5px dashed var(--accent);color:var(--accent);display:grid;place-items:center;font-weight:600}
+.script{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:14px}
+.script .when{font-size:13.5px;color:var(--muted);margin-bottom:10px}
+.script pre{white-space:pre-wrap;font-family:var(--f-body);background:var(--soft);border-radius:10px;padding:14px;margin:0 0 12px;color:var(--ink);font-size:14.5px}
+.var{background:var(--accentbg);color:var(--accent);border-radius:4px;padding:0 3px;font-weight:600}
+/* Forms */
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 0 5px}
+input[type=text],input[type=number],input[type=date],textarea,select{width:100%;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:9px 12px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+textarea{min-height:80px;resize:vertical}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700;padding:10px;border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tblwrap{overflow-x:auto}
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(5,minmax(200px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px}
+.col{background:var(--soft);border-radius:var(--r);padding:12px;min-height:200px}
+.col h3{font-size:13px;display:flex;justify-content:space-between}
+.kc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;font-size:13.5px}
+.kc .mv{display:flex;justify-content:space-between;margin-top:8px}
+.kc .mv button{border:0;background:var(--soft);border-radius:6px;padding:2px 8px;cursor:pointer;color:var(--muted)}
+/* Months */
+.month{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;text-decoration:none;color:var(--ink);display:block}
+.month:hover{border-color:var(--accent)}
+.month b{font-family:var(--f-head);font-size:16px}
+.month small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px}
+/* Chat */
+.chat{display:flex;flex-direction:column;height:calc(100vh - 230px);min-height:420px}
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px}
+.msg{max-width:78%;padding:11px 14px;border-radius:14px;font-size:14.5px;white-space:pre-wrap}
+.msg.u{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:var(--card);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.composer{display:flex;gap:8px;margin-top:12px}
+.composer input{flex:1}
+.kpi b{font-family:var(--f-head);font-size:28px;color:var(--ink);display:block}
+.kpi small{color:var(--muted)}
+.check{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.check:last-child{border:0}
+.check input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px}
+.check.done span{text-decoration:line-through;color:var(--muted)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:50}
+.toast.on{opacity:1}
+.muted{color:var(--muted)}
+.mt{margin-top:14px}.mb{margin-bottom:14px}
+.overlay{display:none}
+@media (max-width:1000px){.g4{grid-template-columns:repeat(2,1fr)}.shortcuts{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){
+  .side{position:fixed;left:-290px;z-index:40;transition:left .2s}
+  .side.open{left:0}
+  .overlay.open{display:block;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30}
+  .top{padding:10px 16px}.top .burger{display:grid}
+  .content{padding:18px 16px 60px}
+  .g2,.g3{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}
+  .shortcuts{grid-template-columns:repeat(4,1fr)}
+  .hero .meet{margin-left:0;width:100%}
+  .msg{max-width:90%}
+  .step{flex-wrap:wrap}.step .r{margin-left:48px;text-align:left}
+  .search{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand"><div class="logo">LM</div><div><b>Loja Magnética</b><small>Hub · Portal da Mentoria</small></div></div>
+    <div class="role"><button data-role="mentorado">Mentorado(a)</button><button data-role="equipe">Equipe</button></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="me" id="me"></div>
+  </aside>
+  <div class="overlay" id="overlay"></div>
+  <div class="main">
+    <div class="banner" id="banner"></div>
+    <header class="top">
+      <button class="ib burger" id="burger" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="Buscar no Hub (scripts, aulas, páginas)…"></div>
+      <div class="tools">
+        <button class="ib" id="fontBtn" title="Aumentar letra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19 9 5l5 14M6 14h6M18 8v6M15 11h6"/></svg></button>
+        <button class="ib" id="themeBtn" title="Modo escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+      </div>
+    </header>
+    <main class="content" id="view"></main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- Ícones ---------- */
+const I = {
+  home:'<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
+  spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+  map:'<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  video:'<rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3z"/>',
+  sliders:'<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  note:'<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
+  chat:'<path d="M4 5h16v11H8l-4 4z"/>',
+  calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  kanban:'<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>',
+  insta:'<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8"/>',
+  play:'<circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.7M12 17h.01"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>',
+  hand:'<path d="M7 11V6a1.5 1.5 0 0 1 3 0v4M10 10V4.5a1.5 1.5 0 0 1 3 0V10M13 10V5.5a1.5 1.5 0 0 1 3 0V11M16 9.5a1.5 1.5 0 0 1 3 0V14a7 7 0 0 1-7 7h-1a6 6 0 0 1-5-2.7L3.5 15a1.5 1.5 0 0 1 2.4-1.8L7 14.5"/>',
+  wpp:'<path d="M4 20l1.3-4A8 8 0 1 1 8 18.8z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/>',
+  tag:'<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8" r="1.3"/>',
+  gift:'<rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13M12 8S10.5 3 8 4s-.5 4 4 4zM12 8s1.5-5 4-4 .5 4-4 4z"/>',
+  bag:'<path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  refresh:'<path d="M20 11a8 8 0 0 0-14.6-4.5L4 8M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16M20 20v-4h-4"/>',
+  team:'<circle cx="12" cy="7" r="3"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/><circle cx="4.5" cy="10" r="2"/><circle cx="19.5" cy="10" r="2"/>',
+  inbox:'<path d="M3 13h5l1.5 3h5L16 13h5"/><path d="M5 5h14l2 8v6H3v-6z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  book:'<path d="M4 4h6a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H4zM20 4h-6a3 3 0 0 0-3 3"/><path d="M20 4v13.5h-6.5A2.5 2.5 0 0 0 11 20"/>',
+  copy:'<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>'
+};
+const ic = (n,extra='') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${I[n]||''}</svg>`;
+
+/* ---------- Estado (protótipo: salvo só neste navegador) ---------- */
+const KEY = 'lm_hub_proto_v1';
+const DEFAULT = {
+  role:'mentorado',
+  perfil:{loja:'Boutique Aurora', nome:'Ana Paula', cidade:'Recife', insta:'@boutiqueaurora', tom:'próximo e carinhoso', ticket:'280'},
+  persDone:[true,true,true,true,true,true,false],
+  plano:{}, planeje:{}, notas:[{t:'Ideia de vitrine',c:'Vitrine de primavera com flores de papel e paleta terracota.'}],
+  kanban:[
+    {t:'Reels: 3 jeitos de usar a camisa de linho',c:0},{t:'Carrossel: provador da semana',c:1},
+    {t:'Stories: bastidores da chegada da coleção',c:2},{t:'Reels: cliente real, antes e depois',c:3},{t:'Post: Dia do Cliente 15/09',c:4}
+  ],
+  chat:[]
+};
+let S;
+try{ S = Object.assign(structuredClone(DEFAULT), JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ S = structuredClone(DEFAULT); }
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} };
+const esc = s => String(s??'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const toast = t => { const el=document.getElementById('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'),1800); };
+
+/* ---------- Conteúdo ---------- */
+const PERS = [
+  {t:'Diagnóstico da loja', d:'As respostas que montam o seu Plano de Ação.'},
+  {t:'Sua loja e tom de voz', d:'Nome, cidade, Instagram e como você fala com a cliente.'},
+  {t:'Cliente ideal', d:'Quem compra, quanto gasta, o que valoriza.'},
+  {t:'Mix de produtos e preços', d:'Marcas, categorias, faixas de preço e margem.'},
+  {t:'Time de vendas', d:'Quem atende, metas individuais e rotina.'},
+  {t:'Metas e números', d:'Faturamento, ticket médio, peças por atendimento.'},
+  {t:'Canais de venda', d:'Loja física, WhatsApp, Instagram, site, malinha.'}
+];
+const JORNADA = [
+  {t:'Onboarding', d:'Boas-vindas, próximos passos e acesso à comunidade.', s:'ok'},
+  {t:'Diagnóstico', d:'Análise da loja, do perfil e do estoque.', s:'ok'},
+  {t:'Plano de Ação 90 dias', d:'100% personalizado. Entregue em até 7 dias após a documentação.', s:'go', href:'#/plano'},
+  {t:'Ferramentas', d:'Portal do curso da metodologia completo.', s:'no', href:'#/cursos'},
+  {t:'Planejamento de Marketing', d:'PLANEJE AQUI, Calendário Comercial e Kanban de Conteúdo.', s:'no', href:'#/planeje'},
+  {t:'Reuniões Individuais', d:'Encontros no Meet, gravações e atas.', s:'go', href:'#/reunioes'},
+  {t:'Encerramento', d:'Balanço dos resultados e próximos passos.', s:'no'}
+];
+const PLANO = [
+  {m:'Mês 1 · Arrumar a casa', items:['Definir meta mensal e meta diária da loja','Organizar a base de clientes (nome, WhatsApp, aniversário, última compra)','Fazer a Curva ABC do estoque e separar as peças paradas','Reunião semanal de 20 minutos com o time às segundas','Ajustar a bio e os destaques do Instagram']},
+  {m:'Mês 2 · Vender mais para quem já compra', items:['Rodar o script de reativação para clientes há mais de 90 dias sem comprar','Lançar a malinha/condicional para as 30 melhores clientes','Ação de queima com as peças da curva C','Postar 4 Reels por semana seguindo o Kanban']},
+  {m:'Mês 3 · Escalar e medir', items:['Bater a meta de peças por atendimento','Montar a campanha da próxima data comercial no PLANEJE AQUI','Revisar números com a Camilla na reunião individual','Definir os próximos 90 dias']}
+];
+const SCRIPT_CATS = [
+  {id:'boas-vindas', t:'Boas-vindas', i:'hand', c:'#C2341B'},
+  {id:'salao', t:'Atendimento no salão', i:'bag', c:'#6F2F18'},
+  {id:'direct', t:'Direct → WhatsApp', i:'wpp', c:'#1F8A5B'},
+  {id:'objecoes', t:'Quebra de objeções', i:'bolt', c:'#08163A'},
+  {id:'followup', t:'Follow-up', i:'refresh', c:'#E08A3C'},
+  {id:'colecao', t:'Lançamento de coleção', i:'spark', c:'#BC4914'},
+  {id:'malinha', t:'Malinha / condicional', i:'box', c:'#6F2F18'},
+  {id:'posvenda', t:'Pós-venda', i:'heart', c:'#1F8A5B'},
+  {id:'reativacao', t:'Reativação de clientes', i:'users', c:'#08163A'},
+  {id:'aniversario', t:'Aniversariantes', i:'gift', c:'#C2341B'},
+  {id:'queima', t:'Liquidação e queima', i:'tag', c:'#E08A3C'},
+  {id:'time', t:'Reunião com o time', i:'team', c:'#BC4914'}
+];
+const SCRIPTS = {
+  'boas-vindas':[{t:'Primeira mensagem no WhatsApp', w:'Quando a cliente chama pela primeira vez ou deixa o número na loja.', x:`Oi, {cliente}! Aqui é a {seu_nome}, da {loja} 💛
+Que bom ter você por aqui. Me conta: você está procurando algo para uma ocasião especial ou quer ver as novidades da semana?
+Assim eu já separo as peças com a sua cara.`}],
+  'salao':[{t:'Abordagem sem "posso ajudar?"', w:'Quando a cliente entra na loja. Troque a pergunta fechada por uma conversa.', x:`Oi, seja bem-vinda à {loja}! Fica à vontade.
+Essa arara aqui chegou ontem, é a coleção nova. Você está procurando algo para o dia a dia ou para algum evento?`}],
+  'direct':[{t:'Levar a conversa do Direct para o WhatsApp', w:'Quando a cliente pergunta preço ou tamanho pelo Instagram.', x:`Oi, {cliente}! Essa peça é linda mesmo 😍
+Para eu te mandar fotos com detalhes, medidas e outras cores, me passa o seu WhatsApp? Lá eu consigo te atender com calma.
+Ou se preferir, chama direto: {whatsapp_link}`}],
+  'objecoes':[{t:'"Tá caro"', w:'Nunca discuta preço. Mostre valor e ofereça condição.', x:`Entendo, {cliente}. Essa peça é de tecido que não amassa e dura muitas temporadas. Você usa no trabalho e no fim de semana.
+Consigo parcelar em até 4x sem juros. Quer que eu separe para você provar com aquela calça que você levou da última vez?`},{t:'"Vou pensar"', w:'Descubra a objeção real antes de deixar a cliente ir.', x:`Claro, {cliente}! Me conta: ficou em dúvida no modelo, no tamanho ou no valor?
+Se quiser, eu reservo para você até amanhã às 18h. Assim ninguém leva antes.`}],
+  'followup':[{t:'Cliente que não respondeu', w:'24 a 48 horas depois da última mensagem.', x:`Oi, {cliente}! Passando para saber se você conseguiu ver as fotos que te mandei.
+Separei o vestido no seu tamanho, mas só consigo segurar até amanhã. Quer que eu mantenha?`}],
+  'colecao':[{t:'Aviso de coleção nova (lista VIP)', w:'Um dia antes de postar a coleção no Instagram.', x:`{cliente}, você é uma das primeiras a saber 🤫
+Amanhã chega a coleção nova na {loja}, e as clientes VIP podem ver tudo hoje à noite, antes de todo mundo.
+Quer que eu te mande as fotos às 20h?`}],
+  'malinha':[{t:'Convite para malinha', w:'Para as clientes da curva A, uma vez por mês.', x:`Oi, {cliente}! Montei uma malinha com peças que combinam muito com você: {pecas}.
+Posso mandar para a sua casa na quinta? Você prova com calma e devolve o que não quiser até sábado.`}],
+  'posvenda':[{t:'Pós-venda em 3 dias', w:'Três dias depois da compra.', x:`Oi, {cliente}! Já usou o look novo? 😍
+Se puder, me manda uma foto. Eu amo ver como ficou! E se quiser, posto no nosso Instagram {insta} marcando você.`}],
+  'reativacao':[{t:'Cliente sumida há mais de 90 dias', w:'Use a lista "Inativas" do Gestão de Clientes.', x:`{cliente}, que saudade de você aqui na {loja}!
+Chegaram umas peças que lembram muito o seu estilo. Separei três para te mostrar. Posso te mandar as fotos?`}],
+  'aniversario':[{t:'Mensagem de aniversário com presente', w:'No dia do aniversário, de manhã.', x:`Feliz aniversário, {cliente}! 🎉
+Toda a equipe da {loja} deseja um ano lindo para você.
+Seu presente: 15% de desconto em qualquer peça até o fim do mês. É só me chamar aqui.`}],
+  'queima':[{t:'Queima de estoque para a base', w:'Para girar as peças da curva C.', x:`{cliente}, só para as clientes da lista: separei peças selecionadas com até 40% off antes de abrir para o público.
+São poucas unidades por tamanho. Quer que eu te mande as opções do seu número?`}],
+  'time':[{t:'Reunião de segunda (20 minutos)', w:'Toda segunda, antes de abrir a loja.', x:`1. Resultado da semana passada: meta x realizado (3 min)
+2. Quem vendeu mais e o que fez de diferente (3 min)
+3. Meta da semana e meta de hoje (3 min)
+4. Peças-foco da semana e argumentos de venda (5 min)
+5. Script da semana: treinar em dupla (5 min)
+6. Combinado final (1 min)`}]
+};
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DATAS = ['Liquidação de verão · Volta às aulas','Carnaval','Dia da Mulher (8/3) · Dia do Consumidor (15/3)','Páscoa · Início do outono','Dia das Mães','Dia dos Namorados (12/6) · São João','Férias · Liquidação de inverno','Dia dos Pais','Dia do Cliente (15/9) · Primavera','Dia das Crianças (12/10)','Black Friday','Natal · Réveillon'];
+const BLOCOS = ['Produtos em destaque','Ações de venda','O que precisa ser feito','Meta de faturamento','Semana 1','Semana 2','Semana 3','Semana 4'];
+const KCOLS = ['Ideias','Roteiro','Gravar','Editar','Publicado'];
+const REUNIOES = [
+  {t:'Onboarding e alinhamento', d:'2026-09-08 10:00', s:'Realizado', g:true},
+  {t:'Devolutiva do Diagnóstico', d:'2026-09-22 10:00', s:'Realizado', g:true},
+  {t:'Plano de Ação: Mês 1', d:'2026-10-06 10:00', s:'Pendente', g:false},
+  {t:'Revisão de números', d:'2026-10-20 10:00', s:'Pendente', g:false}
+];
+const MENTORADOS = [
+  {n:'Boutique Aurora', p:'Plano de Ação', pr:43, r:'06/10 10h', a:'hoje', st:'ok'},
+  {n:'Casa Lume Moda', p:'Diagnóstico', pr:22, r:'07/10 15h', a:'ontem', st:'ok'},
+  {n:'Ateliê Flor de Sal', p:'Onboarding', pr:8, r:'— sem data', a:'há 9 dias', st:'bad'},
+  {n:'Vila Linho', p:'Reuniões', pr:71, r:'09/10 11h', a:'há 2 dias', st:'ok'},
+  {n:'Maré Store (consultoria)', p:'Plano de Ação', pr:55, r:'08/10 14h', a:'há 5 dias', st:'wa'}
+];
+const DUVIDAS = [
+  {l:'Vila Linho', q:'Posso usar o script de malinha para clientes novas também?', h:'09:12'},
+  {l:'Casa Lume Moda', q:'Mandei a planilha de estoque. Precisa de mais alguma coluna para a Curva ABC?', h:'08:40'},
+  {l:'Boutique Aurora', q:'Qual a melhor data para a queima: antes ou depois do Dia do Cliente?', h:'ontem'}
+];
+
+/* ---------- Navegação ---------- */
+const NAV = {
+  mentorado:[
+    {id:'inicio', l:'Início', i:'home'},
+    {id:'assistente', l:'Assistente Magnética', i:'spark', ai:true},
+    {g:'Minha jornada'},
+    {id:'jornada', l:'Os 7 passos', i:'map'},
+    {id:'plano', l:'Plano de Ação 90 dias', i:'target'},
+    {id:'reunioes', l:'Reuniões', i:'video'},
+    {g:'Minha loja'},
+    {id:'personalizacao', l:'Personalização', i:'sliders', dot:true},
+    {id:'metas', l:'Metas e calculadora', i:'calc'},
+    {id:'clientes', l:'Gestão de clientes', i:'users', soon:true},
+    {id:'estoque', l:'Giro de estoque', i:'box', soon:true},
+    {id:'notas', l:'Notas', i:'note'},
+    {g:'Vendas'},
+    {id:'scripts', l:'Scripts de venda', i:'chat'},
+    {g:'Marketing'},
+    {id:'planeje', l:'PLANEJE AQUI', i:'cal'},
+    {id:'kanban', l:'Kanban de conteúdo', i:'kanban'},
+    {id:'perfil-ig', l:'Análise do perfil', i:'insta'},
+    {g:'Aprender'},
+    {id:'cursos', l:'Cursos e gravações', i:'play'},
+    {id:'duvidas', l:'Dúvidas entre encontros', i:'help'}
+  ],
+  equipe:[
+    {id:'painel', l:'Painel da equipe', i:'chart'},
+    {id:'caixa', l:'Dúvidas pendentes', i:'inbox'},
+    {id:'agenda', l:'Reuniões da semana', i:'cal'},
+    {id:'novo', l:'Novo portal', i:'plus'},
+    {id:'biblioteca', l:'Biblioteca', i:'book'}
+  ]
+};
+const persLeft = () => S.persDone.filter(x=>!x).length;
+
+function renderNav(route){
+  const items = NAV[S.role];
+  document.getElementById('nav').innerHTML = items.map(n => n.g
+    ? `<div class="grp">${n.g}</div>`
+    : `<a href="#/${n.id}" class="${route===n.id?'on':''} ${n.ai?'ai':''}">${ic(n.i)}<span>${n.l}</span>${n.soon?'<span class="tag">EM BREVE</span>':''}${n.dot&&persLeft()?'<span class="dot"></span>':''}</a>`
+  ).join('');
+  document.querySelectorAll('.role button').forEach(b => b.classList.toggle('on', b.dataset.role===S.role));
+  const me = S.role==='mentorado'
+    ? {a:S.perfil.nome[0], n:`Olá, ${S.perfil.nome.split(' ')[0]}!`, s:`${S.perfil.loja}`}
+    : {a:'C', n:'Olá, Camilla!', s:'Equipe Loja Magnética'};
+  document.getElementById('me').innerHTML = `<div class="avatar">${esc(me.a)}</div><div><b>${esc(me.n)}</b><small>${esc(me.s)} · acesso ativo<span class="online"></span></small></div>`;
+  const left = persLeft();
+  document.getElementById('banner').innerHTML = S.role==='mentorado' && left
+    ? `Termine a sua Personalização · falta ${left} de 7 <a href="#/personalizacao">Terminar agora →</a>`
+    : `Protótipo do Hub Loja Magnética · dados de exemplo`;
+}
+
+/* ---------- Páginas ---------- */
+const P = {};
+const head = (t,s) => `<span class="proto">PROTÓTIPO</span><h1>${t}</h1>${s?`<p class="sub">${s}</p>`:''}`;
+const fill = txt => esc(txt)
+  .replace(/\{loja\}/g, `<span class="var">${esc(S.perfil.loja)}</span>`)
+  .replace(/\{seu_nome\}/g, `<span class="var">${esc(S.perfil.nome.split(' ')[0])}</span>`)
+  .replace(/\{insta\}/g, `<span class="var">${esc(S.perfil.insta)}</span>`)
+  .replace(/\{(\w+)\}/g, '<span class="var">[$1]</span>');
+const plain = txt => txt.replace(/\{loja\}/g,S.perfil.loja).replace(/\{seu_nome\}/g,S.perfil.nome.split(' ')[0]).replace(/\{insta\}/g,S.perfil.insta);
+
+P.inicio = () => {
+  const done = Object.values(S.plano).filter(Boolean).length, total = PLANO.reduce((a,m)=>a+m.items.length,0);
+  const shortcuts = [['assistente','spark','Assistente'],['plano','target','Plano 90d'],['scripts','chat','Scripts'],['planeje','cal','Planeje'],['kanban','kanban','Kanban'],['metas','calc','Metas'],['notas','note','Notas'],['cursos','play','Cursos']];
+  const groups = [
+    ['Minha jornada',[['jornada','Os 7 passos'],['plano','Plano de Ação'],['reunioes','Reuniões']]],
+    ['Minha loja',[['personalizacao','Personalização'],['metas','Metas e calculadora'],['clientes','Gestão de clientes'],['estoque','Giro de estoque'],['notas','Notas']]],
+    ['Vendas e marketing',[['scripts','Scripts de venda'],['planeje','PLANEJE AQUI'],['kanban','Kanban de conteúdo'],['perfil-ig','Análise do perfil']]],
+    ['Aprender',[['cursos','Cursos e gravações'],['duvidas','Dúvidas entre encontros']]]
+  ];
+  return `
+  <div class="hero">
+    <div><h1>Seja bem-vindo(a), ${esc(S.perfil.nome.split(' ')[0])}! 🥂</h1><p>Este é o seu PORTAL DA MENTORIA. Tudo da ${esc(S.perfil.loja)} em um lugar só.</p></div>
+    <div class="meet"><small>Próximo encontro no Meet</small><b>Seg, 06/10 · 10h</b><br><span style="opacity:.85">Plano de Ação: Mês 1</span><div class="mt"><a class="btn w sm" href="#/reunioes">Entrar na sala</a></div></div>
+  </div>
+  <div class="sectitle">Seus atalhos</div>
+  <div class="shortcuts">${shortcuts.map(([r,i,l])=>`<a class="sc" href="#/${r}"><div class="ic">${ic(i)}</div>${l}</a>`).join('')}</div>
+  <div class="grid g3 mt">
+    <div class="card"><h3>Sua jornada</h3><p class="muted" style="margin:0 0 10px">Passo 3 de 7 · Plano de Ação</p><div class="bar"><i style="width:36%"></i></div><a class="btn s sm mt" href="#/jornada">Ver os 7 passos</a></div>
+    <div class="card"><h3>Plano de Ação 90 dias</h3><p class="muted" style="margin:0 0 10px">${done} de ${total} tarefas feitas</p><div class="bar"><i style="width:${Math.round(done/total*100)}%"></i></div><a class="btn s sm mt" href="#/plano">Abrir plano</a></div>
+    <div class="card"><h3>Data comercial do mês</h3><p class="muted" style="margin:0 0 10px">${DATAS[9]}</p><a class="btn s sm" href="#/planeje/9">Planejar outubro</a></div>
+  </div>
+  <div class="sectitle">Tudo aqui no Hub</div>
+  <div class="card"><div class="grid g4">${groups.map(([g,l])=>`<div><h3 style="font-size:14px">${g}</h3><div class="chips">${l.map(([r,t])=>`<a class="chip" href="#/${r}">${t}</a>`).join('')}</div></div>`).join('')}</div></div>`;
+};
+
+P.jornada = () => head('A jornada da sua Loja Magnética','Os 7 passos da mentoria. Cada passo libera o próximo.') +
+  `<div class="steps">${JORNADA.map((j,i)=>`<div class="step ${j.s==='ok'?'done':j.s==='go'?'now':''}"><div class="num">${j.s==='ok'?'✓':i+1}</div><div><h3>${j.t}</h3><p>${j.d}</p></div><div class="r">${j.s==='ok'?'<span class="pill ok">Concluído</span>':j.s==='go'?'<span class="pill go">Em andamento</span>':'<span class="pill no">A seguir</span>'}${j.href?`<div class="mt"><a class="btn s sm" href="${j.href}">Abrir</a></div>`:''}</div></div>`).join('')}</div>`;
+
+P.plano = () => {
+  const done = Object.values(S.plano).filter(Boolean).length, total = PLANO.reduce((a,m)=>a+m.items.length,0);
+  return head('Plano de Ação · 90 dias','100% personalizado para a sua loja. Marque o que for concluindo. A Camilla acompanha daqui.') +
+  `<div class="card mb"><div class="row" style="justify-content:space-between"><b>${done} de ${total} tarefas</b><span class="muted">${Math.round(done/total*100)}%</span></div><div class="bar mt"><i style="width:${Math.round(done/total*100)}%"></i></div></div>
+  <div class="grid g3">${PLANO.map((m,mi)=>`<div class="card"><h3>${m.m}</h3>${m.items.map((it,ii)=>{const k=mi+'-'+ii;return `<label class="check ${S.plano[k]?'done':''}"><input type="checkbox" data-plano="${k}" ${S.plano[k]?'checked':''}><span>${it}</span></label>`}).join('')}</div>`).join('')}</div>`;
+};
+
+P.reunioes = () => head('Reuniões individuais','Sincronizadas automaticamente com o Google Agenda. As gravações aparecem aqui depois do encontro.') +
+  `<div class="card tblwrap"><table class="tbl"><thead><tr><th>Reunião</th><th>Data</th><th>Status</th><th>Gravação</th></tr></thead><tbody>${REUNIOES.map(r=>`<tr><td><b style="color:var(--ink)">${r.t}</b></td><td>${new Date(r.d.replace(' ','T')).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td><td>${r.s==='Realizado'?'<span class="pill ok">Realizado</span>':'<span class="pill wa">Pendente</span>'}</td><td>${r.g?'<a href="#/reunioes" onclick="toast(\'No Hub real, abre a gravação\');return false">▶ Assistir</a>':'<span class="muted">—</span>'}</td></tr>`).join('')}</tbody></table></div>
+  <p class="muted mt">Link fixo do Meet: <a href="#/reunioes" onclick="toast('No Hub real, abre o Meet');return false">meet.google.com/xxx-xxxx-xxx</a></p>`;
+
+P.personalizacao = (arg) => {
+  if(arg==='2') return head('Sua loja e tom de voz','Essas respostas personalizam os scripts e o Assistente.') +
+    `<div class="card" style="max-width:640px">
+      <label>Nome da loja</label><input type="text" data-p="loja" value="${esc(S.perfil.loja)}">
+      <label>Seu nome</label><input type="text" data-p="nome" value="${esc(S.perfil.nome)}">
+      <div class="grid g2"><div><label>Cidade</label><input type="text" data-p="cidade" value="${esc(S.perfil.cidade)}"></div><div><label>Instagram</label><input type="text" data-p="insta" value="${esc(S.perfil.insta)}"></div></div>
+      <div class="grid g2"><div><label>Tom de voz</label><select data-p="tom">${['próximo e carinhoso','elegante e sofisticado','descontraído e divertido','direto e objetivo'].map(o=>`<option ${o===S.perfil.tom?'selected':''}>${o}</option>`).join('')}</select></div><div><label>Ticket médio (R$)</label><input type="number" data-p="ticket" value="${esc(S.perfil.ticket)}"></div></div>
+      <div class="row mt"><button class="btn p" id="savePerfil">Salvar</button><a class="btn s" href="#/scripts">Ver os scripts com os seus dados</a></div>
+    </div>`;
+  if(arg==='7') return head('Canais de venda','A última etapa da Personalização.') +
+    `<div class="card" style="max-width:640px"><label>Onde você vende hoje?</label>${['Loja física','WhatsApp','Instagram (Direct)','Site / e-commerce','Malinha / condicional'].map(c=>`<label class="check" style="font-weight:400"><input type="checkbox"><span>${c}</span></label>`).join('')}
+    <label>Qual canal traz mais faturamento?</label><input type="text" placeholder="Ex.: WhatsApp, cerca de 40%">
+    <div class="row mt"><button class="btn p" id="finishPers">Concluir Personalização</button></div></div>`;
+  return head('Personalização','7 etapas para o Hub conhecer a sua loja. Quanto mais completo, mais certeiros ficam o Plano, os scripts e o Assistente.') +
+  `<div class="steps">${PERS.map((p,i)=>`<div class="step ${S.persDone[i]?'done':'now'}"><div class="num">${S.persDone[i]?'✓':i+1}</div><div><h3>${p.t}</h3><p>${p.d}</p></div><div class="r">${S.persDone[i]?`<span class="pill ok">feito</span>`:'<span class="pill go">pendente</span>'}<div class="mt"><a class="btn ${S.persDone[i]?'s':'p'} sm" href="#/personalizacao/${i+1}" ${[2,7].includes(i+1)?'':`onclick="toast('Formulário de exemplo: abra a etapa 2 ou 7');return false"`}>${S.persDone[i]?'Ver respostas':'Responder'}</a></div></div></div>`).join('')}</div>`;
+};
+
+P.metas = () => head('Metas e calculadora','Da meta do mês para o que precisa acontecer todo dia.') +
+  `<div class="grid g2">
+    <div class="card"><h3>Meta diária</h3>
+      <label>Meta de faturamento do mês (R$)</label><input type="number" id="mMeta" value="60000">
+      <div class="grid g2"><div><label>Dias de loja aberta</label><input type="number" id="mDias" value="26"></div><div><label>Ticket médio (R$)</label><input type="number" id="mTicket" value="${esc(S.perfil.ticket)}"></div></div>
+      <label>Conversão (% de quem entra e compra)</label><input type="number" id="mConv" value="30">
+      <div class="grid g3 mt" id="mOut"></div></div>
+    <div class="card"><h3>Preço de venda</h3>
+      <label>Custo da peça (R$)</label><input type="number" id="pCusto" value="89.90">
+      <label>Markup</label><input type="number" id="pMk" value="2.6" step="0.1">
+      <label>Desconto máximo na queima (%)</label><input type="number" id="pDesc" value="30">
+      <div class="grid g3 mt" id="pOut"></div></div>
+  </div>`;
+
+P.scripts = (arg) => {
+  if(arg){
+    const cat = SCRIPT_CATS.find(c=>c.id===arg); const list = SCRIPTS[arg]||[];
+    return `<a class="btn s sm mb" href="#/scripts">← Todos os scripts</a>` + head(cat.t,'Os campos em destaque já vêm da sua Personalização. O que estiver entre colchetes você completa na hora.') +
+      list.map((s,i)=>`<div class="script"><h3>${s.t}</h3><div class="when">Quando usar: ${s.w}</div><pre>${fill(s.x)}</pre><div class="row"><button class="btn p sm" data-copy="${arg}|${i}">${ic('copy','width="15" height="15"')} Copiar</button><a class="btn s sm" href="#/assistente" data-ask="Adapte o script '${esc(s.t)}' para uma cliente específica">Adaptar com o Assistente</a></div></div>`).join('');
+  }
+  return head('Scripts de venda',`Mensagens prontas para a ${esc(S.perfil.loja)}, no seu tom de voz (${esc(S.perfil.tom)}).`) +
+    `<div class="grid g3">${SCRIPT_CATS.map(c=>`<a class="scard" style="--c:${c.c}" href="#/scripts/${c.id}"><div class="ic">${ic(c.i)}</div><b>${c.t}</b><small>${(SCRIPTS[c.id]||[]).length} script${(SCRIPTS[c.id]||[]).length>1?'s':''} · abrir →</small></a>`).join('')}<a class="scard new" href="#/assistente" data-ask="Crie um script novo para ">+ Novo script com o Assistente</a></div>`;
+};
+
+P.planeje = (arg) => {
+  if(arg!==undefined && arg!==''){
+    const m = +arg, k = 'm'+m, d = S.planeje[k]||{};
+    return `<a class="btn s sm mb" href="#/planeje">← Todos os meses</a>` + head(`🗓️ ${MESES[m]}`, `Datas comerciais: ${DATAS[m]}`) +
+      `<div class="grid g2">${BLOCOS.map((b,i)=>`<div class="card"><h3>${b}</h3><textarea data-planeje="${k}|${i}" placeholder="Escreva aqui…">${esc(d[i]||'')}</textarea></div>`).join('')}</div>`;
+  }
+  return head('🗓️ PLANEJE AQUI','Um card por mês: datas comerciais, produtos em destaque, ações, meta e as 4 semanas.') +
+    `<div class="grid g4">${MESES.map((m,i)=>{const filled=Object.values(S.planeje['m'+i]||{}).filter(Boolean).length;return `<a class="month" href="#/planeje/${i}"><b>${m}</b><small>${DATAS[i]}</small><div class="mt">${filled?`<span class="pill ok">${filled}/8 blocos</span>`:'<span class="pill no">a planejar</span>'}</div></a>`}).join('')}</div>`;
+};
+
+P.kanban = () => head('Kanban de conteúdo','Da ideia ao post publicado. Use as setas para mover os cards.') +
+  `<div class="row mb"><input type="text" id="kNew" placeholder="Nova ideia de conteúdo…" style="max-width:420px"><button class="btn p" id="kAdd">Adicionar</button></div>
+  <div class="kanban">${KCOLS.map((c,ci)=>{const cards=S.kanban.map((k,i)=>({...k,i})).filter(k=>k.c===ci);return `<div class="col"><h3>${c}<span class="muted">${cards.length}</span></h3>${cards.map(k=>`<div class="kc">${esc(k.t)}<div class="mv"><button data-km="${k.i}|-1" ${ci===0?'disabled':''}>←</button><button data-kdel="${k.i}" title="Excluir">✕</button><button data-km="${k.i}|1" ${ci===KCOLS.length-1?'disabled':''}>→</button></div></div>`).join('')}</div>`}).join('')}</div>`;
+
+P['perfil-ig'] = () => head('Análise do perfil','O diagnóstico do Instagram da sua loja, com vídeo explicativo e roteiro.') +
+  `<div class="card"><p>No Hub, a análise que hoje vai como link do GitHub fica dentro do portal da mentorada, junto com o Plano de Ação.</p><a class="btn p" href="../versatilita/" target="_blank" rel="noopener">Ver um exemplo de análise</a></div>`;
+
+P.notas = () => head('Notas','Seu caderno dentro do Hub. Substitui as páginas soltas do Notion.') +
+  `<div class="card mb"><input type="text" id="nT" placeholder="Título"><textarea id="nC" class="mt" placeholder="Escreva sua nota…"></textarea><div class="row mt"><button class="btn p" id="nAdd">Salvar nota</button></div></div>
+  <div class="grid g3">${S.notas.map((n,i)=>`<div class="card"><h3>${esc(n.t)}</h3><p style="white-space:pre-wrap;margin:0 0 10px">${esc(n.c)}</p><button class="btn s sm" data-ndel="${i}">Excluir</button></div>`).join('')}</div>`;
+
+P.cursos = () => head('Cursos e gravações','O portal do curso da metodologia completo e as gravações dos encontros.') +
+  `<div class="grid g3">${['Módulo 1 · Gestão e números da loja','Módulo 2 · Time de vendas','Módulo 3 · Vitrine e experiência','Módulo 4 · Base de clientes e CRM','Módulo 5 · Instagram que vende','Módulo 6 · Estoque e compras'].map((m,i)=>`<div class="card"><div style="height:110px;border-radius:10px;background:var(--grad);opacity:${.55+i*.07};margin-bottom:12px;display:grid;place-items:center;color:#fff">${ic('play','width="34" height="34"')}</div><h3>${m}</h3><div class="bar"><i style="width:${[100,60,20,0,0,0][i]}%"></i></div></div>`).join('')}</div>`;
+
+P.duvidas = () => head('Dúvidas entre os encontros','Respostas da Camilla às 10h e às 16h, de segunda a sexta. Prazo de até 12 horas úteis.') +
+  `<div class="card mb"><textarea id="dq" placeholder="Escreva sua dúvida…"></textarea><div class="row mt"><button class="btn p" id="dSend">Enviar para a Camilla</button></div></div>
+  <div class="card"><h3>Respondidas</h3><div class="check"><span><b>Posso mandar o script de aniversário por áudio?</b><br><span class="muted">Camilla: Pode e deve! Áudio curto, até 30 segundos, e depois o texto com o cupom.</span></span></div></div>`;
+
+P.clientes = () => head('Gestão de clientes','Em breve: a base de clientes da loja com aniversário, última compra, curva A/B/C e lista de inativas para reativação.') + `<div class="card muted">Este módulo entra na fase 2.</div>`;
+P.estoque = () => head('Giro de estoque','Em breve: suba a planilha do sistema e o Hub monta a Curva ABC e os blocos de queima no padrão Loja Magnética.') + `<div class="card muted">Este módulo entra na fase 2.</div>`;
+
+P.assistente = () => head('✨ Assistente Magnética',`Treinado no método Loja Magnética e nos dados da ${esc(S.perfil.loja)}. No Hub real, quem responde aqui é o Claude.`) +
+  `<div class="card chat"><div class="msgs" id="msgs">${(S.chat.length?S.chat:[{r:'a',t:`Oi, ${S.perfil.nome.split(' ')[0]}! Eu conheço a sua Personalização, o seu Plano de Ação e os scripts. Posso escrever uma mensagem para uma cliente, montar a ação do mês ou revisar a sua meta. Por onde começamos?`}]).map(m=>`<div class="msg ${m.r}">${esc(m.t)}</div>`).join('')}</div>
+  <div class="chips mt">${['Crie uma ação para o Dia das Crianças','Quanto preciso vender por dia?','Escreva uma mensagem de reativação'].map(s=>`<a class="chip" href="#/assistente" data-sug="${s}">${s}</a>`).join('')}</div>
+  <div class="composer"><input type="text" id="ci" placeholder="Pergunte qualquer coisa sobre a sua loja…"><button class="btn p" id="cs">Enviar</button></div></div>`;
+
+/* Equipe */
+P.painel = () => head('Painel da equipe','Todos os portais em uma tela: em que passo cada loja está e quem precisa de atenção.') +
+  `<div class="grid g4 mb">${[['5','portais ativos'],['4','reuniões esta semana'],['3','dúvidas pendentes'],['1','portal parado há 7+ dias']].map(([n,l])=>`<div class="card kpi"><b>${n}</b><small>${l}</small></div>`).join('')}</div>
+  <div class="card tblwrap"><table class="tbl"><thead><tr><th>Loja</th><th>Passo</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th></th></tr></thead><tbody>${MENTORADOS.map(m=>`<tr><td><b style="color:var(--ink)">${m.n}</b></td><td>${m.p}</td><td style="min-width:120px"><div class="bar"><i style="width:${m.pr}%"></i></div><small class="muted">${m.pr}%</small></td><td>${m.r}</td><td>${m.st==='bad'?`<span class="pill bad">${m.a}</span>`:m.st==='wa'?`<span class="pill wa">${m.a}</span>`:m.a}</td><td><a class="btn s sm" href="#/inicio" data-as="mentorado">Abrir portal</a></td></tr>`).join('')}</tbody></table></div>`;
+
+P.caixa = () => head('Dúvidas pendentes','Responder às 10h e às 16h. Tudo em uma caixa só, sem caçar no Notion ou no WhatsApp.') +
+  DUVIDAS.map((d,i)=>`<div class="card mb"><div class="row" style="justify-content:space-between"><b style="color:var(--ink)">${d.l}</b><small class="muted">${d.h}</small></div><p>${d.q}</p><textarea placeholder="Sua resposta…"></textarea><div class="row mt"><button class="btn p sm" onclick="toast('Resposta enviada para ${d.l}')">Responder</button><button class="btn s sm" onclick="toast('Rascunho gerado pelo Assistente')">Rascunho com o Assistente</button></div></div>`).join('');
+
+P.agenda = () => head('Reuniões da semana','Puxadas do Google Agenda (suportelojamagnetica@gmail.com). Eventos roxos de lead do comercial ficam de fora.') +
+  `<div class="card tblwrap"><table class="tbl"><thead><tr><th>Quando</th><th>Loja</th><th>Tema</th><th>Status</th></tr></thead><tbody>${[['Seg 06/10 10h','Boutique Aurora','Plano de Ação: Mês 1'],['Ter 07/10 15h','Casa Lume Moda','Devolutiva do Diagnóstico'],['Qua 08/10 14h','Maré Store','Consultoria: estoque'],['Qui 09/10 11h','Vila Linho','Revisão de números']].map(r=>`<tr><td>${r[0]}</td><td><b style="color:var(--ink)">${r[1]}</b></td><td>${r[2]}</td><td><span class="pill wa">Pendente</span></td></tr>`).join('')}</tbody></table></div>`;
+
+P.novo = () => head('Novo portal','Cria o PORTAL DA MENTORIA a partir do modelo, com os 7 passos, PLANEJE AQUI e Reuniões já prontos.') +
+  `<div class="card" style="max-width:640px"><label>Nome da loja</label><input type="text" placeholder="Ex.: Ateliê Flor de Sal"><div class="grid g2"><div><label>Responsável</label><input type="text"></div><div><label>WhatsApp</label><input type="text"></div></div><div class="grid g2"><div><label>Tipo</label><select><option>Mentoria</option><option>Mentoria VIP Anual</option><option>Consultoria</option></select></div><div><label>Início</label><input type="date"></div></div><label class="check" style="font-weight:400"><input type="checkbox" checked><span>Enviar convite de acesso por e-mail</span></label><div class="row mt"><button class="btn p" onclick="toast('Portal criado (exemplo)')">Criar portal</button></div></div>`;
+
+P.biblioteca = () => head('Biblioteca','O que a equipe edita uma vez e aparece para todos os portais.') +
+  `<div class="grid g3">${[['chat','Scripts modelo','12 categorias'],['play','Aulas e gravações','6 módulos'],['map','Modelo da jornada','7 passos + textos do Onboarding'],['cal','Datas comerciais','12 meses'],['note','Questionários','7 etapas da Personalização'],['spark','Instruções do Assistente','Método e tom da Camilla']].map(([i,t,s])=>`<div class="card"><div class="sc" style="border:0;padding:0;text-align:left"><div class="ic" style="margin:0 0 10px">${ic(i)}</div></div><h3>${t}</h3><p class="muted" style="margin:0">${s}</p></div>`).join('')}</div>`;
+
+/* ---------- Assistente (simulado) ---------- */
+function reply(q){
+  const t = q.toLowerCase(), f = S.perfil.nome.split(' ')[0];
+  if(/dia|vender|meta/.test(t) && /dia|meta/.test(t)) return `Com meta de R$ 60.000 em 26 dias, são R$ 2.308 por dia. Com ticket de R$ ${S.perfil.ticket}, dá umas ${Math.ceil(2308/(+S.perfil.ticket||1))} vendas por dia. Se a conversão for de 30%, você precisa de cerca de ${Math.ceil(2308/(+S.perfil.ticket||1)/0.3)} atendimentos por dia.\n\nQuer que eu monte a meta por vendedora?`;
+  if(/reativ|sumid|inativ/.test(t)) return plain(SCRIPTS.reativacao[0].x).replace('{cliente}','Juliana') + `\n\nTroquei o nome para Juliana como exemplo. Me fala o estilo dela que eu ajusto as peças.`;
+  if(/crian|ação|acao|campanha/.test(t)) return `Ação para o Dia das Crianças na ${S.perfil.loja}:\n\n1. Semana 1: stories "Mãe e filha combinando" com 3 looks.\n2. Semana 2: lista VIP para as clientes com filhos, com brinde na compra acima de R$ 300.\n3. Dia 10/10: Reels com cliente real e o filho.\n4. Meta: 15% acima de outubro do ano passado.\n\nQuer que eu salve isso em Outubro no PLANEJE AQUI?`;
+  return `Boa pergunta, ${f}! No Hub real eu respondo com o Claude, usando a sua Personalização (tom ${S.perfil.tom}, ticket de R$ ${S.perfil.ticket}), o seu Plano de Ação e o método Loja Magnética.\n\nNeste protótipo, experimente: "Quanto preciso vender por dia?"`;
+}
+
+/* ---------- Roteador ---------- */
+function route(){
+  const [r='',arg] = location.hash.replace(/^#\/?/,'').split('/');
+  const def = S.role==='equipe' ? 'painel' : 'inicio';
+  const name = P[r] ? r : def;
+  renderNav(name);
+  document.getElementById('view').innerHTML = P[name](arg);
+  document.getElementById('side').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  window.scrollTo(0,0);
+  after(name);
+}
+function after(name){
+  if(name==='metas'){
+    const brl = v => v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+    const calc = () => {
+      const g = id => +document.getElementById(id).value || 0;
+      const dia = g('mMeta')/Math.max(g('mDias'),1), vendas = dia/Math.max(g('mTicket'),1), at = vendas/Math.max(g('mConv')/100,.01);
+      document.getElementById('mOut').innerHTML = [[brl(dia),'por dia'],[Math.ceil(vendas),'vendas por dia'],[Math.ceil(at),'atendimentos por dia']].map(([n,l])=>`<div class="kpi"><b style="font-size:20px">${n}</b><small>${l}</small></div>`).join('');
+      const pv = g('pCusto')*g('pMk'), pq = pv*(1-g('pDesc')/100);
+      document.getElementById('pOut').innerHTML = [[brl(pv),'preço de venda'],[brl(pq),'preço na queima'],[(pq/Math.max(g('pCusto'),.01)).toFixed(2)+'x','markup na queima']].map(([n,l])=>`<div class="kpi"><b style="font-size:20px">${n}</b><small>${l}</small></div>`).join('');
+    };
+    document.querySelectorAll('#view input').forEach(i=>i.addEventListener('input',calc)); calc();
+  }
+  if(name==='assistente'){
+    const box = document.getElementById('msgs'); box.scrollTop = box.scrollHeight;
+    const ask = sessionGet('ask'); if(ask){ document.getElementById('ci').value = ask; sessionSet('ask',''); }
+  }
+}
+function sessionGet(k){ try{ return sessionStorage.getItem(k)||''; }catch(e){ return ''; } }
+function sessionSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+
+/* ---------- Eventos ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-role],[data-copy],[data-km],[data-kdel],[data-ndel],[data-sug],[data-ask],[data-as],#savePerfil,#finishPers,#kAdd,#nAdd,#dSend,#cs,#burger,#overlay,#themeBtn,#fontBtn');
+  if(!t) return;
+  if(t.dataset.role){ S.role=t.dataset.role; save(); location.hash = S.role==='equipe'?'#/painel':'#/inicio'; route(); return; }
+  if(t.dataset.as){ S.role=t.dataset.as; save(); return; }
+  if(t.dataset.copy){ const [c,i]=t.dataset.copy.split('|'); const txt=plain(SCRIPTS[c][+i].x); (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('Script copiado'),()=>toast('Não foi possível copiar')); return; }
+  if(t.dataset.km){ const [i,d]=t.dataset.km.split('|').map(Number); S.kanban[i].c=Math.min(KCOLS.length-1,Math.max(0,S.kanban[i].c+d)); save(); route(); return; }
+  if(t.dataset.kdel){ S.kanban.splice(+t.dataset.kdel,1); save(); route(); return; }
+  if(t.dataset.ndel){ S.notas.splice(+t.dataset.ndel,1); save(); route(); return; }
+  if(t.dataset.ask){ sessionSet('ask', t.dataset.ask); return; }
+  if(t.dataset.sug){ e.preventDefault(); document.getElementById('ci').value=t.dataset.sug; document.getElementById('cs').click(); return; }
+  switch(t.id){
+    case 'savePerfil': document.querySelectorAll('[data-p]').forEach(i=>S.perfil[i.dataset.p]=i.value); save(); toast('Personalização salva'); renderNav('personalizacao'); break;
+    case 'finishPers': S.persDone[6]=true; save(); toast('Personalização concluída 🎉'); location.hash='#/personalizacao'; break;
+    case 'kAdd': { const v=document.getElementById('kNew').value.trim(); if(v){ S.kanban.push({t:v,c:0}); save(); route(); } break; }
+    case 'nAdd': { const tt=document.getElementById('nT').value.trim(), cc=document.getElementById('nC').value.trim(); if(tt||cc){ S.notas.unshift({t:tt||'Sem título',c:cc}); save(); route(); } break; }
+    case 'dSend': { const q=document.getElementById('dq'); if(q.value.trim()){ q.value=''; toast('Dúvida enviada. A Camilla responde às 10h ou às 16h.'); } break; }
+    case 'cs': { const inp=document.getElementById('ci'), q=inp.value.trim(); if(!q) break; if(!S.chat.length) S.chat.push({r:'a',t:`Oi, ${S.perfil.nome.split(' ')[0]}! Por onde começamos?`}); S.chat.push({r:'u',t:q},{r:'a',t:reply(q)}); S.chat=S.chat.slice(-30); save(); route(); break; }
+    case 'burger': document.getElementById('side').classList.add('open'); document.getElementById('overlay').classList.add('open'); break;
+    case 'overlay': document.getElementById('side').classList.remove('open'); t.classList.remove('open'); break;
+    case 'themeBtn': { const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark?'light':'dark'; break; }
+    case 'fontBtn': { const r=document.documentElement; const cur=parseFloat(getComputedStyle(r).getPropertyValue('--fs'))||15; r.style.setProperty('--fs', (cur>=18?15:cur+1.5)+'px'); break; }
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if(t.dataset.plano){ S.plano[t.dataset.plano]=t.checked; save(); route(); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if(t.dataset.planeje){ const [k,i]=t.dataset.planeje.split('|'); (S.planeje[k]=S.planeje[k]||{})[i]=t.value; save(); }
+});
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter' && e.target.id==='ci') document.getElementById('cs').click();
+  if(e.key==='Enter' && e.target.id==='q'){
+    const q = e.target.value.toLowerCase().trim(); if(!q) return;
+    const hit = NAV.mentorado.find(n=>n.l && n.l.toLowerCase().includes(q)) || SCRIPT_CATS.find(c=>c.t.toLowerCase().includes(q));
+    if(hit){ S.role='mentorado'; location.hash = hit.l ? '#/'+hit.id : '#/scripts/'+hit.id; } else toast('Nada encontrado para "'+q+'"');
+  }
+});
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>

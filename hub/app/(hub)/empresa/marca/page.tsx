@@ -28,7 +28,10 @@ const INSTAGRAM: Arquivo[] = [
   { arq: "destaque-04-resultados.png", rotulo: "Destaque · Resultados", alto: true },
   { arq: "destaque-05-socios.png", rotulo: "Destaque · Quem somos", alto: true },
   { arq: "destaque-06-eventos.png", rotulo: "Destaque · Eventos", alto: true },
-  { arq: "boas-vindas-cracha-modelo.png", rotulo: "Story de boas-vindas (modelo)", alto: true },
+  { arq: "cracha-premium.png", rotulo: "Boas-vindas · Premium", alto: true },
+  { arq: "cracha-gold.png", rotulo: "Boas-vindas · Gold", alto: true },
+  { arq: "cracha-start.png", rotulo: "Boas-vindas · Start", alto: true },
+  { arq: "cracha-consultoria.png", rotulo: "Boas-vindas · Consultoria", alto: true },
   { arq: "simulacao-feed-magnetica-hub.png", rotulo: "Simulação do feed", alto: true },
 ];
 
@@ -68,7 +71,7 @@ export default function Marca() {
 
       <div className="card mb">
         <h2>Crachá de boas-vindas</h2>
-        <p className="mudo" style={{ fontSize: 14 }}>Para cada nova mentorada: coloque o nome, a turma e a foto, e baixe o story pronto para postar e mandar no WhatsApp.</p>
+        <p className="mudo" style={{ fontSize: 14 }}>Para cada cliente nova: escolha o plano (Premium, Gold, Start ou Consultoria), coloque o nome, a turma ou a loja e a foto, e baixe o story pronto para postar e mandar no WhatsApp.</p>
         <GeradorCracha />
       </div>
 

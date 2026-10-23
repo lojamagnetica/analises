@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { Simbolo } from "@/components/Simbolo";
 
 function Confirmar() {
   const router = useRouter();
@@ -27,7 +28,7 @@ function Confirmar() {
         : { error: new Error("sem token") };
     if (error) {
       setEntrando(false);
-      return setErro("Este link expirou ou já foi usado. Peça um novo para a equipe Loja Magnética.");
+      return setErro("Este link expirou ou já foi usado. Peça um novo para a equipe magnética.");
     }
     const proximo = sp.get("next");
     router.replace(convite ? "/conta?senha=1" : proximo?.startsWith("/") && !proximo.startsWith("//") ? proximo : "/");
@@ -36,7 +37,7 @@ function Confirmar() {
   return (
     <div className="login-form" style={{ minHeight: "100vh" }}>
       <div className="card" style={{ textAlign: "center" }}>
-        <div className="logo" style={{ margin: "0 auto 14px" }}>LM</div>
+        <div className="logo" style={{ margin: "0 auto 14px" }}><Simbolo /></div>
         <h1>{convite ? "Seu PORTAL DA MENTORIA está pronto 🥂" : "Entrar no Hub"}</h1>
         <p className="mudo">{convite ? "Clique abaixo e crie a sua senha." : "Clique abaixo para entrar."}</p>
         {erro && <div className="aviso mb">{erro}</div>}

@@ -1,4 +1,5 @@
 import { PrimeiroAcesso } from "./PrimeiroAcesso";
+import { Simbolo } from "@/components/Simbolo";
 
 export const metadata = { title: "Primeiro acesso" };
 
@@ -8,14 +9,14 @@ export default function Pagina() {
     <div className="login">
       <div className="login-arte">
         <div className="linha">
-          <div className="logo">LM</div>
-          <b style={{ fontSize: 18 }}>Loja Magnética</b>
+          <div className="logo"><Simbolo /></div>
+          <b className="marca-nome" style={{ fontSize: 24 }}>magnética<span>.hub</span></b>
         </div>
         <div>
-          <h1>Bem-vinda ao Hub da Loja Magnética.</h1>
+          <h1>Boas-vindas ao magnética.hub.</h1>
           <p style={{ opacity: 0.8, maxWidth: 420 }}>Crie a sua conta de equipe. Depois é só entrar pela tela de login.</p>
         </div>
-        <small style={{ opacity: 0.6 }}>Método Loja Magnética · Camilla Ribeiro</small>
+        <small style={{ opacity: 0.6 }}>Método Loja Magnética · um método magnética</small>
       </div>
       <div className="login-form"><PrimeiroAcesso /></div>
     </div>

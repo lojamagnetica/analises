@@ -40,7 +40,7 @@ export default function AcoesDoMes() {
     <>
       <Titulo titulo="Ações do Mês" sub="Ações de mercado validadas, prontas para a sua loja: o cronograma, as mensagens, o conteúdo, o script do time e o placar da meta." />
       {ativas.length === 0 ? (
-        <div className="card">A próxima ação aparece aqui assim que a equipe Loja Magnética publicar.</div>
+        <div className="card">A próxima ação aparece aqui assim que a equipe magnética publicar.</div>
       ) : (
         <div className="grade g2">{ativas.map(cartao)}</div>
       )}

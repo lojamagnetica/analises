@@ -8,6 +8,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
 import { buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa } from "@/lib/pessoas";
+import { INDICADOR_DA_ACAO } from "@/lib/gincanas";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; conversao: string };
 const COLUNAS: [keyof Linha, string, string][] = [["venda", "Venda", "R$"], ["meta", "Meta da semana", "R$"], ["ticket", "Ticket", "R$"], ["pa", "PA", "1,6"], ["conversao", "Conversão %", "opcional"]];
@@ -95,6 +96,7 @@ export default function ReuniaoSemanal() {
               await reuniaoSalvar(portal.id, "semanal", data, { linhas: numeros, ...t }, pauta); setSalvo(true); recarregar();
             }}>{salvo ? "Registrada ✓" : "Registrar reunião"}</button>
           </div>
+          {sugestoes[0] && INDICADOR_DA_ACAO[sugestoes[0]] && <p className="ajuda">Para o foco da semana: <Link href={`/pessoas/gincanas?ind=${encodeURIComponent(INDICADOR_DA_ACAO[sugestoes[0]])}`}>gincanas de {INDICADOR_DA_ACAO[sugestoes[0]]} →</Link></p>}
           <p className="ajuda">Duas reuniões seguidas registradas são a prova do fundamento 02.4 · Reunião semanal no Curso.</p>
         </div>
       </div>

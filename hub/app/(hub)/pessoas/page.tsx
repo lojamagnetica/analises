@@ -28,12 +28,14 @@ export default function MinhaEquipe() {
     <>
       <Titulo titulo="Minha equipe" sub="Liderar é fazer o time fazer: Combinar → Ensinar → Acompanhar → Dar retorno. E repete. Toda semana." />
 
-      <div className="grade g4 mb">
+      <div className="grade g3 mb">
         {([
           ["/pessoas/retorno", "Dar retorno", "Cobrar e reconhecer com roteiro pronto", "var(--red)"],
           ["/pessoas/reuniao-semanal", "Reunião semanal", "Os números de cada um e o foco da semana", "var(--orange)"],
           ["/pessoas/reuniao-mensal", "Reunião do mês", "Fechamento e metas individuais", "var(--purple)"],
           ["/pessoas/desenvolvimento", "Desenvolvimento", "Uma habilidade por mês, por pessoa", "var(--blue)"],
+          ["/pessoas/gincanas", "Gincanas", "Escolha o que trabalhar e a gincana certa", "var(--green)"],
+          ["/acoes", "Ações do Mês", "A ação validada do mês, pronta para a loja", "var(--red)"],
         ] as const).map(([href, t, s, c]) => (
           <Link key={href} href={href} className="card card-borda" style={{ ["--c" as string]: c, textDecoration: "none", color: "inherit" }}>
             <b style={{ color: "var(--ink)" }}>{t}</b><div className="mudo" style={{ fontSize: 13.5 }}>{s}</div>

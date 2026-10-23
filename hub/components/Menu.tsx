@@ -27,6 +27,8 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
         { href: "/equipe/duvidas", rotulo: "Dúvidas pendentes", icone: "inbox" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
+        { href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt" },
+        { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift" },
         { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
       ],
     });
@@ -59,11 +61,15 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
         { href: "/pessoas/reuniao-semanal", rotulo: "Reunião semanal", icone: "cal" },
         { href: "/pessoas/reuniao-mensal", rotulo: "Reunião do mês", icone: "chart" },
         { href: "/pessoas/desenvolvimento", rotulo: "Desenvolvimento", icone: "target" },
+        { href: "/pessoas/gincanas", rotulo: "Gincanas", icone: "gift" },
       ],
     },
     {
       id: "vendas", rotulo: "Vendas", icone: "funnel",
-      itens: [{ href: "/scripts", rotulo: "Scripts de venda", icone: "chat" }],
+      itens: [
+        { href: "/acoes", rotulo: "Ações do Mês", icone: "bolt" },
+        { href: "/scripts", rotulo: "Scripts de venda", icone: "chat" },
+      ],
     },
     {
       id: "marketing", rotulo: "Marketing", icone: "pencil",

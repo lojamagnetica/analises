@@ -18,7 +18,8 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 - Metas e calculadora: meta diária, atendimentos, preço de venda e de queima
 - Scripts de venda (12 categorias) já preenchidos com nome da loja, vendedora e Instagram
 - PLANEJE AQUI (12 meses, salva sozinho) e Kanban de conteúdo
-- Notas, Cursos e gravações, Dúvidas (respostas às 10h e às 16h)
+- **Curso Loja Magnética** (estrutura do Mapa do Curso): Aula 0 com o Raio-X interativo (nota 0/1/2 nos 16 fundamentos, radar por pilar e por onde começar), os 4 módulos com aulas, ferramentas, missão de 7 dias e prova, o bônus Contratar certo e o Manual da loja. Placar Magnético 0/16 e selo por pilar. Só avança quando entrega a prova; o que já funciona no Raio-X não trava a trilha. A prova entregue entra sozinha em "Fundamentos implantados" na ficha da loja
+- Notas, gravações dos encontros, Dúvidas (respostas às 10h e às 16h)
 - **Assistente Magnética**: o Claude conhece o método e os dados daquela loja
 - Modo escuro, letra maior, largura da tela e instalação como app no celular
 
@@ -34,7 +35,7 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 - Criar portal novo e gerar o link de acesso da mentorada, pronto para mandar no WhatsApp
 - Editar dados do portal, Plano de Ação, reuniões (gravação e ata) e ver as respostas da Personalização
 - Caixa única de dúvidas pendentes
-- Biblioteca: scripts, aulas, modelo do Plano de Ação e textos dos 7 passos, editados uma vez para todos
+- Biblioteca: scripts, vídeos das aulas e links das ferramentas do curso, modelo do Plano de Ação e textos dos 7 passos, editados uma vez para todos
 
 **Acesso por link:** ao criar o portal (ou em "Quem acessa → Novo link"), o Hub gera um link de uso único que a equipe manda pelo WhatsApp. O link só é usado quando a pessoa clica em "Criar minha senha", então a prévia do WhatsApp não o gasta.
 

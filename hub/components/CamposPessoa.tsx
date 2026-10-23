@@ -1,6 +1,6 @@
-import { MOTORES, type Motor } from "@/lib/pessoas";
+import { MOTORES, type Metodo, type Motor } from "@/lib/pessoas";
 
-export function CamposPessoa({ p }: { p?: { nome: string; funcao: string | null; entrada: string | null; motor: Motor | null } }) {
+export function CamposPessoa({ p, m }: { p?: { nome: string; funcao: string | null; entrada: string | null; motor: Motor | null }; m: Metodo }) {
   return (
     <>
       <div className="grade g2" style={{ gap: 12 }}>
@@ -11,11 +11,11 @@ export function CamposPessoa({ p }: { p?: { nome: string; funcao: string | null;
           <label className="rotulo">O motor do querer</label>
           <select name="motor" defaultValue={p?.motor ?? ""}>
             <option value="">Ainda não sei</option>
-            {(Object.keys(MOTORES) as Motor[]).map((m) => <option key={m} value={m}>{m} · {MOTORES[m]}</option>)}
+            {MOTORES.map((x) => <option key={x} value={x}>{x} · {m.motores[x]}</option>)}
           </select>
         </div>
       </div>
-      <p className="ajuda">Cada pessoa liga um motor diferente. O líder precisa saber qual é o de cada um.</p>
+      <p className="ajuda">{m.textos.motor_ajuda}</p>
     </>
   );
 }

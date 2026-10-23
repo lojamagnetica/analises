@@ -7,7 +7,7 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import {
-  DIAGNOSTICO, PERFIS, alertasTexto, buscarPessoas, principal, retornoSalvar, roteiroCobranca, roteiroReconhecimento, type Falta,
+  FALTAS, alertasTexto, buscarMetodo, buscarPessoas, principal, retornoSalvar, roteiroCobranca, roteiroReconhecimento, type Falta,
 } from "@/lib/pessoas";
 
 function Retorno() {
@@ -18,8 +18,10 @@ function Retorno() {
   const [falta, setFalta] = useState<Falta>("Querer");
   const [c, setC] = useState({ combinado: "", aconteceu: "", impacto: "", novo: "", retorno: "", fez: "", importou: "", mostra: "" });
   const [salvo, setSalvo] = useState("");
-  const { dados, recarregar } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
+  const { m } = dados;
+  const PERFIS = m.perfis;
   const ativos = dados.pessoas.filter((p) => p.ativo);
   const p = ativos.find((x) => x.id === pessoaId) ?? null;
   const pr = principal(p?.perfil ?? null);
@@ -33,9 +35,9 @@ function Retorno() {
   );
   const pronto = tipo === "Cobrar" ? !!(c.combinado && c.aconteceu) : !!(c.fez && c.importou);
   const roteiro = !p || !pronto ? "" : tipo === "Cobrar"
-    ? roteiroCobranca({ nome: p.nome, perfil: pr?.letra ?? null, falta, ...c })
-    : roteiroReconhecimento({ nome: p.nome, perfil: pr?.letra ?? null, fez: c.fez, importou: c.importou, mostra: c.mostra });
-  const alertas = tipo === "Cobrar" && pronto ? alertasTexto(c.combinado, c.aconteceu) : [];
+    ? roteiroCobranca(m, { nome: p.nome, perfil: pr?.letra ?? null, falta, ...c })
+    : roteiroReconhecimento(m, { nome: p.nome, perfil: pr?.letra ?? null, fez: c.fez, importou: c.importou, mostra: c.mostra });
+  const alertas = tipo === "Cobrar" && pronto ? alertasTexto(m, c.combinado, c.aconteceu) : [];
 
   if (!ativos.length) {
     return (
@@ -48,7 +50,7 @@ function Retorno() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Dar retorno" sub="Escreva o que precisa ser dito e para quem. O Hub monta o roteiro no Método Loja Magnética, no tom do perfil da pessoa." />
+      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Dar retorno" sub={m.textos.retorno_sub} />
       <div className="grade g2">
         <div className="card">
           <label className="rotulo">Para quem</label>
@@ -68,13 +70,13 @@ function Retorno() {
           {tipo === "Cobrar" ? (
             <>
               <label className="rotulo">Antes de cobrar: o que está faltando?</label>
-              {(Object.keys(DIAGNOSTICO) as Falta[]).map((f) => (
+              {FALTAS.map((f) => (
                 <label key={f} className="marcar">
                   <input type="radio" name="falta" checked={falta === f} onChange={() => { setFalta(f); setSalvo(""); }} />
-                  <span><b>{f}</b>: {DIAGNOSTICO[f].sinal} → o líder {DIAGNOSTICO[f].lider}</span>
+                  <span><b>{f}</b>: {m.diagnostico[f].sinal} → o líder {m.diagnostico[f].lider}</span>
                 </label>
               ))}
-              <p className="ajuda">Cobrar quem não sabe gera medo. Ensinar quem não quer gera desgaste.</p>
+              <p className="ajuda">{m.textos.retorno_diag_nota}</p>
               {campo("combinado", "O que foi combinado", "Ex.: 10 mensagens por dia para a carteira")}
               {campo("aconteceu", "O que aconteceu (um fato, com número)", "Ex.: Essa semana foram 3")}
               {falta === "Querer" && campo("impacto", "O impacto", "Ex.: Sem esse contato, a cliente não volta e a sua meta fica mais longe")}
@@ -86,7 +88,7 @@ function Retorno() {
               {campo("fez", "Fez: o comportamento, específico", "Ex.: você chamou de volta aquela cliente que não comprava há 3 meses")}
               {campo("importou", "Importou: o resultado", "Ex.: Ela voltou e levou três peças")}
               {campo("mostra", "Mostra: o que isso ensina ao time", "Ex.: Isso é atenção com cliente")}
-              <p className="ajuda">Reconheça o comportamento certo antes do resultado aparecer. Para cada correção, procure três reconhecimentos verdadeiros.</p>
+              <p className="ajuda">{m.textos.retorno_reconhecer_nota}</p>
             </>
           )}
         </div>
@@ -106,7 +108,7 @@ function Retorno() {
                 }}>Registrar</button>
               </div>
               {salvo && <div className="aviso ok mt">{salvo}</div>}
-              <p className="ajuda">{tipo === "Cobrar" ? "No particular, com número, na semana. Nunca no grupo nem na frente de cliente." : "Específico, no mesmo dia e na frente do time. Corrija no particular."}</p>
+              <p className="ajuda">{tipo === "Cobrar" ? m.textos.retorno_regra_cobrar : m.textos.retorno_regra_reconhecer}</p>
             </>
           )}
         </div>

@@ -7,8 +7,8 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
-import { buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa } from "@/lib/pessoas";
-import { INDICADOR_DA_ACAO } from "@/lib/gincanas";
+import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa } from "@/lib/pessoas";
+import { INDICADOR_DA_CHAVE } from "@/lib/gincanas";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; conversao: string };
 const COLUNAS: [keyof Linha, string, string][] = [["venda", "Venda", "R$"], ["meta", "Meta da semana", "R$"], ["ticket", "Ticket", "R$"], ["pa", "PA", "1,6"], ["conversao", "Conversão %", "opcional"]];
@@ -19,17 +19,20 @@ export default function ReuniaoSemanal() {
   const [linhas, setLinhas] = useState<Record<string, Linha>>({});
   const [t, setT] = useState({ funcionou: "", travou: "", foco: "", destaqueId: "", fez: "", importou: "", oque: "", quanto: "", ate: "", como: "" });
   const [salvo, setSalvo] = useState(false);
-  const { dados, recarregar } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
+  const { m } = dados;
   const ativos = dados.pessoas.filter((p) => p.ativo);
   const vazia: Linha = { venda: "", meta: "", ticket: "", pa: "", conversao: "" };
   const numeros: NumerosPessoa[] = ativos.map((p) => {
     const l = linhas[p.id] ?? vazia;
     return { pessoa_id: p.id, nome: p.nome, venda: lerNumero(l.venda), meta: lerNumero(l.meta), ticket: lerNumero(l.ticket), pa: lerNumero(l.pa), conversao: l.conversao ? lerNumero(l.conversao) : null };
   });
-  const sugestoes = [...new Set(leitura(numeros).flatMap((x) => x.acoes.map((a) => a.split("→ ")[1])))];
+  const chaves = [...new Set(leitura(m, numeros).flatMap((x) => x.chaves))];
+  const sugestoes = chaves.map((c) => acaoDaLeitura(m.textos[`leitura_${c}`]));
+  const indicador = chaves[0] ? INDICADOR_DA_CHAVE[chaves[0]] : null;
   const destaque = ativos.find((p) => p.id === t.destaqueId);
-  const pauta = pautaSemanal({
+  const pauta = pautaSemanal(m, {
     data, linhas: numeros, funcionou: t.funcionou, travou: t.travou, foco: t.foco,
     destaque: destaque ? { nome: destaque.nome.split(" ")[0], fez: t.fez, importou: t.importou } : null,
     combinado: { oque: t.oque, quanto: t.quanto, ate: t.ate, como: t.como },
@@ -39,11 +42,11 @@ export default function ReuniaoSemanal() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Reunião semanal" sub="Reunião de números · 20 a 30 min. Lance os números de cada pessoa e o Hub monta a pauta com o foco da semana." />
+      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Reunião semanal" sub={m.textos.semanal_sub} />
       {!ativos.length && <div className="card mb">Cadastre a sua equipe primeiro. <Link href="/pessoas">Ir para Minha equipe →</Link></div>}
       <div className="card mb">
         <div className="linha entre"><h2 style={{ margin: 0 }}>Os números da semana, por pessoa</h2><input type="date" value={data} onChange={(e) => setData(e.target.value)} style={{ maxWidth: 170 }} /></div>
-        <p className="mudo">O número da loja esconde quem está carregando o time e quem precisa de ajuda.</p>
+        <p className="mudo">{m.textos.semanal_nota_numeros}</p>
         <div className="tabela-wrap">
           <table className="tabela">
             <thead><tr><th>Pessoa</th>{COLUNAS.map(([, r]) => <th key={r}>{r}</th>)}</tr></thead>
@@ -96,7 +99,7 @@ export default function ReuniaoSemanal() {
               await reuniaoSalvar(portal.id, "semanal", data, { linhas: numeros, ...t }, pauta); setSalvo(true); recarregar();
             }}>{salvo ? "Registrada ✓" : "Registrar reunião"}</button>
           </div>
-          {sugestoes[0] && INDICADOR_DA_ACAO[sugestoes[0]] && <p className="ajuda">Para o foco da semana: <Link href={`/pessoas/gincanas?ind=${encodeURIComponent(INDICADOR_DA_ACAO[sugestoes[0]])}`}>gincanas de {INDICADOR_DA_ACAO[sugestoes[0]]} →</Link></p>}
+          {indicador && <p className="ajuda">Para o foco da semana: <Link href={`/pessoas/gincanas?ind=${encodeURIComponent(indicador)}`}>gincanas de {indicador} →</Link></p>}
           <p className="ajuda">Duas reuniões seguidas registradas são a prova do fundamento 02.4 · Reunião semanal no Curso.</p>
         </div>
       </div>

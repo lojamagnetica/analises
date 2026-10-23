@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
-import { INDICADORES, REGRAS_DE_OURO, buscarGincanas, fecharGincana, rodarGincana, type Gincana } from "@/lib/gincanas";
+import { INDICADORES, buscarGincanas, fecharGincana, rodarGincana, type Gincana } from "@/lib/gincanas";
 
 function CartaoGincana({ g, indicador, aoRodar }: { g: Gincana; indicador: string | null; aoRodar: (d: { inicio: string; fim: string; premio: string }) => Promise<void> }) {
   const [rodar, setRodar] = useState(false);
@@ -65,7 +65,7 @@ function Gincanas() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Gincanas" sub="Diga o que você quer trabalhar com o time e escolha a gincana. Gincana sem técnica é sorte; com técnica, é número subindo no fim do mês." />
+      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Gincanas" sub={dados.metodo.sub} />
       {aviso && <div className="aviso ok mb">{aviso}</div>}
       <div className="card mb">
         <b>O que você quer trabalhar?</b>
@@ -76,8 +76,8 @@ function Gincanas() {
           ))}
         </div>
         <details className="mt">
-          <summary style={{ cursor: "pointer" }}><b>As 5 regras de ouro</b></summary>
-          <ol style={{ paddingLeft: 18 }}>{REGRAS_DE_OURO.map((r) => <li key={r}>{r}</li>)}</ol>
+          <summary style={{ cursor: "pointer" }}><b>As {dados.metodo.regras_de_ouro.length} regras de ouro</b></summary>
+          <ol style={{ paddingLeft: 18 }}>{dados.metodo.regras_de_ouro.map((r) => <li key={r}>{r}</li>)}</ol>
         </details>
       </div>
       {emAndamento && <div className="aviso mb">Uma gincana por vez: {nome(emAndamento.gincana_id)} está rolando{emAndamento.fim ? ` até ${dia(emAndamento.fim)}` : ""}. Feche o resultado antes de começar outra.</div>}

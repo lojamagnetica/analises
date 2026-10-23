@@ -5,7 +5,6 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 
 - `app/`, `components/`, `lib/`: o aplicativo (Next.js).
 - `supabase/migrations/`: o banco de dados (tabelas, segurança e conteúdo inicial).
-- `prototipo/index.html`: o protótipo clicável da primeira conversa.
 
 ## O que tem
 

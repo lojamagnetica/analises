@@ -1,14 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { SUPABASE_CHAVE_PUBLICA, SUPABASE_URL } from "@/lib/config";
 
-const PUBLICAS = ["/login", "/auth", "/api/cron"];
+const PUBLICAS = ["/login", "/auth", "/api/cron", "/primeiro-acesso"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_CHAVE_PUBLICA,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),

@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { contextoEquipe } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sincronizarAgenda } from "@/lib/agenda";
 import { localParaIso } from "@/lib/formato";
 
@@ -24,40 +23,29 @@ async function origem() {
 
 /**
  * Gera um link de acesso de uso único (sem depender de e-mail): convite para quem ainda não tem
- * conta, link de entrada para quem já tem. A equipe copia e manda pelo WhatsApp.
+ * conta, link de entrada para quem já tem. Quem gera é a função "acesso" do Supabase, que confere
+ * se quem pediu é da equipe e, com portalId, já liga a pessoa ao portal.
  */
-async function gerarLink(email: string, nome: string) {
-  const admin = supabaseAdmin();
-  const convite = await admin.auth.admin.generateLink({ type: "invite", email, options: { data: { nome } } });
-  if (convite.data?.properties?.hashed_token) {
-    return { userId: convite.data.user.id, hash: convite.data.properties.hashed_token, tipo: "invite" as const };
+async function montarLink(email: string, nome: string, portalId?: string) {
+  const supabase = await supabaseServer();
+  const { data, error } = await supabase.functions.invoke("acesso", {
+    body: { email, nome, portal_id: portalId ?? null },
+  });
+  if (error) {
+    const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(corpo?.erro ?? error.message);
   }
-  const entrada = await admin.auth.admin.generateLink({ type: "magiclink", email });
-  if (entrada.data?.properties?.hashed_token) {
-    return { userId: entrada.data.user.id, hash: entrada.data.properties.hashed_token, tipo: "email" as const };
-  }
-  throw new Error(entrada.error?.message ?? convite.error?.message ?? "erro desconhecido");
-}
-
-async function montarLink(email: string, nome: string) {
-  const { userId, hash, tipo } = await gerarLink(email, nome);
-  const link = `${await origem()}/auth/confirm?token_hash=${hash}&type=${tipo}${tipo === "email" ? "&next=/conta" : ""}`;
-  return { userId, link };
+  const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
+  return `${await origem()}/auth/confirm?token_hash=${hash}&type=${tipo}${tipo === "email" ? "&next=/conta" : ""}`;
 }
 
 /** Liga a pessoa ao portal e devolve o link de acesso dela. */
 async function ligarPessoa(portalId: string, email: string, nome: string): Promise<{ link?: string; aviso?: string }> {
-  const admin = supabaseAdmin();
-  let r: { userId: string; link: string };
   try {
-    r = await montarLink(email, nome);
+    return { link: await montarLink(email, nome, portalId) };
   } catch (e) {
     return { aviso: `Não foi possível criar o acesso de ${email}: ${(e as Error).message}` };
   }
-  const { data: perfil } = await admin.from("perfis").select("papel").eq("id", r.userId).maybeSingle();
-  if (perfil?.papel === "equipe") return { aviso: `${email} é da equipe e não pode ser ligado a um portal.` };
-  await admin.from("perfis").update({ portal_id: portalId, nome: nome || undefined }).eq("id", r.userId);
-  return { link: r.link };
 }
 
 const comLink = (r: { link?: string; aviso?: string }, ok: string) =>
@@ -130,7 +118,7 @@ export async function novoLink(portalId: string, email: string, nome: string) {
   await contextoEquipe();
   let destino: string;
   try {
-    destino = comLink({ link: (await montarLink(email, nome)).link }, "");
+    destino = comLink({ link: await montarLink(email, nome) }, "");
   } catch (e) {
     destino = comLink({ aviso: (e as Error).message }, "");
   }
@@ -139,7 +127,8 @@ export async function novoLink(portalId: string, email: string, nome: string) {
 
 export async function desligarPessoa(portalId: string, userId: string) {
   await contextoEquipe();
-  await supabaseAdmin().from("perfis").update({ portal_id: null }).eq("id", userId).eq("portal_id", portalId);
+  const supabase = await supabaseServer();
+  await supabase.from("perfis").update({ portal_id: null }).eq("id", userId).eq("portal_id", portalId);
   revalidatePath(`/equipe/portais/${portalId}`);
 }
 

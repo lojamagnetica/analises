@@ -103,9 +103,9 @@ function desenhar(ctx: CanvasRenderingContext2D, nome: string, turma: string, ro
   ctx.textAlign = "center"; ctx.fillStyle = C.ferrugem; ctx.font = "italic 800 84px Archivo, sans-serif";
   ctx.fillText("magnética.", 540, 1690);
   espaco(ctx, 0); ctx.fillStyle = "#3D3632"; ctx.font = "400 30px Archivo, sans-serif";
-  ctx.fillText("A partir de hoje, a sua loja", 540, 1800);
+  ctx.fillText("Atrair. Vender. Repetir.", 540, 1800);
   ctx.fillStyle = C.noite; ctx.font = "800 30px Archivo, sans-serif";
-  ctx.fillText("não está mais sozinha.", 540, 1842);
+  ctx.fillText("Começa hoje.", 540, 1842);
   ctx.textAlign = "left";
 }
 

@@ -9,7 +9,7 @@ const SERVICO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // O Hub chama esta função direto do navegador (site estático), então ela responde ao CORS.
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-hub-interno",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const json = (corpo: unknown, status = 200) =>
@@ -19,9 +19,19 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
 
-  const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
-  const { data: equipe } = await usuario.rpc("is_equipe");
-  if (equipe !== true) return json({ erro: "Só a equipe pode gerar links de acesso." }, 403);
+  // Chamada interna (do próprio banco, com a chave guardada em chaves_internas) ou da equipe logada.
+  const interno = req.headers.get("x-hub-interno");
+  let liberado = false;
+  if (interno) {
+    const adm = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data } = await adm.from("chaves_internas").select("valor").eq("nome", "acesso").maybeSingle();
+    liberado = !!data?.valor && data.valor.length >= 32 && data.valor === interno;
+  }
+  if (!liberado) {
+    const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
+    const { data: equipe } = await usuario.rpc("is_equipe");
+    if (equipe !== true) return json({ erro: "Só a equipe pode gerar links de acesso." }, 403);
+  }
 
   const { email, nome, portal_id, equipe: daEquipe, funcao } = await req.json().catch(() => ({}));
   const e = String(email ?? "").trim().toLowerCase();

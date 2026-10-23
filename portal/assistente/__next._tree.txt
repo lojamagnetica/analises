@@ -1,3 +1,3 @@
 :HL["/analises/portal/_next/static/chunks/1_0qbqtzgkuef.css","style"]
 :HL["https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"(hub)","param":null,"prefetchHints":4192,"slots":{"children":{"name":"assistente","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"2a5tfhM6FtcW2hyU3SLRO"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"(hub)","param":null,"prefetchHints":4192,"slots":{"children":{"name":"assistente","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}},"staleTime":300,"buildId":"4crHz_-s6VqLAtDWZPcY_"}

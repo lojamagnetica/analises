@@ -174,7 +174,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
           {props.temPortal && (
             <>
               <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
-                <Icone nome="play" /> CURSOS
+                <Icone nome="play" /> CURSO
               </Link>
               <Link href="/duvidas" className={`nav-item ${ativo("/duvidas") ? "ativo" : ""}`}>
                 <Icone nome="help" /> DÚVIDAS

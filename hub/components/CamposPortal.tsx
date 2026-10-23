@@ -21,6 +21,9 @@ export function CamposPortal({ p }: { p?: Partial<Portal> }) {
       <label className="rotulo">Apelidos na agenda</label>
       <input type="text" name="apelidos" defaultValue={(p?.apelidos ?? []).join(", ")} placeholder="Ex.: Shiê, Shie" />
       <div className="ajuda">Nomes que aparecem no título dos eventos do Google Agenda, separados por vírgula. O nome da loja já conta.</div>
+      <label className="rotulo">Lojas deste portal</label>
+      <input type="text" name="lojas" defaultValue={(p?.lojas ?? []).join(", ")} placeholder="Ex.: Loja Feminina, Loja Masculina" />
+      <div className="ajuda">Só quando o portal tem mais de uma loja (ex.: feminino e masculino), separadas por vírgula. Com uma loja só, deixe em branco.</div>
     </>
   );
 }

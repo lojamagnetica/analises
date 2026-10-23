@@ -1,6 +1,7 @@
+"use client";
+
 import { Titulo } from "@/components/Titulo";
 
-export const metadata = { title: "Gestão de clientes" };
 
 export default function Clientes() {
   return (

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
 type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
@@ -58,7 +59,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
 }
 
 export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: number; nome: string; email: string }) {
-  const caminho = usePathname();
+  const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam);
@@ -187,7 +188,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
           <div className="pe-botoes">
             <Link href="/conta"><Icone nome="pencil" /> Perfil</Link>
             <Link href="/conta#app"><Icone nome="phone" /> App</Link>
-            <a href="/auth/sair">Sair</a>
+            <button type="button" onClick={() => supabaseBrowser().auth.signOut()}>Sair</button>
           </div>
         </div>
       </aside>

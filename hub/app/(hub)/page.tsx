@@ -1,7 +1,14 @@
-import { redirect } from "next/navigation";
-import { contexto } from "@/lib/contexto";
+"use client";
 
-export default async function Raiz() {
-  const ctx = await contexto();
-  redirect(ctx.equipe && !ctx.portal ? "/equipe" : ctx.portal ? "/inicio" : "/sem-portal");
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { Carregando, useHub } from "@/lib/hub";
+
+export default function Raiz() {
+  const hub = useHub();
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(hub.equipe && !hub.portal ? "/equipe" : hub.portal ? "/inicio" : "/sem-portal");
+  }, [hub, router]);
+  return <Carregando />;
 }

@@ -1,0 +1,9 @@
+{
+  "name": "Hub Loja Magnética",
+  "short_name": "Loja Magnética",
+  "start_url": "/analises/portal/inicio/",
+  "display": "standalone",
+  "background_color": "#1C1412",
+  "theme_color": "#1C1412",
+  "icons": [{ "src": "/analises/portal/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

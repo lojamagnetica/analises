@@ -2,8 +2,7 @@ import { Login } from "./Login";
 
 export const metadata = { title: "Entrar" };
 
-export default async function Pagina({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
-  const { erro } = await searchParams;
+export default function Pagina() {
   return (
     <div className="login">
       <div className="login-arte">
@@ -20,7 +19,7 @@ export default async function Pagina({ searchParams }: { searchParams: Promise<{
         <small style={{ opacity: 0.6 }}>Método Loja Magnética · Camilla Ribeiro</small>
       </div>
       <div className="login-form">
-        <Login erroInicial={erro === "link" ? "O link expirou ou já foi usado. Peça um novo para a equipe Loja Magnética." : undefined} />
+        <Login />
       </div>
     </div>
   );

@@ -1,12 +1,11 @@
+"use client";
+
 import { Titulo } from "@/components/Titulo";
-import { contextoPortal, personalizacao } from "@/lib/contexto";
+import { usePortal } from "@/lib/hub";
 import { Calculadora } from "./Calculadora";
 
-export const metadata = { title: "Metas e calculadora" };
-
-export default async function Metas() {
-  const { portal } = await contextoPortal();
-  const pers = await personalizacao(portal.id);
+export default function Metas() {
+  const { pers } = usePortal();
   const n = (etapa: number, campo: string, padrao: number) => {
     const v = Number(pers.get(etapa)?.respostas?.[campo]);
     return Number.isFinite(v) && v > 0 ? v : padrao;

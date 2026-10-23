@@ -1,16 +1,19 @@
-import { Titulo } from "@/components/Titulo";
-import { contextoPortal } from "@/lib/contexto";
-import { supabaseServer } from "@/lib/supabase/server";
-import { dataHora } from "@/lib/formato";
+"use client";
 
-export const metadata = { title: "Reuniões" };
+import { Titulo } from "@/components/Titulo";
+import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { dataHora } from "@/lib/formato";
 
 const SELO: Record<string, string> = { Realizado: "feito", Pendente: "alerta", Adiado: "espera" };
 
-export default async function Reunioes() {
-  const { portal } = await contextoPortal();
-  const supabase = await supabaseServer();
-  const { data } = await supabase.from("reunioes").select("*").eq("portal_id", portal.id).order("data", { ascending: false });
+export default function Reunioes() {
+  const { portal } = usePortal();
+  const { dados: data } = useDados(
+    async () => (await supabaseBrowser().from("reunioes").select("*").eq("portal_id", portal.id).order("data", { ascending: false })).data ?? [],
+    [portal.id],
+  );
+  if (!data) return <Carregando />;
 
   return (
     <>

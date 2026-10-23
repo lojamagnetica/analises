@@ -2,14 +2,14 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { COLUNAS_KANBAN } from "@/lib/conteudo";
-import { kanbanApagar, kanbanCriar, kanbanMover } from "../acoes";
+import { kanbanApagar, kanbanCriar, kanbanMover } from "@/lib/acoes";
 
 type Card = { id: string; titulo: string; coluna: number };
 type Acao = { tipo: "mover"; id: string; coluna: number } | { tipo: "apagar"; id: string } | { tipo: "criar"; titulo: string };
 
 const CORES = ["var(--muted)", "var(--purple)", "var(--red)", "var(--orange)", "var(--green)"];
 
-export function Quadro({ cards }: { cards: Card[] }) {
+export function Quadro({ portalId, cards, aoMudar }: { portalId: string; cards: Card[]; aoMudar: () => void }) {
   const [, iniciar] = useTransition();
   const [novo, setNovo] = useState("");
   const [lista, aplicar] = useOptimistic(cards, (atual, a: Acao) => {
@@ -18,7 +18,7 @@ export function Quadro({ cards }: { cards: Card[] }) {
     return [...atual, { id: "novo-" + Date.now(), titulo: a.titulo, coluna: 0 }];
   });
 
-  const rodar = (a: Acao, fn: () => Promise<void>) => iniciar(async () => { aplicar(a); await fn(); });
+  const rodar = (a: Acao, fn: () => Promise<void>) => iniciar(async () => { aplicar(a); await fn(); aoMudar(); });
 
   return (
     <>
@@ -29,7 +29,7 @@ export function Quadro({ cards }: { cards: Card[] }) {
           const t = novo.trim();
           if (!t) return;
           setNovo("");
-          rodar({ tipo: "criar", titulo: t }, () => kanbanCriar(t));
+          rodar({ tipo: "criar", titulo: t }, () => kanbanCriar(portalId, t));
         }}
       >
         <input type="text" value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Nova ideia de conteúdo…" style={{ maxWidth: 440 }} />

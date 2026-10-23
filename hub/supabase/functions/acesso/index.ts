@@ -1,0 +1,42 @@
+// Gera o link de acesso de uso único de uma mentorada e liga a conta dela ao portal.
+// Roda dentro do Supabase (usa a chave de serviço que o próprio Supabase fornece) e só atende a equipe.
+import { createClient } from "npm:@supabase/supabase-js@2";
+
+const URL = Deno.env.get("SUPABASE_URL")!;
+const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
+const SERVICO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const json = (corpo: unknown, status = 200) =>
+  new Response(JSON.stringify(corpo), { status, headers: { "Content-Type": "application/json" } });
+
+Deno.serve(async (req) => {
+  if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
+
+  const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
+  const { data: equipe } = await usuario.rpc("is_equipe");
+  if (equipe !== true) return json({ erro: "Só a equipe pode gerar links de acesso." }, 403);
+
+  const { email, nome, portal_id } = await req.json().catch(() => ({}));
+  const e = String(email ?? "").trim().toLowerCase();
+  if (!e.includes("@")) return json({ erro: "E-mail inválido." }, 400);
+
+  const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
+  // Conta nova recebe convite (cria a senha); quem já tem conta recebe link de entrada.
+  let tipo = "invite";
+  let r = await admin.auth.admin.generateLink({ type: "invite", email: e, options: { data: { nome: nome ?? "" } } });
+  if (!r.data?.properties?.hashed_token) {
+    tipo = "email";
+    r = await admin.auth.admin.generateLink({ type: "magiclink", email: e });
+  }
+  const hash = r.data?.properties?.hashed_token;
+  const userId = r.data?.user?.id;
+  if (!hash || !userId) return json({ erro: r.error?.message ?? "Não foi possível gerar o link." }, 400);
+
+  if (portal_id) {
+    const { data: perfil } = await admin.from("perfis").select("papel").eq("id", userId).maybeSingle();
+    if (perfil?.papel === "equipe") return json({ erro: `${e} é da equipe e não pode ser ligado a um portal.` }, 400);
+    const dados: Record<string, string> = { portal_id };
+    if (nome) dados.nome = nome;
+    await admin.from("perfis").update(dados).eq("id", userId);
+  }
+  return json({ hash, tipo });
+});

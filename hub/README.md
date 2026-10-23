@@ -25,40 +25,26 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 **Equipe**
 - Painel com todos os portais: passo da jornada, % do Plano, próxima reunião, último acesso e dúvidas pendentes
 - Abrir qualquer portal e ver exatamente o que a mentorada vê
-- Criar portal novo e enviar o convite por e-mail em um clique
+- Criar portal novo e gerar o link de acesso da mentorada, pronto para mandar no WhatsApp
 - Editar dados do portal, Plano de Ação, reuniões (gravação e ata) e ver as respostas da Personalização
 - Caixa única de dúvidas pendentes
 - Biblioteca: scripts, aulas, modelo do Plano de Ação e textos dos 7 passos, editados uma vez para todos
+
+**Acesso por link:** ao criar o portal (ou em "Quem acessa → Novo link"), o Hub gera um link de uso único que a equipe manda pelo WhatsApp. O link só é usado quando a pessoa clica em "Criar minha senha", então a prévia do WhatsApp não o gasta.
 
 **Segurança:** cada mentorado(a) só enxerga o próprio portal. Isso é garantido pelo banco de dados (RLS), não só pela tela.
 Ninguém se cadastra sozinho: só entra quem a equipe convida.
 
 ## Como colocar no ar (uma vez só)
 
-### 1. Supabase (banco de dados e login)
-1. Crie uma conta em [supabase.com](https://supabase.com) e um projeto novo (região São Paulo).
-2. Em **SQL Editor**, cole o conteúdo de `supabase/migrations/0001_estrutura.sql` e clique em **Run**. Depois faça o mesmo com `0002_conteudo.sql`.
-3. Em **Authentication → Sign In / Providers**, desligue **Allow new users to sign up**.
-4. Em **Authentication → URL Configuration**:
-   - **Site URL**: o endereço do Hub (ex.: `https://hub.lojamagnetica.com.br`)
-   - **Redirect URLs**: adicione `https://hub.lojamagnetica.com.br/**`
-5. Em **Authentication → Emails → Templates**, troque o link de três modelos:
-   - **Invite user**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite">Aceitar convite</a>`
-   - **Magic Link**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/conta">Entrar no Hub</a>`
-   - **Reset Password**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">Criar nova senha</a>`
-6. O e-mail padrão do Supabase manda poucas mensagens por hora. Para convidar várias mentoradas, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**. O Resend, por exemplo, tem plano gratuito.
-7. Crie a sua conta: **Authentication → Users → Add user**, com o seu e-mail e uma senha. Depois, no **SQL Editor**, rode:
-   ```sql
-   update public.perfis set papel = 'equipe', nome = 'Camilla Ribeiro'
-   where email = 'seu-email@exemplo.com';
-   ```
-   Repita para cada pessoa da equipe.
+### 1. Supabase (já feito)
+O projeto `hub-loja-magnetica` (região São Paulo) já está criado, com as migrações de `supabase/migrations/` aplicadas e as funções `acesso` e `primeiro-acesso` (em `supabase/functions/`) publicadas.
+O endereço e a chave pública ficam em `lib/config.ts`. A chave pública é feita para ficar no navegador; quem protege os dados são as regras do banco.
 
 ### 2. Vercel (onde o site fica no ar)
-1. Crie uma conta em [vercel.com](https://vercel.com) entrando com o GitHub.
-2. **Add New → Project**, escolha este repositório e, em **Root Directory**, selecione `hub`.
-3. Em **Environment Variables**, cadastre as variáveis do arquivo `.env.example`. Os valores do Supabase estão em **Project Settings → API**.
-4. Clique em **Deploy**. Depois, em **Settings → Domains**, ligue o domínio (ex.: `hub.lojamagnetica.com.br`).
+1. Em [vercel.com](https://vercel.com), clique em **Add New → Project** e importe este repositório.
+2. Em **Root Directory**, escolha `hub` e clique em **Deploy**. Não precisa cadastrar nenhuma variável.
+3. Abra `https://SEU-ENDERECO.vercel.app/primeiro-acesso` e crie a conta da equipe (só funciona uma vez, para o e-mail autorizado).
 
 ### 3. Assistente Magnética (Claude)
 1. Em [console.anthropic.com](https://console.anthropic.com), crie uma chave em **API Keys** e coloque créditos.

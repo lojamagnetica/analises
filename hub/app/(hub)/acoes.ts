@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { COOKIE_PORTAL, contexto, contextoPortal } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 import { BLOCOS_PLANEJE, ETAPAS, type Respostas } from "@/lib/conteudo";
 
 // Todas as escritas usam a sessão de quem está logado: as regras do banco (RLS)
@@ -113,9 +112,10 @@ export async function limparChat() {
 
 /** O próprio usuário muda o nome de exibição (a tabela perfis só a equipe altera). */
 export async function salvarNome(form: FormData) {
-  const ctx = await contexto();
+  await contexto();
   const nome = String(form.get("nome") ?? "").trim().slice(0, 120);
   if (!nome) return;
-  await supabaseAdmin().from("perfis").update({ nome }).eq("id", ctx.userId);
+  const supabase = await supabaseServer();
+  await supabase.rpc("salvar_meu_nome", { novo: nome });
   revalidatePath("/", "layout");
 }

@@ -6,9 +6,10 @@ import { ETAPAS, MESES_PLANO, type Respostas } from "@/lib/conteudo";
 import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
 import { abrirPortal } from "../../../acoes";
 import {
-  atualizarPortal, convidarPessoa, desligarPessoa, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
+  atualizarPortal, convidarPessoa, desligarPessoa, novoLink, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
 } from "../../acoes";
 import { CamposPortal } from "../CamposPortal";
+import { LinkAcesso } from "@/components/LinkAcesso";
 
 function CamposReuniao({ r }: { r?: { titulo: string; data: string; selecionar: string; status: string; gravacao_url: string | null; ata: string | null } }) {
   return (
@@ -33,7 +34,7 @@ function CamposReuniao({ r }: { r?: { titulo: string; data: string; selecionar: 
   );
 }
 
-export default async function EditarPortal({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aviso?: string; criado?: string; convidado?: string }> }) {
+export default async function EditarPortal({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ aviso?: string; criado?: string; convidado?: string; link?: string }> }) {
   const { id } = await params;
   const sp = await searchParams;
   await contextoEquipe();
@@ -52,7 +53,7 @@ export default async function EditarPortal({ params, searchParams }: { params: P
     <>
       <Titulo voltar={{ href: "/equipe", rotulo: "Painel" }} titulo={p.loja} sub={`${p.tipo} · passo ${p.passo_atual} de 7`} />
       {sp.criado && <div className="aviso ok mb">Portal criado.</div>}
-      {sp.convidado && <div className="aviso ok mb">Convite enviado.</div>}
+      {sp.link && <LinkAcesso link={sp.link} nome={p.responsavel ?? ""} whatsapp={p.whatsapp} />}
       {sp.aviso && <div className="aviso mb">{sp.aviso}</div>}
       <form action={abrirPortal.bind(null, p.id)} className="mb"><button className="btn p" type="submit">Abrir portal como mentorado(a) vê</button></form>
 
@@ -76,7 +77,10 @@ export default async function EditarPortal({ params, searchParams }: { params: P
           {(pessoas ?? []).map((u) => (
             <div key={u.id} className="linha entre marcar" style={{ cursor: "default" }}>
               <div><b>{u.nome}</b><div className="mudo" style={{ fontSize: 13 }}>{u.email} · último acesso {haQuanto(u.ultimo_acesso)}</div></div>
-              <form action={desligarPessoa.bind(null, p.id, u.id)}><button className="btn s peq" type="submit">Remover</button></form>
+              <div className="linha" style={{ flexWrap: "nowrap" }}>
+                <form action={novoLink.bind(null, p.id, u.email ?? "", u.nome ?? "")}><button className="btn s peq" type="submit">Novo link</button></form>
+                <form action={desligarPessoa.bind(null, p.id, u.id)}><button className="btn s peq" type="submit">Remover</button></form>
+              </div>
             </div>
           ))}
           <form action={convidarPessoa.bind(null, p.id)} className="mt">
@@ -84,7 +88,7 @@ export default async function EditarPortal({ params, searchParams }: { params: P
               <div><label className="rotulo">Nome</label><input type="text" name="nome" /></div>
               <div><label className="rotulo">E-mail</label><input type="email" name="email" required /></div>
             </div>
-            <div className="linha mt"><button className="btn p peq" type="submit">Convidar</button></div>
+            <div className="linha mt"><button className="btn p peq" type="submit">Criar acesso</button></div>
           </form>
 
           <h2 className="mt">Personalização</h2>

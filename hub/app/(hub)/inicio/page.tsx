@@ -22,6 +22,7 @@ const ATALHOS = [
 const TUDO = [
   { titulo: "Minha jornada", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"]] },
   { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/personalizacao", "Personalização"], ["/metas", "Metas e calculadora"], ["/clientes", "Gestão de clientes"], ["/estoque", "Giro de estoque"], ["/notas", "Notas"]] },
+  { titulo: "Gestão de pessoas", icone: "team", cor: "var(--purple)", itens: [["/pessoas", "Minha equipe e perfis"], ["/pessoas/retorno", "Dar retorno"], ["/pessoas/reuniao-semanal", "Reunião semanal"], ["/pessoas/reuniao-mensal", "Reunião do mês"], ["/pessoas/desenvolvimento", "Desenvolvimento"], ["/pessoas/gincanas", "Gincanas"]] },
   { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
   { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
   { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/duvidas", "Dúvidas entre encontros"], ["/assistente", "Assistente Magnética"]] },

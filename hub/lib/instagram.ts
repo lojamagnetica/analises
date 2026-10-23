@@ -2,7 +2,7 @@
 
 // Conteúdo no portal da loja: a Análise do Perfil (feita pela equipe), a programação da semana,
 // o gerador de roteiro e os resultados. Os textos do método vêm do banco (metodo, chave 'conteudo').
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { erroDaFuncao, supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 
@@ -43,7 +43,12 @@ export type Analise = {
   pare: string[]; comece: string[]; estrategia: Regra[]; roteiros: Roteiro[]; workflow: Passo[];
   ganchos: string[]; ideias: Ideia[]; ctas: Cta[]; ferramentas: string[]; cronograma: Passo[];
 };
-export type AnaliseLinha = { portal_id: string; status: "rascunho" | "liberada"; dados: Partial<Analise>; liberada_em: string | null; updated_at: string };
+/** O que o agente de análise está fazendo (preenchido pela função analise-perfil). */
+export type Agente = {
+  estado?: "coletando" | "analisando" | "pronta" | "erro"; instagram?: string; inicio?: string; fim?: string;
+  fonte?: string; msg?: string; pendencias?: string[]; roteiro_video?: string;
+};
+export type AnaliseLinha = { portal_id: string; status: "rascunho" | "liberada"; dados: Partial<Analise>; agente?: Agente; liberada_em: string | null; updated_at: string };
 export type Ajustes = { dias?: number[]; hora?: string; serie?: string; por_dia?: 1 | 2 };
 export type LojaConteudo = { portal_id: string; feitas: string[]; ajustes: Ajustes; desafio: { inicio?: string; feitas?: string[] } };
 export type Post = {
@@ -314,7 +319,41 @@ export function resultados(posts: Post[]) {
 export const caracteresBio = (bio: string) => [...bio.split("\n").slice(1).join("\n")].length;
 
 /** Tudo o que as telas de Conteúdo precisam. Sem análise liberada, a loja vê o módulo trancado (a equipe vê sempre). */
-export async function carregarConteudo(portalId: string) {
+export async function carregarConteudo(portalId: string, comoLoja = false) {
   const [m, c] = await Promise.all([buscarMetodoConteudo(), buscarConteudo(portalId)]);
-  return { m, ...c, a: c.analise ? completar(m, c.analise.dados) : null };
+  // A equipe lê o rascunho pelo banco; vendo "como a loja", o rascunho fica escondido como para a loja.
+  const visivel = c.analise && (!comoLoja || c.analise.status === "liberada");
+  return { m, ...c, a: visivel ? completar(m, c.analise!.dados) : null };
+}
+
+// ───── Agente de análise ─────
+
+export type Print = { media_type: string; data: string };
+
+/** Reduz o print para no máximo 1600 px (JPEG) antes de mandar para o agente. */
+export function lerPrint(arquivo: File): Promise<Print> {
+  return new Promise((ok, falha) => {
+    const img = new Image();
+    img.onload = () => {
+      const escala = Math.min(1, 1600 / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * escala); c.height = Math.round(img.height * escala);
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      ok({ media_type: "image/jpeg", data: c.toDataURL("image/jpeg", 0.85).split(",")[1] });
+    };
+    img.onerror = () => falha(new Error(`Não consegui ler ${arquivo.name}.`));
+    img.src = URL.createObjectURL(arquivo);
+  });
+}
+
+/** Chama o agente: ele coleta o Instagram, analisa com o Claude e salva a análise como rascunho. */
+export async function rodarAgente(portalId: string, instagram: string, prints: Print[], observacoes: string) {
+  const { error } = await sb().functions.invoke("analise-perfil", { body: { portal_id: portalId, instagram, prints, observacoes } });
+  if (error) throw new Error(await erroDaFuncao(error));
+}
+
+export async function lerAgente(portalId: string) {
+  const { data } = await sb().from("loja_analise_perfil").select("agente, dados").eq("portal_id", portalId).maybeSingle();
+  return data as { agente: Agente; dados: Partial<Analise> } | null;
 }

@@ -3,8 +3,8 @@
   "short_name": "magnética",
   "start_url": "/analises/portal/inicio/",
   "display": "standalone",
-  "background_color": "#0B1A3A",
-  "theme_color": "#0B1A3A",
+  "background_color": "#141210",
+  "theme_color": "#141210",
   "icons": [
     {
       "src": "/analises/portal/icon.svg",

@@ -2,6 +2,7 @@
 
 // Gincanas: o lojista diz o que quer trabalhar e o Hub sugere as gincanas da biblioteca Loja Magnética.
 import { supabaseBrowser } from "@/lib/supabase/client";
+import type { ChaveLeitura } from "@/lib/pessoas";
 
 export type Gincana = {
   id: string; ordem: number; nome: string; categoria: string | null; comece: boolean; objetivo: string; indicadores: string[];
@@ -17,30 +18,24 @@ export const INDICADORES = [
   "Venda de peças paradas", "Conteúdo e Instagram", "Organização e rotina", "Pontualidade", "Atendimento", "Trabalho em equipe",
 ];
 
-export const REGRAS_DE_OURO = [
-  "Uma gincana por vez.",
-  "Duração curta: um dia, um fim de semana, no máximo uma semana.",
-  "Prêmio anunciado antes: dinheiro, folga, brinde ou jantar.",
-  "Placar visível e atualizado (cartolina no estoque).",
-  "Comemore com barulho: sino, corneta, palma.",
-];
-
 /** Da leitura da reunião semanal para o indicador das gincanas. */
-export const INDICADOR_DA_ACAO: Record<string, string> = {
-  "treinar o look completo": "Ticket médio",
-  "treinar a oferta da segunda peça": "Peças por atendimento",
-  "acompanhar atendimentos ao vivo": "Conversão",
-  "ativar a carteira": "Faturamento",
+export const INDICADOR_DA_CHAVE: Record<ChaveLeitura, string> = {
+  ticket: "Ticket médio",
+  pa: "Peças por atendimento",
+  conversao: "Conversão",
+  carteira: "Faturamento",
 };
 
 const sb = () => supabaseBrowser();
 
 export async function buscarGincanas(portalId: string | null) {
-  const [g, l] = await Promise.all([
+  const [g, l, m] = await Promise.all([
     sb().from("gincanas").select("*").order("ordem"),
     portalId ? sb().from("loja_gincanas").select("*").eq("portal_id", portalId).order("inicio", { ascending: false }) : Promise.resolve({ data: [] }),
+    sb().from("metodo").select("dados").eq("chave", "gincanas").maybeSingle(),
   ]);
-  return { gincanas: (g.data ?? []) as Gincana[], minhas: (l.data ?? []) as LojaGincana[] };
+  const metodo = (m.data?.dados ?? { regras_de_ouro: [], sub: "" }) as { regras_de_ouro: string[]; sub: string };
+  return { gincanas: (g.data ?? []) as Gincana[], minhas: (l.data ?? []) as LojaGincana[], metodo };
 }
 
 async function ok<T extends { error: { message: string } | null }>(p: PromiseLike<T>) {

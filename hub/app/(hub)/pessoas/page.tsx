@@ -5,28 +5,23 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { CamposPessoa } from "@/components/CamposPessoa";
-import { PERFIS, buscarPessoas, pessoaSalvar, principal } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, pessoaSalvar, principal } from "@/lib/pessoas";
 
-const ROTINA = [
-  ["Todo dia", "Abertura: a meta do dia e o foco de cada um", "10 min", null],
-  ["Todo dia", "Fechamento: quanto cada pessoa vendeu", "5 min", null],
-  ["Toda semana", "Reunião de números: o que funcionou, o que travou", "20 a 30 min", "/pessoas/reuniao-semanal"],
-  ["A cada 15 dias", "Conversa individual com cada pessoa (revisa a Ficha de desenvolvimento)", "15 min", "/pessoas/desenvolvimento"],
-  ["Todo mês", "Fechamento do mês e metas individuais", "45 min", "/pessoas/reuniao-mensal"],
-] as const;
 
 export default function MinhaEquipe() {
   const { portal } = usePortal();
   const [erro, setErro] = useState("");
   const [aberto, setAberto] = useState(false);
-  const { dados, recarregar } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
+  const { m } = dados;
+  const PERFIS = m.perfis;
   const ativos = dados.pessoas.filter((p) => p.ativo);
   const semPerfil = ativos.filter((p) => !p.perfil).length;
 
   return (
     <>
-      <Titulo titulo="Minha equipe" sub="Liderar é fazer o time fazer: Combinar → Ensinar → Acompanhar → Dar retorno. E repete. Toda semana." />
+      <Titulo titulo="Minha equipe" sub={m.textos.equipe_sub} />
 
       <div className="grade g3 mb">
         {([
@@ -52,7 +47,7 @@ export default function MinhaEquipe() {
           setErro("");
           try { await pessoaSalvar(portal.id, null, f); setAberto(false); recarregar(); } catch (e) { setErro((e as Error).message); }
         }}>
-          <CamposPessoa />
+          <CamposPessoa m={m} />
           {erro && <div className="aviso mt">{erro}</div>}
           <div className="linha mt"><button className="btn p" type="submit">Salvar</button></div>
         </form>
@@ -80,7 +75,7 @@ export default function MinhaEquipe() {
                 <div className="mudo" style={{ fontSize: 13.5 }}>{p.funcao ?? "—"}{p.motor ? ` · motor: ${p.motor}` : ""}</div>
                 <div style={{ fontSize: 13.5, marginTop: 8 }}>
                   Retornos: {reconhec} reconhecimento{reconhec === 1 ? "" : "s"} · {cobr} cobrança{cobr === 1 ? "" : "s"}
-                  {cobr > 0 && reconhec < cobr * 3 && <div className="mudo">Para cada correção, procure três reconhecimentos verdadeiros.</div>}
+                  {cobr > 0 && reconhec < cobr * 3 && <div className="mudo">{m.textos.proporcao}</div>}
                 </div>
                 <div style={{ fontSize: 13.5, marginTop: 6 }}>{ficha ? <>Habilidade do mês: <b>{ficha.competencia}</b> ({ficha.estagio})</> : <span className="mudo">Sem habilidade do mês</span>}</div>
               </Link>
@@ -93,12 +88,12 @@ export default function MinhaEquipe() {
       <div className="card tabela-wrap">
         <table className="tabela">
           <tbody>
-            {ROTINA.map(([q, o, t, href]) => (
-              <tr key={o}><td style={{ whiteSpace: "nowrap" }}><b>{q}</b></td><td>{href ? <Link href={href}>{o}</Link> : o}</td><td className="mudo" style={{ whiteSpace: "nowrap" }}>{t}</td></tr>
+            {m.rotina.map((r) => (
+              <tr key={r.oque}><td style={{ whiteSpace: "nowrap" }}><b>{r.quando}</b></td><td>{r.link ? <Link href={r.link}>{r.oque}</Link> : r.oque}</td><td className="mudo" style={{ whiteSpace: "nowrap" }}>{r.tempo}</td></tr>
             ))}
           </tbody>
         </table>
-        <p className="ajuda">Para começar: abertura diária e reunião semanal. O que não é acompanhado, o time entende que não é importante.</p>
+        <p className="ajuda">{m.textos.equipe_rotina_nota}</p>
       </div>
     </>
   );

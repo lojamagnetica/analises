@@ -7,7 +7,7 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { MESES_ABREV, hoje, dia } from "@/lib/formato";
-import { buscarPessoas, metasSugeridas, pautaMensal, reuniaoSalvar, type LinhaMes } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, metasSugeridas, pautaMensal, reuniaoSalvar, type LinhaMes } from "@/lib/pessoas";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; proxima: string };
 const COLUNAS: [keyof Linha, string][] = [["venda", "Venda do mês"], ["meta", "Meta do mês"], ["ticket", "Ticket"], ["pa", "PA"]];
@@ -19,7 +19,7 @@ export default function ReuniaoMensal() {
   const [loja, setLoja] = useState({ meta: "", venda: "", ticket: "", pa: "", antVenda: "", antTicket: "", antPa: "", metaProxima: "" });
   const [t, setT] = useState({ funcionou: "", travou: "", foco: "" });
   const [salvo, setSalvo] = useState(false);
-  const { dados, recarregar } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
   const ativos = dados.pessoas.filter((p) => p.ativo);
   const vazia: Linha = { venda: "", meta: "", ticket: "", pa: "", proxima: "" };
@@ -34,7 +34,7 @@ export default function ReuniaoMensal() {
   const [a, m] = mes.split("-");
   const nomeMes = `${MESES_ABREV[Number(m) - 1]}/${a}`;
   const anterior = loja.antVenda || loja.antTicket || loja.antPa ? { venda: lerNumero(loja.antVenda), ticket: lerNumero(loja.antTicket), pa: lerNumero(loja.antPa) } : null;
-  const pauta = pautaMensal({
+  const pauta = pautaMensal(dados.m, {
     mes: nomeMes, metaLoja: lerNumero(loja.meta), vendaLoja, ticketLoja: lerNumero(loja.ticket), paLoja: lerNumero(loja.pa), anterior,
     linhas: lm, funcionou: t.funcionou, travou: t.travou, foco: t.foco, metaProxima: lerNumero(loja.metaProxima), metas,
   });
@@ -45,7 +45,7 @@ export default function ReuniaoMensal() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Reunião do mês" sub="Fechamento do mês e metas individuais · 45 min. Traga os resultados e o Hub monta a reunião ideal do seu mês." />
+      <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo="Reunião do mês" sub={dados.m.textos.mensal_sub} />
       {!ativos.length && <div className="card mb">Cadastre a sua equipe primeiro. <Link href="/pessoas">Ir para Minha equipe →</Link></div>}
 
       <div className="card mb">

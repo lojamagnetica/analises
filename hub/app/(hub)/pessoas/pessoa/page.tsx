@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { CamposPessoa } from "@/components/CamposPessoa";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { MOTORES, PERFIS, buscarPessoas, pessoaDesligar, pessoaSalvar, principal, retornoFeito, type Letra } from "@/lib/pessoas";
+import { LETRAS, buscarMetodo, buscarPessoas, pessoaDesligar, pessoaSalvar, principal, retornoFeito } from "@/lib/pessoas";
 import { dataCurta, dia } from "@/lib/formato";
 
 function Pessoa() {
@@ -14,8 +14,10 @@ function Pessoa() {
   const { portal } = usePortal();
   const [editar, setEditar] = useState(false);
   const [erro, setErro] = useState("");
-  const { dados, recarregar } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
+  const { m } = dados;
+  const PERFIS = m.perfis, MOTORES = m.motores;
   const p = dados.pessoas.find((x) => x.id === id);
   if (!p) return <div className="card">Pessoa não encontrada.</div>;
   const pr = principal(p.perfil);
@@ -38,7 +40,7 @@ function Pessoa() {
           setErro("");
           try { await pessoaSalvar(portal.id, p.id, f); setEditar(false); recarregar(); } catch (e) { setErro((e as Error).message); }
         }}>
-          <CamposPessoa p={p} />
+          <CamposPessoa p={p} m={m} />
           {erro && <div className="aviso mt">{erro}</div>}
           <div className="linha mt">
             <button className="btn p" type="submit">Salvar</button>
@@ -58,13 +60,13 @@ function Pessoa() {
             <small className="mudo">PERFIL {pr!.letra}{pr!.segunda ? ` COM TRAÇOS DE ${pr!.segunda}` : ""} · {p.respondido_por === "pessoa" ? "respondido pela pessoa" : "pela observação do líder"} · {dia(p.perfil_em)}</small>
             <h2 style={{ margin: "6px 0" }}>{perfil.nome}</h2>
             <p style={{ marginTop: 0 }}>{perfil.resumo}</p>
-            {(["D", "I", "S", "C"] as Letra[]).map((l) => (
+            {LETRAS.map((l) => (
               <div key={l} className="mb" style={{ marginBottom: 8 }}>
                 <div className="linha entre" style={{ fontSize: 13 }}><span>{l} · {PERFIS[l].nome}</span><span>{Math.round(((p.perfil![l] ?? 0) / total) * 100)}%</span></div>
                 <div className="barra"><i style={{ width: `${((p.perfil![l] ?? 0) / total) * 100}%`, background: PERFIS[l].cor }} /></div>
               </div>
             ))}
-            <p className="ajuda">Perfil ajuda a escolher o tom. A regra continua a mesma para todos: afinidade é humana, preferido é injusto.</p>
+            <p className="ajuda">{m.textos.perfil_regra}</p>
           </div>
           <div className="card">
             <h2>Como agir com {p.nome.split(" ")[0]}</h2>

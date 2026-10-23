@@ -13,7 +13,7 @@ const ATALHOS = [
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--red)" },
   { href: "/scripts", rotulo: "Scripts", icone: "chat", cor: "var(--blue)" },
   { href: "/planeje", rotulo: "Planeje", icone: "cal", cor: "var(--green)" },
-  { href: "/kanban", rotulo: "Kanban", icone: "kanban", cor: "var(--orange)" },
+  { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
   { href: "/metas", rotulo: "Metas", icone: "calc", cor: "var(--purple)" },
   { href: "/notas", rotulo: "Notas", icone: "note", cor: "var(--orange)" },
   { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
@@ -22,7 +22,8 @@ const ATALHOS = [
 const TUDO = [
   { titulo: "Minha jornada", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"]] },
   { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/personalizacao", "Personalização"], ["/metas", "Metas e calculadora"], ["/clientes", "Gestão de clientes"], ["/estoque", "Giro de estoque"], ["/notas", "Notas"]] },
-  { titulo: "Vendas e marketing", icone: "funnel", cor: "var(--orange)", itens: [["/scripts", "Scripts de venda"], ["/planeje", "PLANEJE AQUI"], ["/kanban", "Kanban de conteúdo"]] },
+  { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
+  { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
   { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/duvidas", "Dúvidas entre encontros"], ["/assistente", "Assistente Magnética"]] },
 ];
 

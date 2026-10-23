@@ -31,7 +31,7 @@ export type Hub = {
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
   persFaltam: number;
   recarregar: () => Promise<void>;
-  abrirPortal: (id: string | null) => void;
+  abrirPortal: (id: string | null, destino?: string) => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
@@ -78,9 +78,9 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       pers,
       persFaltam: portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0,
       recarregar: carregar,
-      abrirPortal: (id) => {
+      abrirPortal: (id, destino) => {
         try { if (id) localStorage.setItem(CHAVE_PORTAL, id); else localStorage.removeItem(CHAVE_PORTAL); } catch { /* sem armazenamento */ }
-        carregar().then(() => router.push(id ? "/inicio" : "/empresa"));
+        carregar().then(() => router.push(destino ?? (id ? "/inicio" : "/empresa")));
       },
     });
   }, [router]);

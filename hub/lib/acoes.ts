@@ -73,7 +73,9 @@ export async function salvarNome(form: FormData) {
 export async function salvarFoto(arquivo: File | null) {
   let foto: string | null = null;
   if (arquivo) {
-    const img = await createImageBitmap(arquivo);
+    const img = await createImageBitmap(arquivo).catch(() => {
+      throw new Error("Não deu para abrir essa imagem. Use uma foto em JPG ou PNG.");
+    });
     const lado = Math.min(img.width, img.height);
     const tela = document.createElement("canvas");
     tela.width = tela.height = 256;

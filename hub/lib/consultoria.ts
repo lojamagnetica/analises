@@ -16,8 +16,8 @@ export type DadosConsultoria = {
   frentes: Frente[];
   como: { titulo: string; texto: string }[];
 };
-export type Entrega = { id: string; ordem: number; mes: string; frente: number; entrega: string; status: string; material_url: string | null };
-export type Acao = { id: string; acao: string; quem: string | null; prazo: string | null; tipo: string; status: string; obs: string | null };
+export type Entrega = { id: string; ordem: number; mes: string; frente: number; entrega: string; status: string; material_url: string | null; loja: string | null };
+export type Acao = { id: string; acao: string; quem: string | null; prazo: string | null; tipo: string; status: string; obs: string | null; loja: string | null };
 
 export const STATUS_ENTREGA = ["A fazer", "Em andamento", "Entregue"];
 export const STATUS_ACAO = ["A fazer", "Fazendo", "Feito"];
@@ -26,8 +26,8 @@ export async function buscarConsultoria(portalId: string) {
   const sb = supabaseBrowser();
   const [{ data: c }, { data: entregas }, { data: acoes }] = await Promise.all([
     sb.from("consultoria").select("dados").eq("portal_id", portalId).maybeSingle(),
-    sb.from("consultoria_entregas").select("id, ordem, mes, frente, entrega, status, material_url").eq("portal_id", portalId).order("ordem"),
-    sb.from("consultoria_acoes").select("id, acao, quem, prazo, tipo, status, obs").eq("portal_id", portalId).order("prazo", { nullsFirst: false }),
+    sb.from("consultoria_entregas").select("id, ordem, mes, frente, entrega, status, material_url, loja").eq("portal_id", portalId).order("ordem"),
+    sb.from("consultoria_acoes").select("id, acao, quem, prazo, tipo, status, obs, loja").eq("portal_id", portalId).order("prazo", { nullsFirst: false }),
   ]);
   return {
     dados: (c?.dados as DadosConsultoria | undefined) ?? null,
@@ -47,6 +47,14 @@ export async function entregaStatus(id: string, status: string) {
   if (!STATUS_ENTREGA.includes(status)) return;
   await supabaseBrowser().from("consultoria_entregas").update({ status }).eq("id", id);
 }
+
+/** Em portais com mais de uma loja: de qual loja é o item (null = das duas). */
+export async function mudarLoja(tabela: "consultoria_entregas" | "consultoria_acoes", id: string, loja: string | null) {
+  await supabaseBrowser().from(tabela).update({ loja }).eq("id", id);
+}
+
+/** O item aparece no filtro escolhido? ("" = todas as lojas; item sem loja = das duas). */
+export const daLoja = (item: { loja: string | null }, filtro: string) => !filtro || !item.loja || item.loja === filtro;
 
 export async function entregaRemover(id: string) {
   await supabaseBrowser().from("consultoria_entregas").delete().eq("id", id);

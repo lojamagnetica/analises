@@ -148,6 +148,7 @@ export async function atualizarPortal(id: string, form: FormData) {
     passo_atual: Math.min(7, Math.max(1, Number(form.get("passo_atual")) || 1)),
     meet_url: txt(form, "meet_url", 500) || null,
     apelidos: apelidos(txt(form, "apelidos", 500)),
+    lojas: apelidos(txt(form, "lojas", 500)),
     ativo: form.get("ativo") === "on",
   }).eq("id", id);
 }

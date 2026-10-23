@@ -21,6 +21,8 @@ export type Portal = {
   meet_url: string | null;
   apelidos: string[];
   ativo: boolean;
+  /** Lojas dentro do mesmo portal (ex.: feminino e masculino). Vazio = uma loja só. */
+  lojas: string[];
 };
 
 export type Hub = {

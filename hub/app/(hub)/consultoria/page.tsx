@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, diasAte } from "@/lib/formato";
 import {
-  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, entregaRemover, entregaStatus, mesDaConsultoria, type Acao,
+  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, daLoja, entregaRemover, entregaStatus, mesDaConsultoria, mudarLoja,
+  type Acao, type Entrega,
 } from "@/lib/consultoria";
 
 const doisDigitos = (n: number) => String(n).padStart(2, "0");
@@ -12,8 +14,12 @@ const doisDigitos = (n: number) => String(n).padStart(2, "0");
 export default function Consultoria() {
   const { portal, equipe } = usePortal();
   const { dados, recarregar } = useDados(() => buscarConsultoria(portal.id), [portal.id]);
+  const [filtro, setFiltro] = useState("");
   if (!dados) return <Carregando />;
-  const { dados: c, acoes } = dados;
+  const c = dados.dados;
+  const lojas = portal.lojas ?? [];
+  const varias = lojas.length > 1;
+  const acoes = dados.acoes.filter((a) => daLoja(a, filtro));
 
   if (!c) {
     return (
@@ -25,22 +31,37 @@ export default function Consultoria() {
   }
 
   // Só as entregas dos meses do plano (uma entrega tirada do plano fica fora de todos os meses).
-  const entregas = dados.entregas.filter((e) => c.meses.some((m) => m.mes === e.mes));
+  const entregas = dados.entregas.filter((e) => c.meses.some((m) => m.mes === e.mes) && daLoja(e, filtro));
   const n = mesDaConsultoria(c.inicio);
   const atual = c.meses[Math.min(Math.max(n, 1), c.meses.length) - 1];
   const encerrando = n > c.duracao;
   const frenteDe = (num: number) => c.frentes.find((f) => f.n === num);
 
+  // Com mais de uma loja no portal: a etiqueta de cada item (a equipe escolhe a loja ali mesmo).
+  const Etiqueta = ({ tabela, item }: { tabela: "consultoria_entregas" | "consultoria_acoes"; item: Acao | Entrega }) => {
+    if (!varias) return null;
+    if (equipe) {
+      return (
+        <select value={item.loja ?? ""} aria-label="Loja" style={{ width: "auto", fontSize: 12, padding: "2px 6px", marginTop: 4 }}
+          onChange={async (e) => { await mudarLoja(tabela, item.id, e.target.value || null); recarregar(); }}>
+          <option value="">As duas lojas</option>
+          {lojas.map((l) => <option key={l}>{l}</option>)}
+        </select>
+      );
+    }
+    return <span className="chip" style={{ display: "inline-block", fontSize: 11.5, padding: "1px 8px", marginTop: 4 }}>{item.loja ?? "As duas lojas"}</span>;
+  };
+
   const Linha = ({ a }: { a: Acao }) => {
     const prazo = diasAte(a.prazo);
-    const daLoja = a.tipo === "Ação da loja";
+    const feitaPelaLoja = a.tipo === "Ação da loja";
     return (
       <div className="marcar" style={{ cursor: "default", alignItems: "flex-start", gap: 12 }}>
         {equipe ? (
           <select value={a.status} onChange={async (e) => { await acaoStatus(a.id, e.target.value); recarregar(); }} style={{ width: "auto" }}>
             {STATUS_ACAO.map((s) => <option key={s}>{s}</option>)}
           </select>
-        ) : daLoja ? (
+        ) : feitaPelaLoja ? (
           <input type="checkbox" checked={a.status === "Feito"} aria-label="Feito"
             onChange={async (e) => { await acaoStatus(a.id, e.target.checked ? "Feito" : "A fazer"); recarregar(); }} />
         ) : (
@@ -53,6 +74,7 @@ export default function Consultoria() {
             {a.status !== "Feito" && prazo === 0 ? " · hoje" : ""}
           </div>
           {a.obs && <div className="ajuda" style={{ margin: 0 }}>{a.obs}</div>}
+          <Etiqueta tabela="consultoria_acoes" item={a} />
         </div>
       </div>
     );
@@ -62,7 +84,7 @@ export default function Consultoria() {
     <>
       <Titulo
         titulo="Minha consultoria"
-        sub={[`${c.duracao} meses`, `${dia(c.inicio)} a ${dia(c.fim)}`, c.cidade, ...(c.instagram ?? [])].filter(Boolean).join(" · ")}
+        sub={[varias ? lojas.join(" e ") : "", `${c.duracao} meses`, `${dia(c.inicio)} a ${dia(c.fim)}`, c.cidade, ...(c.instagram ?? [])].filter(Boolean).join(" · ")}
       />
 
       <div className="heroi mb">
@@ -86,6 +108,17 @@ export default function Consultoria() {
         </div>
         {c.visita && <div className="meet"><small>Agenda</small><b>{c.visita}</b></div>}
       </div>
+
+      {varias && (
+        <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">
+          {["", ...lojas].map((l) => (
+            <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => setFiltro(l)}
+              style={filtro === l ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
+              {l || "As duas lojas"}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="secao">Ações da quinzena</div>
       <div className="grade g2">
@@ -139,6 +172,7 @@ export default function Consultoria() {
                       {doisDigitos(e.frente)} · {frenteDe(e.frente)?.nome}
                       {e.material_url && <> · <a href={e.material_url} target="_blank" rel="noopener">abrir material</a></>}
                     </div>
+                    <Etiqueta tabela="consultoria_entregas" item={e} />
                   </div>
                   {equipe ? (
                     <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>

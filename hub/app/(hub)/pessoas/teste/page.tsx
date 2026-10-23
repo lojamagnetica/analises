@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { PERGUNTAS, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
 
 // A ordem das opções muda de pergunta para pergunta, para a pessoa não "pegar o padrão".
 const ORDENS: Letra[][] = [["D", "I", "S", "C"], ["S", "C", "D", "I"], ["I", "D", "C", "S"], ["C", "S", "I", "D"]];
@@ -13,14 +13,15 @@ function Teste() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { portal } = usePortal();
-  const [respostas, setRespostas] = useState<(Letra | null)[]>(() => PERGUNTAS.map(() => null));
+  const [respostas, setRespostas] = useState<(Letra | null)[]>([]);
   const [por, setPor] = useState<"pessoa" | "gestor">("pessoa");
   const [erro, setErro] = useState("");
-  const { dados } = useDados(() => buscarPessoas(portal.id), [portal.id]);
+  const { dados } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
   const p = dados.pessoas.find((x) => x.id === id);
   if (!p) return <div className="card">Pessoa não encontrada.</div>;
-  const faltam = respostas.filter((r) => !r).length;
+  const PERGUNTAS = dados.m.perguntas;
+  const faltam = PERGUNTAS.filter((_, i) => !respostas[i]).length;
   const nome = p.nome.split(" ")[0];
 
   return (
@@ -39,7 +40,7 @@ function Teste() {
           <legend style={{ fontWeight: 700, color: "var(--ink)", padding: 0, marginBottom: 8 }}>{i + 1}. {q.pergunta}</legend>
           {ORDENS[i % 4].map((l) => (
             <label key={l} className="marcar">
-              <input type="radio" name={`q${i}`} checked={respostas[i] === l} onChange={() => setRespostas((r) => r.map((x, j) => (j === i ? l : x)))} />
+              <input type="radio" name={`q${i}`} checked={respostas[i] === l} onChange={() => setRespostas((r) => { const n = [...r]; n[i] = l; return n; })} />
               <span>{q.opcoes[l]}</span>
             </label>
           ))}
@@ -53,7 +54,7 @@ function Teste() {
           disabled={faltam > 0}
           onClick={async () => {
             setErro("");
-            try { await perfilSalvar(p.id, respostas as Letra[], por); router.push(`/pessoas/pessoa?id=${p.id}`); } catch (e) { setErro((e as Error).message); }
+            try { await perfilSalvar(p.id, PERGUNTAS.map((_, i) => respostas[i]) as Letra[], por); router.push(`/pessoas/pessoa?id=${p.id}`); } catch (e) { setErro((e as Error).message); }
           }}
         >{faltam ? `Faltam ${faltam}` : "Ver o perfil"}</button>
       </div>

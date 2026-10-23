@@ -14,14 +14,15 @@ create table public.planos (
   ordem    int not null default 0
 );
 
-insert into public.planos (id, nome, tipo, meses, valor, vendendo, ordem) values
-  ('premium',        'Premium',          'Mentoria',    6,  18000, true,  1),
-  ('gold',           'Gold',             'Mentoria',    6,  12000, true,  2),
-  ('start',          'Start',            'Mentoria',    4,   5000, true,  3),
-  ('consultoria-3m', 'Consultoria 3m',   'Consultoria', 3,  20000, true,  4),
-  ('consultoria-6m', 'Consultoria 6m',   'Consultoria', 6,  30000, true,  5),
-  ('pro-12',         'Magnética PRO 12', 'Mentoria',    12, null,  false, 6),
-  ('grupo-6m',       'Grupo 6M',         'Mentoria',    6,  null,  false, 7);
+-- Os planos e os valores ficam só no banco (Empresa → Carteira). Este repositório é público.
+insert into public.planos (id, nome, tipo, meses, vendendo, ordem) values
+  ('premium',        'Premium',          'Mentoria',    6,  true,  1),
+  ('gold',           'Gold',             'Mentoria',    6,  true,  2),
+  ('start',          'Start',            'Mentoria',    4,  true,  3),
+  ('consultoria-3m', 'Consultoria 3m',   'Consultoria', 3,  true,  4),
+  ('consultoria-6m', 'Consultoria 6m',   'Consultoria', 6,  true,  5),
+  ('pro-12',         'Magnética PRO 12', 'Mentoria',    12, false, 6),
+  ('grupo-6m',       'Grupo 6M',         'Mentoria',    6,  false, 7);
 
 -- ───────────── Ficha da loja (a Carteira) ─────────────
 

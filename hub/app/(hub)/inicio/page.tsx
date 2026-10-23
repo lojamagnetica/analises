@@ -29,7 +29,7 @@ const TUDO = [
 export default function Inicio() {
   const { portal, nome, pers } = usePortal();
   const mes = mesAtual();
-  useEffect(() => { document.title = "Início · Hub Loja Magnética"; }, []);
+  useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }] = await Promise.all([

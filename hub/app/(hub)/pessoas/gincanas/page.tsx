@@ -90,7 +90,7 @@ function Gincanas() {
           }} />
         ))}
       </div>
-      {lista.length === 0 && <div className="card mb">Ainda não há gincana para este indicador. A equipe Loja Magnética está ampliando a biblioteca.</div>}
+      {lista.length === 0 && <div className="card mb">Ainda não há gincana para este indicador. A equipe magnética está ampliando a biblioteca.</div>}
 
       {dados.minhas.length > 0 && (
         <>

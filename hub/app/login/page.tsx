@@ -1,4 +1,5 @@
 import { Login } from "./Login";
+import { Simbolo } from "@/components/Simbolo";
 
 export const metadata = { title: "Entrar" };
 
@@ -7,8 +8,8 @@ export default function Pagina() {
     <div className="login">
       <div className="login-arte">
         <div className="linha">
-          <div className="logo">LM</div>
-          <b style={{ fontSize: 18 }}>Loja Magnética</b>
+          <div className="logo"><Simbolo /></div>
+          <b className="marca-nome" style={{ fontSize: 24 }}>magnética<span>.hub</span></b>
         </div>
         <div>
           <h1>Seu PORTAL DA MENTORIA em um lugar só.</h1>
@@ -16,7 +17,7 @@ export default function Pagina() {
             Jornada, Plano de Ação, reuniões, scripts, planejamento e o Assistente Magnética.
           </p>
         </div>
-        <small style={{ opacity: 0.6 }}>Método Loja Magnética · Camilla Ribeiro</small>
+        <small style={{ opacity: 0.6 }}>Método Loja Magnética · um método magnética</small>
       </div>
       <div className="login-form">
         <Login />

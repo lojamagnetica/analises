@@ -1,55 +1,63 @@
-/* Hub Loja Magnética: visual inspirado no Escritório Virtual de referência, com as cores da marca. */
+/* magnética.hub: identidade da magnética (azul-noite e ferrugem, Archivo no texto e Outfit no nome). */
 :root {
-  --bg: #F4F2F1;
+  --bg: #F5F0EA;           /* off-white quente */
   --card: #FFFFFF;
-  --soft: #F6F3F1;
-  --line: #ECE6E2;
-  --ink: #1C1412;
-  --text: #4A3F3A;
-  --muted: #8E827B;
+  --soft: #F8F4EF;
+  --line: #E6DCD0;         /* areia */
+  --ink: #0B1A3A;          /* azul-noite: títulos */
+  --text: #3D3632;
+  --muted: #776D66;
 
-  --red: #D2361F;          /* faixa e destaques */
-  --red-soft: #FCEBE7;
-  --accent: #BC4914;       /* terracota da marca */
-  --accent-soft: #FBEDE5;
-  --purple: #7C3AED;
-  --purple-soft: #F1EAFE;
-  --green: #16A34A;
-  --green-soft: #E7F6EC;
-  --blue: #2563EB;
-  --blue-soft: #E8EFFD;
-  --orange: #EA580C;
-  --orange-soft: #FDEFE6;
-  --yellow: #F2C94C;
+  --red: #BC4914;          /* ferrugem: destaques, botões e faixas */
+  --red-soft: #F6E6DC;
+  --accent: #E08A3C;       /* âmbar */
+  --accent-soft: #FBEEE2;
+  --purple: #8A5A44;
+  --purple-soft: #F1E6DF;
+  --green: #2F8A57;
+  --green-soft: #E4F2E9;
+  --blue: #2F4A7A;
+  --blue-soft: #E6EBF3;
+  --orange: #E08A3C;
+  --orange-soft: #FBEEE2;
+  --yellow: #E8B04B;
 
-  --side: #1C1412;
-  --side-2: #2A1F1B;
-  --side-3: #3A2B25;
-  --side-text: #F3ECE8;
-  --side-muted: #A8968C;
+  --side: #0B1A3A;         /* barra lateral azul-noite */
+  --side-2: #14264D;
+  --side-3: #1E3463;
+  --side-text: #F5F0EA;
+  --side-muted: #A9B1C4;
 
-  --grad: linear-gradient(90deg, #08163A, #6F2F18 35%, #BC4914 70%, #E08A3C);
+  --grad: linear-gradient(120deg, #0B1A3A, #1A2F5C);
   --radius: 18px;
   --fs: 15px;
-  --font: "Poppins", "Inter", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font: "Archivo", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font-marca: "Outfit", "Archivo", sans-serif;
   --max: 1180px;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --bg: #120D0B;
-  --card: #1E1714;
-  --soft: #271E1A;
-  --line: #352925;
-  --ink: #F6EFEB;
-  --text: #DCCFC8;
-  --muted: #A3948C;
-  --red-soft: #3B1A14;
-  --accent-soft: #3A2117;
-  --purple-soft: #2A1E45;
+  --bg: #08122A;
+  --card: #0F1F42;
+  --soft: #142650;
+  --line: #22355F;
+  --ink: #F5F0EA;
+  --text: #D8DCE6;
+  --muted: #9AA3B8;
+  --red: #D9622C;
+  --red-soft: #3A2218;
+  --accent-soft: #3A2A18;
+  --purple: #C08A70;
+  --purple-soft: #33241E;
+  --green: #4FB57C;
   --green-soft: #13301F;
+  --blue: #7C9BD1;
   --blue-soft: #172440;
   --orange-soft: #3A2414;
+  --side: #060E22;
+  --side-2: #0F1F42;
+  --side-3: #1A2E5A;
   color-scheme: dark;
 }
 :root[data-largo="1"] { --max: 1600px; }
@@ -77,10 +85,13 @@ p { margin: 0 0 .8em; }
 }
 .side-topo { display: flex; align-items: center; gap: 12px; padding: 20px 18px 16px; }
 .logo {
-  width: 44px; height: 44px; border-radius: 50%; background: var(--grad); flex-shrink: 0;
-  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 15px; letter-spacing: .02em;
+  width: 44px; height: 44px; border-radius: 50%; background: #BC4914; flex-shrink: 0;
+  display: grid; place-items: center; color: #F5F0EA;
 }
-.side-topo b { display: block; color: #fff; font-size: 17px; font-weight: 700; line-height: 1.15; }
+.logo svg { width: 30px; height: 30px; }
+.marca-nome { font-family: var(--font-marca); font-weight: 400; letter-spacing: -.03em; }
+.marca-nome span { color: #E08A3C; }
+.side-topo b { display: block; color: #fff; font-size: 21px; font-weight: 400; line-height: 1.1; }
 .side-topo small { color: var(--side-muted); font-size: 12.5px; font-weight: 500; }
 .icone-btn {
   margin-left: auto; width: 38px; height: 38px; border-radius: 11px; border: 0; cursor: pointer;
@@ -95,8 +106,8 @@ p { margin: 0 0 .8em; }
 }
 .nav-item:hover { background: var(--side-2); }
 .nav-item.ativo { background: var(--side-2); }
-.nav-item.ia { border-color: #6D4BC8; background: #241A33; }
-.nav-item.ia.ativo { background: #2F2245; }
+.nav-item.ia { border-color: #E08A3C; background: rgba(224,138,60,.12); }
+.nav-item.ia.ativo { background: rgba(224,138,60,.22); }
 .nav-item svg { width: 19px; height: 19px; flex-shrink: 0; opacity: .9; }
 .nav-item .seta { margin-left: auto; width: 14px; height: 14px; opacity: .6; transition: transform .15s; }
 .nav-item[aria-expanded="true"] .seta { transform: rotate(180deg); }

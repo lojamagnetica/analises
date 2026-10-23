@@ -98,6 +98,13 @@ export type Slide =
 export function lerSlides(md: string): Slide[] {
   const corpo = md.replace(/\r/g, "").split(/\n## (?!Slides)/)[0];
   const marcas = [...corpo.matchAll(/\*\*Slide\s+\d+([^*]*)\*\*/g)];
+  if (!marcas.length) {
+    // Formato em lista: "1. **(gancho)** texto" · "2. **Prática 1: título.** explicação"
+    return [...corpo.matchAll(/^\d+\.\s+\*\*([^*]+)\*\*\s*(.*)$/gm)].map((m) => {
+      const pratica = m[1].trim().match(/^(Prática\s+\d+\s*:\s*.+?)\.?$/i);
+      return pratica ? { tipo: "pratica", titulo: pratica[1], texto: m[2].trim() } : { tipo: "hook", texto: m[2].trim() };
+    });
+  }
   return marcas.map((m, i) => {
     const fim = i + 1 < marcas.length ? marcas[i + 1].index! : corpo.length;
     const cab = m[1].trim();

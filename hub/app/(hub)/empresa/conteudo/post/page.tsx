@@ -107,7 +107,7 @@ function Post() {
         <div className="card mb">
           <h2>Carrossel pronto</h2>
           <p className="mudo" style={{ fontSize: 14 }}>No modelo tweet validado do perfil, com o cabeçalho de {cfg.nome}. Baixe os PNGs e poste na ordem.</p>
-          <CarrosselTweet slides={slides} nome={cfg.nome} arroba={cfg.arroba} avatar={cfg.avatar} arquivo={`carrossel-${(p.titulo || "post").toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} />
+          <CarrosselTweet slides={slides} nome={cfg.nome} arroba={cfg.arroba} avatar={cfg.avatar} arquivo={`carrossel-${(p.titulo || "post").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`} />
         </div>
       )}
 

@@ -224,3 +224,73 @@ export async function modeloAdicionar(form: FormData) {
 export async function modeloApagar(id: string) {
   await sb().from("plano_modelo").delete().eq("id", id);
 }
+
+// ───── Empresa: ficha, contratos e equipe ─────
+
+const dataOuNulo = (f: FormData, k: string) => txt(f, k, 10) || null;
+
+export async function fichaSalvar(portalId: string, form: FormData) {
+  const etapa = Number(form.get("etapa"));
+  const termometro = txt(form, "termometro", 20) || null;
+  const { data: antes } = await sb().from("fichas").select("termometro").eq("portal_id", portalId).maybeSingle();
+  const { error } = await sb().from("fichas").upsert({
+    portal_id: portalId,
+    plano_id: txt(form, "plano_id", 40) || null,
+    jornada: txt(form, "jornada", 40) || null,
+    situacao: txt(form, "situacao", 40) || "Em andamento",
+    etapa: etapa >= 1 && etapa <= 8 ? etapa : null,
+    termometro,
+    ...(termometro !== (antes?.termometro ?? null) ? { termometro_em: termometro ? new Date().toISOString().slice(0, 10) : null } : {}),
+    resultado_n1: txt(form, "resultado_n1", 1000) || null,
+    indicador: txt(form, "indicador", 300) || null,
+    fundamentos: form.getAll("fundamentos").map(String),
+    condicao_especial: txt(form, "condicao_especial", 500) || null,
+    instagram: txt(form, "instagram", 300) || null,
+    grupo_whatsapp: txt(form, "grupo_whatsapp", 500) || null,
+    pasta_interna: txt(form, "pasta_interna", 500) || null,
+    data_diagnostico: dataOuNulo(form, "data_diagnostico"),
+    responsavel_cs: txt(form, "responsavel_cs", 60) || null,
+    observacoes: txt(form, "observacoes", 8000) || null,
+    updated_at: agora(),
+  });
+  if (error) throw new Error(error.message);
+}
+
+export async function contratoSalvar(portalId: string, id: string | null, form: FormData) {
+  const valor = Number(String(form.get("valor") ?? "").replace(/\./g, "").replace(",", "."));
+  const dados = {
+    plano_id: txt(form, "plano_id", 40) || null,
+    inicio: dataOuNulo(form, "inicio"),
+    fim: dataOuNulo(form, "fim"),
+    valor: Number.isFinite(valor) && valor > 0 ? valor : null,
+    condicao: txt(form, "condicao", 1000) || null,
+    status: txt(form, "status", 20) || "Ativo",
+  };
+  const { error } = id
+    ? await sb().from("contratos").update(dados).eq("id", id)
+    : await sb().from("contratos").insert({ ...dados, portal_id: portalId });
+  if (error) throw new Error(error.message);
+}
+export async function contratoApagar(id: string) {
+  await sb().from("contratos").delete().eq("id", id);
+}
+
+/** Link de acesso para uma pessoa nova da equipe; a função "acesso" já dá a ela o papel de equipe. */
+export async function convidarEquipe(form: FormData) {
+  const email = txt(form, "email", 200).toLowerCase();
+  if (!email) throw new Error("Preencha o e-mail.");
+  const { data, error } = await sb().functions.invoke("acesso", {
+    body: { email, nome: txt(form, "nome", 200), funcao: txt(form, "funcao", 80), equipe: true },
+  });
+  if (error) throw new Error(await erroDaFuncao(error));
+  const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
+  return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
+}
+
+export async function equipeFuncao(userId: string, funcao: string) {
+  await sb().from("perfis").update({ funcao: funcao.trim().slice(0, 80) || null }).eq("id", userId);
+}
+
+export async function equipeRemover(userId: string) {
+  await sb().from("perfis").update({ papel: "mentorado" }).eq("id", userId);
+}

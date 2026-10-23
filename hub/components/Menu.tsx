@@ -13,9 +13,17 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
-      id: "equipe", rotulo: "Equipe", icone: "team",
+      id: "empresa", rotulo: "Empresa", icone: "home",
       itens: [
-        { href: "/equipe", rotulo: "Painel dos portais", icone: "chart" },
+        { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
+        { href: "/empresa/carteira", rotulo: "Carteira", icone: "users" },
+        { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
+      ],
+    });
+    g.push({
+      id: "equipe", rotulo: "Portais", icone: "folder",
+      itens: [
+        { href: "/equipe", rotulo: "Painel dos portais", icone: "kanban" },
         { href: "/equipe/duvidas", rotulo: "Dúvidas pendentes", icone: "inbox" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
@@ -63,7 +71,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam);
-  const ativo = (href: string) => caminho === href || (href !== "/equipe" && caminho.startsWith(href + "/"));
+  const ativo = (href: string) => caminho === href || (href !== "/equipe" && href !== "/empresa" && caminho.startsWith(href + "/"));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );

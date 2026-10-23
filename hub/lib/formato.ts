@@ -45,3 +45,21 @@ export const moeda = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
 export const MESES_ABREV = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+/** Data sem hora ("2026-12-28") → "28/12/2026", sem passar por fuso (senão volta um dia). */
+export function dia(d: string | null | undefined) {
+  if (!d) return "—";
+  const [a, m, x] = d.slice(0, 10).split("-");
+  return `${x}/${m}/${a}`;
+}
+
+/** Hoje no fuso de Recife, como "2026-10-23". */
+export function hoje() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO }).format(new Date());
+}
+
+/** Dias de hoje até a data (negativo = já passou). */
+export function diasAte(d: string | null | undefined) {
+  if (!d) return Infinity;
+  return Math.round((Date.parse(d.slice(0, 10)) - Date.parse(hoje())) / 86_400_000);
+}

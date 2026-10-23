@@ -80,7 +80,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       recarregar: carregar,
       abrirPortal: (id) => {
         try { if (id) localStorage.setItem(CHAVE_PORTAL, id); else localStorage.removeItem(CHAVE_PORTAL); } catch { /* sem armazenamento */ }
-        carregar().then(() => router.push(id ? "/inicio" : "/equipe"));
+        carregar().then(() => router.push(id ? "/inicio" : "/empresa"));
       },
     });
   }, [router]);
@@ -116,9 +116,9 @@ export function useEquipe() {
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
 export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal">) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
-  if (caminho.startsWith("/equipe")) return hub.equipe ? null : "/inicio";
+  if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   if (livre || hub.portal) return null;
-  return hub.equipe ? "/equipe" : "/sem-portal";
+  return hub.equipe ? "/empresa" : "/sem-portal";
 }
 
 /** Carrega dados do Supabase e permite recarregar depois de uma alteração. */

@@ -8,7 +8,7 @@ export default function Raiz() {
   const hub = useHub();
   const router = useRouter();
   useEffect(() => {
-    router.replace(hub.equipe && !hub.portal ? "/equipe" : hub.portal ? "/inicio" : "/sem-portal");
+    router.replace(hub.equipe && !hub.portal ? "/empresa" : hub.portal ? "/inicio" : "/sem-portal");
   }, [hub, router]);
   return <Carregando />;
 }

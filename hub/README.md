@@ -22,7 +22,13 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 - **Assistente Magnética**: o Claude conhece o método e os dados daquela loja
 - Modo escuro, letra maior, largura da tela e instalação como app no celular
 
-**Equipe**
+**Empresa** (só a equipe)
+- Painel da empresa: clientes ativas por plano, etapa da jornada, contratos vencendo em 60 dias, termômetros e encontros da semana
+- Carteira: a ficha única de cada loja (plano, situação, etapa, termômetro, Resultado Nº 1, fundamentos, CS responsável) e os contratos
+- Equipe: quem é da equipe, a função de cada um e o convite por link para pessoas novas
+- As clientes vieram do Notion pela regra "vale a versão mais atual" entre a Carteira, Mentorados & Entregas e os portais. Os dados delas ficam só no banco, nunca neste repositório (ele é público)
+
+**Portais**
 - Painel com todos os portais: passo da jornada, % do Plano, próxima reunião, último acesso e dúvidas pendentes
 - Abrir qualquer portal e ver exatamente o que a mentorada vê
 - Criar portal novo e gerar o link de acesso da mentorada, pronto para mandar no WhatsApp
@@ -42,7 +48,7 @@ O Hub é um **site estático** publicado no GitHub Pages deste repositório:
 
 - Os dados vêm direto do Supabase pelo navegador. Quem protege tudo são as regras do banco (RLS), testadas em `supabase/migrations/`.
 - As operações que precisam da chave de serviço rodam em funções do Supabase (`supabase/functions/`):
-  - `acesso`: gera o link de uso único da mentorada. Só atende a equipe.
+  - `acesso`: gera o link de uso único da mentorada (ou, com `equipe: true`, de uma pessoa nova da equipe). Só atende a equipe.
   - `primeiro-acesso`: cria a conta da equipe uma única vez, só para o e-mail autorizado.
 - O endereço e a chave pública do Supabase ficam em `lib/config.ts`.
 

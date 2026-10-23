@@ -4,9 +4,11 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CamposPessoa } from "@/components/CamposPessoa";
+import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { LETRAS, buscarMetodo, buscarPessoas, pessoaDesligar, pessoaSalvar, principal, retornoFeito } from "@/lib/pessoas";
+import { LETRAS, buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, retornoFeito } from "@/lib/pessoas";
+import { BASE } from "@/lib/config";
 import { dataCurta, dia } from "@/lib/formato";
 
 function Pessoa() {
@@ -14,6 +16,7 @@ function Pessoa() {
   const { portal } = usePortal();
   const [editar, setEditar] = useState(false);
   const [erro, setErro] = useState("");
+  const [link, setLink] = useState("");
   const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
   const { m } = dados;
@@ -31,10 +34,30 @@ function Pessoa() {
       <Titulo voltar={{ href: "/pessoas", rotulo: "Minha equipe" }} titulo={p.nome} sub={[p.funcao, p.entrada ? `na loja desde ${dia(p.entrada)}` : null, p.motor ? `motor: ${p.motor} (${MOTORES[p.motor]})` : null].filter(Boolean).join(" · ")} />
       <div className="linha mb">
         <Link className="btn p" href={`/pessoas/teste?id=${p.id}`}>{p.perfil ? "Refazer o teste de perfil" : "Fazer o teste de perfil"}</Link>
+        <button className="btn s" type="button" onClick={async () => {
+          setErro("");
+          try { setLink(await linkDoTeste(p.id, `${window.location.origin}${BASE}`)); } catch (e) { setErro((e as Error).message); }
+        }}>Enviar o teste pelo link</button>
         <Link className="btn s" href={`/pessoas/retorno?pessoa=${p.id}`}>Dar retorno</Link>
         <Link className="btn s" href={`/pessoas/desenvolvimento?pessoa=${p.id}`}>Ficha de desenvolvimento</Link>
         <button className="btn s" type="button" onClick={() => setEditar(!editar)}>Editar dados</button>
       </div>
+      {erro && !editar && <div className="aviso mb">{erro}</div>}
+      {link && (() => {
+        const nome = p.nome.split(" ")[0];
+        const msg = `Oi, ${nome}! Responde este teste rapidinho? Leva uns 5 minutos e não tem resposta certa: é para a gente te conhecer melhor e saber como te ajudar no dia a dia.\n\n${link}`;
+        return (
+          <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+            <b>Link do teste de {nome}</b>
+            <p className="mudo" style={{ margin: "4px 0 10px" }}>Abre só o teste, no celular da pessoa, sem login e sem acesso ao resto do portal. Vale para uma resposta: quando a pessoa enviar, o perfil aparece aqui e o link deixa de abrir.</p>
+            <input type="text" readOnly value={link} onFocus={(e) => e.target.select()} />
+            <div className="linha mt" style={{ gap: 8 }}>
+              <Copiar texto={msg} rotulo="Copiar mensagem com o link" />
+              <a className="btn s peq" href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
+            </div>
+          </div>
+        );
+      })()}
       {editar && (
         <form className="card mb" action={async (f) => {
           setErro("");

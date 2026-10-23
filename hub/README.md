@@ -25,10 +25,12 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 **Equipe**
 - Painel com todos os portais: passo da jornada, % do Plano, próxima reunião, último acesso e dúvidas pendentes
 - Abrir qualquer portal e ver exatamente o que a mentorada vê
-- Criar portal novo e enviar o convite por e-mail em um clique
+- Criar portal novo e gerar o link de acesso da mentorada, pronto para mandar no WhatsApp
 - Editar dados do portal, Plano de Ação, reuniões (gravação e ata) e ver as respostas da Personalização
 - Caixa única de dúvidas pendentes
 - Biblioteca: scripts, aulas, modelo do Plano de Ação e textos dos 7 passos, editados uma vez para todos
+
+**Acesso por link:** ao criar o portal (ou em "Quem acessa → Novo link"), o Hub gera um link de uso único que a equipe manda pelo WhatsApp. O link só é usado quando a pessoa clica em "Criar minha senha", então a prévia do WhatsApp não o gasta.
 
 **Segurança:** cada mentorado(a) só enxerga o próprio portal. Isso é garantido pelo banco de dados (RLS), não só pela tela.
 Ninguém se cadastra sozinho: só entra quem a equipe convida.
@@ -42,11 +44,11 @@ Ninguém se cadastra sozinho: só entra quem a equipe convida.
 4. Em **Authentication → URL Configuration**:
    - **Site URL**: o endereço do Hub (ex.: `https://hub.lojamagnetica.com.br`)
    - **Redirect URLs**: adicione `https://hub.lojamagnetica.com.br/**`
-5. Em **Authentication → Emails → Templates**, troque o link de três modelos:
+5. (Opcional: só para o botão "Primeiro acesso ou esqueci a senha" da tela de login, que manda e-mail. O acesso das mentoradas é por link no WhatsApp e não depende disto.) Em **Authentication → Emails → Templates**, troque o link de três modelos:
    - **Invite user**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite">Aceitar convite</a>`
    - **Magic Link**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/conta">Entrar no Hub</a>`
    - **Reset Password**: `<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery">Criar nova senha</a>`
-6. O e-mail padrão do Supabase manda poucas mensagens por hora. Para convidar várias mentoradas, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**. O Resend, por exemplo, tem plano gratuito.
+6. O e-mail padrão do Supabase manda poucas mensagens por hora. Se for usar o acesso por e-mail, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**. O Resend, por exemplo, tem plano gratuito.
 7. Crie a sua conta: **Authentication → Users → Add user**, com o seu e-mail e uma senha. Depois, no **SQL Editor**, rode:
    ```sql
    update public.perfis set papel = 'equipe', nome = 'Camilla Ribeiro'

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { contextoEquipe } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -13,28 +14,54 @@ import { localParaIso } from "@/lib/formato";
 const txt = (f: FormData, k: string, max = 4000) => String(f.get(k) ?? "").trim().slice(0, max);
 const apelidos = (s: string) => s.split(",").map((a) => a.trim()).filter(Boolean);
 
-/** Convida por e-mail (ou reaproveita a conta que já existe) e liga a pessoa ao portal. */
-async function ligarPessoa(portalId: string, email: string, nome: string) {
-  const admin = supabaseAdmin();
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-  let userId: string | undefined;
-
-  const convite = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { nome },
-    redirectTo: `${site}/auth/confirm`,
-  });
-  if (convite.data.user) userId = convite.data.user.id;
-  else {
-    const { data: existente } = await admin.from("perfis").select("id").eq("email", email).maybeSingle();
-    userId = existente?.id;
-  }
-  if (!userId) return `Não foi possível convidar ${email}: ${convite.error?.message ?? "erro desconhecido"}`;
-
-  const { data: perfil } = await admin.from("perfis").select("papel").eq("id", userId).maybeSingle();
-  if (perfil?.papel === "equipe") return `${email} é da equipe e não pode ser ligado a um portal.`;
-  await admin.from("perfis").update({ portal_id: portalId, nome: nome || undefined }).eq("id", userId);
-  return null;
+/** Endereço do Hub como a equipe está acessando agora (serve para montar os links de acesso). */
+async function origem() {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  return process.env.NEXT_PUBLIC_SITE_URL || (host ? `${proto}://${host}` : "");
 }
+
+/**
+ * Gera um link de acesso de uso único (sem depender de e-mail): convite para quem ainda não tem
+ * conta, link de entrada para quem já tem. A equipe copia e manda pelo WhatsApp.
+ */
+async function gerarLink(email: string, nome: string) {
+  const admin = supabaseAdmin();
+  const convite = await admin.auth.admin.generateLink({ type: "invite", email, options: { data: { nome } } });
+  if (convite.data?.properties?.hashed_token) {
+    return { userId: convite.data.user.id, hash: convite.data.properties.hashed_token, tipo: "invite" as const };
+  }
+  const entrada = await admin.auth.admin.generateLink({ type: "magiclink", email });
+  if (entrada.data?.properties?.hashed_token) {
+    return { userId: entrada.data.user.id, hash: entrada.data.properties.hashed_token, tipo: "email" as const };
+  }
+  throw new Error(entrada.error?.message ?? convite.error?.message ?? "erro desconhecido");
+}
+
+async function montarLink(email: string, nome: string) {
+  const { userId, hash, tipo } = await gerarLink(email, nome);
+  const link = `${await origem()}/auth/confirm?token_hash=${hash}&type=${tipo}${tipo === "email" ? "&next=/conta" : ""}`;
+  return { userId, link };
+}
+
+/** Liga a pessoa ao portal e devolve o link de acesso dela. */
+async function ligarPessoa(portalId: string, email: string, nome: string): Promise<{ link?: string; aviso?: string }> {
+  const admin = supabaseAdmin();
+  let r: { userId: string; link: string };
+  try {
+    r = await montarLink(email, nome);
+  } catch (e) {
+    return { aviso: `Não foi possível criar o acesso de ${email}: ${(e as Error).message}` };
+  }
+  const { data: perfil } = await admin.from("perfis").select("papel").eq("id", r.userId).maybeSingle();
+  if (perfil?.papel === "equipe") return { aviso: `${email} é da equipe e não pode ser ligado a um portal.` };
+  await admin.from("perfis").update({ portal_id: portalId, nome: nome || undefined }).eq("id", r.userId);
+  return { link: r.link };
+}
+
+const comLink = (r: { link?: string; aviso?: string }, ok: string) =>
+  r.aviso ? `aviso=${encodeURIComponent(r.aviso)}` : r.link ? `link=${encodeURIComponent(r.link)}` : ok;
 
 export async function criarPortal(form: FormData) {
   await contextoEquipe();
@@ -66,10 +93,9 @@ export async function criarPortal(form: FormData) {
     await supabase.from("plano_itens").insert(modelo.map((m) => ({ ...m, portal_id: portal.id })));
   }
 
-  let aviso = "";
-  if (email && form.get("convidar") === "on") aviso = (await ligarPessoa(portal.id, email, responsavel)) ?? "";
+  const acesso = email ? await ligarPessoa(portal.id, email, responsavel) : {};
   revalidatePath("/equipe");
-  redirect(`/equipe/portais/${portal.id}${aviso ? `?aviso=${encodeURIComponent(aviso)}` : "?criado=1"}`);
+  redirect(`/equipe/portais/${portal.id}?${comLink(acesso, "criado=1")}`);
 }
 
 export async function atualizarPortal(id: string, form: FormData) {
@@ -94,9 +120,21 @@ export async function convidarPessoa(portalId: string, form: FormData) {
   await contextoEquipe();
   const email = txt(form, "email", 200).toLowerCase();
   if (!email) return;
-  const aviso = await ligarPessoa(portalId, email, txt(form, "nome", 200));
+  const acesso = await ligarPessoa(portalId, email, txt(form, "nome", 200));
   revalidatePath(`/equipe/portais/${portalId}`);
-  redirect(`/equipe/portais/${portalId}?${aviso ? `aviso=${encodeURIComponent(aviso)}` : "convidado=1"}`);
+  redirect(`/equipe/portais/${portalId}?${comLink(acesso, "convidado=1")}`);
+}
+
+/** Novo link de acesso para quem já está no portal (esqueceu a senha, link venceu etc.). */
+export async function novoLink(portalId: string, email: string, nome: string) {
+  await contextoEquipe();
+  let destino: string;
+  try {
+    destino = comLink({ link: (await montarLink(email, nome)).link }, "");
+  } catch (e) {
+    destino = comLink({ aviso: (e as Error).message }, "");
+  }
+  redirect(`/equipe/portais/${portalId}?${destino}`);
 }
 
 export async function desligarPessoa(portalId: string, userId: string) {

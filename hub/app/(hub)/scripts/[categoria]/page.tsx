@@ -4,7 +4,7 @@ import { Titulo } from "@/components/Titulo";
 import { contextoPortal, personalizacao } from "@/lib/contexto";
 import { supabaseServer } from "@/lib/supabase/server";
 import { preencher, trechos, variaveisDaLoja } from "@/lib/scripts";
-import { Copiar } from "./Copiar";
+import { Copiar } from "@/components/Copiar";
 
 export default async function Categoria({ params }: { params: Promise<{ categoria: string }> }) {
   const { categoria } = await params;

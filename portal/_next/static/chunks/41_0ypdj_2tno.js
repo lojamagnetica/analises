@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,28858,e=>{"use strict";var t=e.i(43476),o=e.i(71645),u=e.i(18566),r=e.i(61175);e.s(["default",0,function(){let e=(0,u.useRouter)();return(0,o.useEffect)(()=>{e.replace("/conteudo/semana")},[e]),(0,t.jsx)(r.Carregando,{})}])}]);

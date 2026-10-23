@@ -1,21 +1,12 @@
 "use client";
 
-import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { supabaseBrowser } from "@/lib/supabase/client";
-import { Quadro } from "./Quadro";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Carregando } from "@/lib/hub";
 
+/** O Kanban de conteúdo virou a Programação da semana (com as mesmas etapas, da ideia ao publicado). */
 export default function Kanban() {
-  const { portal } = usePortal();
-  const { dados, recarregar } = useDados(
-    async () => (await supabaseBrowser().from("kanban_cards").select("id, titulo, coluna").eq("portal_id", portal.id).order("created_at")).data ?? [],
-    [portal.id],
-  );
-  if (!dados) return <Carregando />;
-  return (
-    <>
-      <Titulo titulo="Kanban de conteúdo" sub="Da ideia ao post publicado. Use as setas para mover os cards." />
-      <Quadro portalId={portal.id} cards={dados} aoMudar={recarregar} />
-    </>
-  );
+  const router = useRouter();
+  useEffect(() => { router.replace("/conteudo/semana"); }, [router]);
+  return <Carregando />;
 }

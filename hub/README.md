@@ -25,6 +25,12 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
   - Desenvolvimento: Ficha com estágio, habilidade do mês, treino e medida, revisada a cada 15 dias
   - Gincanas: o lojista escolhe o que quer trabalhar e vê as gincanas da biblioteca, com as 5 regras de ouro, e registra prêmio, vencedor e resultado
 - **Ações do Mês** (Vendas): a ação validada do mês com o plano em decisões, a meta sugerida, o cronograma com checklist, mensagens, conteúdo, scripts e vitrine prontos (com o nome da loja) e o placar de faturamento, peças por atendimento e cadastros novos
+- **Conteúdo** (Método Loja Viral), aberto depois que a equipe libera a Análise do Perfil da loja:
+  - Análise do perfil: correções com prazo e caixa de feito, bio pronta para colar, destaques, números (com você no vídeo × só produto), antes e depois, estratégia, roteiros-modelo, ganchos, ideias, CTAs, checklist e cronograma
+  - Programação da semana: o Hub monta a semana (1 reel + 1 post complementar por dia, série fixa, stories de espera antes de cada Ação do Mês, campanha antes das datas comerciais), etapas da ideia ao publicado, lista de gravação em lote e agenda do celular (.ics)
+  - Criar roteiro: modelo + gancho + CTA, a loja preenche com a peça e sai com roteiro, legenda e checklist
+  - Resultados: views, alcance, envios e vendas por post; a métrica-norte (envios ÷ alcance), os 3 formatos carro-chefe e com você × só produto
+  - Desafio Loja Viral: os 21 dias em 3 semanas (Destravar, Ganchos, Conversão), missões diárias e a semana inteira na programação com um clique
 - Notas, gravações dos encontros, Dúvidas (respostas às 10h e às 16h)
 - **Assistente Magnética**: o Claude conhece o método e os dados daquela loja
 - Modo escuro, letra maior, largura da tela e instalação como app no celular
@@ -43,6 +49,7 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 - Caixa única de dúvidas pendentes
 - Ações do Mês: montar cada ação (etapas e materiais), publicar nos portais e ver o resultado de cada loja
 - Gincanas: a biblioteca que aparece nos portais (o conteúdo fica só no banco)
+- Análises de perfil: montar a Análise do Perfil de cada loja (padrão do diagnóstico validado) e liberar, o que abre o módulo de Conteúdo no portal
 - Biblioteca: scripts, vídeos das aulas e links das ferramentas do curso, modelo do Plano de Ação e textos dos 7 passos, editados uma vez para todos
 
 **Acesso por link:** ao criar o portal (ou em "Quem acessa → Novo link"), o Hub gera um link de uso único que a equipe manda pelo WhatsApp. O link só é usado quando a pessoa clica em "Criar minha senha", então a prévia do WhatsApp não o gasta.

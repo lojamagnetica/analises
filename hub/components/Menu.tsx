@@ -28,6 +28,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
         { href: "/equipe/duvidas", rotulo: "Dúvidas pendentes", icone: "inbox" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
+        { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta" },
         { href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt" },
         { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift" },
         { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
@@ -73,10 +74,14 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
       ],
     },
     {
-      id: "marketing", rotulo: "Marketing", icone: "pencil",
+      id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
-        { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "cal" },
-        { href: "/kanban", rotulo: "Kanban de conteúdo", icone: "kanban" },
+        { href: "/conteudo", rotulo: "Análise do perfil", icone: "insta" },
+        { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
+        { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
+        { href: "/conteudo/resultados", rotulo: "Resultados", icone: "chart" },
+        { href: "/conteudo/desafio", rotulo: "Desafio Loja Viral", icone: "spark" },
+        { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "kanban" },
       ],
     },
   );
@@ -88,7 +93,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam);
-  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
+  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );

@@ -6,6 +6,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useHub } from "@/lib/hub";
 import { salvarNome } from "@/lib/acoes";
 import { Senha } from "./Senha";
+import { Foto } from "./Foto";
 
 function Conta() {
   const senha = useSearchParams().get("senha");
@@ -15,6 +16,7 @@ function Conta() {
     <>
       <Titulo titulo="Minha conta" sub={hub.email} />
       {senha && <div className="aviso ok mb">Bem-vindo(a)! Crie a sua senha para os próximos acessos.</div>}
+      <Foto />
       <div className="grade g2">
         <form className="card" action={async (f) => { await salvarNome(f); await hub.recarregar(); setSalvo(true); }}>
           <h3>Seu nome</h3>

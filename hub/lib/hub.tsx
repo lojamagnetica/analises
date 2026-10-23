@@ -27,6 +27,7 @@ export type Hub = {
   userId: string;
   nome: string;
   email: string;
+  foto: string | null;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -64,7 +65,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -84,6 +85,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       userId: user.id,
       nome: perfil?.nome ?? user.email ?? "",
       email: perfil?.email ?? user.email ?? "",
+      foto: perfil?.foto ?? null,
       equipe,
       portal,
       pers,

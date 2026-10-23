@@ -89,7 +89,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
   return g;
 }
 
-export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: number; nome: string; email: string }) {
+export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: number; nome: string; email: string; foto: string | null }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -208,7 +208,12 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
 
         <div className="side-pe">
           <div className="pe-pessoa">
-            <div className="avatar">{(props.nome || "?").trim().charAt(0).toUpperCase()}</div>
+            <Link href="/conta#foto" className="avatar" title="Trocar a foto">
+              {props.foto
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={props.foto} alt="" />
+                : (props.nome || "?").trim().charAt(0).toUpperCase()}
+            </Link>
             <div style={{ minWidth: 0 }}>
               <b>Olá, {props.nome.split(" ")[0]}!</b>
               <small>

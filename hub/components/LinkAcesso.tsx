@@ -2,7 +2,7 @@ import { Copiar } from "@/components/Copiar";
 
 /** Mostra o link de acesso recém-gerado, com botões para copiar e mandar pelo WhatsApp. */
 export function LinkAcesso({ link, nome, whatsapp }: { link: string; nome: string; whatsapp: string | null }) {
-  const mensagem = `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! Seu PORTAL DA MENTORIA da magnética está pronto 🥂\n\nEntre por este link para criar a sua senha:\n${link}`;
+  const mensagem = `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! O Hub da sua loja na Loja Magnética está pronto 🥂\n\nEntre por este link para criar a sua senha:\n${link}`;
   let numero = (whatsapp ?? "").replace(/\D/g, "");
   if (numero && numero.length <= 11) numero = "55" + numero;
   const wa = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;

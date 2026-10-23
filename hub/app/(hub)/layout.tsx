@@ -17,7 +17,7 @@ function Casca({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
   return (
     <div className="app">
-      <Menu equipe={equipe} temPortal={!!hub.portal} persFaltam={hub.persFaltam} nome={hub.nome} email={hub.email} foto={hub.foto} />
+      <Menu equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} persFaltam={hub.persFaltam} nome={hub.nome} email={hub.email} foto={hub.foto} />
       <div className="main">
         {hub.comoLoja && hub.portal ? (
           <div className="faixa equipe">
@@ -31,7 +31,7 @@ function Casca({ children }: { children: React.ReactNode }) {
             <Link href="/empresa/carteira">Trocar portal</Link>
             <button type="button" onClick={() => hub.abrirPortal(null)}>Voltar para a empresa</button>
           </div>
-        ) : !hub.equipe && hub.persFaltam > 0 ? (
+        ) : !hub.equipe && hub.persFaltam > 0 && hub.portal?.tipo !== "Consultoria" ? (
           <div className="faixa">
             Termine a sua Personalização · falta {hub.persFaltam} de {ETAPAS.length}
             <Link href="/personalizacao">Terminar agora →</Link>

@@ -58,7 +58,7 @@ export default function RaioX() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/cursos/fundamento?c=aula-0", rotulo: "Aula 0" }} titulo="Raio-X da sua loja" sub="Para cada fundamento, a nota de hoje: 0 não existe, 1 existe mas não roda sempre, 2 funciona toda semana. Seja sincero(a): o radar só ajuda se for verdade." />
+      <Titulo voltar={{ href: "/cursos/fundamento?c=aula-0", rotulo: "Aula 0" }} titulo="Raio-X da sua loja" sub="Para cada fundamento, a nota de hoje: 0 não existe, 1 existe mas não roda sempre, 2 funciona toda semana. Responda com sinceridade: o radar só ajuda se for verdade." />
       {erro && <div className="aviso mb">{erro}</div>}
       <div className="grade g2">
         <div>

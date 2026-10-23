@@ -15,7 +15,7 @@ export default function NovoPortal() {
   const [criando, setCriando] = useState(false);
   return (
     <>
-      <Titulo voltar={{ href: "/equipe", rotulo: "Painel" }} titulo="Novo portal" sub="Cria o PORTAL DA MENTORIA com os 7 passos, o Plano de Ação do modelo, PLANEJE AQUI e Reuniões." />
+      <Titulo voltar={{ href: "/equipe", rotulo: "Painel" }} titulo="Novo portal" sub="Cria o portal da loja com os 7 passos, o Plano de Ação do modelo, PLANEJE AQUI e Reuniões." />
       <form
         className="card"
         style={{ maxWidth: 760 }}

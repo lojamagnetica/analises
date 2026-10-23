@@ -12,7 +12,7 @@ export default function Pagina() {
           <b className="marca-nome" style={{ fontSize: 24 }}>magnética<span>.hub</span></b>
         </div>
         <div>
-          <h1>Seu PORTAL DA MENTORIA em um lugar só.</h1>
+          <h1>Tudo da sua loja em um lugar só.</h1>
           <p style={{ opacity: 0.8, maxWidth: 420 }}>
             Jornada, Plano de Ação, reuniões, scripts, planejamento e o Assistente Magnética.
           </p>

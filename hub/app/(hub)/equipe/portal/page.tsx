@@ -84,7 +84,7 @@ function EditarPortal() {
       {aviso.ok && <div className="aviso ok mb">{aviso.ok}</div>}
       {aviso.link && <LinkAcesso link={aviso.link} nome={p.responsavel ?? ""} whatsapp={p.whatsapp} />}
       {aviso.erro && <div className="aviso mb">{aviso.erro}</div>}
-      <div className="mb"><button className="btn p" type="button" onClick={() => hub.abrirPortal(p.id)}>Abrir portal como mentorado(a) vê</button></div>
+      <div className="mb"><button className="btn p" type="button" onClick={() => hub.abrirPortal(p.id)}>Abrir o portal da loja</button></div>
 
       <div className="grade g2">
         <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>

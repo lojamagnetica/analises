@@ -38,7 +38,7 @@ function Confirmar() {
     <div className="login-form" style={{ minHeight: "100vh" }}>
       <div className="card" style={{ textAlign: "center" }}>
         <div className="logo" style={{ margin: "0 auto 14px" }}><Simbolo /></div>
-        <h1>{convite ? "Seu PORTAL DA MENTORIA está pronto 🥂" : "Entrar no Hub"}</h1>
+        <h1>{convite ? "O Hub da sua loja está pronto 🥂" : "Entrar no Hub"}</h1>
         <p className="mudo">{convite ? "Clique abaixo e crie a sua senha." : "Clique abaixo para entrar."}</p>
         {erro && <div className="aviso mb">{erro}</div>}
         <button className="btn p" type="button" onClick={entrar} disabled={entrando} style={{ width: "100%" }}>

@@ -16,7 +16,7 @@ function Casca({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
   return (
     <div className="app">
-      <Menu equipe={hub.equipe} temPortal={!!hub.portal} persFaltam={hub.persFaltam} nome={hub.nome} email={hub.email} />
+      <Menu equipe={hub.equipe} temPortal={!!hub.portal} persFaltam={hub.persFaltam} nome={hub.nome} email={hub.email} foto={hub.foto} />
       <div className="main">
         {hub.equipe && hub.portal ? (
           <div className="faixa equipe">

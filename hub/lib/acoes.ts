@@ -69,6 +69,23 @@ export async function salvarNome(form: FormData) {
   if (nome) await sb().rpc("salvar_meu_nome", { novo: nome });
 }
 
+/** Foto de perfil: recorta no quadrado do meio e reduz para 256 px em JPEG antes de salvar. Sem arquivo, remove. */
+export async function salvarFoto(arquivo: File | null) {
+  let foto: string | null = null;
+  if (arquivo) {
+    const img = await createImageBitmap(arquivo).catch(() => {
+      throw new Error("Não deu para abrir essa imagem. Use uma foto em JPG ou PNG.");
+    });
+    const lado = Math.min(img.width, img.height);
+    const tela = document.createElement("canvas");
+    tela.width = tela.height = 256;
+    tela.getContext("2d")!.drawImage(img, (img.width - lado) / 2, (img.height - lado) / 2, lado, lado, 0, 0, 256, 256);
+    foto = tela.toDataURL("image/jpeg", 0.85);
+  }
+  const { error } = await sb().rpc("salvar_minha_foto", { nova: foto });
+  if (error) throw new Error("Não deu para salvar a foto. Tente outra imagem.");
+}
+
 // ───── Equipe ─────
 
 /**

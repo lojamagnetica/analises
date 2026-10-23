@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CamposPortal } from "@/components/CamposPortal";
+import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
@@ -79,7 +80,7 @@ function EditarPortal() {
 
   return (
     <>
-      <Titulo voltar={{ href: "/equipe", rotulo: "Painel" }} titulo={p.loja} sub={`${p.tipo} · passo ${p.passo_atual} de 7`} />
+      <Titulo voltar={{ href: "/empresa/carteira", rotulo: "Carteira" }} titulo={p.loja} sub={`${p.tipo} · passo ${p.passo_atual} de 7`} />
       {aviso.ok && <div className="aviso ok mb">{aviso.ok}</div>}
       {aviso.link && <LinkAcesso link={aviso.link} nome={p.responsavel ?? ""} whatsapp={p.whatsapp} />}
       {aviso.erro && <div className="aviso mb">{aviso.erro}</div>}
@@ -144,6 +145,8 @@ function EditarPortal() {
           })}
         </div>
       </div>
+
+      <FichaLoja portalId={p.id} />
 
       <div className="card mt">
         <h2>Plano de Ação</h2>

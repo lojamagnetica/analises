@@ -1,4 +1,5 @@
 // Gera o link de acesso de uso único de uma mentorada e liga a conta dela ao portal.
+// Com equipe: true, gera o link de uma pessoa nova da equipe e já dá a ela o papel de equipe.
 // Roda dentro do Supabase (usa a chave de serviço que o próprio Supabase fornece) e só atende a equipe.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
   const { data: equipe } = await usuario.rpc("is_equipe");
   if (equipe !== true) return json({ erro: "Só a equipe pode gerar links de acesso." }, 403);
 
-  const { email, nome, portal_id } = await req.json().catch(() => ({}));
+  const { email, nome, portal_id, equipe: daEquipe, funcao } = await req.json().catch(() => ({}));
   const e = String(email ?? "").trim().toLowerCase();
   if (!e.includes("@")) return json({ erro: "E-mail inválido." }, 400);
 
@@ -38,7 +39,11 @@ Deno.serve(async (req) => {
   const userId = r.data?.user?.id;
   if (!hash || !userId) return json({ erro: r.error?.message ?? "Não foi possível gerar o link." }, 400);
 
-  if (portal_id) {
+  if (daEquipe === true) {
+    const dados: Record<string, string | null> = { papel: "equipe", portal_id: null, funcao: funcao ? String(funcao).slice(0, 80) : null };
+    if (nome) dados.nome = nome;
+    await admin.from("perfis").update(dados).eq("id", userId);
+  } else if (portal_id) {
     const { data: perfil } = await admin.from("perfis").select("papel").eq("id", userId).maybeSingle();
     if (perfil?.papel === "equipe") return json({ erro: `${e} é da equipe e não pode ser ligado a um portal.` }, 400);
     const dados: Record<string, string> = { portal_id };

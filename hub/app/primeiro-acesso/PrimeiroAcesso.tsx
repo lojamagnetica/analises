@@ -27,7 +27,7 @@ export function PrimeiroAcesso() {
       setEnviando(false);
       return setErro("Conta criada. Entre pela tela de login.");
     }
-    router.replace("/equipe");
+    router.replace("/empresa");
   }
 
   return (

@@ -21,7 +21,7 @@ function Casca({ children }: { children: React.ReactNode }) {
         {hub.equipe && hub.portal ? (
           <div className="faixa equipe">
             Você está vendo o portal de {hub.portal.loja} como equipe
-            <Link href="/equipe">Trocar portal →</Link>
+            <Link href="/empresa/carteira">Trocar portal →</Link>
           </div>
         ) : !hub.equipe && hub.persFaltam > 0 ? (
           <div className="faixa">

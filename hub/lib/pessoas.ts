@@ -67,6 +67,16 @@ export function preencherModelo(linhas: string[], v: Record<string, string | str
 }
 export const texto = (m: Metodo, chave: string, v: Record<string, string> = {}) => preencherModelo([m.textos[chave] ?? ""], v);
 
+/** A ordem das opções muda de pergunta para pergunta, para a pessoa não "pegar o padrão". */
+export const ORDENS: Letra[][] = [["D", "I", "S", "C"], ["S", "C", "D", "I"], ["I", "D", "C", "S"], ["C", "S", "I", "D"]];
+
+/** Link do teste para a própria pessoa responder no celular dela, sem entrar no Hub. */
+export async function linkDoTeste(id: string, base: string) {
+  const token = crypto.randomUUID();
+  await ok(sb().from("loja_equipe").update({ teste_token: token }).eq("id", id));
+  return `${base}/teste/?t=${token}`;
+}
+
 export function pontuar(respostas: Letra[]): Record<Letra, number> {
   const p: Record<Letra, number> = { D: 0, I: 0, S: 0, C: 0 };
   respostas.forEach((l) => { p[l] += 1; });

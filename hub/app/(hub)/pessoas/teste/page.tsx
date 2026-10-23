@@ -4,10 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
-
-// A ordem das opções muda de pergunta para pergunta, para a pessoa não "pegar o padrão".
-const ORDENS: Letra[][] = [["D", "I", "S", "C"], ["S", "C", "D", "I"], ["I", "D", "C", "S"], ["C", "S", "I", "D"]];
+import { ORDENS, buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
 
 function Teste() {
   const id = useSearchParams().get("id") ?? "";

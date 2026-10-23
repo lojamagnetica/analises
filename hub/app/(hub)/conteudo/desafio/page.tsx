@@ -11,10 +11,10 @@ import { variaveisDaLoja } from "@/lib/scripts";
 import { carregarConteudo, conteudoSalvar, ctaDe, ganchoDe, postsCriar, roteirosDaLoja, textoDoRoteiro, type LojaConteudo } from "@/lib/instagram";
 
 export default function Desafio() {
-  const { portal, pers } = usePortal();
+  const { portal, pers, comoLoja } = usePortal();
   const [estado, setEstado] = useState<LojaConteudo["desafio"] | null>(null);
   const [aviso, setAviso] = useState("");
-  const { dados, recarregar } = useDados(() => carregarConteudo(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
   const { m, a, conteudo, posts } = dados;
   const d = m.desafio;

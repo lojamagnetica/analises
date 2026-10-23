@@ -73,7 +73,7 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
 }
 
 export default function Semana() {
-  const { portal, pers } = usePortal();
+  const { portal, pers, comoLoja } = usePortal();
   const [segunda, setSegunda] = useState(segundaDe(hoje()));
   const [ajustes, setAjustes] = useState<Ajustes | null>(null);
   const [aviso, setAviso] = useState("");
@@ -81,14 +81,14 @@ export default function Semana() {
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
     const [c, datas, la] = await Promise.all([
-      carregarConteudo(portal.id),
+      carregarConteudo(portal.id, comoLoja),
       sb.from("datas_comerciais").select("mes, dia, titulo"),
       sb.from("loja_acoes").select("acao_id").eq("portal_id", portal.id),
     ]);
     const ids = (la.data ?? []).map((x) => x.acao_id as string);
     const acoes = ids.length ? (await sb.from("acoes").select("id, titulo, venda_inicio, data_acao").in("id", ids)).data ?? [] : [];
     return { ...c, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })) };
-  }, [portal.id]);
+  }, [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
   const { m, a, conteudo, posts } = dados;
   if (!a) return <Trancado titulo="Programação da semana" texto={m.textos.trancado} />;

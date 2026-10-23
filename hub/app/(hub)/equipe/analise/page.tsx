@@ -1,15 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AgenteAnalise } from "@/components/AgenteAnalise";
 import { ListaObjetos, ListaTexto } from "@/components/Listas";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  OBJETIVOS, analiseInicial, analiseLiberar, analiseSalvar, buscarMetodoConteudo, caracteresBio, completar, type Analise,
+  OBJETIVOS, type Agente, analiseInicial, analiseLiberar, analiseSalvar, buscarMetodoConteudo, caracteresBio, completar, type Analise,
 } from "@/lib/instagram";
 
 function Secao({ titulo, sub, children, aberta = false }: { titulo: string; sub?: string; children: React.ReactNode; aberta?: boolean }) {
@@ -37,13 +38,18 @@ function Editor() {
       sb.from("personalizacao").select("respostas").eq("portal_id", id).eq("etapa", 2).maybeSingle(),
     ]);
     const r = (pers.data?.respostas ?? {}) as Record<string, unknown>;
-    return { m, portal: p.data as { id: string; loja: string } | null, linha: an.data as { status: string; dados: Partial<Analise>; liberada_em: string | null } | null, etapa2: { instagram: String(r.instagram ?? ""), cidade: String(r.cidade ?? "") } };
+    return { m, portal: p.data as { id: string; loja: string } | null, linha: an.data as { status: string; dados: Partial<Analise>; agente?: Agente; liberada_em: string | null } | null, etapa2: { instagram: String(r.instagram ?? ""), cidade: String(r.cidade ?? "") } };
   }, [id]);
 
   useEffect(() => {
     if (!dados || a) return;
     setA(dados.linha ? completar(dados.m, dados.linha.dados) : analiseInicial(dados.m, dados.etapa2));
   }, [dados, a]);
+
+  const aoTerminar = useCallback((d: Partial<Analise>) => {
+    if (!dados) return;
+    setA(completar(dados.m, d)); setMudou(false); setAviso({ ok: "O agente terminou: a análise está no editor. Revise, ajuste e libere." }); recarregar();
+  }, [dados, recarregar]);
 
   if (!dados || !a) return <Carregando />;
   if (!dados.portal) return <div className="card">Portal não encontrado. <Link href="/equipe/analises">Voltar</Link></div>;
@@ -70,7 +76,7 @@ function Editor() {
           </div>
           <div className="linha" style={{ gap: 8 }}>
             <button className="btn p" type="button" onClick={salvar}>Salvar</button>
-            <button className="btn s" type="button" onClick={async () => { await salvar(); abrirPortal(portal.id, "/conteudo"); }}>Ver como a loja vê</button>
+            <button className="btn s" type="button" onClick={async () => { await salvar(); abrirPortal(portal.id, "/conteudo", true); }}>Ver como a loja vê</button>
             <button className={`btn ${liberada ? "s" : "p"}`} type="button" disabled={!a.bio.trim() || a.correcoes.length === 0} onClick={async () => {
               await analiseSalvar(portal.id, a); await analiseLiberar(portal.id, !liberada); setMudou(false);
               setAviso({ ok: liberada ? "Voltou para rascunho: a loja não vê mais." : "Liberada. O módulo de Conteúdo abriu no portal da loja." }); recarregar();
@@ -81,6 +87,9 @@ function Editor() {
         {aviso.erro && <div className="aviso mt">{aviso.erro}</div>}
         {!a.bio.trim() && <p className="ajuda">Para liberar: bio sugerida e pelo menos uma correção.</p>}
       </div>
+
+      <AgenteAnalise portalId={portal.id} instagram={a.instagram || dados.etapa2.instagram} agenteInicial={dados.linha?.agente}
+        temAnalise={!!dados.linha?.dados && Object.keys(dados.linha.dados).length > 0} aoTerminar={aoTerminar} />
 
       <Secao titulo="1. Capa" sub="dados da loja, vídeo e os 4 números" aberta>
         <div className="grade g4" style={{ gap: 12 }}>

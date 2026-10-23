@@ -7,6 +7,7 @@ import { ETAPAS, type Respostas } from "@/lib/conteudo";
 
 export const CHAVE_PORTAL = "lm_portal";
 export const CHAVE_RESULTADO = "lm_resultado_portal";
+export const CHAVE_COMO_LOJA = "lm_como_loja";
 
 export type Portal = {
   id: string;
@@ -31,10 +32,20 @@ export type Hub = {
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
   persFaltam: number;
   recarregar: () => Promise<void>;
-  abrirPortal: (id: string | null, destino?: string) => void;
+  abrirPortal: (id: string | null, destino?: string, comoLoja?: boolean) => void;
+  /** Equipe vendo o portal exatamente como a loja vê: sem menus nem botões da equipe. */
+  comoLoja: boolean;
+  verComoLoja: (sim: boolean) => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
+
+function lerComoLoja() {
+  try { return localStorage.getItem(CHAVE_COMO_LOJA) === "1"; } catch { return false; }
+}
+function gravarComoLoja(sim: boolean) {
+  try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
+}
 
 function lerPortalEscolhido() {
   try { return localStorage.getItem(CHAVE_PORTAL); } catch { return null; }
@@ -78,9 +89,16 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       pers,
       persFaltam: portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0,
       recarregar: carregar,
-      abrirPortal: (id, destino) => {
+      abrirPortal: (id, destino, comoLoja = false) => {
         try { if (id) localStorage.setItem(CHAVE_PORTAL, id); else localStorage.removeItem(CHAVE_PORTAL); } catch { /* sem armazenamento */ }
+        gravarComoLoja(!!id && comoLoja);
         carregar().then(() => router.push(destino ?? (id ? "/inicio" : "/empresa")));
+      },
+      comoLoja: equipe && !!portal && lerComoLoja(),
+      verComoLoja: (sim) => {
+        gravarComoLoja(sim);
+        setHub((h) => (h ? { ...h, comoLoja: sim } : h));
+        router.push(sim ? "/inicio" : "/equipe/portal");
       },
     });
   }, [router]);
@@ -105,7 +123,8 @@ export function useHub() {
 
 /** Para páginas do portal. A casca do Hub (layout) só mostra essas páginas quando há portal aberto. */
 export function usePortal() {
-  return useHub() as Hub & { portal: Portal };
+  const hub = useHub() as Hub & { portal: Portal };
+  return hub.comoLoja ? { ...hub, equipe: false } : hub;
 }
 
 /** Para páginas da equipe. A casca do Hub só mostra essas páginas para a equipe. */

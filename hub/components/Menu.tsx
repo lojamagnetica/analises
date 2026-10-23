@@ -52,6 +52,16 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
       ],
     },
     {
+      id: "pessoas", rotulo: "Gestão de pessoas", icone: "team",
+      itens: [
+        { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
+        { href: "/pessoas/retorno", rotulo: "Dar retorno", icone: "chat" },
+        { href: "/pessoas/reuniao-semanal", rotulo: "Reunião semanal", icone: "cal" },
+        { href: "/pessoas/reuniao-mensal", rotulo: "Reunião do mês", icone: "chart" },
+        { href: "/pessoas/desenvolvimento", rotulo: "Desenvolvimento", icone: "target" },
+      ],
+    },
+    {
       id: "vendas", rotulo: "Vendas", icone: "funnel",
       itens: [{ href: "/scripts", rotulo: "Scripts de venda", icone: "chat" }],
     },
@@ -71,7 +81,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam);
-  const ativo = (href: string) => caminho === href || (href !== "/equipe" && href !== "/empresa" && caminho.startsWith(href + "/"));
+  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );

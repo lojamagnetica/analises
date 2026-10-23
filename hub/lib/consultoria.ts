@@ -48,6 +48,10 @@ export async function entregaStatus(id: string, status: string) {
   await supabaseBrowser().from("consultoria_entregas").update({ status }).eq("id", id);
 }
 
+export async function entregaRemover(id: string) {
+  await supabaseBrowser().from("consultoria_entregas").delete().eq("id", id);
+}
+
 export async function acaoStatus(id: string, status: string) {
   if (!STATUS_ACAO.includes(status)) return;
   await supabaseBrowser().from("consultoria_acoes").update({ status }).eq("id", id);

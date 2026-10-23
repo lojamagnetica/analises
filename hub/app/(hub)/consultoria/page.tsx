@@ -4,7 +4,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, diasAte } from "@/lib/formato";
 import {
-  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, entregaStatus, mesDaConsultoria, type Acao,
+  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, entregaRemover, entregaStatus, mesDaConsultoria, type Acao,
 } from "@/lib/consultoria";
 
 const doisDigitos = (n: number) => String(n).padStart(2, "0");
@@ -13,7 +13,7 @@ export default function Consultoria() {
   const { portal, equipe } = usePortal();
   const { dados, recarregar } = useDados(() => buscarConsultoria(portal.id), [portal.id]);
   if (!dados) return <Carregando />;
-  const { dados: c, entregas, acoes } = dados;
+  const { dados: c, acoes } = dados;
 
   if (!c) {
     return (
@@ -24,6 +24,8 @@ export default function Consultoria() {
     );
   }
 
+  // Só as entregas dos meses do plano (uma entrega tirada do plano fica fora de todos os meses).
+  const entregas = dados.entregas.filter((e) => c.meses.some((m) => m.mes === e.mes));
   const n = mesDaConsultoria(c.inicio);
   const atual = c.meses[Math.min(Math.max(n, 1), c.meses.length) - 1];
   const encerrando = n > c.duracao;
@@ -139,9 +141,13 @@ export default function Consultoria() {
                     </div>
                   </div>
                   {equipe ? (
-                    <select value={e.status} onChange={async (x) => { await entregaStatus(e.id, x.target.value); recarregar(); }} style={{ width: "auto" }}>
-                      {STATUS_ENTREGA.map((s) => <option key={s}>{s}</option>)}
-                    </select>
+                    <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>
+                      <select value={e.status} onChange={async (x) => { await entregaStatus(e.id, x.target.value); recarregar(); }} style={{ width: "auto" }}>
+                        {STATUS_ENTREGA.map((s) => <option key={s}>{s}</option>)}
+                      </select>
+                      <button type="button" className="btn s peq" aria-label={`Tirar "${e.entrega}" do plano`}
+                        onClick={async () => { if (confirm(`Tirar "${e.entrega}" do plano?`)) { await entregaRemover(e.id); recarregar(); } }}>✕</button>
+                    </div>
                   ) : (
                     <span className={`selo ${classeStatus(e.status)}`}>{e.status}</span>
                   )}

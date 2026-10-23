@@ -77,9 +77,9 @@ export default function Carteira() {
 
       <div className="card tabela-wrap">
         <table className="tabela">
-          <thead><tr><th>Loja</th><th>Plano</th><th>Situação</th><th>Etapa</th><th>Termômetro</th><th>Fim do contrato</th><th>CS</th><th /></tr></thead>
+          <thead><tr><th>Loja</th><th>Plano</th><th>Situação</th><th>Etapa</th><th>Termômetro</th><th>Placar</th><th>Fim do contrato</th><th>CS</th><th /></tr></thead>
           <tbody>
-            {linhas.length === 0 && <tr><td colSpan={8} className="mudo">Nenhuma loja com esses filtros.</td></tr>}
+            {linhas.length === 0 && <tr><td colSpan={9} className="mudo">Nenhuma loja com esses filtros.</td></tr>}
             {linhas.map((l) => {
               const faltam = diasAte(l.c?.fim);
               return (
@@ -89,6 +89,7 @@ export default function Carteira() {
                   <td>{l.f?.situacao ?? "—"}</td>
                   <td>{l.f?.etapa ? `${l.f.etapa} · ${ETAPAS_JORNADA[l.f.etapa]}` : <span className="mudo">—</span>}</td>
                   <td>{l.f?.termometro ? <span className={`selo ${corTermometro(l.f.termometro)}`}>{l.f.termometro}</span> : <span className="mudo">—</span>}</td>
+                  <td>{l.f?.fundamentos.length ?? 0}/16</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {dia(l.c?.fim)}
                     {faltam >= 0 && faltam <= 60 && <div><span className="selo alerta">em {faltam} dias</span></div>}

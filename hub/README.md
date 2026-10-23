@@ -35,39 +35,38 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 **Segurança:** cada mentorado(a) só enxerga o próprio portal. Isso é garantido pelo banco de dados (RLS), não só pela tela.
 Ninguém se cadastra sozinho: só entra quem a equipe convida.
 
-## Como colocar no ar (uma vez só)
+## Onde fica no ar
 
-### 1. Supabase (já feito)
-O projeto `hub-loja-magnetica` (região São Paulo) já está criado, com as migrações de `supabase/migrations/` aplicadas e as funções `acesso` e `primeiro-acesso` (em `supabase/functions/`) publicadas.
-O endereço e a chave pública ficam em `lib/config.ts`. A chave pública é feita para ficar no navegador; quem protege os dados são as regras do banco.
+O Hub é um **site estático** publicado no GitHub Pages deste repositório:
+**https://lojamagnetica.github.io/analises/portal/**
 
-### 2. Vercel (onde o site fica no ar)
-1. Em [vercel.com](https://vercel.com), clique em **Add New → Project** e importe este repositório.
-2. Em **Root Directory**, escolha `hub` e clique em **Deploy**. Não precisa cadastrar nenhuma variável.
-3. Abra `https://SEU-ENDERECO.vercel.app/primeiro-acesso` e crie a conta da equipe (só funciona uma vez, para o e-mail autorizado).
+- Os dados vêm direto do Supabase pelo navegador. Quem protege tudo são as regras do banco (RLS), testadas em `supabase/migrations/`.
+- As operações que precisam da chave de serviço rodam em funções do Supabase (`supabase/functions/`):
+  - `acesso`: gera o link de uso único da mentorada. Só atende a equipe.
+  - `primeiro-acesso`: cria a conta da equipe uma única vez, só para o e-mail autorizado.
+- O endereço e a chave pública do Supabase ficam em `lib/config.ts`.
 
-### 3. Assistente Magnética (Claude)
-1. Em [console.anthropic.com](https://console.anthropic.com), crie uma chave em **API Keys** e coloque créditos.
-2. Cadastre a chave na Vercel como `ANTHROPIC_API_KEY`.
+### Publicar uma nova versão
+```bash
+cd hub
+npm install
+npm run publicar   # gera o site e copia para ../portal (com ../.nojekyll)
+```
+Depois é só fazer o commit da pasta `portal/` no `main`. O GitHub Pages atualiza sozinho.
 
-O custo é por uso. Cada pergunta manda as instruções do método e os dados da loja; a parte repetida fica em cache e sai mais barata.
+### Primeiro acesso da equipe
+Abra https://lojamagnetica.github.io/analises/portal/primeiro-acesso/ e crie a conta com o e-mail autorizado. Isso funciona uma única vez.
 
-### 4. Google Agenda → Reuniões
-1. Em [console.cloud.google.com](https://console.cloud.google.com), crie um projeto e ative a **Google Calendar API**.
-2. Em **IAM → Service Accounts**, crie uma conta de serviço e gere uma chave **JSON**.
-3. Na Vercel, cadastre `GOOGLE_SERVICE_ACCOUNT_EMAIL` (o `client_email` do JSON) e `GOOGLE_PRIVATE_KEY` (o `private_key`).
-4. No Google Agenda de `suportelojamagnetica@gmail.com`, abra **Configurações da agenda → Compartilhar com pessoas específicas**, adicione o e-mail da conta de serviço com **Ver todos os detalhes dos eventos**.
-5. Cadastre também `CRON_SECRET` (qualquer texto longo). A sincronização roda sozinha todo dia às 07h05 (Recife) e também pelo botão **Sincronizar agora** em Equipe → Reuniões.
-
-Regras da sincronização: a loja é encontrada pelo **nome no título** do evento (nome da loja ou um dos apelidos do portal). Eventos **roxos** (leads do comercial), de dia inteiro e com club/curso/treinamento/semanal/ausente ficam de fora. Nada é duplicado e nenhuma linha existente é alterada.
+### Ainda a ligar
+- **Assistente Magnética:** vai rodar numa função do Supabase que chama o Claude. Precisa de uma chave da Anthropic guardada como segredo da função (Supabase → Edge Functions → Secrets).
+- **Google Agenda → Reuniões:** vai rodar numa função do Supabase agendada todo dia às 07h05 (Recife). As regras de leitura já estão em `lib/agenda-regras.ts`, com testes: a loja é encontrada pelo **nome no título** do evento (nome da loja ou um apelido do portal); eventos **roxos** (leads do comercial), de dia inteiro e com club/curso/treinamento/semanal/ausente ficam de fora; nada é duplicado.
 
 ## Para desenvolver
 
 ```bash
 cd hub
 npm install
-cp .env.example .env.local   # preencha os valores
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3000/analises/portal/
 npm test                     # regras da agenda
 npm run typecheck
 ```

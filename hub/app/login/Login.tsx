@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { BASE } from "@/lib/config";
 
 export function Login({ erroInicial }: { erroInicial?: string }) {
   const router = useRouter();
@@ -18,7 +19,6 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
     setEnviando(false);
     if (error) return setMsg({ ok: false, texto: "E-mail ou senha incorretos." });
     router.replace("/");
-    router.refresh();
   }
 
   async function receberLink() {
@@ -26,7 +26,7 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
     setEnviando(true);
     const { error } = await supabaseBrowser().auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: false, emailRedirectTo: `${location.origin}/auth/confirm?next=/conta` },
+      options: { shouldCreateUser: false, emailRedirectTo: `${location.origin}${BASE}/auth/confirm/?next=/conta` },
     });
     setEnviando(false);
     setMsg(

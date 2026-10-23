@@ -1,11 +1,11 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
-import { marcarPlano } from "../acoes";
+import { marcarPlano } from "@/lib/acoes";
 
 type Item = { id: string; texto: string; feito: boolean };
 
-export function Checklist({ itens }: { itens: Item[] }) {
+export function Checklist({ itens, aoMudar }: { itens: Item[]; aoMudar: () => void }) {
   const [, iniciar] = useTransition();
   const [lista, marcar] = useOptimistic(itens, (atual, { id, feito }: { id: string; feito: boolean }) =>
     atual.map((i) => (i.id === id ? { ...i, feito } : i)),
@@ -22,6 +22,7 @@ export function Checklist({ itens }: { itens: Item[] }) {
               iniciar(async () => {
                 marcar({ id: i.id, feito });
                 await marcarPlano(i.id, feito);
+                aoMudar();
               });
             }}
           />

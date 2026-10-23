@@ -1,6 +1,7 @@
+"use client";
+
 import { Titulo } from "@/components/Titulo";
 
-export const metadata = { title: "Giro de estoque" };
 
 export default function Estoque() {
   return (

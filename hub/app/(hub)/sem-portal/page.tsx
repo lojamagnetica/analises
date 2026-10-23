@@ -1,3 +1,5 @@
+"use client";
+
 export default function SemPortal() {
   return (
     <div className="card mt" style={{ maxWidth: 560 }}>

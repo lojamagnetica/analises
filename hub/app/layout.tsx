@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { BASE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: { default: "Hub Loja Magnética", template: "%s · Hub Loja Magnética" },
   description: "Portal da Mentoria e Hub da equipe Loja Magnética.",
-  manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  manifest: `${BASE}/manifest.webmanifest`,
+  icons: { icon: `${BASE}/icon.svg`, apple: `${BASE}/icon.svg` },
   robots: { index: false, follow: false },
 };
 

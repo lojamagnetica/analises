@@ -1,11 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect } from "react";
 import { Icone } from "@/components/Icone";
-import { contextoPortal, personalizacao, primeiroNome } from "@/lib/contexto";
-import { supabaseServer } from "@/lib/supabase/server";
+import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
-
-export const metadata = { title: "Início" };
 
 const ATALHOS = [
   { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },
@@ -25,19 +26,22 @@ const TUDO = [
   { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/duvidas", "Dúvidas entre encontros"], ["/assistente", "Assistente Magnética"]] },
 ];
 
-export default async function Inicio() {
-  const { portal, nome } = await contextoPortal();
-  const supabase = await supabaseServer();
-  const agora = new Date().toISOString();
+export default function Inicio() {
+  const { portal, nome, pers } = usePortal();
   const mes = mesAtual();
-
-  const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }, pers] = await Promise.all([
-    supabase.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", agora).order("data").limit(1).maybeSingle(),
-    supabase.from("plano_itens").select("feito").eq("portal_id", portal.id),
-    supabase.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
-    supabase.from("jornada_passos").select("titulo").eq("numero", portal.passo_atual).maybeSingle(),
-    personalizacao(portal.id),
-  ]);
+  useEffect(() => { document.title = "Início · Hub Loja Magnética"; }, []);
+  const { dados } = useDados(async () => {
+    const sb = supabaseBrowser();
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }] = await Promise.all([
+      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
+      sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
+      sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
+      sb.from("jornada_passos").select("titulo").eq("numero", portal.passo_atual).maybeSingle(),
+    ]);
+    return { prox, plano, datas, passo };
+  }, [portal.id]);
+  if (!dados) return <Carregando />;
+  const { prox, plano, datas, passo } = dados;
 
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
@@ -98,7 +102,7 @@ export default async function Inicio() {
           <p className="mudo">
             {(datas ?? []).map((d) => (d.dia ? `${d.titulo} (${d.dia}/${MESES_ABREV[mes]})` : d.titulo)).join(" · ") || "Sem datas cadastradas"}
           </p>
-          <Link className="btn s peq" href={`/planeje/${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
+          <Link className="btn s peq" href={`/planeje/mes?m=${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { supabaseBrowser } from "@/lib/supabase/client";
+import { erroDaFuncao, supabaseBrowser } from "@/lib/supabase/client";
 
 export function PrimeiroAcesso() {
   const router = useRouter();
@@ -19,9 +19,8 @@ export function PrimeiroAcesso() {
     const supabase = supabaseBrowser();
     const { error } = await supabase.functions.invoke("primeiro-acesso", { body: { email, senha } });
     if (error) {
-      const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
       setEnviando(false);
-      return setErro(corpo?.erro ?? "Não deu certo. Tente de novo.");
+      return setErro(await erroDaFuncao(error));
     }
     const { error: erroLogin } = await supabase.auth.signInWithPassword({ email, password: senha });
     if (erroLogin) {
@@ -29,7 +28,6 @@ export function PrimeiroAcesso() {
       return setErro("Conta criada. Entre pela tela de login.");
     }
     router.replace("/equipe");
-    router.refresh();
   }
 
   return (

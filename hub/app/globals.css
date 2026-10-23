@@ -317,3 +317,5 @@ textarea { min-height: 90px; resize: vertical; }
   .login-arte { padding: 28px 20px; }
   .login-arte h1 { font-size: 1.6em; }
 }
+
+.carregando { min-height: 40vh; display: grid; place-items: center; color: var(--muted); font-weight: 600; }

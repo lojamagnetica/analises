@@ -1,23 +1,28 @@
+"use client";
+
 import { Icone } from "@/components/Icone";
 import { Titulo } from "@/components/Titulo";
-import { contextoPortal } from "@/lib/contexto";
-import { supabaseServer } from "@/lib/supabase/server";
+import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta } from "@/lib/formato";
-
-export const metadata = { title: "Cursos e gravações" };
 
 function embedYoutube(url: string) {
   const id = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/)?.[1];
   return id ? `https://www.youtube-nocookie.com/embed/${id}` : null;
 }
 
-export default async function Cursos() {
-  const { portal } = await contextoPortal();
-  const supabase = await supabaseServer();
-  const [{ data: aulas }, { data: gravacoes }] = await Promise.all([
-    supabase.from("aulas").select("*").order("ordem"),
-    supabase.from("reunioes").select("id, titulo, data, gravacao_url").eq("portal_id", portal.id).not("gravacao_url", "is", null).order("data", { ascending: false }),
-  ]);
+export default function Cursos() {
+  const { portal } = usePortal();
+  const { dados } = useDados(async () => {
+    const sb = supabaseBrowser();
+    const [{ data: aulas }, { data: gravacoes }] = await Promise.all([
+      sb.from("aulas").select("*").order("ordem"),
+      sb.from("reunioes").select("id, titulo, data, gravacao_url").eq("portal_id", portal.id).not("gravacao_url", "is", null).order("data", { ascending: false }),
+    ]);
+    return { aulas: aulas ?? [], gravacoes: gravacoes ?? [] };
+  }, [portal.id]);
+  if (!dados) return <Carregando />;
+  const { aulas, gravacoes } = dados;
   const modulos = [...new Set((aulas ?? []).map((a) => a.modulo))];
 
   return (

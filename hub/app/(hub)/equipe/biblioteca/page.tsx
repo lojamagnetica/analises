@@ -1,10 +1,11 @@
-import { Titulo } from "@/components/Titulo";
-import { contextoEquipe } from "@/lib/contexto";
-import { supabaseServer } from "@/lib/supabase/server";
-import { MESES_PLANO } from "@/lib/conteudo";
-import { aulaApagar, aulaSalvar, modeloAdicionar, modeloApagar, passoSalvar, scriptApagar, scriptSalvar } from "../acoes";
+"use client";
 
-export const metadata = { title: "Biblioteca" };
+import { Titulo } from "@/components/Titulo";
+import { Carregando, useDados, useEquipe } from "@/lib/hub";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { MESES_PLANO } from "@/lib/conteudo";
+import { aulaApagar, aulaSalvar, modeloAdicionar, modeloApagar, passoSalvar, scriptApagar, scriptSalvar } from "@/lib/acoes";
+
 
 type Script = { id: string; categoria: string; titulo: string; quando: string; texto: string; ordem: number };
 type Aula = { id: string; modulo: string; titulo: string; descricao: string; video_url: string | null; ordem: number };
@@ -41,16 +42,21 @@ function CamposAula({ a }: { a?: Aula }) {
   );
 }
 
-export default async function Biblioteca() {
-  await contextoEquipe();
-  const supabase = await supabaseServer();
-  const [{ data: cats }, { data: scripts }, { data: aulas }, { data: passos }, { data: modelo }] = await Promise.all([
-    supabase.from("script_categorias").select("id, titulo").order("ordem"),
-    supabase.from("scripts").select("*").order("ordem"),
-    supabase.from("aulas").select("*").order("ordem"),
-    supabase.from("jornada_passos").select("*").order("numero"),
-    supabase.from("plano_modelo").select("*").order("mes").order("ordem"),
-  ]);
+export default function Biblioteca() {
+  useEquipe();
+  const { dados, recarregar } = useDados(async () => {
+    const sb = supabaseBrowser();
+    const [{ data: cats }, { data: scripts }, { data: aulas }, { data: passos }, { data: modelo }] = await Promise.all([
+      sb.from("script_categorias").select("id, titulo").order("ordem"),
+      sb.from("scripts").select("*").order("ordem"),
+      sb.from("aulas").select("*").order("ordem"),
+      sb.from("jornada_passos").select("*").order("numero"),
+      sb.from("plano_modelo").select("*").order("mes").order("ordem"),
+    ]);
+    return { cats, scripts, aulas, passos, modelo };
+  }, []);
+  if (!dados) return <Carregando />;
+  const { cats, scripts, aulas, passos, modelo } = dados;
   const categorias = cats ?? [];
 
   return (
@@ -60,7 +66,7 @@ export default async function Biblioteca() {
       <div className="secao">Scripts de venda</div>
       <div className="card mb">
         <details><summary className="btn p peq" style={{ display: "inline-flex" }}>+ Novo script</summary>
-          <form action={scriptSalvar.bind(null, null)} className="mt"><CamposScript categorias={categorias} /><div className="linha mt"><button className="btn p peq" type="submit">Criar script</button></div></form>
+          <form action={async (f) => { await scriptSalvar(null, f); recarregar(); }} className="mt"><CamposScript categorias={categorias} /><div className="linha mt"><button className="btn p peq" type="submit">Criar script</button></div></form>
         </details>
         {categorias.map((c) => (
           <div key={c.id} className="mt">
@@ -68,8 +74,8 @@ export default async function Biblioteca() {
             {(scripts ?? []).filter((s) => s.categoria === c.id).map((s) => (
               <details key={s.id} className="marcar" style={{ display: "block" }}>
                 <summary style={{ cursor: "pointer" }}>{s.titulo}</summary>
-                <form action={scriptSalvar.bind(null, s.id)} className="mt"><CamposScript s={s} categorias={categorias} /><div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div></form>
-                <form action={scriptApagar.bind(null, s.id)} className="mt"><button className="btn s peq" type="submit">Apagar script</button></form>
+                <form action={async (f) => { await scriptSalvar(s.id, f); recarregar(); }} className="mt"><CamposScript s={s} categorias={categorias} /><div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div></form>
+                <form action={async () => { await scriptApagar(s.id); recarregar(); }} className="mt"><button className="btn s peq" type="submit">Apagar script</button></form>
               </details>
             ))}
           </div>
@@ -79,13 +85,13 @@ export default async function Biblioteca() {
       <div className="secao">Cursos e aulas</div>
       <div className="card mb">
         <details><summary className="btn p peq" style={{ display: "inline-flex" }}>+ Nova aula</summary>
-          <form action={aulaSalvar.bind(null, null)} className="mt"><CamposAula /><div className="linha mt"><button className="btn p peq" type="submit">Criar aula</button></div></form>
+          <form action={async (f) => { await aulaSalvar(null, f); recarregar(); }} className="mt"><CamposAula /><div className="linha mt"><button className="btn p peq" type="submit">Criar aula</button></div></form>
         </details>
         {(aulas ?? []).map((a) => (
           <details key={a.id} className="marcar" style={{ display: "block" }}>
             <summary style={{ cursor: "pointer" }}>{a.modulo} · <b>{a.titulo}</b>{a.video_url ? " · ▶" : " · sem vídeo"}</summary>
-            <form action={aulaSalvar.bind(null, a.id)} className="mt"><CamposAula a={a} /><div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div></form>
-            <form action={aulaApagar.bind(null, a.id)} className="mt"><button className="btn s peq" type="submit">Apagar aula</button></form>
+            <form action={async (f) => { await aulaSalvar(a.id, f); recarregar(); }} className="mt"><CamposAula a={a} /><div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div></form>
+            <form action={async () => { await aulaApagar(a.id); recarregar(); }} className="mt"><button className="btn s peq" type="submit">Apagar aula</button></form>
           </details>
         ))}
       </div>
@@ -100,10 +106,10 @@ export default async function Biblioteca() {
               {(modelo ?? []).filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span>{i.texto}</span>
-                  <form action={modeloApagar.bind(null, i.id)}><button className="btn s peq" type="submit" aria-label="Apagar">✕</button></form>
+                  <form action={async () => { await modeloApagar(i.id); recarregar(); }}><button className="btn s peq" type="submit" aria-label="Apagar">✕</button></form>
                 </div>
               ))}
-              <form action={modeloAdicionar} className="linha mt" style={{ flexWrap: "nowrap" }}>
+              <form action={async (f) => { await modeloAdicionar(f); recarregar(); }} className="linha mt" style={{ flexWrap: "nowrap" }}>
                 <input type="hidden" name="mes" value={m} />
                 <input type="text" name="texto" placeholder="Nova tarefa…" />
                 <button className="btn p peq" type="submit">+</button>
@@ -118,7 +124,7 @@ export default async function Biblioteca() {
         {(passos ?? []).map((p) => (
           <details key={p.numero} className="marcar" style={{ display: "block" }}>
             <summary style={{ cursor: "pointer" }}>{p.numero}. <b>{p.titulo}</b></summary>
-            <form action={passoSalvar.bind(null, p.numero)} className="mt">
+            <form action={async (f) => { await passoSalvar(p.numero, f); recarregar(); }} className="mt">
               <label className="rotulo">Título</label><input type="text" name="titulo" defaultValue={p.titulo} />
               <label className="rotulo">Descrição curta</label><input type="text" name="descricao" defaultValue={p.descricao} />
               <label className="rotulo">Conteúdo da página</label><textarea name="conteudo" rows={14} defaultValue={p.conteudo} />

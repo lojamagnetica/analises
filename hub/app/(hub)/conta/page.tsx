@@ -1,21 +1,25 @@
+"use client";
+
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { contexto } from "@/lib/contexto";
-import { salvarNome } from "../acoes";
+import { Carregando, useHub } from "@/lib/hub";
+import { salvarNome } from "@/lib/acoes";
 import { Senha } from "./Senha";
 
-export const metadata = { title: "Minha conta" };
-
-export default async function Conta({ searchParams }: { searchParams: Promise<{ senha?: string }> }) {
-  const { senha } = await searchParams;
-  const ctx = await contexto();
+function Conta() {
+  const senha = useSearchParams().get("senha");
+  const hub = useHub();
+  const [salvo, setSalvo] = useState(false);
   return (
     <>
-      <Titulo titulo="Minha conta" sub={ctx.email} />
+      <Titulo titulo="Minha conta" sub={hub.email} />
       {senha && <div className="aviso ok mb">Bem-vindo(a)! Crie a sua senha para os próximos acessos.</div>}
       <div className="grade g2">
-        <form className="card" action={salvarNome}>
+        <form className="card" action={async (f) => { await salvarNome(f); await hub.recarregar(); setSalvo(true); }}>
           <h3>Seu nome</h3>
-          <input type="text" name="nome" defaultValue={ctx.nome} />
+          <input type="text" name="nome" defaultValue={hub.nome} />
+          {salvo && <div className="aviso ok mt">Nome salvo.</div>}
           <div className="linha mt"><button className="btn p" type="submit">Salvar</button></div>
         </form>
         <Senha destaque={!!senha} />
@@ -30,4 +34,8 @@ export default async function Conta({ searchParams }: { searchParams: Promise<{ 
       </div>
     </>
   );
+}
+
+export default function Pagina() {
+  return <Suspense fallback={<Carregando />}><Conta /></Suspense>;
 }

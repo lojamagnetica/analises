@@ -9,12 +9,13 @@ import { useEquipe } from "@/lib/hub";
 type Arquivo = { arq: string; rotulo: string; fundo?: string; alto?: boolean };
 
 const LOGOS: Arquivo[] = [
-  { arq: "logo-horizontal-azul-noite.png", rotulo: "Logo horizontal · azul-noite", fundo: "#F5F0EA" },
-  { arq: "logo-horizontal-off-white.png", rotulo: "Logo horizontal · off-white", fundo: "#0B1A3A" },
-  { arq: "logo-magnetica-hub-azul-noite.png", rotulo: "magnética.hub · azul-noite", fundo: "#F5F0EA" },
-  { arq: "logo-magnetica-hub-off-white.png", rotulo: "magnética.hub · off-white", fundo: "#0B1A3A" },
-  { arq: "logo-simbolo-azul-noite.png", rotulo: "Símbolo · azul-noite", fundo: "#F5F0EA" },
-  { arq: "logo-simbolo-off-white.png", rotulo: "Símbolo · off-white", fundo: "#0B1A3A" },
+  { arq: "logo-horizontal-black.png", rotulo: "Logo horizontal · black", fundo: "#F5F0EA" },
+  { arq: "logo-horizontal-off-white.png", rotulo: "Logo horizontal · off-white", fundo: "#141210" },
+  { arq: "logo-magnetica-hub-black.png", rotulo: "magnética.hub · black", fundo: "#F5F0EA" },
+  { arq: "logo-magnetica-hub-off-white.png", rotulo: "magnética.hub · off-white", fundo: "#141210" },
+  { arq: "logo-simbolo-black.png", rotulo: "Símbolo · black", fundo: "#F5F0EA" },
+  { arq: "logo-simbolo-off-white.png", rotulo: "Símbolo · off-white", fundo: "#141210" },
+  { arq: "logo-simbolo-laranja.png", rotulo: "Símbolo · laranja", fundo: "#F5F0EA" },
 ];
 
 const INSTAGRAM: Arquivo[] = [
@@ -36,12 +37,12 @@ const INSTAGRAM: Arquivo[] = [
 ];
 
 const CORES = [
-  { nome: "Azul-noite", hex: "#0B1A3A", papel: "Marca-mãe, fundos fortes, texto", texto: "#F5F0EA" },
-  { nome: "Ferrugem", hex: "#BC4914", papel: "Método Loja Magnética, destaques", texto: "#FFFFFF" },
-  { nome: "Âmbar", hex: "#E08A3C", papel: "Energia; texto escuro em cima", texto: "#0B1A3A" },
-  { nome: "Off-white", hex: "#F5F0EA", papel: "Fundo principal", texto: "#0B1A3A" },
-  { nome: "Areia", hex: "#E6DCD0", papel: "Apoio, fundos de foto", texto: "#0B1A3A" },
-  { nome: "Grafite", hex: "#1C1412", papel: "Texto de contraste", texto: "#F5F0EA" },
+  { nome: "Black", hex: "#141210", papel: "Cor principal: fundos fortes, texto, logo", texto: "#F5F0EA" },
+  { nome: "Laranja", hex: "#B7400E", papel: "Destaques, botões, Método Loja Magnética", texto: "#FFFFFF" },
+  { nome: "Laranja claro", hex: "#D9622C", papel: "Destaque sobre o black", texto: "#141210" },
+  { nome: "Off-white", hex: "#F5F0EA", papel: "Fundo principal", texto: "#141210" },
+  { nome: "Cinza quente", hex: "#E7E2DC", papel: "Apoio, fundos de foto", texto: "#141210" },
+  { nome: "Grafite", hex: "#6B645E", papel: "Texto de apoio", texto: "#FFFFFF" },
 ];
 
 const BIO = "Magnética · Varejo de Moda\nEducação e estratégia para lojistas de moda\nCasa do Método Loja Magnética · Mentoria · Cursos · Eventos\n↓ Entre na lista";
@@ -77,7 +78,7 @@ export default function Marca() {
 
       <div className="card mb">
         <h2>Logos</h2>
-        <p className="mudo" style={{ fontSize: 14 }}>Arquivos com fundo transparente. Use o azul-noite sobre fundo claro e o off-white sobre fundo escuro. O símbolo é sempre de uma cor só.</p>
+        <p className="mudo" style={{ fontSize: 14 }}>Arquivos com fundo transparente. Use o black sobre fundo claro e o off-white sobre fundo escuro. O laranja é para detalhe. O símbolo é sempre de uma cor só.</p>
         <Grade itens={LOGOS} />
       </div>
 
@@ -109,9 +110,10 @@ export default function Marca() {
           <ul style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6, fontSize: 14 }}>
             <li>A marca é <strong>magnética</strong>, em minúsculas. O @ é <strong>@magnetica.hub</strong>.</li>
             <li>Mostre a casa: sócios, educadores, turma e bastidores, cada um com o crachá.</li>
-            <li>O neutro domina o feed; azul-noite e ferrugem marcam presença.</li>
+            <li>Black e off-white dominam o feed; o laranja aparece pouco, só para destacar.</li>
             <li>Lema do método: <strong>ATRAIR. VENDER. REPETIR.</strong></li>
-            <li>Nunca: símbolo colorido de duas cores, laranja vivo, vermelho carmim ou a palavra &quot;Group&quot;.</li>
+            <li>Os crachás de boas-vindas mantêm a cor de cada plano (Premium azul-noite, Gold black, Start laranja, Consultoria off-white).</li>
+            <li>Nunca: símbolo de duas cores, azul-noite fora dos crachás, laranja neon, vermelho carmim ou a palavra &quot;Group&quot;.</li>
           </ul>
         </div>
       </div>

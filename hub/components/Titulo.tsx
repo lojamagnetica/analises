@@ -7,7 +7,7 @@ import { Icone } from "@/components/Icone";
 export function Titulo({ titulo, sub, voltar, aba }: { titulo: React.ReactNode; sub?: React.ReactNode; voltar?: { href: string; rotulo: string }; aba?: string }) {
   useEffect(() => {
     const t = aba ?? (typeof titulo === "string" ? titulo : "");
-    document.title = t ? `${t} · Hub Loja Magnética` : "Hub Loja Magnética";
+    document.title = t ? `${t} · magnética.hub` : "magnética.hub";
   }, [aba, titulo]);
   return (
     <div className="titulo-pagina">

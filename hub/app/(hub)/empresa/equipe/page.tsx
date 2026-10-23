@@ -20,7 +20,7 @@ export default function Equipe() {
   if (!dados) return <Carregando />;
 
   const mensagem = (link: string, nome?: string) =>
-    `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! Este é o seu acesso ao Hub da Loja Magnética.\n\nEntre por este link para criar a sua senha:\n${link}`;
+    `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! Este é o seu acesso ao magnética.hub.\n\nEntre por este link para criar a sua senha:\n${link}`;
 
   return (
     <>

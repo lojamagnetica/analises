@@ -31,7 +31,7 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
     setEnviando(false);
     setMsg(
       error
-        ? { ok: false, texto: "Não encontramos esse e-mail. Fale com a equipe Loja Magnética." }
+        ? { ok: false, texto: "Não encontramos esse e-mail. Fale com a equipe magnética." }
         : { ok: true, texto: "Enviamos um link de acesso para o seu e-mail." },
     );
   }

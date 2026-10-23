@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
+import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
@@ -121,9 +122,9 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
       <div className={`mobile-fundo ${aberta ? "aberto" : ""}`} onClick={() => setAberta(false)} />
       <aside className={`side ${aberta ? "aberta" : ""}`}>
         <div className="side-topo">
-          <div className="logo">LM</div>
+          <div className="logo"><Simbolo /></div>
           <div>
-            <b>Loja Magnética</b>
+            <b className="marca-nome">magnética<span>.hub</span></b>
             <small>Hub · Portal da Mentoria</small>
           </div>
           <button className="icone-btn" aria-label="Fechar menu" onClick={() => setAberta(false)}>

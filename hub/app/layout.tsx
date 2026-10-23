@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = { themeColor: "#0B1A3A", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#141210", width: "device-width", initialScale: 1 };
 
 // Aplica tema e tamanho de letra salvos antes de pintar a tela (evita piscar).
 const preferencias = `try{var r=document.documentElement,t=localStorage.getItem('lm_tema'),l=localStorage.getItem('lm_largo'),f=localStorage.getItem('lm_fs');if(t)r.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)r.dataset.theme='dark';if(l)r.dataset.largo=l;if(f)r.style.setProperty('--fs',f)}catch(e){}`;

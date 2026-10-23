@@ -19,6 +19,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/carteira", rotulo: "Carteira", icone: "users" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
+        { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
       ],
     });

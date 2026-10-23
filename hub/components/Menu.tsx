@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
 type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
 
-function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[] {
+function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean): Grupo[] {
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
@@ -39,14 +39,22 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
   }
   if (!temPortal) return g;
   g.push(
-    {
-      id: "jornada", rotulo: "Minha jornada", icone: "map",
-      itens: [
-        { href: "/jornada", rotulo: "Os 7 passos", icone: "map" },
-        { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
-        { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
-      ],
-    },
+    consultoria
+      ? {
+          id: "consultoria", rotulo: "Minha consultoria", icone: "target",
+          itens: [
+            { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
+            { href: "/reunioes", rotulo: "Encontros", icone: "video" },
+          ],
+        }
+      : {
+          id: "jornada", rotulo: "Minha jornada", icone: "map",
+          itens: [
+            { href: "/jornada", rotulo: "Os 7 passos", icone: "map" },
+            { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
+            { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
+          ],
+        },
     {
       id: "loja", rotulo: "Minha loja", icone: "folder",
       itens: [
@@ -90,11 +98,11 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number): Grupo[
   return g;
 }
 
-export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: number; nome: string; email: string; foto: string | null }) {
+export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; nome: string; email: string; foto: string | null }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam);
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria);
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
@@ -126,7 +134,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; persFaltam: n
           <div className="logo"><Simbolo /></div>
           <div>
             <b className="marca-nome">magnética<span>.hub</span></b>
-            <small>Hub · Portal da Mentoria</small>
+            <small>Hub · Loja Magnética</small>
           </div>
           <button className="icone-btn" aria-label="Fechar menu" onClick={() => setAberta(false)}>
             <Icone nome="menu" tamanho={18} />

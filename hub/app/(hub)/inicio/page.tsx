@@ -7,6 +7,7 @@ import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
+import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 
 const ATALHOS = [
   { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },
@@ -29,34 +30,46 @@ const TUDO = [
 ];
 
 export default function Inicio() {
-  const { portal, nome, pers } = usePortal();
+  const { portal, nome, pers, comoLoja } = usePortal();
+  const consultoria = portal.tipo === "Consultoria";
   const mes = mesAtual();
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }, consult] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("titulo").eq("numero", portal.passo_atual).maybeSingle(),
+      consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
     ]);
-    return { prox, plano, datas, passo };
+    return { prox, plano, datas, passo, consult };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passo } = dados;
+  const { prox, plano, datas, passo, consult } = dados;
 
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
   const pct = total ? Math.round((feitos / total) * 100) : 0;
   const etapa2 = pers.get(2)?.respostas;
-  const quem = (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || primeiroNome(nome);
+  const quem = (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
+  const c = consult?.dados;
+  const nMes = c ? mesDaConsultoria(c.inicio) : 0;
+  const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
+  const abertas = consult ? consult.acoes.filter((a) => a.tipo === "Ação da loja" && a.status !== "Feito").length : 0;
+  const atalhos = consultoria
+    ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
+    : ATALHOS;
+  const tudo = consultoria
+    ? TUDO.map((g) => (g.titulo === "Minha jornada" ? { ...g, titulo: "Minha consultoria", itens: [["/consultoria", "Painel da consultoria"], ["/reunioes", "Encontros"]] } : g))
+    : TUDO;
 
   return (
     <>
       <div className="heroi mt">
         <div>
-          <h1>Seja bem-vindo(a), {quem}! 🥂</h1>
-          <p>Este é o seu PORTAL DA MENTORIA. Tudo da {portal.loja} em um lugar só.</p>
+          <h1>Que bom ter você aqui, {quem}! 🥂</h1>
+          <p>Este é o Hub da {portal.loja}. Tudo da sua loja em um lugar só.</p>
         </div>
         <div className="meet">
           <small>Próximo encontro no Meet</small>
@@ -78,7 +91,7 @@ export default function Inicio() {
 
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
-        {ATALHOS.map((a) => (
+        {atalhos.map((a) => (
           <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}
@@ -87,18 +100,40 @@ export default function Inicio() {
       </div>
 
       <div className="grade g3 mt">
-        <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
-          <h3>Sua jornada</h3>
-          <p className="mudo">Passo {portal.passo_atual} de 7 · {passo?.titulo}</p>
-          <div className="barra"><i style={{ width: `${(portal.passo_atual / 7) * 100}%` }} /></div>
-          <Link className="btn s peq mt" href="/jornada">Ver os 7 passos</Link>
-        </div>
-        <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
-          <h3>Plano de Ação 90 dias</h3>
-          <p className="mudo">{total ? `${feitos} de ${total} tarefas feitas` : "Seu plano está sendo montado"}</p>
-          <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-          <Link className="btn s peq mt" href="/plano">Abrir plano</Link>
-        </div>
+        {consultoria ? (
+          <>
+            <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+              <h3>Sua consultoria</h3>
+              {c && mesC ? (
+                <>
+                  <p className="mudo">{nMes > c.duracao ? "Encerramento" : `Mês ${nMes} de ${c.duracao} · ${mesC.nome}`}{mesC.foco ? ` · ${mesC.foco}` : ""}</p>
+                  <div className="barra"><i style={{ width: `${(Math.min(nMes, c.duracao) / c.duracao) * 100}%` }} /></div>
+                </>
+              ) : <p className="mudo">A estrutura da sua consultoria está sendo montada.</p>}
+              <Link className="btn s peq mt" href="/consultoria">Abrir a consultoria</Link>
+            </div>
+            <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+              <h3>Ações da quinzena</h3>
+              <p className="mudo">{abertas ? `${abertas} ${abertas === 1 ? "ação aberta" : "ações abertas"} até o próximo encontro` : "Tudo em dia por aqui"}</p>
+              <Link className="btn s peq mt" href="/consultoria">Ver as ações</Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+              <h3>Sua jornada</h3>
+              <p className="mudo">Passo {portal.passo_atual} de 7 · {passo?.titulo}</p>
+              <div className="barra"><i style={{ width: `${(portal.passo_atual / 7) * 100}%` }} /></div>
+              <Link className="btn s peq mt" href="/jornada">Ver os 7 passos</Link>
+            </div>
+            <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+              <h3>Plano de Ação 90 dias</h3>
+              <p className="mudo">{total ? `${feitos} de ${total} tarefas feitas` : "Seu plano está sendo montado"}</p>
+              <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+              <Link className="btn s peq mt" href="/plano">Abrir plano</Link>
+            </div>
+          </>
+        )}
         <div className="card card-borda" style={{ ["--c" as string]: "var(--green)" }}>
           <h3>Datas de {MESES[mes].toLowerCase()}</h3>
           <p className="mudo">
@@ -111,7 +146,7 @@ export default function Inicio() {
       <div className="secao">Tudo aqui na plataforma</div>
       <div className="card">
         <div className="tudo" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {TUDO.map((g) => (
+          {tudo.map((g) => (
             <div key={g.titulo}>
               <h3>
                 <span className="quadrado" style={{ ["--c" as string]: g.cor }}><Icone nome={g.icone} /></span>

@@ -4,7 +4,7 @@ import { BASE } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: { default: "magnética.hub", template: "%s · magnética.hub" },
-  description: "Portal da Mentoria e Hub da equipe magnética.",
+  description: "Hub da Loja Magnética: o portal da loja e da equipe.",
   manifest: `${BASE}/manifest.webmanifest`,
   icons: { icon: `${BASE}/icon.svg`, apple: `${BASE}/icon.svg` },
   robots: { index: false, follow: false },

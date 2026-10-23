@@ -15,7 +15,7 @@ function Conta() {
   return (
     <>
       <Titulo titulo="Minha conta" sub={hub.email} />
-      {senha && <div className="aviso ok mb">Bem-vindo(a)! Crie a sua senha para os próximos acessos.</div>}
+      {senha && <div className="aviso ok mb">Que bom ter você aqui! Crie a sua senha para os próximos acessos.</div>}
       <Foto />
       <div className="grade g2">
         <form className="card" action={async (f) => { await salvarNome(f); await hub.recarregar(); setSalvo(true); }}>

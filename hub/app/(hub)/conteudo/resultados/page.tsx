@@ -36,8 +36,8 @@ function Linha({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
 }
 
 export default function Resultados() {
-  const { portal } = usePortal();
-  const { dados, recarregar } = useDados(() => carregarConteudo(portal.id), [portal.id]);
+  const { portal, comoLoja } = usePortal();
+  const { dados, recarregar } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
   const { m, a, posts } = dados;
   if (!a) return <Trancado titulo="Resultados" texto={m.textos.trancado} />;

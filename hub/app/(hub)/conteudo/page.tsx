@@ -21,10 +21,10 @@ function Cabecalho({ emoji, titulo, sub }: { emoji: string; titulo: string; sub?
 }
 
 export default function Analise() {
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, comoLoja } = usePortal();
   const [feitasLocal, setFeitas] = useState<string[] | null>(null);
   const [checklist, setChecklist] = useState<number[]>([]);
-  const { dados } = useDados(() => carregarConteudo(portal.id), [portal.id]);
+  const { dados } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
   const { m, a, analise, conteudo } = dados;
   if (!a) return <Trancado titulo="Análise do perfil" texto={m.textos.trancado} />;
@@ -111,9 +111,9 @@ export default function Analise() {
         </div>
       )}
 
-      {a.reels.length > 0 && (
+      {(a.reels.length > 0 || a.conclusao) && (
         <>
-          <Cabecalho emoji="📊" titulo="O que os números dizem" sub="Os últimos reels em dois grupos: com você no vídeo e só com produto ou loja" />
+          <Cabecalho emoji="📊" titulo="O que os números dizem" sub={a.reels.length ? "Os últimos reels em dois grupos: com você no vídeo e só com produto ou loja" : "O que os posts mais recentes mostram"} />
           <div className="card">
             {a.reels.map((r, i) => (
               <div key={i} style={{ margin: "0 0 8px" }}>
@@ -121,11 +121,11 @@ export default function Analise() {
                 <div style={{ height: 8, borderRadius: 99, background: "var(--soft)" }}><div style={{ height: 8, borderRadius: 99, width: `${(r.views / maior) * 100}%`, background: r.rosto ? "var(--accent)" : "var(--muted)" }} /></div>
               </div>
             ))}
-            <div className="grade g2 mt" style={{ gap: 10 }}>
+            {rosto.length > 0 && produto.length > 0 && <div className="grade g2 mt" style={{ gap: 10 }}>
               <div className="card" style={{ background: "var(--accent-soft)" }}><div style={{ fontSize: 26, fontWeight: 800, color: "var(--accent)" }}>{med(rosto).toLocaleString("pt-BR")}</div><small>média de views com você no vídeo</small></div>
               <div className="card" style={{ background: "var(--soft)" }}><div style={{ fontSize: 26, fontWeight: 800 }}>{med(produto).toLocaleString("pt-BR")}</div><small>média de views só com produto ou loja</small></div>
-            </div>
-            <p style={{ marginBottom: 0 }}>{a.conclusao || m.textos.rosto_conclusao}</p>
+            </div>}
+            <p style={{ margin: a.reels.length ? undefined : 0 }}>{a.conclusao || m.textos.rosto_conclusao}</p>
           </div>
         </>
       )}

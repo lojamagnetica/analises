@@ -18,7 +18,7 @@ function Gerador() {
   const params = useSearchParams();
   const router = useRouter();
   const postId = params.get("post");
-  const { portal, pers } = usePortal();
+  const { portal, pers, comoLoja } = usePortal();
   const [modelo, setModelo] = useState(params.get("m") ?? "");
   const [v, setV] = useState<Record<string, string>>({});
   const [gancho, setGancho] = useState("");
@@ -26,7 +26,7 @@ function Gerador() {
   const [data, setData] = useState(hoje());
   const [check, setCheck] = useState<number[]>([]);
   const [aviso, setAviso] = useState("");
-  const { dados } = useDados(() => carregarConteudo(portal.id), [portal.id]);
+  const { dados } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
   const post = dados?.posts.find((p) => p.id === postId) ?? null;
   useEffect(() => { if (post?.data) setData(post.data); }, [post?.data]);
   if (!dados) return <Carregando />;

@@ -19,6 +19,11 @@ O visual segue o Escritório Virtual de referência (Geração N), com as cores 
 - Scripts de venda (12 categorias) já preenchidos com nome da loja, vendedora e Instagram
 - PLANEJE AQUI (12 meses, salva sozinho) e Kanban de conteúdo
 - **Curso Loja Magnética** (estrutura do Mapa do Curso): Aula 0 com o Raio-X interativo (nota 0/1/2 nos 16 fundamentos, radar por pilar e por onde começar), os 4 módulos com aulas, ferramentas, missão de 7 dias e prova, o bônus Contratar certo e o Manual da loja. Placar Magnético 0/16 e selo por pilar. Só avança quando entrega a prova; o que já funciona no Raio-X não trava a trilha. A prova entregue entra sozinha em "Fundamentos implantados" na ficha da loja
+- **Gestão de pessoas**, no método da Formação Gerencial (Combinar → Ensinar → Acompanhar → Dar retorno):
+  - Minha equipe com o teste de perfil (12 situações de loja, tipo DISC), "como agir" com cada perfil e o motor do querer
+  - Dar retorno: diagnóstico Saber · Poder · Querer, cobrança em 5 passos e reconhecimento Fez · importou · mostra, no tom do perfil
+  - Reunião semanal de números (número → comportamento → ação, um foco, combinado em 4 partes) e Reunião do mês com metas individuais sugeridas
+  - Desenvolvimento: Ficha com estágio, habilidade do mês, treino e medida, revisada a cada 15 dias
 - Notas, gravações dos encontros, Dúvidas (respostas às 10h e às 16h)
 - **Assistente Magnética**: o Claude conhece o método e os dados daquela loja
 - Modo escuro, letra maior, largura da tela e instalação como app no celular

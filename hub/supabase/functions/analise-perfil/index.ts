@@ -195,12 +195,16 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
 
+  const corpo = await req.json().catch(() => ({}));
+  // Diagnóstico sem login: diz só se a chave do Claude está cadastrada (nunca o valor).
+  if (corpo?.diagnostico === true) return json({ chave_claude: !!CHAVE });
+
   const usuarioSb = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
   const { data: equipe } = await usuarioSb.rpc("is_equipe");
   if (equipe !== true) return json({ erro: "Só a equipe pode rodar o agente de análise." }, 403);
   if (!CHAVE) return json({ erro: "Falta ligar o Claude: cadastre o segredo ANTHROPIC_API_KEY nas Edge Functions do Supabase." }, 400);
 
-  const { portal_id, instagram, prints, observacoes } = await req.json().catch(() => ({}));
+  const { portal_id, instagram, prints, observacoes } = corpo;
   const usuario = String(instagram ?? "").trim().replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/^@/, "").replace(/[/?#].*$/, "").toLowerCase();
   if (!portal_id || !/^[a-z0-9._]{1,30}$/.test(usuario)) return json({ erro: "Informe o portal e um @ válido." }, 400);
   const imagens: Imagem[] = Array.isArray(prints) ? prints.filter((p) => p?.data && /^image\/(png|jpeg|webp|gif)$/.test(p?.media_type)).slice(0, 8) : [];

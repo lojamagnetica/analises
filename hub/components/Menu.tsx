@@ -29,6 +29,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
         { href: "/equipe", rotulo: "Painel dos portais", icone: "kanban" },
         { href: "/equipe/duvidas", rotulo: "Caixa da Assistente", icone: "inbox" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
+        { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
         { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta" },

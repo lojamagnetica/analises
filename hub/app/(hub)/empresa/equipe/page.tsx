@@ -92,7 +92,7 @@ export default function Equipe() {
           <input type="email" name="email" required />
           <label className="rotulo">Função</label>
           <input type="text" name="funcao" placeholder="Ex.: Comercial, CS e ADM" />
-          <p className="ajuda">A pessoa entra com acesso de equipe: vê todas as clientes, a Carteira e o painel.</p>
+          <p className="ajuda">A pessoa entra com acesso de equipe: vê todas as clientes, a Gestão de Clientes e o painel.</p>
           <div className="linha mt"><button className="btn p" type="submit">Gerar link de acesso</button></div>
         </form>
       </div>

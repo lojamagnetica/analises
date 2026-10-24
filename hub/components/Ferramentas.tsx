@@ -12,7 +12,7 @@ function gravar(chave: string, valor: string) {
   try { localStorage.setItem(chave, valor); } catch { /* sem armazenamento */ }
 }
 
-/** Botões redondos do topo: ajuda, atualizar, largura, letra, modo escuro, notas e assistente. */
+/** Botões redondos do topo: atualizar, largura, letra, modo escuro, notas e assistente. */
 export function Ferramentas({ temPortal }: { temPortal: boolean }) {
   const router = useRouter();
 
@@ -48,7 +48,6 @@ export function Ferramentas({ temPortal }: { temPortal: boolean }) {
         <Icone nome="menu" />
       </button>
       <div className="ferramentas">
-        {temPortal && <Link className="redondo" href="/duvidas" title="Dúvidas"><Icone nome="help" /></Link>}
         <button className="redondo" title="Atualizar" onClick={() => router.refresh()}><Icone nome="refresh" /></button>
         <button className="redondo esconde-mobile" title="Largura da tela" onClick={alternarLargura}><Icone nome="width" /></button>
         <button className="redondo" title="Aumentar letra" onClick={aumentarLetra}><Icone nome="font" /></button>

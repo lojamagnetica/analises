@@ -16,7 +16,7 @@ export default function PainelEmpresa() {
     const [carteira, { data: reunioes }, { data: duvidas }, { data: acessos }] = await Promise.all([
       buscarCarteira(),
       sb.from("reunioes").select("portal_id, data, titulo").gte("data", agora).lte("data", semana).order("data"),
-      sb.from("duvidas").select("portal_id").is("resposta", null),
+      sb.from("solicitacoes").select("portal_id").in("status", ["Recebida", "Em andamento"]),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
     ]);
     return { ...carteira, reunioes: reunioes ?? [], duvidas: duvidas ?? [], acessos: acessos ?? [] };
@@ -52,7 +52,7 @@ export default function PainelEmpresa() {
           [ativas.length, "clientes ativas", "var(--red)", "/empresa/carteira"],
           [vencendo.length, "contratos vencendo em 60 dias", "var(--orange)", "#vencendo"],
           [vermelhos, "termômetros vermelhos", "var(--purple)", "#atencao"],
-          [dados.duvidas.length, "dúvidas pendentes", "var(--blue)", "/equipe/duvidas"],
+          [dados.duvidas.length, "mensagens esperando resposta", "var(--blue)", "/equipe/duvidas"],
         ] as const).map(([n, r, c, href]) => (
           <Link key={r} href={href} className="card card-borda kpi" style={{ ["--c" as string]: c, textDecoration: "none" }}><b>{n}</b><small>{r}</small></Link>
         ))}

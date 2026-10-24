@@ -29,7 +29,7 @@ const TUDO = [
   { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
   { titulo: "De cliente a fã", icone: "users", cor: "var(--accent)", itens: [["/clientes", "Minhas clientes"], ["/clientes/tipos", "Ações por tipo"], ["/clientes/resgate", "Resgate"], ["/clientes/campanhas", "Top 10 campanhas"], ["/clientes/experiencia", "Experiência do cliente"]] },
   { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
-  { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/duvidas", "Dúvidas entre encontros"], ["/assistente", "Assistente Magnética"]] },
+  { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/assistente", "Assistente Magnética: fale com a equipe"]] },
 ];
 
 const PASSOS_ENTRADA = [
@@ -45,17 +45,18 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }, consult] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }, consult, { count: respondidas }] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("titulo").eq("numero", portal.passo_atual).maybeSingle(),
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
+      sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
     ]);
-    return { prox, plano, datas, passo, consult };
+    return { prox, plano, datas, passo, consult, respondidas: respondidas ?? 0 };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passo, consult } = dados;
+  const { prox, plano, datas, passo, consult, respondidas } = dados;
 
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
@@ -117,6 +118,13 @@ export default function Inicio() {
             ))}
           </div>
         </div>
+      )}
+
+      {respondidas > 0 && (
+        <Link href="/assistente" className="card card-borda mt linha entre" style={{ ["--c" as string]: "var(--purple)", textDecoration: "none", color: "inherit" }}>
+          <span><b>A equipe respondeu {respondidas === 1 ? "1 mensagem" : `${respondidas} mensagens`}</b> na Assistente Magnética.</span>
+          <span className="btn s peq">Ver resposta{respondidas === 1 ? "" : "s"}</span>
+        </Link>
       )}
 
       <div className="secao">Seus atalhos</div>

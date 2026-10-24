@@ -27,7 +27,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       id: "equipe", rotulo: "Portais", icone: "folder",
       itens: [
         { href: "/equipe", rotulo: "Painel dos portais", icone: "kanban" },
-        { href: "/equipe/duvidas", rotulo: "Dúvidas pendentes", icone: "inbox" },
+        { href: "/equipe/duvidas", rotulo: "Caixa da Assistente", icone: "inbox" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
         { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta" },
@@ -236,14 +236,9 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
           ))}
 
           {props.temPortal && (
-            <>
-              <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
-                <Icone nome="play" /> CURSO
-              </Link>
-              <Link href="/duvidas" className={`nav-item ${ativo("/duvidas") ? "ativo" : ""}`}>
-                <Icone nome="help" /> DÚVIDAS
-              </Link>
-            </>
+            <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
+              <Icone nome="play" /> CURSO
+            </Link>
           )}
         </nav>
 

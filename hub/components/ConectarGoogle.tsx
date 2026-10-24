@@ -35,7 +35,7 @@ export function ConectarGoogle({ aoSalvar }: { aoSalvar: () => void }) {
 
   const mostrarCaixa = !dados?.tem || trocando;
   return (
-    <details className="card mt" open={!dados?.tem || !!erro || !!msg}>
+    <details className="card mb" open={!dados?.tem || !!erro || !!msg}>
       <summary style={{ cursor: "pointer" }}><b>Google Agenda: atualização automática</b> {dados?.tem ? <span className="selo feito">chave guardada</span> : <span className="selo alerta">falta a chave</span>}</summary>
       <div className="mt">
         {dados?.tem && <p className="mudo" style={{ marginTop: 0 }}>Conta de serviço: <b>{dados.email}</b>. As duas agendas precisam estar compartilhadas com esse e-mail, com a permissão <b>Ver todos os detalhes do evento</b>. O Hub lê o Google sozinho a cada poucos minutos.</p>}

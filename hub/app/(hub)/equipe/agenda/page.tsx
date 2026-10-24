@@ -88,6 +88,8 @@ export default function AgendaEquipe() {
     <>
       <Titulo titulo="Agenda" sub="Os Google Agendas da equipe num lugar só, só para ver. Para marcar ou mudar um horário, use o Google Agenda." />
 
+      <ConectarGoogle aoSalvar={recarregar} />
+
       {dados.calendarios.length === 0 && (
         <div className="aviso mb">Ainda não há agenda conectada. Quando as agendas forem compartilhadas com a conta de serviço do Google e cadastradas, os eventos aparecem aqui.</div>
       )}
@@ -180,8 +182,6 @@ export default function AgendaEquipe() {
           </div>
         )}
       </div>
-
-      <ConectarGoogle aoSalvar={recarregar} />
     </>
   );
 }

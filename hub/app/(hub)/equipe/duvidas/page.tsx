@@ -48,7 +48,7 @@ export default function CaixaAssistente() {
 
   return (
     <>
-      <Titulo titulo="Caixa da Assistente" sub="Tudo o que as lojas mandam pela Assistente Magnética: dúvidas, pedidos, avisos e urgências. Prazo de 12 horas úteis." />
+      <Titulo titulo="Caixa do Fale com a Camilla" sub="Tudo o que as lojas mandam pelo Fale com a Camilla: dúvidas, pedidos, avisos e urgências. Para a loja, é a Camilla que responde; quem cuida aparece com o nome em cada resposta. Prazo de 12 horas úteis." />
       <div className="chips mb">
         {FILTROS.map(([f, rotulo]) => (
           <button key={f} type="button" className={`chip ${filtro === f ? "escolhido" : ""}`} onClick={() => setFiltro(f)}>

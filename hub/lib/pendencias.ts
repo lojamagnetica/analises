@@ -116,7 +116,7 @@ export async function novaPendencia(portalId: string, texto: string, quem: Quem,
 
 export const aberta = (p: Pendencia) => p.status === "pendente" || p.status === "solicitado";
 
-/** Para pendência escrita à mão: relatório, estoque e vendas sobem em Estoque e relatórios; o resto a loja manda pela Assistente. */
+/** Para pendência escrita à mão: relatório, estoque e vendas sobem em Estoque e relatórios; o resto a loja manda pelo Fale com a Camilla. */
 function ondeResolver(texto: string) {
   const t = texto.toLowerCase();
   if (/relat[óo]rio|estoque|vendas|planilha|faturamento|custo|compras/.test(t)) return "/personalizacao/etapa/?n=8";
@@ -132,7 +132,7 @@ export function nomeDoLugar(onde: string) {
   if (onde.startsWith("/pessoas")) return "Minha equipe e perfis";
   if (onde.startsWith("/clientes")) return "Minhas clientes";
   if (onde.startsWith("/gestao/caixa")) return "Fechamento de caixa";
-  return "Assistente Magnética";
+  return "Fale com a Camilla";
 }
 
 /** Mensagem pronta para a loja: o que falta, agrupado pela página do Hub onde ela resolve, com o link de cada página. */

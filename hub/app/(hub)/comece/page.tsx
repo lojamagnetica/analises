@@ -135,7 +135,7 @@ export default function Comece() {
               </div>
             );
           })}
-          <p className="ajuda">Sempre abertos: Início, Reuniões, Cursos e a Assistente Magnética, o seu canal com a equipe.</p>
+          <p className="ajuda">Sempre abertos: Início, Reuniões, Cursos e o Fale com a Camilla.</p>
           {visto && <Link className="btn s peq" href="/inicio">Ir para o Início</Link>}
         </div>
       </div>

@@ -14,7 +14,7 @@ export default function Pagina() {
         <div>
           <h1>Tudo da sua loja em um lugar só.</h1>
           <p style={{ opacity: 0.8, maxWidth: 420 }}>
-            Jornada, Plano de Ação, reuniões, scripts, planejamento e o Assistente Magnética.
+            Jornada, Plano de Ação, reuniões, scripts, planejamento e o Fale com a Camilla.
           </p>
         </div>
         <small style={{ opacity: 0.6 }}>Método Loja Magnética · um método magnética</small>

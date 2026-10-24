@@ -12,9 +12,11 @@ import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/fo
 import { gerarLink } from "@/lib/acoes";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
 import {
-  etapasDoPlano, buscarJornada, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
+  etapasDoPlano, buscarJornada, mensagemBoasVindas, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
   type Check, type ClienteJornada,
 } from "@/lib/jornada";
+
+const NOME_PLANO: Record<string, string> = { premium: "Premium", gold: "Gold", start: "Start" };
 
 function Item({ c, k, nome, recarregar, extra }: { c: ClienteJornada; k: Check; nome: string; recarregar: () => void; extra?: React.ReactNode }) {
   const feito = c.checks.get(k.chave);
@@ -66,6 +68,7 @@ function Cliente() {
   const site = typeof window !== "undefined" ? `${location.origin}${BASE}` : "";
 
   const extra = (k: Check) => {
+    if (k.acao === "boasvindas") return <Copiar texto={mensagemBoasVindas(c, nome.split(" ")[0], NOME_PLANO[c.plano ?? ""] ?? null)} rotulo={k.chave === "grupo" ? "Copiar boas-vindas" : "Copiar boas-vindas com o horário"} />;
     if (k.acao === "contrato") return <Link className="btn s peq" href={`/equipe/central/contrato?id=${c.id}`}>Gerar o contrato</Link>;
     if (k.acao === "acesso") {
       if (!c.email) return <small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small>;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AgenteAnalise } from "@/components/AgenteAnalise";
 import { ListaObjetos, ListaTexto } from "@/components/Listas";
 import { Titulo } from "@/components/Titulo";
@@ -10,7 +10,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  OBJETIVOS, type Agente, analiseInicial, analiseLiberar, analiseSalvar, buscarMetodoConteudo, caracteresBio, completar, type Analise,
+  OBJETIVOS, type Agente, analiseInicial, analiseLiberar, analiseSalvar, buscarExtras, buscarMetodoConteudo, caracteresBio, completar, extraCriar, extraLiberar, extraSalvar, type Analise,
 } from "@/lib/instagram";
 
 function Secao({ titulo, sub, children, aberta = false }: { titulo: string; sub?: string; children: React.ReactNode; aberta?: boolean }) {
@@ -22,8 +22,34 @@ function Secao({ titulo, sub, children, aberta = false }: { titulo: string; sub?
   );
 }
 
+/** Os Instagrams desta loja: a análise principal e as extras (ex.: loja feminina e masculina). */
+function Perfis({ portalId, principal, extras, atual }: { portalId: string; principal: string; extras: { id: string; instagram: string; status: string }[]; atual: string }) {
+  const router = useRouter();
+  const [novo, setNovo] = useState("");
+  const [erro, setErro] = useState("");
+  return (
+    <div className="linha mb" style={{ gap: 8 }}>
+      <Link className="chip" href={`/equipe/analise?p=${portalId}`} style={!atual ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{principal || "Perfil principal"}</Link>
+      {extras.map((x) => (
+        <Link key={x.id} className="chip" href={`/equipe/analise?p=${portalId}&x=${x.id}`} style={atual === x.id ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
+          {x.instagram}{x.status === "liberada" ? " ✓" : ""}
+        </Link>
+      ))}
+      <form className="linha" style={{ gap: 6, flexWrap: "nowrap" }} action={async () => {
+        setErro("");
+        try { const id = await extraCriar(portalId, novo); router.push(`/equipe/analise?p=${portalId}&x=${id}`); } catch (e) { setErro((e as Error).message); }
+      }}>
+        <input type="text" value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="+ outro Instagram desta loja" style={{ width: 230 }} aria-label="Outro Instagram desta loja" />
+        <button className="btn s peq" type="submit" disabled={novo.trim().length < 2}>Criar</button>
+      </form>
+      {erro && <span className="aviso">{erro}</span>}
+    </div>
+  );
+}
+
 function Editor() {
   const id = useSearchParams().get("p") ?? "";
+  const x = useSearchParams().get("x") ?? "";
   const { abrirPortal } = useEquipe();
   const [a, setA] = useState<Analise | null>(null);
   const [aviso, setAviso] = useState<{ ok?: string; erro?: string }>({});
@@ -31,19 +57,28 @@ function Editor() {
   const [json, setJson] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [m, p, an, pers] = await Promise.all([
+    const [m, p, an, pers, extras] = await Promise.all([
       buscarMetodoConteudo(),
       sb.from("portais").select("id, loja").eq("id", id).maybeSingle(),
       sb.from("loja_analise_perfil").select("*").eq("portal_id", id).maybeSingle(),
       sb.from("personalizacao").select("respostas").eq("portal_id", id).eq("etapa", 2).maybeSingle(),
+      buscarExtras(id),
     ]);
     const r = (pers.data?.respostas ?? {}) as Record<string, unknown>;
-    return { m, portal: p.data as { id: string; loja: string } | null, linha: an.data as { status: string; dados: Partial<Analise>; agente?: Agente; liberada_em: string | null } | null, etapa2: { instagram: String(r.instagram ?? ""), cidade: String(r.cidade ?? "") } };
-  }, [id]);
+    type Linha = { status: string; dados: Partial<Analise>; agente?: Agente; liberada_em: string | null };
+    const principal = an.data as Linha | null;
+    const extra = x ? extras.find((e) => e.id === x) ?? null : null;
+    const linha: Linha | null = x ? (extra && Object.keys(extra.dados ?? {}).length ? extra : extra ? { ...extra, dados: {} } : null) : principal;
+    return {
+      m, portal: p.data as { id: string; loja: string } | null, linha, extras,
+      igPrincipal: String(principal?.dados?.instagram ?? r.instagram ?? ""),
+      etapa2: { instagram: extra ? extra.instagram : String(r.instagram ?? ""), cidade: String(r.cidade ?? "") },
+    };
+  }, [id, x]);
 
   useEffect(() => {
     if (!dados || a) return;
-    setA(dados.linha ? completar(dados.m, dados.linha.dados) : analiseInicial(dados.m, dados.etapa2));
+    setA(dados.linha && Object.keys(dados.linha.dados ?? {}).length ? completar(dados.m, dados.linha.dados) : analiseInicial(dados.m, dados.etapa2));
   }, [dados, a]);
 
   const aoTerminar = useCallback((d: Partial<Analise>) => {
@@ -58,7 +93,7 @@ function Editor() {
   const set = <K extends keyof Analise>(k: K, v: Analise[K]) => { setA({ ...a, [k]: v }); setMudou(true); };
   const salvar = async () => {
     setAviso({});
-    try { await analiseSalvar(portal.id, a); setMudou(false); setAviso({ ok: "Análise salva." }); recarregar(); } catch (e) { setAviso({ erro: (e as Error).message }); }
+    try { await (x ? extraSalvar(x, a) : analiseSalvar(portal.id, a)); setMudou(false); setAviso({ ok: "Análise salva." }); recarregar(); } catch (e) { setAviso({ erro: (e as Error).message }); }
   };
   const bio = caracteresBio(a.bio);
   const rosto = a.reels.filter((r) => r.rosto), produto = a.reels.filter((r) => !r.rosto);
@@ -68,6 +103,8 @@ function Editor() {
     <>
       <Titulo voltar={{ href: "/equipe/analises", rotulo: "Análises de perfil" }} titulo={`Análise do Perfil · ${portal.loja}`}
         sub="Método Loja Magnética · Diagnóstico de Perfil. Quando liberada, abre o módulo de Conteúdo no portal da loja, com a programação montada a partir desta análise." />
+      <Perfis portalId={portal.id} principal={dados.igPrincipal} extras={dados.extras} atual={x} />
+      {x && <p className="ajuda" style={{ marginTop: -8 }}>Análise extra: aparece para a loja num seletor dentro de Análise do perfil. A Programação da semana continua montada pela análise principal.</p>}
       <div className="card mb card-borda" style={{ ["--c" as string]: liberada ? "var(--green)" : "var(--orange)", position: "sticky", top: 8, zIndex: 5 }}>
         <div className="linha entre">
           <div>
@@ -76,9 +113,10 @@ function Editor() {
           </div>
           <div className="linha" style={{ gap: 8 }}>
             <button className="btn p" type="button" onClick={salvar}>Salvar</button>
-            <button className="btn s" type="button" onClick={async () => { await salvar(); abrirPortal(portal.id, "/conteudo", true); }}>Ver como a loja vê</button>
+            <button className="btn s" type="button" onClick={async () => { await salvar(); abrirPortal(portal.id, x ? `/conteudo?x=${x}` : "/conteudo", true); }}>Ver como a loja vê</button>
             <button className={`btn ${liberada ? "s" : "p"}`} type="button" disabled={!a.bio.trim() || a.correcoes.length === 0} onClick={async () => {
-              await analiseSalvar(portal.id, a); await analiseLiberar(portal.id, !liberada); setMudou(false);
+              if (x) { await extraSalvar(x, a); await extraLiberar(x, !liberada); } else { await analiseSalvar(portal.id, a); await analiseLiberar(portal.id, !liberada); }
+              setMudou(false);
               setAviso({ ok: liberada ? "Voltou para rascunho: a loja não vê mais." : "Liberada. O módulo de Conteúdo abriu no portal da loja." }); recarregar();
             }}>{liberada ? "Voltar para rascunho" : "Liberar para a loja"}</button>
           </div>
@@ -88,8 +126,8 @@ function Editor() {
         {!a.bio.trim() && <p className="ajuda">Para liberar: bio sugerida e pelo menos uma correção.</p>}
       </div>
 
-      <AgenteAnalise portalId={portal.id} instagram={a.instagram || dados.etapa2.instagram} agenteInicial={dados.linha?.agente}
-        temAnalise={!!dados.linha?.dados && Object.keys(dados.linha.dados).length > 0} aoTerminar={aoTerminar} />
+      {!x && <AgenteAnalise portalId={portal.id} instagram={a.instagram || dados.etapa2.instagram} agenteInicial={dados.linha?.agente}
+        temAnalise={!!dados.linha?.dados && Object.keys(dados.linha.dados).length > 0} aoTerminar={aoTerminar} />}
 
       <Secao titulo="1. Capa" sub="dados da loja, vídeo e os 4 números" aberta>
         <div className="grade g4" style={{ gap: 12 }}>
@@ -187,6 +225,12 @@ function Editor() {
   );
 }
 
+/** Trocar de perfil recomeça o editor do zero. */
+function EditorPorPerfil() {
+  const x = useSearchParams().get("x") ?? "";
+  return <Editor key={x} />;
+}
+
 export default function Pagina() {
-  return <Suspense fallback={<Carregando />}><Editor /></Suspense>;
+  return <Suspense fallback={<Carregando />}><EditorPorPerfil /></Suspense>;
 }

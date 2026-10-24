@@ -116,6 +116,25 @@ export const analiseSalvar = (portalId: string, dados: Analise) =>
   ok(sb().from("loja_analise_perfil").upsert({ portal_id: portalId, dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id" }));
 export const analiseLiberar = (portalId: string, liberar: boolean) =>
   ok(sb().from("loja_analise_perfil").update({ status: liberar ? "liberada" : "rascunho", liberada_em: liberar ? new Date().toISOString() : null }).eq("portal_id", portalId));
+// ───── Análises extras (portal com mais de um Instagram) ─────
+
+export type AnaliseExtra = { id: string; portal_id: string; instagram: string; status: string; dados: Partial<Analise>; liberada_em: string | null };
+
+export async function buscarExtras(portalId: string) {
+  const { data } = await sb().from("loja_analise_extra").select("*").eq("portal_id", portalId).order("created_at");
+  return (data ?? []) as AnaliseExtra[];
+}
+export async function extraCriar(portalId: string, instagram: string) {
+  const ig = instagram.trim().startsWith("@") ? instagram.trim() : `@${instagram.trim()}`;
+  const { data, error } = await sb().from("loja_analise_extra").insert({ portal_id: portalId, instagram: ig }).select("id").single();
+  if (error) throw new Error(error.message);
+  return data.id as string;
+}
+export const extraSalvar = (id: string, dados: Analise) =>
+  ok(sb().from("loja_analise_extra").update({ dados, instagram: dados.instagram || undefined, updated_at: new Date().toISOString() }).eq("id", id));
+export const extraLiberar = (id: string, liberar: boolean) =>
+  ok(sb().from("loja_analise_extra").update({ status: liberar ? "liberada" : "rascunho", liberada_em: liberar ? new Date().toISOString() : null }).eq("id", id));
+
 export async function buscarAnalises() {
   const [p, a] = await Promise.all([
     sb().from("portais").select("id, loja, responsavel, tipo, ativo").eq("ativo", true).order("loja"),

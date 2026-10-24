@@ -4,10 +4,12 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS, type Respostas } from "@/lib/conteudo";
+import { buscarEntrada, type Entrada } from "@/lib/entrada";
 
 export const CHAVE_PORTAL = "lm_portal";
 export const CHAVE_RESULTADO = "lm_resultado_portal";
 export const CHAVE_COMO_LOJA = "lm_como_loja";
+export const CHAVE_APRESENTACAO = "lm_apresentacao";
 
 export type Portal = {
   id: string;
@@ -34,11 +36,16 @@ export type Hub = {
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
   persFaltam: number;
+  /** Onde a loja está na entrada (vídeo, dados da loja, equipe). null sem portal aberto. */
+  entrada: Entrada | null;
   recarregar: () => Promise<void>;
   abrirPortal: (id: string | null, destino?: string, comoLoja?: boolean) => void;
   /** Equipe vendo o portal exatamente como a loja vê: sem menus nem botões da equipe. */
   comoLoja: boolean;
   verComoLoja: (sim: boolean) => void;
+  /** Vendo como a loja e compartilhando a tela: some o nome da equipe e a faixa escura. */
+  apresentacao: boolean;
+  modoApresentacao: (sim: boolean) => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
@@ -48,6 +55,13 @@ function lerComoLoja() {
 }
 function gravarComoLoja(sim: boolean) {
   try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
+}
+
+function lerApresentacao() {
+  try { return localStorage.getItem(CHAVE_APRESENTACAO) === "1"; } catch { return false; }
+}
+function gravarApresentacao(sim: boolean) {
+  try { if (sim) localStorage.setItem(CHAVE_APRESENTACAO, "1"); else localStorage.removeItem(CHAVE_APRESENTACAO); } catch { /* sem armazenamento */ }
 }
 
 function lerPortalEscolhido() {
@@ -82,6 +96,9 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       (linhas ?? []).forEach((l) => pers.set(l.etapa, { respostas: l.respostas as Respostas, concluida: l.concluida }));
     }
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);
+    const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
+    const comoLojaAgora = equipe && !!portal && lerComoLoja();
+    const entrada = portal ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
 
     setHub({
       userId: user.id,
@@ -91,18 +108,25 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       equipe,
       portal,
       pers,
-      persFaltam: portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0,
+      persFaltam,
+      entrada,
       recarregar: carregar,
       abrirPortal: (id, destino, comoLoja = false) => {
         try { if (id) localStorage.setItem(CHAVE_PORTAL, id); else localStorage.removeItem(CHAVE_PORTAL); } catch { /* sem armazenamento */ }
         gravarComoLoja(!!id && comoLoja);
         carregar().then(() => router.push(destino ?? (id ? "/inicio" : "/empresa")));
       },
-      comoLoja: equipe && !!portal && lerComoLoja(),
+      comoLoja: comoLojaAgora,
+      apresentacao: comoLojaAgora && lerApresentacao(),
+      modoApresentacao: (sim) => {
+        gravarApresentacao(sim);
+        setHub((h) => (h ? { ...h, apresentacao: sim } : h));
+      },
       verComoLoja: (sim) => {
         gravarComoLoja(sim);
-        setHub((h) => (h ? { ...h, comoLoja: sim } : h));
-        router.push(sim ? "/inicio" : "/equipe/portal");
+        if (!sim) gravarApresentacao(false);
+        // Recarrega para a entrada (vídeo, cadeados) refletir exatamente o que a loja vê.
+        carregar().then(() => router.push(sim ? "/inicio" : `/equipe/portal?id=${portal?.id ?? ""}`));
       },
     });
   }, [router]);

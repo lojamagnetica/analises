@@ -337,3 +337,7 @@ textarea { min-height: 90px; resize: vertical; }
 }
 
 .carregando { min-height: 40vh; display: grid; place-items: center; color: var(--muted); font-weight: 600; }
+
+/* Modo apresentação: só um botão discreto para sair, no canto. */
+.sair-apresentacao { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 60; width: 30px; height: 30px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--muted); opacity: .35; cursor: pointer; font-size: 13px; }
+.sair-apresentacao:hover, .sair-apresentacao:focus-visible { opacity: 1; }

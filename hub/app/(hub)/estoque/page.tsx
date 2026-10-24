@@ -1,13 +1,7 @@
 "use client";
 
-import { Titulo } from "@/components/Titulo";
-
+import { EmBreve } from "@/components/EmBreve";
 
 export default function Estoque() {
-  return (
-    <>
-      <Titulo titulo="Giro de estoque" sub="Em breve: suba a planilha do sistema e o Hub monta a Curva ABC e os blocos de queima no padrão Loja Magnética." />
-      <div className="card mudo">Este módulo entra na próxima fase do Hub.</div>
-    </>
-  );
+  return <EmBreve titulo="Estoque x o que fazer" oque="A foto do seu estoque e o que fazer com cada parte dele: o que repor, o que girar, o que liquidar e o que não comprar de novo, no padrão Loja Magnética (curva ABC, idade das peças e meses de estoque)." adiantar={{ texto: "Para essa análise sair certa, ela usa os relatórios do seu sistema. Já pode subir agora.", href: "/personalizacao/etapa?n=8", botao: "Subir relatórios →" }} />;
 }

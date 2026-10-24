@@ -46,6 +46,8 @@ export type Hub = {
   /** Vendo como a loja e compartilhando a tela: some o nome da equipe e a faixa escura. */
   apresentacao: boolean;
   modoApresentacao: (sim: boolean) => void;
+  /** Sai do "como a loja" e da apresentação sem trocar de página (ex.: abriu um link da empresa). */
+  sairComoLoja: () => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
@@ -118,6 +120,11 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       },
       comoLoja: comoLojaAgora,
       apresentacao: comoLojaAgora && lerApresentacao(),
+      sairComoLoja: () => {
+        gravarComoLoja(false);
+        gravarApresentacao(false);
+        setHub((h) => (h ? { ...h, comoLoja: false, apresentacao: false } : h));
+      },
       modoApresentacao: (sim) => {
         gravarApresentacao(sim);
         setHub((h) => (h ? { ...h, apresentacao: sim } : h));

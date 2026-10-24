@@ -17,7 +17,9 @@ function Casca({ children }: { children: React.ReactNode }) {
   const hub = useHub();
   const router = useRouter();
   const caminho = usePathname().replace(/(.)\/$/, "$1");
-  const equipe = hub.equipe && !hub.comoLoja;
+  // Equipe que abre uma página da empresa sai sozinha do "Ver como a loja" e do modo apresentação.
+  const areaEquipe = caminho.startsWith("/empresa") || caminho.startsWith("/equipe");
+  const equipe = hub.equipe && (!hub.comoLoja || areaEquipe);
   const destino = desvio(caminho, { ...hub, equipe });
   // A loja (ou a equipe vendo como a loja) passa pela entrada; a equipe vê tudo.
   const ent = !equipe && hub.portal ? hub.entrada : null;
@@ -27,6 +29,8 @@ function Casca({ children }: { children: React.ReactNode }) {
   const completa = !ent || ent.livre || (ent.video && ent.loja && ent.equipe);
 
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (hub.equipe && hub.comoLoja && areaEquipe) hub.sairComoLoja(); }, [areaEquipe, hub.comoLoja]);
   useEffect(() => { if (!destino && semVideo) router.replace("/comece"); }, [destino, semVideo, router]);
   // Enquanto a entrada não termina, confere de novo a cada página (ex.: acabou de cadastrar a equipe).
   // eslint-disable-next-line react-hooks/exhaustive-deps

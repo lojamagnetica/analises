@@ -5,7 +5,7 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 
-export type Check = { chave: string; texto: string; prazo?: number; data?: boolean; ajuda?: string; acao?: "contrato" | "acesso" | "pendencias" | "diagnostico" | "plano" | "reunioes" };
+export type Check = { chave: string; texto: string; prazo?: number; data?: boolean; ajuda?: string; acao?: "contrato" | "acesso" | "pendencias" | "diagnostico" | "plano" | "reunioes" | "boasvindas" };
 export type Etapa = { n: number; nome: string; quem: string; janela: [number, number]; checks: Check[] };
 
 /** prazo = dia útil (contado do pagamento) até quando o item deve estar feito. */
@@ -16,8 +16,8 @@ export const ETAPAS: Etapa[] = [
   ] },
   { n: 1, nome: "Primeiros passos", quem: "CS", janela: [0, 7], checks: [
     { chave: "contrato", texto: "Contrato gerado e enviado para assinatura", prazo: 0, acao: "contrato" },
-    { chave: "grupo", texto: "Grupo criado + mensagem de boas-vindas com o horário do onboarding (o vídeo da Camilla fica no Comece aqui do Hub)", prazo: 0 },
-    { chave: "onboarding_marcado", texto: "Onboarding marcado (até 24h)", prazo: 0, data: true },
+    { chave: "grupo", texto: "Grupo criado + boas-vindas da Claudia com o horário do onboarding (o vídeo da Camilla fica no Comece aqui do Hub)", prazo: 0, acao: "boasvindas" },
+    { chave: "onboarding_marcado", texto: "Onboarding marcado (até 24h)", prazo: 0, data: true, acao: "boasvindas" },
     { chave: "onboarding", texto: "Onboarding feito e acesso ao Hub enviado na call", prazo: 1, acao: "acesso" },
     { chave: "pendencias", texto: "Mensagem de Pendências enviada no grupo", prazo: 1, acao: "pendencias" },
     { chave: "lembrete", texto: "Lembrete do dia 3 (só o que falta)", prazo: 4, acao: "pendencias" },
@@ -168,4 +168,26 @@ export async function receberPassagem(portalId: string, porNome: string) {
   const { error } = await sb().from("passagens").update({ recebida_em: new Date().toISOString(), recebida_por: porNome }).eq("portal_id", portalId);
   if (error) throw new Error(error.message);
   await mudarEtapa(portalId, 1);
+}
+
+/** Mensagem de boas-vindas que a Claudia manda no grupo assim que cria (com o horário do onboarding, se já marcado). */
+export function mensagemBoasVindas(c: ClienteJornada, quem: string, plano: string | null) {
+  const nome = (c.responsavel ?? "").trim().split(/\s+/)[0];
+  const quando = c.checks.get("onboarding_marcado")?.marcado_para;
+  const dataOnb = quando
+    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(quando))
+    : null;
+  return [
+    `Oi${nome ? `, ${nome}` : ""}! Seja muito bem-vinda à Mentoria Loja Magnética${plano ? ` · ${plano}` : ""}!`,
+    "",
+    `Eu sou a ${quem}, do Sucesso do Cliente. Vou te acompanhar em cada etapa da mentoria, e este grupo é o nosso canal para avisos, lembretes e para comemorar as suas vitórias.`,
+    "",
+    `Seu contrato já foi enviado para o e-mail${(c.passagem?.email_contrato ?? c.email) ? ` ${c.passagem?.email_contrato ?? c.email}` : ""}, para assinatura digital. É só abrir o e-mail e assinar.`,
+    "",
+    dataOnb
+      ? `Nosso onboarding está marcado para ${dataOnb} (30 minutos). Nele eu te explico os próximos passos e você já recebe o acesso ao Hub da sua loja, onde estão o vídeo de boas-vindas da Camilla e tudo da mentoria.`
+      : "Agora vamos marcar o nosso onboarding (30 minutos, ainda hoje ou amanhã): me diga o melhor horário para você. Nele eu te explico os próximos passos e você já recebe o acesso ao Hub da sua loja, onde estão o vídeo de boas-vindas da Camilla e tudo da mentoria.",
+    "",
+    "Até lá, qualquer coisa é só me chamar por aqui.",
+  ].join("\n");
 }

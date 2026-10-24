@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { EditarAcao, EditarEntrega, EstruturaEditor, NovaAcao, NovaEntrega } from "@/components/ConsultoriaEquipe";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { dia, diasAte } from "@/lib/formato";
+import { dia, diasAte, hoje } from "@/lib/formato";
 import {
-  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, daLoja, entregaRemover, entregaStatus, mesDaConsultoria, mudarLoja,
+  STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, daLoja, entregaRemover, entregaStatus, estruturaPadrao, mesDaConsultoria, mudarLoja,
   type Acao, type Entrega,
 } from "@/lib/consultoria";
 
@@ -25,7 +26,9 @@ export default function Consultoria() {
     return (
       <>
         <Titulo titulo="Minha consultoria" />
-        <div className="card mudo">A estrutura da sua consultoria está sendo montada pela equipe.</div>
+        {equipe
+          ? <EstruturaEditor portalId={portal.id} c={estruturaPadrao(portal.inicio ?? hoje())} aoSalvar={recarregar} aberto />
+          : <div className="card mudo">A estrutura da sua consultoria está sendo montada pela equipe.</div>}
       </>
     );
   }
@@ -75,6 +78,7 @@ export default function Consultoria() {
           </div>
           {a.obs && <div className="ajuda" style={{ margin: 0 }}>{a.obs}</div>}
           <Etiqueta tabela="consultoria_acoes" item={a} />
+          {equipe && <EditarAcao a={a} lojas={lojas} aoSalvar={recarregar} />}
         </div>
       </div>
     );
@@ -86,6 +90,8 @@ export default function Consultoria() {
         titulo="Minha consultoria"
         sub={[varias ? lojas.join(" e ") : "", `${c.duracao} meses`, `${dia(c.inicio)} a ${dia(c.fim)}`, c.cidade, ...(c.instagram ?? [])].filter(Boolean).join(" · ")}
       />
+
+      {equipe && <EstruturaEditor portalId={portal.id} c={c} aoSalvar={recarregar} />}
 
       <div className="heroi mb">
         <div style={{ minWidth: 180 }}>
@@ -126,11 +132,13 @@ export default function Consultoria() {
           <h3>O que vocês fazem</h3>
           <p className="mudo" style={{ marginTop: -4 }}>Até o próximo encontro. Terminou? Marque como feito.</p>
           {acoes.filter((a) => a.tipo === "Ação da loja").map((a) => <Linha key={a.id} a={a} />)}
+          {equipe && <NovaAcao portalId={portal.id} tipo="Ação da loja" lojas={lojas} aoSalvar={recarregar} />}
         </div>
         <div className="card">
           <h3>O que a Loja Magnética entrega</h3>
           <p className="mudo" style={{ marginTop: -4 }}>O que preparamos para vocês nesta quinzena.</p>
           {acoes.filter((a) => a.tipo !== "Ação da loja").map((a) => <Linha key={a.id} a={a} />)}
+          {equipe && <NovaAcao portalId={portal.id} tipo="Entrega Loja Magnética" lojas={lojas} aoSalvar={recarregar} />}
         </div>
       </div>
 
@@ -156,7 +164,7 @@ export default function Consultoria() {
       <div className="grade g2" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))" }}>
         {c.meses.map((m, i) => {
           const doMes = entregas.filter((e) => e.mes === m.mes);
-          if (!doMes.length) return null;
+          if (!doMes.length && !equipe) return null;
           const agora = i + 1 === n;
           return (
             <div key={m.mes} className={`card ${agora ? "card-borda" : ""}`} style={{ ["--c" as string]: "var(--red)" }}>
@@ -173,6 +181,7 @@ export default function Consultoria() {
                       {e.material_url && <> · <a href={e.material_url} target="_blank" rel="noopener">abrir material</a></>}
                     </div>
                     <Etiqueta tabela="consultoria_entregas" item={e} />
+                    {equipe && <EditarEntrega e={e} c={c} lojas={lojas} aoSalvar={recarregar} />}
                   </div>
                   {equipe ? (
                     <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>
@@ -187,6 +196,7 @@ export default function Consultoria() {
                   )}
                 </div>
               ))}
+              {equipe && <NovaEntrega portalId={portal.id} c={c} lojas={lojas} mes={m.mes} ordem={(dados.entregas.reduce((x, e) => Math.max(x, e.ordem), 0)) + 1} aoSalvar={recarregar} />}
             </div>
           );
         })}

@@ -56,6 +56,40 @@ export async function mudarLoja(tabela: "consultoria_entregas" | "consultoria_ac
 /** O item aparece no filtro escolhido? ("" = todas as lojas; item sem loja = das duas). */
 export const daLoja = (item: { loja: string | null }, filtro: string) => !filtro || !item.loja || item.loja === filtro;
 
+const sbx = () => supabaseBrowser();
+const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
+
+/** Estrutura inicial de uma consultoria nova (a equipe completa depois). */
+export function estruturaPadrao(inicio: string, duracao = 6): DadosConsultoria {
+  const NOMES = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+  const [a, m] = inicio.split("-").map(Number);
+  const meses = Array.from({ length: duracao }, (_, i) => {
+    const nome = NOMES[(m - 1 + i) % 12];
+    return { mes: nome.slice(0, 3), nome, foco: "" };
+  });
+  const fim = new Date(Date.UTC(a, m - 1 + duracao, Number(inicio.slice(8, 10)) || 1)).toISOString().slice(0, 10);
+  return {
+    duracao, inicio, fim, meses, frentes: [], encerramento: "", visita: "",
+    como: [
+      { titulo: "A consultoria", texto: `${duracao} meses, as frentes andando juntas, cada entrega com mês certo.` },
+      { titulo: "Como falar comigo", texto: "" },
+      { titulo: "Quem cuida de quê", texto: "" },
+    ],
+  };
+}
+
+export const salvarEstrutura = (portalId: string, dados: DadosConsultoria) =>
+  ok(sbx().from("consultoria").upsert({ portal_id: portalId, dados, updated_at: new Date().toISOString() }));
+
+export const acaoCriar = (portalId: string, a: Omit<Acao, "id" | "status" | "obs"> & { obs?: string | null }) =>
+  ok(sbx().from("consultoria_acoes").insert({ portal_id: portalId, ...a }));
+export const acaoEditar = (id: string, a: Partial<Omit<Acao, "id">>) => ok(sbx().from("consultoria_acoes").update(a).eq("id", id));
+export const acaoRemover = (id: string) => ok(sbx().from("consultoria_acoes").delete().eq("id", id));
+
+export const entregaCriar = (portalId: string, e: Omit<Entrega, "id" | "status" | "material_url"> & { material_url?: string | null }) =>
+  ok(sbx().from("consultoria_entregas").insert({ portal_id: portalId, ...e }));
+export const entregaEditar = (id: string, e: Partial<Omit<Entrega, "id">>) => ok(sbx().from("consultoria_entregas").update(e).eq("id", id));
+
 export async function entregaRemover(id: string) {
   await supabaseBrowser().from("consultoria_entregas").delete().eq("id", id);
 }

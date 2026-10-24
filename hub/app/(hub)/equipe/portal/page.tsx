@@ -10,6 +10,7 @@ import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS, MESES_PLANO, type Respostas } from "@/lib/conteudo";
 import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
+import { liberarTudo } from "@/lib/entrada";
 import {
   atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
 } from "@/lib/acoes";
@@ -58,14 +59,19 @@ function EditarPortal() {
 
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }] = await Promise.all([
+    const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }] = await Promise.all([
       sb.from("portais").select("*").eq("id", id).maybeSingle(),
       sb.from("perfis").select("id, nome, email, ultimo_acesso").eq("portal_id", id),
       sb.from("plano_itens").select("id, mes, texto, feito").eq("portal_id", id).order("mes").order("ordem"),
       sb.from("reunioes").select("*").eq("portal_id", id).order("data", { ascending: false }),
       sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", id),
+      sb.from("portal_entrada").select("video_visto_em, livre").eq("portal_id", id).maybeSingle(),
+      sb.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", id).eq("ativo", true),
     ]);
-    return { portal: portal as Portal | null, pessoas: pessoas ?? [], plano: plano ?? [], reunioes: (reunioes ?? []) as Reuniao[], pers: pers ?? [] };
+    return {
+      portal: portal as Portal | null, pessoas: pessoas ?? [], plano: plano ?? [], reunioes: (reunioes ?? []) as Reuniao[], pers: pers ?? [],
+      entrada: entrada as { video_visto_em: string | null; livre: boolean } | null, equipeLoja: equipeLoja ?? 0,
+    };
   }, [id]);
   if (!dados) return <Carregando />;
   const p = dados.portal;
@@ -85,6 +91,28 @@ function EditarPortal() {
       {aviso.link && <LinkAcesso link={aviso.link} nome={p.responsavel ?? ""} whatsapp={p.whatsapp} />}
       {aviso.erro && <div className="aviso mb">{aviso.erro}</div>}
       <div className="mb"><button className="btn p" type="button" onClick={() => hub.abrirPortal(p.id)}>Abrir o portal da loja</button></div>
+
+      {(() => {
+        const etapas = ETAPAS.filter((e) => dados.pers.find((x) => x.etapa === e.numero)?.concluida).length;
+        const livre = !!dados.entrada?.livre;
+        return (
+          <div className="card mb">
+            <div className="linha entre">
+              <h2 style={{ margin: 0 }}>Entrada da loja</h2>
+              <label className="marcar" style={{ margin: 0 }}>
+                <input type="checkbox" checked={livre} onChange={async (e) => { await liberarTudo(p.id, e.target.checked); recarregar(); }} />
+                <span>Liberar tudo mesmo assim</span>
+              </label>
+            </div>
+            <div className="grade g3 mt" style={{ gap: 10 }}>
+              <div><span className={`selo ${dados.entrada?.video_visto_em ? "feito" : "espera"}`}>{dados.entrada?.video_visto_em ? "✓" : "1"}</span> Vídeo de boas-vindas<div className="mudo" style={{ fontSize: 13 }}>{dados.entrada?.video_visto_em ? `assistido ${dataHora(dados.entrada.video_visto_em)}` : "ainda não assistiu"}</div></div>
+              <div><span className={`selo ${etapas === ETAPAS.length ? "feito" : "espera"}`}>{etapas === ETAPAS.length ? "✓" : "2"}</span> Dados da loja<div className="mudo" style={{ fontSize: 13 }}>{etapas} de {ETAPAS.length} etapas</div></div>
+              <div><span className={`selo ${dados.equipeLoja > 0 ? "feito" : "espera"}`}>{dados.equipeLoja > 0 ? "✓" : "3"}</span> Equipe cadastrada<div className="mudo" style={{ fontSize: 13 }}>{dados.equipeLoja} {dados.equipeLoja === 1 ? "pessoa" : "pessoas"}</div></div>
+            </div>
+            <p className="ajuda">{livre ? "Todas as áreas estão abertas para esta loja, mesmo sem as etapas." : "As áreas abrem conforme a loja avança. Marque \"Liberar tudo\" para casos especiais."}</p>
+          </div>
+        );
+      })()}
 
       <div className="grade g2">
         <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>
@@ -123,21 +151,23 @@ function EditarPortal() {
             <div className="linha mt"><button className="btn p peq" type="submit">Criar acesso</button></div>
           </form>
 
-          <h2 className="mt">Personalização</h2>
-          {ETAPAS.map((e) => {
+          <h2 className="mt">Dados da loja</h2>
+          {ETAPAS.map((e, i) => {
             const linha = dados.pers.find((x) => x.etapa === e.numero);
             const r = (linha?.respostas ?? {}) as Respostas;
             return (
               <details key={e.numero} className="marcar" style={{ display: "block" }}>
                 <summary style={{ cursor: "pointer" }}>
                   <span className={`selo ${linha?.concluida ? "feito" : "espera"}`} style={{ marginRight: 8 }}>{linha?.concluida ? "feito" : "pendente"}</span>
-                  {e.numero}. {e.titulo}
+                  {i + 1}. {e.titulo}
                 </summary>
                 <div style={{ fontSize: 13.5, marginTop: 8 }}>
                   {e.campos.map((c) => {
                     const v = r[c.id];
                     const t = Array.isArray(v) ? v.join(", ") : v;
-                    return t ? <p key={c.id} style={{ margin: "0 0 6px" }}><b>{c.rotulo}:</b> {t}</p> : null;
+                    const st = r[`${c.id}__st`];
+                    if (st === "nao_tenho") return <p key={c.id} style={{ margin: "0 0 6px" }}><b>{c.rotulo}:</b> <span className="selo alerta">ainda não tem</span></p>;
+                    return t ? <p key={c.id} style={{ margin: "0 0 6px" }}><b>{c.rotulo}:</b> {t}{st === "estimado" && <span className="selo espera" style={{ marginLeft: 6 }}>estimado</span>}</p> : null;
                   })}
                 </div>
               </details>

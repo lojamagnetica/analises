@@ -8,29 +8,38 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
+import { liberado, requisito } from "@/lib/entrada";
 
 const ATALHOS = [
-  { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },
-  { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--red)" },
+  { href: "/painel", rotulo: "Painel da loja", icone: "chart", cor: "var(--red)" },
+  { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
+  { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   { href: "/scripts", rotulo: "Scripts", icone: "chat", cor: "var(--blue)" },
-  { href: "/planeje", rotulo: "Planeje", icone: "cal", cor: "var(--green)" },
   { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
-  { href: "/metas", rotulo: "Metas", icone: "calc", cor: "var(--purple)" },
-  { href: "/notas", rotulo: "Notas", icone: "note", cor: "var(--orange)" },
+  { href: "/clientes", rotulo: "Clientes", icone: "users", cor: "var(--purple)" },
+  { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },
   { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
 ];
 
 const TUDO = [
-  { titulo: "Minha jornada", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"]] },
-  { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/personalizacao", "Personalização"], ["/metas", "Metas e calculadora"], ["/clientes", "Gestão de clientes"], ["/estoque", "Giro de estoque"], ["/notas", "Notas"]] },
-  { titulo: "Gestão de pessoas", icone: "team", cor: "var(--purple)", itens: [["/pessoas", "Minha equipe e perfis"], ["/pessoas/retorno", "Dar retorno"], ["/pessoas/reuniao-semanal", "Reunião semanal"], ["/pessoas/reuniao-mensal", "Reunião do mês"], ["/pessoas/desenvolvimento", "Desenvolvimento"], ["/pessoas/gincanas", "Gincanas"]] },
+  { titulo: "Minha mentoria", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"], ["/notas", "Notas"]] },
+  { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/comece", "Comece aqui"], ["/personalizacao", "Dados da loja"], ["/personalizacao/etapa?n=8", "Estoque e relatórios"], ["/pessoas", "Minha equipe e perfis"]] },
+  { titulo: "Gestão estratégica", icone: "chart", cor: "var(--red)", itens: [["/painel", "Painel da loja"], ["/gestao/caixa", "Fechamento de caixa"], ["/metas", "Metas e calculadora"], ["/estoque", "Estoque x o que fazer"]] },
+  { titulo: "Gestão de pessoas", icone: "team", cor: "var(--purple)", itens: [["/pessoas/retorno", "Dar retorno"], ["/pessoas/reuniao-semanal", "Reunião semanal"], ["/pessoas/reuniao-mensal", "Reunião do mês"], ["/pessoas/desenvolvimento", "Desenvolvimento"], ["/pessoas/gincanas", "Gincanas"]] },
   { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
+  { titulo: "De cliente a fã", icone: "users", cor: "var(--accent)", itens: [["/clientes", "Minhas clientes"], ["/clientes/tipos", "Ações por tipo"], ["/clientes/resgate", "Resgate"], ["/clientes/campanhas", "Top 10 campanhas"], ["/clientes/experiencia", "Experiência do cliente"]] },
   { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
   { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/duvidas", "Dúvidas entre encontros"], ["/assistente", "Assistente Magnética"]] },
 ];
 
+const PASSOS_ENTRADA = [
+  { chave: "video" as const, titulo: "Assistir ao vídeo de boas-vindas", href: "/comece" },
+  { chave: "loja" as const, titulo: "Preencher os Dados da loja", href: "/personalizacao" },
+  { chave: "equipe" as const, titulo: "Cadastrar a sua equipe", href: "/pessoas" },
+];
+
 export default function Inicio() {
-  const { portal, nome, pers, comoLoja } = usePortal();
+  const { portal, nome, pers, comoLoja, equipe, entrada, persFaltam } = usePortal();
   const consultoria = portal.tipo === "Consultoria";
   const mes = mesAtual();
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
@@ -61,8 +70,12 @@ export default function Inicio() {
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
     : ATALHOS;
   const tudo = consultoria
-    ? TUDO.map((g) => (g.titulo === "Minha jornada" ? { ...g, titulo: "Minha consultoria", itens: [["/consultoria", "Painel da consultoria"], ["/reunioes", "Encontros"]] } : g))
+    ? TUDO.map((g) => (g.titulo === "Minha mentoria" ? { ...g, titulo: "Minha consultoria", itens: [["/consultoria", "Painel da consultoria"], ["/reunioes", "Encontros"], ["/notas", "Notas"]] } : g))
     : TUDO;
+  // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
+  const ent = equipe ? null : entrada;
+  const trancado = (href: string) => { const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
+  const entradaAberta = !!ent && !ent.livre && !(ent.video && ent.loja && ent.equipe);
 
   return (
     <>
@@ -91,12 +104,27 @@ export default function Inicio() {
         </div>
       </div>
 
+      {entradaAberta && ent && (
+        <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
+          <h3 style={{ marginTop: 0 }}>Sua entrada no Hub · {PASSOS_ENTRADA.filter((p) => ent[p.chave]).length} de 3</h3>
+          <p className="mudo" style={{ marginTop: -4 }}>Cada passo abre novas áreas. Não pule etapas: é assim que o Hub fica certo para a sua loja.</p>
+          <div className="grade g3" style={{ gap: 10 }}>
+            {PASSOS_ENTRADA.map((p, i) => (
+              <Link key={p.chave} href={p.href} className="marcar" style={{ gap: 10 }}>
+                <span className={`selo ${ent[p.chave] ? "feito" : "espera"}`}>{ent[p.chave] ? "✓" : i + 1}</span>
+                <span>{p.titulo}{p.chave === "loja" && !ent.loja ? ` · falta${persFaltam > 1 ? "m" : ""} ${persFaltam}` : ""}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
         {atalhos.map((a) => (
           <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
-            {a.rotulo}
+            {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
           </Link>
         ))}
       </div>
@@ -156,7 +184,7 @@ export default function Inicio() {
               </h3>
               <div className="chips">
                 {g.itens.map(([href, rotulo]) => (
-                  <Link key={href} className="chip" href={href}>{rotulo}</Link>
+                  <Link key={href} className="chip" href={href}>{rotulo}{trancado(href) ? " 🔒" : ""}</Link>
                 ))}
               </div>
             </div>

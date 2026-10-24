@@ -5,7 +5,7 @@
 // e que só a equipe faz o que é da equipe.
 import { supabaseBrowser, erroDaFuncao } from "@/lib/supabase/client";
 import { BASE } from "@/lib/config";
-import { BLOCOS_PLANEJE, ETAPAS, type Respostas } from "@/lib/conteudo";
+import { BLOCOS_PLANEJE, ETAPAS, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
 import { localParaIso } from "@/lib/formato";
 
 const sb = () => supabaseBrowser();
@@ -15,14 +15,30 @@ const agora = () => new Date().toISOString();
 
 // ───── Mentorado ─────
 
-export async function salvarEtapa(portalId: string, numero: number, form: FormData) {
+/** Salva a etapa. Dado marcado como "Ainda não tenho" vira tarefa no Plano; quando é preenchido depois, a tarefa se fecha. */
+export async function salvarEtapa(portalId: string, numero: number, form: FormData, extra?: { semRelatorio?: boolean }) {
   const etapa = ETAPAS.find((e) => e.numero === numero);
   if (!etapa) return;
   const respostas: Respostas = {};
+  const faltam: Record<string, string> = {};
   for (const c of etapa.campos) {
-    respostas[c.id] = c.tipo === "multi" ? form.getAll(c.id).map(String) : txt(form, c.id);
+    const st = (c.dado ? txt(form, chaveSituacao(c.id), 20) : "") as Situacao | "";
+    if (st === "estimado" || st === "nao_tenho") respostas[chaveSituacao(c.id)] = st;
+    if (st === "nao_tenho") {
+      respostas[c.id] = c.tipo === "multi" ? [] : "";
+      faltam[c.id] = `Conseguir o dado: ${c.rotulo.replace(/\?$/, "")} (Dados da loja · ${etapa.titulo})`;
+    } else {
+      respostas[c.id] = c.tipo === "multi" ? form.getAll(c.id).map(String) : txt(form, c.id);
+    }
   }
-  await sb().from("personalizacao").upsert({ portal_id: portalId, etapa: numero, respostas, concluida: true, updated_at: agora() });
+  const chaves = etapa.campos.filter((c) => c.dado).map((c) => c.id);
+  if (numero === 8) {
+    chaves.push("relatorio");
+    if (extra?.semRelatorio) faltam.relatorio = "Pedir ao suporte do sistema o relatório de estoque e subir em Dados da loja · Estoque e fornecedores";
+  }
+  const { error } = await sb().from("personalizacao").upsert({ portal_id: portalId, etapa: numero, respostas, concluida: true, updated_at: agora() });
+  if (error) throw new Error(error.message);
+  await sb().rpc("pendencias_da_etapa", { p_portal: portalId, p_etapa: numero, p_faltam: faltam, p_chaves: chaves });
 }
 
 export async function marcarPlano(id: string, feito: boolean) {

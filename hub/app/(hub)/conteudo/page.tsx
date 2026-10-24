@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Trancado } from "@/components/Trancado";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
-import { caracteresBio, carregarConteudo, conteudoSalvar, type LojaConteudo } from "@/lib/instagram";
+import { buscarExtras, caracteresBio, carregarConteudo, completar, conteudoSalvar, type LojaConteudo } from "@/lib/instagram";
 
 const idYoutube = (url: string) => url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/)?.[1] ?? null;
 
@@ -20,13 +21,21 @@ function Cabecalho({ emoji, titulo, sub }: { emoji: string; titulo: string; sub?
   );
 }
 
-export default function Analise() {
+function Analise() {
   const { portal, equipe, comoLoja } = usePortal();
+  const x = useSearchParams().get("x") ?? "";
   const [feitasLocal, setFeitas] = useState<string[] | null>(null);
   const [checklist, setChecklist] = useState<number[]>([]);
-  const { dados } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
+  const { dados } = useDados(async () => {
+    const [c, extras] = await Promise.all([carregarConteudo(portal.id, comoLoja), buscarExtras(portal.id)]);
+    return { ...c, extras: extras.filter((e) => e.status === "liberada" || (equipe && !comoLoja)) };
+  }, [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
-  const { m, a, analise, conteudo } = dados;
+  const { m, analise, conteudo, extras } = dados;
+  const extra = x ? extras.find((e) => e.id === x) : undefined;
+  const a = extra ? completar(m, extra.dados) : dados.a;
+  // As marcações de uma análise extra ficam separadas das da principal.
+  const px = extra ? `${extra.id}:` : "";
   if (!a) return <Trancado titulo="Análise do perfil" texto={m.textos.trancado} />;
 
   const feitas = feitasLocal ?? conteudo.feitas;
@@ -35,7 +44,7 @@ export default function Analise() {
     setFeitas(nova);
     await conteudoSalvar({ ...conteudo, feitas: nova } as LojaConteudo);
   };
-  const correcoesFeitas = a.correcoes.filter((_, i) => feitas.includes(`c${i}`)).length;
+  const correcoesFeitas = a.correcoes.filter((_, i) => feitas.includes(`${px}c${i}`)).length;
   const yt = idYoutube(a.video_url);
   const rosto = a.reels.filter((r) => r.rosto), produto = a.reels.filter((r) => !r.rosto);
   const med = (xs: { views: number }[]) => (xs.length ? Math.round(xs.reduce((s, r) => s + r.views, 0) / xs.length) : 0);
@@ -43,7 +52,15 @@ export default function Analise() {
 
   return (
     <>
-      {equipe && analise?.status !== "liberada" && <div className="aviso mb">Rascunho: a loja ainda não vê esta análise. <Link href={`/equipe/analise?p=${portal.id}`}>Editar e liberar →</Link></div>}
+      {extras.length > 0 && (
+        <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Escolha o Instagram">
+          {dados.a && <Link className="chip" href="/conteudo" style={!extra ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{dados.a.instagram || "Perfil principal"}</Link>}
+          {extras.map((e) => (
+            <Link key={e.id} className="chip" href={`/conteudo?x=${e.id}`} style={extra?.id === e.id ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{e.instagram}</Link>
+          ))}
+        </div>
+      )}
+      {equipe && (extra ? extra.status : analise?.status) !== "liberada" && <div className="aviso mb">Rascunho: a loja ainda não vê esta análise. <Link href={`/equipe/analise?p=${portal.id}${extra ? `&x=${extra.id}` : ""}`}>Editar e liberar →</Link></div>}
       <div className="card mb" style={{ overflow: "hidden", padding: 0 }}>
         <div style={{ height: 6, background: "var(--grad)" }} />
         <div style={{ padding: "22px 22px 18px" }}>
@@ -78,10 +95,10 @@ export default function Analise() {
       <Cabecalho emoji="🛠️" titulo="Correções imediatas do perfil" sub="A bio e o link são a porta da loja no Instagram. Marque o que já fez." />
       <div className="grade g2">
         {a.correcoes.map((c, i) => (
-          <label key={i} className="card" style={{ cursor: "pointer", opacity: feitas.includes(`c${i}`) ? 0.65 : 1 }}>
+          <label key={i} className="card" style={{ cursor: "pointer", opacity: feitas.includes(`${px}c${i}`) ? 0.65 : 1 }}>
             <div className="linha entre" style={{ flexWrap: "nowrap", alignItems: "flex-start" }}>
               <div className="linha" style={{ gap: 10, flexWrap: "nowrap", alignItems: "flex-start" }}>
-                <input type="checkbox" checked={feitas.includes(`c${i}`)} onChange={() => marcar(`c${i}`)} style={{ marginTop: 4 }} aria-label={`Feito: ${c.titulo}`} />
+                <input type="checkbox" checked={feitas.includes(`${px}c${i}`)} onChange={() => marcar(`${px}c${i}`)} style={{ marginTop: 4 }} aria-label={`Feito: ${c.titulo}`} />
                 <b>{i + 1}. {c.titulo}</b>
               </div>
               <span className={`selo ${c.prazo === "Fazer agora" ? "andamento" : "espera"}`} style={{ flex: "none" }}>{c.prazo}</span>
@@ -202,9 +219,9 @@ export default function Analise() {
       <Cabecalho emoji="🗓️" titulo="Cronograma de execução" sub="Passo a passo para implementar tudo sem se perder" />
       <div className="grade g2">
         {a.cronograma.map((c, i) => (
-          <label key={i} className="card" style={{ cursor: "pointer", opacity: feitas.includes(`t${i}`) ? 0.65 : 1 }}>
+          <label key={i} className="card" style={{ cursor: "pointer", opacity: feitas.includes(`${px}t${i}`) ? 0.65 : 1 }}>
             <div className="linha" style={{ gap: 10, flexWrap: "nowrap" }}>
-              <input type="checkbox" checked={feitas.includes(`t${i}`)} onChange={() => marcar(`t${i}`)} aria-label={`Feito: ${c.titulo}`} />
+              <input type="checkbox" checked={feitas.includes(`${px}t${i}`)} onChange={() => marcar(`${px}t${i}`)} aria-label={`Feito: ${c.titulo}`} />
               <span className="selo andamento">{c.quando}</span><b>{c.titulo}</b>
             </div>
             <p style={{ margin: "8px 0 0" }}>{c.texto}</p>
@@ -214,4 +231,8 @@ export default function Analise() {
       <p className="mudo mt" style={{ fontSize: 12.5, textAlign: "center" }}>Análise do perfil · Método Loja Magnética com Camilla Ribeiro</p>
     </>
   );
+}
+
+export default function Pagina() {
+  return <Suspense fallback={<Carregando />}><Analise /></Suspense>;
 }

@@ -38,37 +38,49 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
     });
   }
   if (!temPortal) return g;
+  const consultoriaOuMentoria: Grupo = consultoria
+    ? {
+        id: "consultoria", rotulo: "Minha consultoria", icone: "target",
+        itens: [
+          { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
+          { href: "/reunioes", rotulo: "Encontros", icone: "video" },
+          { href: "/notas", rotulo: "Notas", icone: "note" },
+        ],
+      }
+    : {
+        id: "jornada", rotulo: "Minha mentoria", icone: "map",
+        itens: [
+          { href: "/jornada", rotulo: "Os 7 passos", icone: "map" },
+          { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
+          { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
+          { href: "/notas", rotulo: "Notas", icone: "note" },
+        ],
+      };
+  if (consultoria) g.push(consultoriaOuMentoria);
   g.push(
-    consultoria
-      ? {
-          id: "consultoria", rotulo: "Minha consultoria", icone: "target",
-          itens: [
-            { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
-            { href: "/reunioes", rotulo: "Encontros", icone: "video" },
-          ],
-        }
-      : {
-          id: "jornada", rotulo: "Minha jornada", icone: "map",
-          itens: [
-            { href: "/jornada", rotulo: "Os 7 passos", icone: "map" },
-            { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
-            { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
-          ],
-        },
     {
       id: "loja", rotulo: "Minha loja", icone: "folder",
       itens: [
-        { href: "/personalizacao", rotulo: "Personalização", icone: "sliders", ponto: persFaltam > 0 },
-        { href: "/metas", rotulo: "Metas e calculadora", icone: "calc" },
-        { href: "/clientes", rotulo: "Gestão de clientes", icone: "users", emBreve: true },
-        { href: "/estoque", rotulo: "Giro de estoque", icone: "box", emBreve: true },
-        { href: "/notas", rotulo: "Notas", icone: "note" },
+        { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
+        { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
+        { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
+      ],
+    },
+    {
+      id: "gestao", rotulo: "Gestão estratégica", icone: "chart",
+      itens: [
+        { href: "/painel", rotulo: "Painel da loja", icone: "chart" },
+        { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
+        { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
+        { href: "/estoque", rotulo: "Estoque x o que fazer", icone: "box", emBreve: true },
+        { href: "/gestao/compras", rotulo: "Estoque e compras", icone: "box", emBreve: true },
+        { href: "/gestao/linhas", rotulo: "Estoque e linhas", icone: "box", emBreve: true },
+        { href: "/gestao/fornecedores", rotulo: "Estoque e fornecedores", icone: "box", emBreve: true },
       ],
     },
     {
       id: "pessoas", rotulo: "Gestão de pessoas", icone: "team",
       itens: [
-        { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
         { href: "/pessoas/retorno", rotulo: "Dar retorno", icone: "chat" },
         { href: "/pessoas/reuniao-semanal", rotulo: "Reunião semanal", icone: "cal" },
         { href: "/pessoas/reuniao-mensal", rotulo: "Reunião do mês", icone: "chart" },
@@ -84,6 +96,16 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       ],
     },
     {
+      id: "clientes", rotulo: "De cliente a fã", icone: "users",
+      itens: [
+        { href: "/clientes", rotulo: "Minhas clientes", icone: "users" },
+        { href: "/clientes/tipos", rotulo: "Ações por tipo de cliente", icone: "target" },
+        { href: "/clientes/resgate", rotulo: "Resgate", icone: "chat" },
+        { href: "/clientes/campanhas", rotulo: "Top 10 campanhas", icone: "bolt" },
+        { href: "/clientes/experiencia", rotulo: "Experiência do cliente", icone: "spark" },
+      ],
+    },
+    {
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
         { href: "/conteudo", rotulo: "Análise do perfil", icone: "insta" },
@@ -95,15 +117,16 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       ],
     },
   );
+  if (!consultoria) g.push(consultoriaOuMentoria);
   return g;
 }
 
-export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; nome: string; email: string; foto: string | null }) {
+export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria);
-  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
+  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );
@@ -173,6 +196,14 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
 
           {props.temPortal && (
             <div className="nav-linha">
+              <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
+                <Icone nome="play" /> COMECE AQUI
+              </Link>
+            </div>
+          )}
+
+          {props.temPortal && (
+            <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
                 <Icone nome="robot" /> ✨ Assistente Magnética
               </Link>
@@ -194,7 +225,8 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
                   {g.itens.map((i) => (
                     <Link key={i.href} href={i.href} className={ativo(i.href) ? "ativo" : ""}>
                       <Icone nome={i.icone} /> {i.rotulo}
-                      {i.emBreve && <span className="em-breve">EM BREVE</span>}
+                      {props.trava?.(i.href) ? <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>
+                        : i.emBreve ? <span className="em-breve">EM BREVE</span> : null}
                       {i.ponto && <span className="ponto" />}
                     </Link>
                   ))}
@@ -226,7 +258,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             <div style={{ minWidth: 0 }}>
               <b>Olá, {props.nome.split(" ")[0]}!</b>
               <small>
-                {props.email} · acesso ativo<span className="online" />
+                {props.email ? <>{props.email} · </> : null}acesso ativo<span className="online" />
               </small>
             </div>
           </div>

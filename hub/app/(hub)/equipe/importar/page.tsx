@@ -16,6 +16,16 @@ const COLUNAS: Record<string, { rotulo: string; colunas: string[]; conflito: str
   planeje: { rotulo: "Planejamento do mês", colunas: ["portal_id", "mes", "bloco", "texto"], conflito: "portal_id,mes,bloco" },
   plano_itens: { rotulo: "Plano de Ação", colunas: ["id", "portal_id", "mes", "ordem", "texto", "feito", "feito_em", "origem"], conflito: "id" },
   consultoria_acoes: { rotulo: "Ações da consultoria", colunas: ["id", "portal_id", "acao", "quem", "prazo", "tipo", "status", "obs", "loja"], conflito: "id" },
+  consultoria_entregas: { rotulo: "Entregas da consultoria", colunas: ["id", "portal_id", "ordem", "mes", "frente", "entrega", "status", "material_url", "loja"], conflito: "id" },
+  consultoria: { rotulo: "Painel da consultoria", colunas: ["portal_id", "dados"], conflito: "portal_id" },
+  personalizacao: { rotulo: "Dados da loja", colunas: ["portal_id", "etapa", "respostas", "concluida"], conflito: "portal_id,etapa" },
+  loja_equipe: { rotulo: "Equipe da loja", colunas: ["id", "portal_id", "nome", "funcao", "entrada", "ativo", "loja", "motor"], conflito: "id" },
+  loja_pdi: { rotulo: "Desenvolvimento", colunas: ["id", "portal_id", "pessoa_id", "competencia", "objetivo", "acoes", "prazo", "status", "estagio"], conflito: "id" },
+  loja_clientes: { rotulo: "Clientes", colunas: ["id", "portal_id", "loja", "nome", "whatsapp", "aniversario", "ultima_compra", "n_compras", "total", "vendedora", "obs"], conflito: "id" },
+  portal_pendencias: { rotulo: "Pendências", colunas: ["portal_id", "chave", "texto", "quem", "manual", "status", "obs", "por_nome"], conflito: "portal_id,chave" },
+  loja_diagnostico: { rotulo: "Diagnóstico (rascunho)", colunas: ["portal_id", "loja", "ordem", "status", "dados"], conflito: "portal_id,loja" },
+  loja_gestao: { rotulo: "Gestão estratégica (rascunho)", colunas: ["portal_id", "area", "loja", "ordem", "status", "dados"], conflito: "portal_id,area,loja" },
+  loja_relatorios_drive: { rotulo: "Relatórios do Drive", colunas: ["portal_id", "nome", "tipo", "periodo", "url", "recebido_em"], conflito: "portal_id,url" },
 };
 
 const so = (o: Record<string, unknown>, cols: string[]) => Object.fromEntries(Object.entries(o).filter(([k]) => cols.includes(k)));
@@ -60,7 +70,7 @@ export default function Importar() {
         res = await sb.from(o.tabela).upsert(so(o.valores, def.colunas), { onConflict: def.conflito, ignoreDuplicates: true });
       } else {
         let q = sb.from(o.tabela).update(so(o.valores, def.colunas.filter((c) => c !== "id" && c !== "portal_id")));
-        for (const [k, v] of Object.entries(o.chave ?? {})) q = q.eq(k, v as string);
+        for (const [k, v] of Object.entries(o.chave ?? {})) q = q.eq(k, v as string | number);
         res = await q.eq("portal_id", o.portal_id);
       }
       if (res.error) erros.push(`${loja} · ${def.rotulo}: ${res.error.message}`);

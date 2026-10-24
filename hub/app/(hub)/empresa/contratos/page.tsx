@@ -41,7 +41,7 @@ export default function ModelosContrato() {
       {!planoId && <p className="mudo">Escolha um plano para ver ou editar o modelo.</p>}
       {planoId && (
         <div className="card">
-          {atual && <p className="ajuda" style={{ marginTop: 0 }}>Última edição: {dataHora(atual.updated_at)}{atual.updated_by ? ` · ${atual.updated_by}` : ""}</p>}
+          {atual && <p className="ajuda" style={{ marginTop: 0 }}>{atual.aprovado ? "Aprovado" : "Última edição"}: {dataHora(atual.updated_at)}{atual.updated_by ? ` · ${atual.updated_by}` : ""}</p>}
           <label className="rotulo" style={{ marginTop: 0 }}>Título</label>
           <input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex.: Contrato Mentoria Loja Magnética · Plano Premium" />
           <label className="rotulo">Texto do contrato</label>
@@ -51,7 +51,7 @@ export default function ModelosContrato() {
             <p className="ajuda">Escreva no texto exatamente assim, com chaves duplas: {CAMPOS.map((k) => `{{${k}}}`).join(" · ")}</p>
             <p className="ajuda">Blocos opcionais: o que estiver entre [[BONUS]] e [[/BONUS]] só entra quando o Comercial marcou o bônus; entre [[GARANTIA]] e [[/GARANTIA]], só com a garantia de risco zero.</p>
           </details>
-          <label className="marcar mt"><input type="checkbox" checked={aprovado} onChange={(e) => setAprovado(e.target.checked)} /> Modelo aprovado pela Camilla</label>
+          <label className="marcar mt"><input type="checkbox" checked={aprovado} onChange={(e) => setAprovado(e.target.checked)} /> Modelo revisado e aprovado (pronto para usar)</label>
           {msg && <div className="aviso ok mt">{msg}</div>}
           <div className="linha mt">
             <button type="button" className="btn p" onClick={async () => { await salvarModelo({ plano_id: planoId, titulo: titulo || "Contrato", texto, aprovado }, nome); setMsg("Modelo salvo."); recarregar(); }}>Salvar modelo</button>

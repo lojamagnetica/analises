@@ -38,7 +38,7 @@ function GerarContrato() {
   return (
     <>
       <Titulo voltar={voltar} titulo="Gerar contrato" sub={`${modelo.titulo} · preenchido com os dados da venda. Confira, ajuste se precisar e baixe para mandar para assinatura.`} />
-      {!modelo.aprovado && <div className="aviso mb">Este modelo ainda não foi aprovado pela Camilla em Modelos de contrato. Confira antes de enviar.</div>}
+      {!modelo.aprovado && <div className="aviso mb">Este modelo ainda não foi revisado e aprovado em Modelos de contrato. Confira antes de enviar.</div>}
       {preenchido && preenchido.faltam.length > 0 && (
         <div className="aviso mb">Faltam dados da venda: {preenchido.faltam.join(", ")}. No texto eles aparecem como [PREENCHER]. Complete aqui ou peça ao Comercial.</div>
       )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnotacoesDaCliente } from "@/components/Anotacoes";
 import { CamposPortal } from "@/components/CamposPortal";
 import { FichaLoja } from "@/components/FichaLoja";
@@ -18,6 +18,47 @@ import {
   atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
 } from "@/lib/acoes";
 
+
+// Exclui o portal e tudo o que é dele (plano, reuniões, fichas, contratos...). Pede o nome da loja para confirmar.
+function ExcluirPortal({ p, pessoas }: { p: Portal; pessoas: number }) {
+  const router = useRouter();
+  const hub = useEquipe();
+  const [aberto, setAberto] = useState(false);
+  const [nome, setNome] = useState("");
+  const [erro, setErro] = useState("");
+  const confere = nome.trim().toLowerCase() === p.loja.trim().toLowerCase();
+  const excluir = async () => {
+    setErro("");
+    const { error } = await supabaseBrowser().from("portais").delete().eq("id", p.id);
+    if (error) { setErro("Não deu certo: " + error.message); return; }
+    hub.abrirPortal(null);
+    router.push("/empresa/carteira");
+  };
+  return (
+    <div className="card mt" style={{ borderColor: "var(--red)" }}>
+      {!aberto ? (
+        <div className="linha entre">
+          <span className="mudo">Cadastro de teste ou duplicado? Dá para excluir.</span>
+          <button type="button" className="btn s peq" style={{ color: "var(--red)" }} onClick={() => setAberto(true)}>Excluir portal</button>
+        </div>
+      ) : (
+        <>
+          <b>Excluir {p.loja} de vez</b>
+          <p className="ajuda">Apaga o portal e tudo o que está nele: plano, reuniões, ficha, contrato, mensagens e dados da loja. Não dá para desfazer.
+            {pessoas > 0 && <> <b style={{ color: "var(--red)" }}>Atenção: {pessoas} {pessoas === 1 ? "pessoa tem" : "pessoas têm"} acesso a este portal.</b></>}
+            {" "}Se for uma cliente que só parou, prefira desmarcar &quot;Portal ativo&quot;.</p>
+          <label className="rotulo">Para confirmar, escreva o nome da loja: <b>{p.loja}</b></label>
+          <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="off" />
+          {erro && <div className="aviso mt">{erro}</div>}
+          <div className="linha mt" style={{ gap: 8 }}>
+            <button type="button" className="btn p peq" disabled={!confere} style={{ background: confere ? "var(--red)" : undefined }} onClick={excluir}>Excluir para sempre</button>
+            <button type="button" className="btn s peq" onClick={() => { setAberto(false); setNome(""); }}>Cancelar</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 type Reuniao = { id: string; titulo: string; data: string; selecionar: string; status: string; gravacao_url: string | null; ata: string | null };
 
@@ -229,6 +270,8 @@ function EditarPortal() {
       <LinhaDoTempo portalId={id} />
 
       <PendenciasDoPortal portalId={id} nome={hub.nome} />
+
+      <ExcluirPortal p={p} pessoas={dados.pessoas.length} />
     </>
   );
 }

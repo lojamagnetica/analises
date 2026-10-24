@@ -14,8 +14,9 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
-      id: "empresa", rotulo: "Empresa", icone: "home",
+      id: "empresa", rotulo: "Minha empresa", icone: "home",
       itens: [
+        { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/carteira", rotulo: "Carteira", icone: "users" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },

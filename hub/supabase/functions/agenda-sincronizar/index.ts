@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     const { data } = await admin.from("chaves_internas").select("valor").eq("nome", "google_agenda").maybeSingle();
     segredo = data?.valor ?? undefined;
   }
-  if (!segredo) return json({ erro: "Falta a chave do Google (guarde em chaves_internas, nome google_agenda)." }, 500);
+  if (!segredo) return json({ erro: "Falta a chave do Google. Cole a chave na Agenda, no quadro Google Agenda: atualização automática." }, 500);
 
   let token: string;
   try {

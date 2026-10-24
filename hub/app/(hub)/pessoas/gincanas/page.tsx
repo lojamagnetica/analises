@@ -100,7 +100,7 @@ function Gincanas() {
               <div key={m.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--line)" }}>
                 <b>{nome(m.gincana_id)}</b> · {dia(m.inicio)}{m.fim ? ` a ${dia(m.fim)}` : ""}{m.indicador ? ` · ${m.indicador}` : ""}{m.premio ? ` · prêmio: ${m.premio}` : ""}
                 {m.resultado ? (
-                  <div className="mudo" style={{ fontSize: 13.5 }}>Vencedor(a): {m.vencedor ?? "—"} · {m.resultado}</div>
+                  <div className="mudo" style={{ fontSize: 13.5 }}>Quem venceu: {m.vencedor ?? "—"} · {m.resultado}</div>
                 ) : (
                   <div className="grade g2 mt" style={{ gap: 8 }}>
                     <input type="text" placeholder="Quem venceu" value={fechar[m.id]?.vencedor ?? ""} onChange={(e) => setFechar({ ...fechar, [m.id]: { vencedor: e.target.value, resultado: fechar[m.id]?.resultado ?? "" } })} />

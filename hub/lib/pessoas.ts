@@ -11,7 +11,7 @@ export type Estagio = "Começando" | "Evoluindo" | "Pronto";
 export type Falta = "Saber" | "Poder" | "Querer";
 export type Pessoa = {
   id: string; portal_id: string; nome: string; funcao: string | null; entrada: string | null; ativo: boolean;
-  respostas: Letra[] | null; perfil: Record<Letra, number> | null; respondido_por: "pessoa" | "gestor" | null;
+  respostas: Letra[] | { mais: Letra[]; menos: Letra[] } | null; perfil: Record<Letra, number> | null; respondido_por: "pessoa" | "gestor" | null;
   perfil_em: string | null; motor: Motor | null;
 };
 export type Retorno = { id: string; pessoa_id: string; tipo: string; situacao: string; roteiro: string; feito: boolean; created_at: string };
@@ -75,6 +75,14 @@ export async function linkDoTeste(id: string, base: string) {
   const token = crypto.randomUUID();
   await ok(sb().from("loja_equipe").update({ teste_token: token }).eq("id", id));
   return `${base}/teste/?t=${token}`;
+}
+
+/** Teste com "mais parece" e "menos parece": cada letra soma os "mais" e desconta os "menos";
+ * a menor fica com 1, para as quatro poderem ser comparadas (mesma conta da função teste_enviar no banco). */
+export function pontuarMaisMenos(mais: Letra[], menos: Letra[]): Record<Letra, number> {
+  const bruto = Object.fromEntries(LETRAS.map((l) => [l, mais.filter((x) => x === l).length - menos.filter((x) => x === l).length])) as Record<Letra, number>;
+  const menor = Math.min(...LETRAS.map((l) => bruto[l]));
+  return Object.fromEntries(LETRAS.map((l) => [l, bruto[l] - menor + 1])) as Record<Letra, number>;
 }
 
 export function pontuar(respostas: Letra[]): Record<Letra, number> {
@@ -230,8 +238,8 @@ export const pessoaSalvar = (portalId: string, id: string | null, form: FormData
   return ok(id ? sb().from("loja_equipe").update(dados).eq("id", id) : sb().from("loja_equipe").insert({ ...dados, portal_id: portalId }));
 };
 export const pessoaDesligar = (id: string, ativo: boolean) => ok(sb().from("loja_equipe").update({ ativo }).eq("id", id));
-export const perfilSalvar = (id: string, respostas: Letra[], por: "pessoa" | "gestor") =>
-  ok(sb().from("loja_equipe").update({ respostas, perfil: pontuar(respostas), respondido_por: por, perfil_em: new Date().toISOString().slice(0, 10) }).eq("id", id));
+export const perfilSalvar = (id: string, mais: Letra[], menos: Letra[], por: "pessoa" | "gestor") =>
+  ok(sb().from("loja_equipe").update({ respostas: { mais, menos }, perfil: pontuarMaisMenos(mais, menos), respondido_por: por, perfil_em: new Date().toISOString().slice(0, 10) }).eq("id", id));
 export const retornoSalvar = (portalId: string, pessoaId: string, tipo: string, situacao: string, roteiro: string) =>
   ok(sb().from("loja_feedbacks").insert({ portal_id: portalId, pessoa_id: pessoaId, tipo, situacao: situacao.slice(0, 2000), roteiro: roteiro.slice(0, 8000) }));
 export const retornoFeito = (id: string, feito: boolean) => ok(sb().from("loja_feedbacks").update({ feito }).eq("id", id));

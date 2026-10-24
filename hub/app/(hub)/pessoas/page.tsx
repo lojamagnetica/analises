@@ -52,7 +52,7 @@ export default function MinhaEquipe() {
           <div className="linha mt"><button className="btn p" type="submit">Salvar</button></div>
         </form>
       )}
-      {semPerfil > 0 && <div className="aviso mb">{semPerfil === 1 ? "1 pessoa ainda não tem" : `${semPerfil} pessoas ainda não têm`} o perfil. Faça o teste com cada uma: são 12 perguntas de loja.</div>}
+      {semPerfil > 0 && <div className="aviso mb">{semPerfil === 1 ? "1 pessoa ainda não tem" : `${semPerfil} pessoas ainda não têm`} o perfil. Mande o teste para cada uma pelo link: são 24 situações de loja.</div>}
 
       {ativos.length === 0 ? (
         <div className="card">

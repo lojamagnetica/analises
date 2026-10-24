@@ -14,7 +14,6 @@ const ATALHOS = [
   { href: "/painel", rotulo: "Painel da loja", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
-  { href: "/scripts", rotulo: "Scripts", icone: "chat", cor: "var(--blue)" },
   { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
   { href: "/clientes", rotulo: "Clientes", icone: "users", cor: "var(--purple)" },
   { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },

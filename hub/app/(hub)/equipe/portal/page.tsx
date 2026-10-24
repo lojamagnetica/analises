@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CamposPortal } from "@/components/CamposPortal";
 import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
+import { PendenciasDoPortal } from "@/components/Pendencias";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -220,6 +221,8 @@ function EditarPortal() {
           </details>
         ))}
       </div>
+
+      <PendenciasDoPortal portalId={id} nome={hub.nome} />
     </>
   );
 }

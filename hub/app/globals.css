@@ -211,6 +211,16 @@ button.chip { cursor: pointer; font-family: inherit; }
 .pessoa-diag { padding: 12px 0; border-top: 1px solid var(--line); }
 .pessoa-diag:first-of-type { margin-top: 10px; }
 
+/* Pendências por cliente */
+.pend { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.pend:last-of-type { border-bottom: 0; }
+@media (max-width: 640px) { .pend { grid-template-columns: 1fr; } }
+.pend-loja > summary { cursor: pointer; list-style: none; }
+.pend-loja > summary::-webkit-details-marker { display: none; }
+.sel-feito { border-color: var(--green); }
+.sel-alerta { border-color: var(--orange); }
+.sel-andamento { border-color: var(--red); }
+
 /* Assistente Magnética */
 .resposta { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--soft); }
 .resposta.da-equipe { background: var(--purple-soft, var(--soft)); border-left: 3px solid var(--purple); }

@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { BASE } from "@/lib/config";
 import { dataHora } from "@/lib/formato";
 import { Carregando, useDados } from "@/lib/hub";
 import {
-  STATUS_PEND, aberta, buscarPendencias, classePend, marcarPendencia, mensagemParaLoja, novaPendencia,
+  STATUS_PEND, aberta, buscarPendencias, classePend, marcarPendencia, mensagemParaLoja, nomeDoLugar, novaPendencia,
   type Pendencia, type PortalPend, type Quem, type StatusPend,
 } from "@/lib/pendencias";
 
@@ -31,6 +32,7 @@ export function ListaPendencias({ p, nome, recarregar, mostrarResolvidas = false
           <b>{x.texto}</b>
         </div>
         {x.detalhe && <small className="mudo" style={{ display: "block", marginTop: 4 }}>Falta: {x.detalhe}</small>}
+        {x.quem === "Loja" && x.onde && <small className="mudo" style={{ display: "block", marginTop: 2 }}>No Hub: {nomeDoLugar(x.onde)}</small>}
         {x.por_nome && x.updated_at && <small className="mudo" style={{ display: "block", marginTop: 2 }}>{STATUS_PEND.find((s) => s.v === x.status)?.rotulo} · {x.por_nome}, {dataHora(x.updated_at)}</small>}
         <input
           type="text" className="mt" placeholder="Anotação (ex.: pedido no WhatsApp em 25/10)" defaultValue={x.obs}
@@ -52,7 +54,7 @@ export function ListaPendencias({ p, nome, recarregar, mostrarResolvidas = false
       {visiveis.length === 0 && <p className="mudo">Nada pendente{resolvidas ? "" : " neste portal"}.</p>}
       {visiveis.map((x) => <Item key={x.chave} x={x} />)}
       <div className="linha mt" style={{ gap: 8 }}>
-        {daLoja.length > 0 && <Copiar texto={mensagemParaLoja(p)} rotulo="Copiar mensagem para a loja" />}
+        {daLoja.length > 0 && <Copiar texto={mensagemParaLoja(p, `${location.origin}${BASE}`)} rotulo="Copiar mensagem para a loja" />}
         {resolvidas > 0 && <button type="button" className="btn s peq" onClick={() => setVerTodas(!verTodas)}>{verTodas ? "Esconder resolvidas" : `Ver resolvidas (${resolvidas})`}</button>}
       </div>
       <div className="linha mt" style={{ gap: 8 }}>

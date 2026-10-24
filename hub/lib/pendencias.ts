@@ -15,6 +15,8 @@ export const classePend = (s: StatusPend) => (s === "recebido" ? "feito" : s ===
 
 export type Pendencia = {
   chave: string; texto: string; detalhe?: string; quem: Quem; manual: boolean;
+  /** Onde a loja resolve isso no Hub (caminho da página). */
+  onde?: string;
   status: StatusPend; obs: string; por_nome: string | null; updated_at: string | null; id?: string;
 };
 export type PortalPend = { id: string; loja: string; responsavel: string | null; tipo: string; pendencias: Pendencia[] };
@@ -65,23 +67,23 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
 
   return lista.map((p) => {
     const auto: Omit<Pendencia, "status" | "obs" | "por_nome" | "updated_at">[] = [];
-    const add = (chave: string, texto: string, quem: Quem, detalhe?: string) => auto.push({ chave, texto, quem, detalhe, manual: false });
+    const add = (chave: string, texto: string, quem: Quem, detalhe?: string, onde?: string) => auto.push({ chave, texto, quem, detalhe, onde, manual: false });
 
     // Dados da loja: cada etapa com campos em branco (quem marcou "ainda não tenho" já respondeu).
     for (const e of ETAPAS) {
       const r = ((pers ?? []).find((x) => x.portal_id === p.id && x.etapa === e.numero)?.respostas ?? {}) as Record<string, unknown>;
       const faltam = e.campos.filter((c) => vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho");
-      if (faltam.length) add(`dados_${e.numero}`, `Dados da loja · ${e.titulo}`, "Loja", faltam.map((c) => c.rotulo).join(" · "));
+      if (faltam.length) add(`dados_${e.numero}`, `Dados da loja · ${e.titulo}`, "Loja", faltam.map((c) => c.rotulo).join(" · "), `/personalizacao/etapa/?n=${e.numero}`);
     }
     const time = (equipe ?? []).filter((x) => x.portal_id === p.id);
-    if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja");
-    else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Minha equipe e perfis");
+    if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja", undefined, "/pessoas/");
+    else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Minha equipe e perfis", "/pessoas/");
     if (!relatorios.get(p.id)) {
-      add("rel_estoque", "Relatório de estoque atual do sistema (lista de produtos com custo, preço, marca e fornecedor)", "Loja");
-      add("rel_vendas", "Relatório de vendas por produto dos últimos 12 meses (com quantidade e valor)", "Loja");
+      add("rel_estoque", "Relatório de estoque atual do sistema (lista de produtos com custo, preço, marca e fornecedor)", "Loja", undefined, "/personalizacao/etapa/?n=8");
+      add("rel_vendas", "Relatório de vendas por produto dos últimos 12 meses (com quantidade e valor)", "Loja", undefined, "/personalizacao/etapa/?n=8");
     }
-    if (!nClientes.get(p.id)) add("clientes", "Lista de clientes (nome, WhatsApp e data da última compra)", "Loja");
-    if (!nCaixa.get(p.id)) add("caixa", "Começar o fechamento de caixa diário no Hub", "Loja");
+    if (!nClientes.get(p.id)) add("clientes", "Lista de clientes (nome, WhatsApp e data da última compra)", "Loja", undefined, "/clientes/");
+    if (!nCaixa.get(p.id)) add("caixa", "Começar o fechamento de caixa diário no Hub", "Loja", undefined, "/gestao/caixa/");
     if (!nAcesso.get(p.id)) add("acesso", "Criar o acesso da loja e mandar o link de entrada", "Equipe");
     if (!nReun.get(p.id)) add("reunioes", "Registrar as reuniões e gravações no portal", "Equipe");
     if (!nInsta.get(p.id)) add("instagram", "Análise do perfil do Instagram", "Equipe");
@@ -93,7 +95,7 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
       return { ...a, status: s?.status ?? "pendente", obs: s?.obs ?? "", por_nome: s?.por_nome ?? null, updated_at: s?.updated_at ?? null, id: s?.id };
     };
     const manuais: Pendencia[] = minhas.filter((x) => x.manual).map((x) => ({
-      chave: x.chave, texto: x.texto ?? "", quem: x.quem, manual: true, status: x.status, obs: x.obs ?? "", por_nome: x.por_nome, updated_at: x.updated_at, id: x.id,
+      chave: x.chave, texto: x.texto ?? "", quem: x.quem, manual: true, onde: ondeResolver(x.texto ?? ""), status: x.status, obs: x.obs ?? "", por_nome: x.por_nome, updated_at: x.updated_at, id: x.id,
     }));
     return { ...p, pendencias: [...auto.map(comStatus), ...manuais] };
   });
@@ -114,17 +116,48 @@ export async function novaPendencia(portalId: string, texto: string, quem: Quem,
 
 export const aberta = (p: Pendencia) => p.status === "pendente" || p.status === "solicitado";
 
-/** Mensagem pronta para a loja com o que falta pedir. */
-export function mensagemParaLoja(p: PortalPend) {
+/** Para pendência escrita à mão: relatório, estoque e vendas sobem em Estoque e relatórios; o resto a loja manda pela Assistente. */
+function ondeResolver(texto: string) {
+  const t = texto.toLowerCase();
+  if (/relat[óo]rio|estoque|vendas|planilha|faturamento|custo|compras/.test(t)) return "/personalizacao/etapa/?n=8";
+  if (/equipe|vendedor|time\b|funcion/.test(t)) return "/pessoas/";
+  if (/cliente/.test(t)) return "/clientes/";
+  return "/assistente/";
+}
+
+/** Nome da página do Hub onde a loja resolve a pendência. */
+export function nomeDoLugar(onde: string) {
+  if (onde.startsWith("/personalizacao/etapa/?n=8")) return "Estoque e relatórios";
+  if (onde.startsWith("/personalizacao")) return "Dados da loja";
+  if (onde.startsWith("/pessoas")) return "Minha equipe e perfis";
+  if (onde.startsWith("/clientes")) return "Minhas clientes";
+  if (onde.startsWith("/gestao/caixa")) return "Fechamento de caixa";
+  return "Assistente Magnética";
+}
+
+/** Mensagem pronta para a loja: o que falta, agrupado pela página do Hub onde ela resolve, com o link de cada página. */
+export function mensagemParaLoja(p: PortalPend, site: string) {
   const itens = p.pendencias.filter((x) => x.quem === "Loja" && aberta(x));
   const nome = (p.responsavel ?? "").trim().split(/\s+/)[0];
+  const semAcesso = p.pendencias.some((x) => x.chave === "acesso" && aberta(x));
+  const grupos = new Map<string, { link: string; linhas: string[] }>();
+  for (const x of itens) {
+    const onde = x.onde ?? "/assistente/";
+    const lugar = nomeDoLugar(onde);
+    const link = lugar === "Dados da loja" ? "/personalizacao/" : onde;
+    const g = grupos.get(lugar) ?? { link, linhas: [] };
+    const texto = x.chave.startsWith("dados_") ? `${x.texto.replace("Dados da loja · ", "")}: ${x.detalhe ?? ""}` : x.texto;
+    g.linhas.push(`• ${texto}`);
+    grupos.set(lugar, g);
+  }
   return [
     `Oi${nome ? `, ${nome}` : ""}! Tudo bem?`,
     "",
-    `Estamos finalizando o Hub da ${p.loja} e, para deixar tudo pronto, precisamos de:`,
+    `Estamos finalizando o Hub da ${p.loja}. Para deixar tudo pronto, falta só isto:`,
+    ...[...grupos.entries()].flatMap(([lugar, g]) => ["", `*${lugar}*`, ...(semAcesso ? [] : [`${site}${g.link}`]), ...g.linhas]),
     "",
-    ...itens.map((x) => `• ${x.texto}${x.detalhe && x.chave.startsWith("dados_") ? ` (${x.detalhe})` : ""}`),
-    "",
-    "Pode mandar por aqui ou subir os relatórios direto no Hub, em Minha loja › Estoque e relatórios. Qualquer dúvida, é só chamar.",
+    semAcesso
+      ? "Seu acesso ao Hub chega em seguida, num link só seu. Até lá, pode mandar tudo por aqui."
+      : "É só abrir o link de cada parte já com o seu acesso ao Hub. Os relatórios do sistema podem subir do jeito que vierem. Qualquer dúvida, é só chamar.",
   ].join("\n");
 }

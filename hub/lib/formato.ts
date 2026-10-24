@@ -10,6 +10,8 @@ export function dataHora(iso: string | null | undefined) {
 
 export function dataCurta(iso: string | null | undefined) {
   if (!iso) return "—";
+  // Data sem hora ("2026-10-20") é o próprio dia: não passa pelo fuso, senão vira o dia anterior.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return dia(iso);
   return new Intl.DateTimeFormat("pt-BR", { timeZone: FUSO, day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date(iso));
 }
 

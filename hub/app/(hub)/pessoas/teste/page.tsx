@@ -2,47 +2,41 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { PerguntasDisc, faltamDisc, type MaisMenos } from "@/components/PerguntasDisc";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { ORDENS, buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
 
 function Teste() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { portal } = usePortal();
-  const [respostas, setRespostas] = useState<(Letra | null)[]>([]);
-  const [por, setPor] = useState<"pessoa" | "gestor">("pessoa");
+  const [r, setR] = useState<MaisMenos>({ mais: [], menos: [] });
+  const [por, setPor] = useState<"pessoa" | "gestor">("gestor");
   const [erro, setErro] = useState("");
   const { dados } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
   const p = dados.pessoas.find((x) => x.id === id);
   if (!p) return <div className="card">Pessoa não encontrada.</div>;
   const PERGUNTAS = dados.m.perguntas;
-  const faltam = PERGUNTAS.filter((_, i) => !respostas[i]).length;
+  const faltam = faltamDisc(PERGUNTAS, r);
   const nome = p.nome.split(" ")[0];
 
   return (
     <>
-      <Titulo voltar={{ href: `/pessoas/pessoa?id=${p.id}`, rotulo: p.nome }} titulo={`Perfil de ${nome}`} sub="12 situações de loja. Em cada uma, escolha a frase que mais parece com a pessoa no dia a dia. Não existe resposta certa." />
+      <Titulo voltar={{ href: `/pessoas/pessoa?id=${p.id}`, rotulo: p.nome }} titulo={`Perfil de ${nome}`}
+        sub={`${PERGUNTAS.length} situações de loja. Em cada uma, marque a frase que MAIS parece e a que MENOS parece com a pessoa no dia a dia. Não existe resposta certa.`} />
       <div className="card mb">
         <label className="rotulo">Quem está respondendo?</label>
         <div className="linha">
-          <label className="marcar"><input type="radio" name="por" checked={por === "pessoa"} onChange={() => setPor("pessoa")} /><span>{nome} responde (no seu celular)</span></label>
           <label className="marcar"><input type="radio" name="por" checked={por === "gestor"} onChange={() => setPor("gestor")} /><span>Eu respondo pelo que observo</span></label>
+          <label className="marcar"><input type="radio" name="por" checked={por === "pessoa"} onChange={() => setPor("pessoa")} /><span>{nome} responde aqui, comigo</span></label>
         </div>
-        {por === "gestor" && <p className="ajuda">Responda como se fosse {nome}, pelo que você vê no dia a dia da loja.</p>}
+        <p className="ajuda">{por === "gestor"
+          ? `Responda como se fosse ${nome}, pelo que você vê no dia a dia da loja.`
+          : `Para ${nome} responder sozinha no celular, sem ver o resto do portal, volte e use "Enviar o teste pelo link".`}</p>
       </div>
-      {PERGUNTAS.map((q, i) => (
-        <fieldset key={q.pergunta} className="card mb" style={{ border: 0 }}>
-          <legend style={{ fontWeight: 700, color: "var(--ink)", padding: 0, marginBottom: 8 }}>{i + 1}. {q.pergunta}</legend>
-          {ORDENS[i % 4].map((l) => (
-            <label key={l} className="marcar">
-              <input type="radio" name={`q${i}`} checked={respostas[i] === l} onChange={() => setRespostas((r) => { const n = [...r]; n[i] = l; return n; })} />
-              <span>{q.opcoes[l]}</span>
-            </label>
-          ))}
-        </fieldset>
-      ))}
+      <PerguntasDisc perguntas={PERGUNTAS} r={r} mudar={setR} quem={nome} />
       {erro && <div className="aviso mb">{erro}</div>}
       <div className="linha">
         <button
@@ -51,7 +45,10 @@ function Teste() {
           disabled={faltam > 0}
           onClick={async () => {
             setErro("");
-            try { await perfilSalvar(p.id, PERGUNTAS.map((_, i) => respostas[i]) as Letra[], por); router.push(`/pessoas/pessoa?id=${p.id}`); } catch (e) { setErro((e as Error).message); }
+            try {
+              await perfilSalvar(p.id, r.mais as Letra[], r.menos as Letra[], por);
+              router.push(`/pessoas/pessoa?id=${p.id}`);
+            } catch (e) { setErro((e as Error).message); }
           }}
         >{faltam ? `Faltam ${faltam}` : "Ver o perfil"}</button>
       </div>

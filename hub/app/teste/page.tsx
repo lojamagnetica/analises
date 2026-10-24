@@ -4,15 +4,15 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ORDENS, type Letra } from "@/lib/pessoas";
+import { PerguntasDisc, faltamDisc, type MaisMenos, type Pergunta } from "@/components/PerguntasDisc";
 
-type Aberto = { nome: string; loja: string; perguntas: { pergunta: string; opcoes: Record<Letra, string> }[] };
+type Aberto = { nome: string; loja: string; perguntas: Pergunta[] };
 
 // O teste de perfil que a própria pessoa da equipe responde pelo link, sem entrar no Hub.
 function Teste() {
   const token = useSearchParams().get("t") ?? "";
   const [t, setT] = useState<Aberto | null | undefined>(undefined);
-  const [respostas, setRespostas] = useState<(Letra | null)[]>([]);
+  const [r, setR] = useState<MaisMenos>({ mais: [], menos: [] });
   const [enviando, setEnviando] = useState(false);
   const [pronto, setPronto] = useState(false);
   const [erro, setErro] = useState("");
@@ -42,27 +42,18 @@ function Teste() {
     );
   }
 
-  const faltam = t.perguntas.filter((_, i) => !respostas[i]).length;
+  const faltam = faltamDisc(t.perguntas, r);
   return (
     <>
       <div className="card mb">
         <h1 style={{ margin: "0 0 6px" }}>Oi, {t.nome}!</h1>
         <p className="mudo" style={{ margin: 0 }}>
-          São {t.perguntas.length} situações da loja. Em cada uma, escolha a frase que mais parece com você no dia a dia.
-          Não existe resposta certa: responda como você é, não como acha que deveria ser.
+          São {t.perguntas.length} situações da loja. Em cada uma, marque a frase que <b>mais</b> parece com você
+          e a que <b>menos</b> parece. Leva uns 8 minutos. Não existe resposta certa: responda como você é no dia a dia,
+          não como acha que deveria ser.
         </p>
       </div>
-      {t.perguntas.map((q, i) => (
-        <fieldset key={q.pergunta} className="card mb" style={{ border: 0 }}>
-          <legend style={{ fontWeight: 700, color: "var(--ink)", padding: 0, marginBottom: 8 }}>{i + 1}. {q.pergunta}</legend>
-          {ORDENS[i % 4].map((l) => (
-            <label key={l} className="marcar">
-              <input type="radio" name={`q${i}`} checked={respostas[i] === l} onChange={() => setRespostas((r) => { const n = [...r]; n[i] = l; return n; })} />
-              <span>{q.opcoes[l]}</span>
-            </label>
-          ))}
-        </fieldset>
-      ))}
+      <PerguntasDisc perguntas={t.perguntas} r={r} mudar={setR} />
       {erro && <div className="aviso mb">{erro}</div>}
       <button
         className="btn p"
@@ -70,7 +61,7 @@ function Teste() {
         disabled={faltam > 0 || enviando}
         onClick={async () => {
           setErro(""); setEnviando(true);
-          const { data, error } = await supabaseBrowser().rpc("teste_responder", { p_token: token, p_respostas: t.perguntas.map((_, i) => respostas[i]) });
+          const { data, error } = await supabaseBrowser().rpc("teste_enviar", { p_token: token, p_mais: r.mais, p_menos: r.menos });
           setEnviando(false);
           if (error || !data) setErro("Não deu para enviar. Confira a internet e tente de novo.");
           else setPronto(true);

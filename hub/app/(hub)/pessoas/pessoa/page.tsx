@@ -75,7 +75,7 @@ function Pessoa() {
       {!perfil ? (
         <div className="card mb">
           <h2>Ainda sem perfil</h2>
-          <p className="mudo">São 12 perguntas com situações de loja. A própria pessoa pode responder no seu celular, ou você responde pelo que observa no dia a dia.</p>
+          <p className="mudo">São 24 situações de loja: em cada uma, a frase que mais parece e a que menos parece com a pessoa. Mande o link para ela responder no celular dela, ou responda você, pelo que observa no dia a dia.</p>
         </div>
       ) : (
         <div className="grade g2 mb">

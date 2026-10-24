@@ -55,7 +55,7 @@ export default function Curso() {
         <div className="mb-hero-txt">
           <span className="mb-olho">Curso · um método magnética</span>
           <h1>Método<br /><b>Loja Magnética</b></h1>
-          <p>16 fundamentos para a sua loja sair do improviso e funcionar com processo, com ou sem você no balcão.</p>
+          <p>16 fundamentos para a sua loja sair do improviso e funcionar com processo, com ou sem você na loja.</p>
           <div className="mb-hero-meta"><span>{c.modulos.length} módulos</span><span>{c.fundamentos.length} fundamentos</span><span>{totalAulas} aulas de até 15 min</span></div>
           <Link href={segue.href} className="mb-segue">
             <span className="mb-segue-play"><Icone nome="play" /></span>

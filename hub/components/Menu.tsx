@@ -21,14 +21,28 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
         { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
+        { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
+      ],
+    });
+    g.push({
+      id: "central", rotulo: "Central do Cliente", icone: "kanban",
+      itens: [
+        { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
+        { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
+        { href: "/equipe/duvidas", rotulo: "Caixa da Assistente", icone: "inbox" },
+      ],
+    });
+    g.push({
+      id: "comercial", rotulo: "Comercial", icone: "target",
+      itens: [
+        { href: "/equipe/comercial", rotulo: "Painel comercial", icone: "chart" },
+        { href: "/equipe/comercial/venda", rotulo: "Nova venda", icone: "plus" },
       ],
     });
     g.push({
       id: "equipe", rotulo: "Portais", icone: "folder",
       itens: [
         { href: "/equipe", rotulo: "Painel dos portais", icone: "kanban" },
-        { href: "/equipe/duvidas", rotulo: "Caixa da Assistente", icone: "inbox" },
-        { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },

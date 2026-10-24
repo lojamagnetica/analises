@@ -212,6 +212,18 @@ button.chip { cursor: pointer; font-family: inherit; }
 .pessoa-diag { padding: 12px 0; border-top: 1px solid var(--line); }
 .pessoa-diag:first-of-type { margin-top: 10px; }
 
+/* Central do Cliente */
+.quadro { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; align-items: flex-start; }
+.coluna { flex: 0 0 250px; background: var(--soft); border-radius: 14px; padding: 10px; }
+.coluna-topo { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13.5px; }
+.jornada-card { display: block; padding: 12px; margin-bottom: 8px; text-decoration: none; color: inherit; border-left: 3px solid var(--line); }
+.jornada-card:hover { border-left-color: var(--red); }
+.jornada-card.atrasada { border-left-color: var(--red); }
+.check-jornada { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.check-jornada:last-child { border-bottom: 0; }
+.check-jornada.feito b { color: var(--muted); text-decoration: line-through; }
+.check-jornada.atrasado b { color: var(--red); }
+
 /* Pendências por cliente */
 .pend { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .pend:last-of-type { border-bottom: 0; }

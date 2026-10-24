@@ -31,6 +31,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 
 ## Regras da marca e do negócio
 - Nome: Loja Magnética / magnética.hub. Nunca "LDS", "Loja de Sucesso" ou "PORTAL DA MENTORIA". Sem "(a)" genérico, sem 🥂.
+- Nunca usar o termo "balcão" (remete a loja popular). Usar "loja", "atendimento", "salão" ou "dia a dia da loja".
 - Textos em português do Brasil, simples e diretos (a usuária principal não é técnica).
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
 - Notion é só leitura.

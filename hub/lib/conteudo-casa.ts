@@ -38,7 +38,7 @@ export const PERFIS: Record<Perfil, { nome: string; arroba: string; titulo: stri
     arroba: "@camillaribeiromentora",
     titulo: "Meu perfil · @camillaribeiromentora",
     avatar: "/conteudo/avatar-camilla.jpg",
-    editorias: ["Prática de balcão", "Gestão do dono", "Data e contexto", "Prova e transformação"],
+    editorias: ["Prática de atendimento", "Gestão do dono", "Data e contexto", "Prova e transformação"],
   },
 };
 

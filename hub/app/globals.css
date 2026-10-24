@@ -84,7 +84,7 @@ p { margin: 0 0 .8em; }
 /* ───── Barra lateral ───── */
 .side {
   width: 290px; flex-shrink: 0; background: var(--side); color: var(--side-text);
-  position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; z-index: 40;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; display: flex; flex-direction: column; z-index: 40;
 }
 .side-topo { display: flex; align-items: center; gap: 12px; padding: 20px 18px 16px; }
 .logo {
@@ -127,7 +127,7 @@ p { margin: 0 0 .8em; }
 .nav-sub .ponto { margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: #D9622C; }
 .em-breve { margin-left: auto; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 99px; background: var(--yellow); color: var(--muted); white-space: nowrap; }
 
-.side-pe { border-top: 1px solid var(--side-2); padding: 14px 16px 16px; }
+.side-pe { border-top: 1px solid var(--side-2); padding: 14px 16px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); }
 .pe-pessoa { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
 .avatar { width: 42px; height: 42px; border-radius: 50%; background: #B7400E; color: #fff; display: grid; place-items: center; font-weight: 700; flex-shrink: 0; overflow: hidden; text-decoration: none; }
 .avatar img { width: 100%; height: 100%; object-fit: cover; }

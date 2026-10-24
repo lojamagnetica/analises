@@ -27,7 +27,6 @@ function Teste() {
   if (pronto) {
     return (
       <div className="card" style={{ textAlign: "center" }}>
-        <div style={{ fontSize: 40 }}>🥂</div>
         <h2>Pronto, {t?.nome}!</h2>
         <p className="mudo">Suas respostas foram enviadas. Obrigada por responder com sinceridade.</p>
       </div>

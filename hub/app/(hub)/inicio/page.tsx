@@ -81,7 +81,7 @@ export default function Inicio() {
     <>
       <div className="heroi mt">
         <div>
-          <h1>Que bom ter você aqui, {quem}! 🥂</h1>
+          <h1>Que bom ter você aqui, {quem}!</h1>
           <p>{portal.lojas?.length > 1
             ? `Este é o Hub da ${portal.lojas.join(" e ")}. Tudo das suas lojas em um lugar só.`
             : `Este é o Hub da ${portal.loja}. Tudo da sua loja em um lugar só.`}</p>

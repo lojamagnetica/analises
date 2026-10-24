@@ -115,7 +115,7 @@ export default function Comece() {
       {equipe && <ConfigVideo v={v} aoSalvar={recarregar} />}
       <div className="grade g2" style={{ alignItems: "start" }}>
         <div className="card" style={{ minWidth: 0 }}>
-          <h2 style={{ marginTop: 0 }}>Que bom ter você aqui{quem ? `, ${quem}` : ""}! 🥂</h2>
+          <h2 style={{ marginTop: 0 }}>Que bom ter você aqui{quem ? `, ${quem}` : ""}!</h2>
           {v ? <Video v={v} aoTerminar={() => setTerminou(true)} /> : (
             <p>Este é o Hub da sua loja: tudo da sua jornada em um lugar só. Antes de qualquer coisa, entenda a ordem. Cada etapa prepara a próxima, e o Hub só funciona bem quando conhece a sua loja de verdade.</p>
           )}

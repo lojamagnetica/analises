@@ -59,11 +59,12 @@ function gravarComoLoja(sim: boolean) {
   try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
 }
 
+// Modo apresentação vale só enquanto a janela está aberta: ao reabrir o Hub, a faixa da equipe volta a aparecer.
 function lerApresentacao() {
-  try { return localStorage.getItem(CHAVE_APRESENTACAO) === "1"; } catch { return false; }
+  try { return sessionStorage.getItem(CHAVE_APRESENTACAO) === "1"; } catch { return false; }
 }
 function gravarApresentacao(sim: boolean) {
-  try { if (sim) localStorage.setItem(CHAVE_APRESENTACAO, "1"); else localStorage.removeItem(CHAVE_APRESENTACAO); } catch { /* sem armazenamento */ }
+  try { localStorage.removeItem(CHAVE_APRESENTACAO); if (sim) sessionStorage.setItem(CHAVE_APRESENTACAO, "1"); else sessionStorage.removeItem(CHAVE_APRESENTACAO); } catch { /* sem armazenamento */ }
 }
 
 function lerPortalEscolhido() {

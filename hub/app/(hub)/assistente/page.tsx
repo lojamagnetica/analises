@@ -5,7 +5,7 @@ import { Titulo } from "@/components/Titulo";
 import { Escrever } from "@/components/Gravador";
 import { Conversa } from "@/components/Conversa";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
-import { TIPOS, aberta, buscarDoPortal, enviarSolicitacao, responder, type Tipo } from "@/lib/assistente";
+import { TIPOS, aberta, buscarCamilla, buscarDoPortal, enviarSolicitacao, responder, type Tipo } from "@/lib/assistente";
 
 const DICA: Record<Tipo, string> = {
   "Dúvida": "Algo do método, de uma ferramenta ou de uma ação que não ficou claro.",
@@ -14,13 +14,14 @@ const DICA: Record<Tipo, string> = {
   "Urgente": "Não pode esperar o próximo encontro. A equipe vê primeiro.",
 };
 
-export default function Assistente() {
+export default function FaleComACamilla() {
   const { portal, userId, nome } = usePortal();
   const [tipo, setTipo] = useState<Tipo>("Dúvida");
   const [enviada, setEnviada] = useState(false);
   const [verTodas, setVerTodas] = useState(false);
   const [respondendo, setRespondendo] = useState<string | null>(null);
   const { dados, recarregar } = useDados(() => buscarDoPortal(portal.id), [portal.id]);
+  const { dados: camilla } = useDados(() => buscarCamilla(), []);
   if (!dados) return <Carregando />;
 
   const abertas = dados.filter((s) => aberta(s) || s.status === "Respondida");
@@ -29,18 +30,19 @@ export default function Assistente() {
 
   return (
     <>
-      <Titulo
-        titulo="✨ Assistente Magnética"
-        aba="Assistente"
-        sub="Seu canal direto com a Camilla e a equipe. Escreva ou mande um áudio: cada mensagem vira uma solicitação com prazo e o nome de quem cuida."
-      />
+      <Titulo titulo="Fale com a Camilla" aba="Fale com a Camilla" />
 
       <div className="card mb" style={{ maxWidth: 760 }}>
-        <h3 style={{ margin: "0 0 4px" }}>Oi, {primeiroNome(nome)}! O que você precisa?</h3>
-        <p className="ajuda" style={{ margin: "0 0 12px" }}>Resposta em até 12 horas úteis (segunda a sexta, das 9h às 18h).</p>
+        <div className="linha" style={{ gap: 14, alignItems: "center", flexWrap: "nowrap", marginBottom: 12 }}>
+          <span className="avatar-camilla">{camilla?.foto ? <img src={camilla.foto} alt="Camilla Ribeiro" /> : "C"}</span>
+          <div>
+            <h3 style={{ margin: "0 0 2px" }}>Oi, {primeiroNome(nome)}! Me conta o que você precisa.</h3>
+            <p className="ajuda" style={{ margin: 0 }}>Me escreve ou manda um áudio. Eu e a minha equipe respondemos em até 12 horas úteis (segunda a sexta, das 9h às 18h).</p>
+          </div>
+        </div>
         {enviada && <div className="aviso ok mb">Mensagem enviada. A resposta aparece aqui embaixo.</div>}
         <Escrever
-          rotulo="Enviar para a equipe"
+          rotulo="Enviar para a Camilla"
           placeholder="Escreva aqui, ou grave um áudio…"
           antes={
             <>

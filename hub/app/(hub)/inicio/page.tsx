@@ -16,7 +16,7 @@ const ATALHOS = [
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
   { href: "/clientes", rotulo: "Clientes", icone: "users", cor: "var(--purple)" },
-  { href: "/assistente", rotulo: "Assistente", icone: "robot", cor: "var(--purple)" },
+  { href: "/assistente", rotulo: "Fale com a Camilla", icone: "chat", cor: "var(--purple)" },
   { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
 ];
 
@@ -28,7 +28,7 @@ const TUDO = [
   { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
   { titulo: "De cliente a fã", icone: "users", cor: "var(--accent)", itens: [["/clientes", "Minhas clientes"], ["/clientes/tipos", "Ações por tipo"], ["/clientes/resgate", "Resgate"], ["/clientes/campanhas", "Top 10 campanhas"], ["/clientes/experiencia", "Experiência do cliente"]] },
   { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
-  { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/assistente", "Assistente Magnética: fale com a equipe"]] },
+  { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/assistente", "Fale com a Camilla"]] },
 ];
 
 const PASSOS_ENTRADA = [
@@ -121,7 +121,7 @@ export default function Inicio() {
 
       {respondidas > 0 && (
         <Link href="/assistente" className="card card-borda mt linha entre" style={{ ["--c" as string]: "var(--purple)", textDecoration: "none", color: "inherit" }}>
-          <span><b>A equipe respondeu {respondidas === 1 ? "1 mensagem" : `${respondidas} mensagens`}</b> na Assistente Magnética.</span>
+          <span><b>Você tem {respondidas === 1 ? "1 resposta nova" : `${respondidas} respostas novas`}</b> em Fale com a Camilla.</span>
           <span className="btn s peq">Ver resposta{respondidas === 1 ? "" : "s"}</span>
         </Link>
       )}

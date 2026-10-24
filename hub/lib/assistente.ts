@@ -1,4 +1,4 @@
-// Assistente Magnética: o canal da loja com a equipe. Cada mensagem (texto ou áudio) vira uma solicitação
+// Fale com a Camilla: o canal da loja com a Camilla e a equipe. Cada mensagem (texto ou áudio) vira uma solicitação
 // com tipo, status, prazo de resposta e quem cuida. A equipe responde e pode transformar em ação ou tarefa.
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -139,4 +139,10 @@ export async function virarTarefa(s: Solicitacao, o: { consultoria: boolean; que
     await ok(sb().from("plano_itens").insert({ portal_id: s.portal_id, mes: mesDoPlano(o.inicio), ordem: 800, texto: resumo(s), origem: "assistente" }));
   }
   await ok(sb().from("solicitacoes").update({ vinculo: o.consultoria ? "acao" : "plano", status: "Em andamento", updated_at: new Date().toISOString() }).eq("id", s.id));
+}
+
+/** Nome e foto da Camilla para o topo do Fale com a Camilla (ficam em hub_config, que a loja pode ler). */
+export async function buscarCamilla() {
+  const { data } = await sb().from("hub_config").select("valor").eq("chave", "camilla").maybeSingle();
+  return (data?.valor ?? null) as { nome: string; foto: string | null } | null;
 }

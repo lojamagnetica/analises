@@ -53,7 +53,7 @@ export function Ferramentas({ temPortal }: { temPortal: boolean }) {
         <button className="redondo" title="Aumentar letra" onClick={aumentarLetra}><Icone nome="font" /></button>
         <button className="redondo" title="Modo escuro" onClick={alternarTema}><Icone nome="moon" /></button>
         {temPortal && <Link className="redondo" href="/notas" title="Notas"><Icone nome="note" /></Link>}
-        {temPortal && <Link className="redondo ia" href="/assistente" title="Assistente Magnética"><Icone nome="robot" /></Link>}
+        {temPortal && <Link className="redondo ia" href="/assistente" title="Fale com a Camilla"><Icone nome="chat" /></Link>}
       </div>
     </div>
   );

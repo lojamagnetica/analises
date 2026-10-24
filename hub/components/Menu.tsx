@@ -29,7 +29,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       itens: [
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
-        { href: "/equipe/duvidas", rotulo: "Caixa da Assistente", icone: "inbox" },
+        { href: "/equipe/duvidas", rotulo: "Caixa do Fale com a Camilla", icone: "inbox" },
       ],
     });
     g.push({
@@ -222,7 +222,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
           {props.temPortal && (
             <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
-                <Icone nome="robot" /> ✨ Assistente Magnética
+                <Icone nome="chat" /> Fale com a Camilla
               </Link>
             </div>
           )}

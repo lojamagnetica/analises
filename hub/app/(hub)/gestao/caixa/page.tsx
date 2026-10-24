@@ -99,7 +99,7 @@ function FechamentoCaixa() {
 
   return (
     <>
-      <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: faturamento, vendas e peças. É daqui que sai o Painel da loja." />
+      <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: faturamento, vendas e peças. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
 
       <form className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }} onSubmit={salvar}>
         <div className="linha entre">
@@ -150,7 +150,7 @@ function FechamentoCaixa() {
           <b style={{ minWidth: 150, textAlign: "center" }}>{nomeMes(mes)}</b>
           <button type="button" className="btn s peq" aria-label="Próximo mês" disabled={noMesAtual} onClick={() => setMes(somarMes(mes, 1))}>›</button>
         </div>
-        <Link className="btn s peq" href={`/painel?mes=${mes}`}>Ver o painel do mês</Link>
+        <Link className="btn s peq" href={`/gestao/resultado?mes=${mes}`}>Ver o resultado do mês</Link>
       </div>
 
       {varias && (

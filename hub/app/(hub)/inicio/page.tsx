@@ -11,7 +11,7 @@ import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { liberado, requisito } from "@/lib/entrada";
 
 const ATALHOS = [
-  { href: "/painel", rotulo: "Painel da loja", icone: "chart", cor: "var(--red)" },
+  { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
@@ -23,7 +23,7 @@ const ATALHOS = [
 const TUDO = [
   { titulo: "Minha mentoria", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"], ["/notas", "Notas"]] },
   { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/comece", "Comece aqui"], ["/personalizacao", "Dados da loja"], ["/personalizacao/etapa?n=8", "Estoque e relatórios"], ["/pessoas", "Minha equipe e perfis"]] },
-  { titulo: "Gestão estratégica", icone: "chart", cor: "var(--red)", itens: [["/painel", "Painel da loja"], ["/gestao/caixa", "Fechamento de caixa"], ["/metas", "Metas e calculadora"], ["/estoque", "Estoque x o que fazer"]] },
+  { titulo: "Gestão estratégica", icone: "chart", cor: "var(--red)", itens: [["/painel", "Diagnóstico da loja"], ["/gestao/caixa", "Fechamento de caixa"], ["/gestao/resultado", "Resultado do mês"], ["/metas", "Metas e calculadora"], ["/estoque", "Estoque x o que fazer"]] },
   { titulo: "Gestão de pessoas", icone: "team", cor: "var(--purple)", itens: [["/pessoas/retorno", "Dar retorno"], ["/pessoas/reuniao-semanal", "Reunião semanal"], ["/pessoas/reuniao-mensal", "Reunião do mês"], ["/pessoas/desenvolvimento", "Desenvolvimento"], ["/pessoas/gincanas", "Gincanas"]] },
   { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
   { titulo: "De cliente a fã", icone: "users", cor: "var(--accent)", itens: [["/clientes", "Minhas clientes"], ["/clientes/tipos", "Ações por tipo"], ["/clientes/resgate", "Resgate"], ["/clientes/campanhas", "Top 10 campanhas"], ["/clientes/experiencia", "Experiência do cliente"]] },

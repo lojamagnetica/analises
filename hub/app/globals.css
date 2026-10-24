@@ -199,6 +199,18 @@ p { margin: 0 0 .8em; }
 button.chip { cursor: pointer; font-family: inherit; }
 .chip.escolhido { background: var(--ink); color: var(--card); border-color: var(--ink); }
 
+/* Diagnóstico da loja */
+.barra-equipe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--orange-soft); }
+.barra-equipe.ok { background: var(--green-soft); }
+.grade-alerta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.acao-alerta { border-left: 1px solid var(--line); padding-left: 18px; }
+@media (max-width: 720px) { .grade-alerta { grid-template-columns: 1fr; } .acao-alerta { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; } }
+.grade .kpi small { display: block; margin-top: 2px; }
+.desejo { padding: 10px 12px; border-radius: 12px; background: var(--purple-soft); }
+.desejo small { font-weight: 700; color: var(--purple); }
+.pessoa-diag { padding: 12px 0; border-top: 1px solid var(--line); }
+.pessoa-diag:first-of-type { margin-top: 10px; }
+
 /* Assistente Magnética */
 .resposta { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--soft); }
 .resposta.da-equipe { background: var(--purple-soft, var(--soft)); border-left: 3px solid var(--purple); }

@@ -15,7 +15,7 @@ type YTWindow = Window & {
 
 const PASSOS = [
   { n: 1, titulo: "Assistir a este vídeo", abre: "Dados da loja e Minha equipe" },
-  { n: 2, titulo: "Preencher os Dados da loja", abre: "Painel da loja, Gestão estratégica e Vendas" },
+  { n: 2, titulo: "Preencher os Dados da loja", abre: "Diagnóstico da loja, Gestão estratégica e Vendas" },
   { n: 3, titulo: "Cadastrar a sua equipe", abre: "Gestão de pessoas" },
 ];
 

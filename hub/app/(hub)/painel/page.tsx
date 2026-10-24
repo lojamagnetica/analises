@@ -1,304 +1,426 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { moeda } from "@/lib/formato";
+import { dataHora, hoje, moeda } from "@/lib/formato";
 import {
-  PA_IDEAL, arredondarGanho, buscarCaixa, daLoja, diagnosticar, fmtPa, fraseFoco, indicadores, mesDeHoje, mesValido, nomeMes, numeroDe,
-  pmDoEstoque, somar, somarMes, type Foco, type PmEstoque,
-} from "@/lib/caixa";
+  NIVEIS, buscarDiagnosticos, caixaPorMes, classeNivel, completo, corNivel, criarDiagnostico, liberarDiagnostico, mesCurto,
+  rotuloNivel, salvarDiagnostico, variacao, vazio,
+  type Diagnostico, type LinhaDiagnostico, type Mes, type Nivel,
+} from "@/lib/diagnostico";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
-const ETAPA_ESTOQUE = "/personalizacao/etapa?n=8";
-const gincanas = (indicador: string) => `/pessoas/gincanas?ind=${encodeURIComponent(indicador)}`;
+const pct = (v: number | null) => (v == null ? "—" : `${v > 0 ? "+" : ""}${v.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}%`);
+const reais = (v: number | null) => (v == null ? "—" : moeda(v));
+const num = (v: string) => { const n = Number(v.replace(/\./g, "").replace(",", ".")); return v.trim() === "" || Number.isNaN(n) ? null : n; };
+const nomeDaVisao = (l: string, varias: boolean) => l || (varias ? "As lojas juntas" : "Visão geral");
 
-type Acao = { texto: string; link?: { href: string; rotulo: string } };
-const FOCOS: Record<Foco["tipo"], { titulo: string; resumo: string; acoes: Acao[] }> = {
-  pa: {
-    titulo: "Vender mais peças em cada venda",
-    resumo: "O PA está abaixo de 2,5: quem compra leva uma peça e vai embora. O foco é a venda adicional, o leva junto.",
-    acoes: [
-      { texto: "Em todo atendimento, ofereça a peça que leva junto: a que completa o look que já foi escolhido." },
-      { texto: "Treine o time com os scripts de venda adicional e use todos os dias.", link: { href: "/scripts", rotulo: "Abrir os scripts" } },
-      { texto: "Rode uma gincana de PA por uma semana, com o prêmio anunciado antes.", link: { href: gincanas("Peças por atendimento"), rotulo: "Ver gincanas de PA" } },
-      { texto: "Olhe o PA do fechamento de cada dia e comente com o time na manhã seguinte." },
-    ],
-  },
-  pm: {
-    titulo: "Vender no preço médio do estoque",
-    resumo: "O preço médio vendido está abaixo do preço médio do estoque: a loja vende as peças mais baratas ou dá desconto demais, e as peças caras ficam paradas.",
-    acoes: [
-      { texto: "Comece o atendimento pela peça de desejo: mostre primeiro a peça de maior valor e só depois as de entrada." },
-      { texto: "Revise a política de desconto: quem pode dar, quanto e em que situação. Desconto não é argumento de venda." },
-      { texto: "Separe as peças caras paradas e monte uma ação para elas: vitrine, provador, conteúdo e uma meta para o time." },
-      { texto: "Rode uma gincana de ticket médio.", link: { href: gincanas("Ticket médio"), rotulo: "Ver gincanas de ticket médio" } },
-    ],
-  },
-};
+type Muda = (f: (d: Diagnostico) => void) => void;
 
-/** Abaixo, no ou acima do ideal (comparando como a loja lê o número). */
-function Selo({ valor, ideal, casas = 0 }: { valor: number | null; ideal: number | null; casas?: number }) {
-  if (valor == null || ideal == null) return <span className="selo espera">sem referência</span>;
-  const r = (n: number) => Math.round(n * 10 ** casas) / 10 ** casas;
-  if (r(valor) < r(ideal)) return <span className="selo alerta">abaixo do ideal</span>;
-  return <span className="selo feito">{r(valor) > r(ideal) ? "acima do ideal" : "no ideal"}</span>;
+/** Texto que vira caixa de edição no modo de edição da equipe. */
+function Texto({ v, ed, set, linhas = 3, ph, forte }: { v: string; ed: boolean; set: (s: string) => void; linhas?: number; ph?: string; forte?: boolean }) {
+  if (ed) return <textarea value={v} rows={linhas} placeholder={ph} onChange={(e) => set(e.target.value)} />;
+  if (!v) return null;
+  return <p style={{ whiteSpace: "pre-wrap", margin: "6px 0 0", fontWeight: forte ? 600 : undefined }}>{v}</p>;
 }
-
-function Barra({ valor, ideal }: { valor: number; ideal: number | null }) {
-  if (!ideal) return null;
-  const pct = Math.min(100, (valor / ideal) * 100);
-  return <div className="barra mt" aria-hidden><i style={{ width: `${pct}%`, background: pct >= 99.5 ? "var(--green)" : undefined }} /></div>;
+function Campo({ v, ed, set, ph, largura }: { v: string; ed: boolean; set: (s: string) => void; ph?: string; largura?: number }) {
+  return ed ? <input type="text" value={v} placeholder={ph} onChange={(e) => set(e.target.value)} style={largura ? { maxWidth: largura } : undefined} /> : <>{v}</>;
 }
-
-function Estimado({ pm }: { pm: PmEstoque }) {
-  return pm.estimado ? <span className="selo espera" style={{ marginLeft: 6, fontSize: 11 }}>estimado</span> : null;
+function Numero({ v, ed, set, fmt }: { v: number | null; ed: boolean; set: (n: number | null) => void; fmt: (n: number | null) => string }) {
+  return ed ? <input type="text" inputMode="decimal" value={v ?? ""} onChange={(e) => set(num(e.target.value))} style={{ minWidth: 80 }} /> : <>{fmt(v)}</>;
 }
-
-function SemPmEstoque() {
+function EscolheNivel({ v, set }: { v?: Nivel; set: (n: Nivel) => void }) {
   return (
-    <div className="card card-borda mt" style={{ ["--c" as string]: "var(--orange)" }}>
-      <h3>Falta o preço médio do estoque</h3>
-      <p style={{ marginTop: 0 }}>
-        O ticket médio ideal é o preço médio do seu estoque × 2,5. Sem esse número, o painel não consegue dizer se a loja está vendendo só as peças mais baratas.
-      </p>
-      <Link className="btn p peq" href={ETAPA_ESTOQUE}>Preencher Estoque e fornecedores</Link>
-      <div className="ajuda">Não sabe o preço médio? Informe quanto tem em estoque e quantas peças: o Hub faz a conta.</div>
-    </div>
+    <select value={v ?? "atencao"} onChange={(e) => set(e.target.value as Nivel)} style={{ maxWidth: 140 }}>
+      {NIVEIS.map((n) => <option key={n.v} value={n.v}>{n.rotulo}</option>)}
+    </select>
   );
 }
+function Tirar({ ed, f }: { ed: boolean; f: () => void }) {
+  return ed ? <button type="button" className="btn s peq" onClick={f} aria-label="Remover">Remover</button> : null;
+}
+function Mais({ ed, f, rotulo }: { ed: boolean; f: () => void; rotulo: string }) {
+  return ed ? <button type="button" className="btn s peq mt" onClick={f}>+ {rotulo}</button> : null;
+}
 
-function Painel() {
-  const params = useSearchParams();
-  const { portal, pers } = usePortal();
-  const lojas = portal.lojas ?? [];
-  const varias = lojas.length > 1;
-  const todas = lojas.length === 2 ? "As duas lojas" : "Todas as lojas";
-  const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) && m <= mesDeHoje() ? m : mesDeHoje(); });
-  const [loja, setLoja] = useState(() => { const l = params.get("loja"); return l && lojas.includes(l) ? l : ""; });
-  const { dados } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
-  if (!dados) return <Carregando />;
-
-  const pmEst = pmDoEstoque(pers.get(8)?.respostas);
-  const lista = dados.filter((c) => daLoja(c, loja));
-  const ind = indicadores(somar(lista));
-  const diag = diagnosticar(ind, pmEst?.valor ?? null);
-  const mesFechado = mes < mesDeHoje();
-  const noMes = mesFechado ? "no mês" : "neste mês, só com as vendas lançadas";
-  const onde = loja ? ` na ${loja}` : "";
-
-  // Referência da Personalização (Metas e números) para quando ainda não há fechamento.
-  const metas = pers.get(6)?.respostas;
-  const ticketCadastro = numeroDe(metas?.ticket);
-  const paCadastro = numeroDe(metas?.pa);
-
-  const cabecalho = (
+function Performance({ d, ed, muda, caixa }: { d: Diagnostico; ed: boolean; muda: Muda; caixa: Map<string, number> }) {
+  // O número importado do relatório vale para o mês fechado; o fechamento de caixa do Hub preenche os meses sem número
+  // (o mês atual aparece como parcial).
+  const conhecidos = new Set(d.performance.meses.map((m) => m.mes));
+  const doCaixa = [...caixa.keys()].filter((k) => !conhecidos.has(k)).map((k) => ({ mes: k, valor: null, anterior: null, meta: null }));
+  const meses: (Mes & { doCaixa: boolean })[] = [...d.performance.meses, ...doCaixa]
+    .sort((a, b) => a.mes.localeCompare(b.mes))
+    .map((m) => (m.valor == null && caixa.has(m.mes) ? { ...m, valor: caixa.get(m.mes) ?? null, doCaixa: true } : { ...m, doCaixa: false }));
+  const atual = hoje().slice(0, 7);
+  const ultimos = meses.filter((m) => m.valor != null).slice(-3);
+  return (
     <>
-      <Titulo titulo="Painel da loja" sub="PA, ticket médio e preço médio do mês, a partir do fechamento de caixa." />
-      {varias && (
-        <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">
-          {["", ...lojas].map((l) => (
-            <button key={l || "todas"} type="button" className="chip" aria-pressed={loja === l} onClick={() => setLoja(l)}
-              style={loja === l ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
-              {l || todas}
-            </button>
-          ))}
+      {ultimos.length > 0 && (
+        <div className="grade g3">
+          {ultimos.map((m) => {
+            const parcial = m.mes === atual;
+            const vsAno = parcial ? null : variacao(m.valor, m.anterior);
+            const vsMeta = m.meta ? ((m.valor ?? 0) / m.meta) * 100 : null;
+            return (
+              <div key={m.mes} className="card card-borda kpi" style={{ ["--c" as string]: parcial ? "var(--blue)" : vsMeta != null && vsMeta < 100 ? "var(--orange)" : "var(--green)" }}>
+                <small>{mesCurto(m.mes)}{m.doCaixa ? (m.mes === atual ? " · até hoje, pelo fechamento" : " · pelo fechamento") : ""}</small>
+                <b style={NUM}>{reais(m.valor)}</b>
+                {!parcial && <small>{vsAno != null ? `${pct(vsAno)} sobre o ano anterior` : "sem ano anterior"}</small>}
+                {vsMeta != null && <small>{vsMeta.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}% da meta de {moeda(m.meta ?? 0)}{parcial ? " até agora" : ""}</small>}
+              </div>
+            );
+          })}
         </div>
       )}
-      <div className="linha entre mb">
-        <div className="linha" style={{ gap: 6 }}>
-          <button type="button" className="btn s peq" aria-label="Mês anterior" onClick={() => setMes(somarMes(mes, -1))}>‹</button>
-          <b style={{ minWidth: 150, textAlign: "center" }}>{nomeMes(mes)}</b>
-          <button type="button" className="btn s peq" aria-label="Próximo mês" disabled={!mesFechado} onClick={() => setMes(somarMes(mes, 1))}>›</button>
-        </div>
-        <Link className="btn s peq" href={`/gestao/caixa?mes=${mes}`}>Fechamento de caixa</Link>
-      </div>
+      <Texto v={d.performance.leitura} ed={ed} set={(s) => muda((x) => { x.performance.leitura = s; })} ph="Leitura da performance e foco do objetivo" />
+      {(meses.length > 0 || ed) && (
+        <details className="mt" open={ed}>
+          <summary style={{ cursor: "pointer" }}><b>Todos os meses</b></summary>
+          <div style={{ overflowX: "auto" }}>
+            <table className="tabela mt">
+              <thead><tr><th>Mês</th><th>Faturamento</th><th>Ano anterior</th><th>Variação</th><th>Meta</th>{ed && <th />}</tr></thead>
+              <tbody>
+                {meses.map((m) => ({ m, i: d.performance.meses.findIndex((x) => x.mes === m.mes) })).filter(({ m, i }) => !ed || i >= 0 || m.mes === "").map(({ m, i }) => (
+                  <tr key={`${m.mes}-${i}`}>
+                    <td>{ed ? <Campo v={m.mes} ed set={(s) => muda((x) => { x.performance.meses[i].mes = s; })} ph="2026-09" largura={100} /> : mesCurto(m.mes)}</td>
+                    <td style={NUM}>{ed ? <Numero v={d.performance.meses[i].valor} ed set={(n) => muda((x) => { x.performance.meses[i].valor = n; })} fmt={reais} /> : <>{reais(m.valor)}{m.doCaixa && <small className="mudo"> (fechamento)</small>}</>}</td>
+                    <td style={NUM}><Numero v={m.anterior} ed={ed} set={(n) => muda((x) => { x.performance.meses[i].anterior = n; })} fmt={reais} /></td>
+                    <td style={NUM}>{pct(variacao(m.valor, m.anterior))}</td>
+                    <td style={NUM}><Numero v={m.meta} ed={ed} set={(n) => muda((x) => { x.performance.meses[i].meta = n; })} fmt={reais} /></td>
+                    {ed && <td><Tirar ed f={() => muda((x) => { x.performance.meses.splice(i, 1); })} /></td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <Mais ed={ed} rotulo="mês" f={() => muda((x) => { x.performance.meses.push({ mes: "", valor: null, anterior: null, meta: null }); })} />
+        </details>
+      )}
     </>
   );
+}
 
-  if (!diag) {
-    return (
-      <>
-        {cabecalho}
-        <div className="card">
-          <h3>Sem fechamento de caixa em {nomeMes(mes).toLowerCase()}{onde}</h3>
-          <p className="mudo" style={{ marginTop: 0 }}>
-            O painel sai do fechamento de cada dia: faturamento, número de vendas e peças vendidas. Lance os dias e os números aparecem aqui.
-          </p>
-          <Link className="btn p" href={`/gestao/caixa?mes=${mes}`}>Lançar o fechamento de caixa</Link>
-        </div>
-        {(ticketCadastro || paCadastro) && (
-          <div className="card mt">
-            <h3>Do seu cadastro</h3>
-            <p className="mudo" style={{ marginTop: 0 }}>O que você informou em Metas e números, na Personalização. Vale como referência até os primeiros fechamentos.</p>
-            <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
-              {ticketCadastro ? (
-                <div className="kpi">
-                  <small>Ticket médio <span className="selo espera" style={{ fontSize: 11 }}>do cadastro</span></small>
-                  <b>{moeda(ticketCadastro)}</b>
-                  {pmEst && <small>Ideal: {moeda(pmEst.valor * PA_IDEAL)}</small>}
-                </div>
-              ) : null}
-              {paCadastro ? (
-                <div className="kpi">
-                  <small>PA <span className="selo espera" style={{ fontSize: 11 }}>do cadastro</span></small>
-                  <b>{fmtPa(paCadastro)}</b>
-                  <small>Ideal: {fmtPa(PA_IDEAL)}</small>
-                </div>
-              ) : null}
-              {pmEst && (
-                <div className="kpi">
-                  <small>Preço médio do estoque<Estimado pm={pmEst} /></small>
-                  <b>{moeda(pmEst.valor)}</b>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        {!pmEst && <SemPmEstoque />}
-      </>
-    );
-  }
-
-  const { pa, tkm, pm } = ind as { pa: number; tkm: number; pm: number };
-  const [principal] = diag.focos;
-
+function Corpo({ d, ed, muda, caixa, equipeHub }: { d: Diagnostico; ed: boolean; muda: Muda; caixa: Map<string, number>; equipeHub: boolean }) {
+  const ordem: Record<Nivel, number> = { critico: 0, atencao: 1, ok: 2 };
+  const alertas = ed ? d.alertas.map((a, i) => ({ a, i })) : d.alertas.map((a, i) => ({ a, i })).sort((x, y) => ordem[x.a.nivel] - ordem[y.a.nivel]);
   return (
     <>
-      {cabecalho}
-
-      <div className="heroi mb">
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <small style={{ opacity: 0.8, letterSpacing: ".08em", textTransform: "uppercase" }}>
-            {loja || (varias ? todas : nomeMes(mes))} · {ind.dias} {ind.dias === 1 ? "dia lançado" : "dias lançados"}{mesFechado ? "" : " · mês em andamento"}
-          </small>
-          {principal ? (
-            <>
-              <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: "4px 0 8px" }}>Foco do mês: {FOCOS[principal.tipo].titulo.toLowerCase()}</div>
-              <p style={NUM}>{fraseFoco(principal, mesFechado)}</p>
-              {diag.focos.length > 1 && diag.tkmIdeal != null && diag.ganhoTotal ? (
-                <p className="mt" style={NUM}>
-                  Com os dois no ideal (PA 2,5 e o preço médio do estoque), o TKM vai para {moeda(diag.tkmIdeal)}: +{moeda(arredondarGanho(diag.ganhoTotal))} {noMes}.
-                </p>
-              ) : null}
-            </>
-          ) : diag.pmOk ? (
-            <>
-              <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: "4px 0 8px" }}>PA e preço médio no ideal</div>
-              <p style={NUM}>Ticket médio de {moeda(tkm)}, com ideal de {moeda(diag.tkmIdeal ?? 0)}. Mantenha a rotina e suba a meta do próximo mês.</p>
-            </>
-          ) : (
-            <>
-              <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: "4px 0 8px" }}>PA no ideal</div>
-              <p>Falta o preço médio do estoque para saber se o ticket médio está no ideal.</p>
-            </>
-          )}
-        </div>
+      <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+        <h3 style={{ margin: 0 }}>Cenário e foco</h3>
+        <Texto v={d.cenario.resumo} ed={ed} set={(s) => muda((x) => { x.cenario.resumo = s; })} linhas={4} ph="O cenário da loja em poucas linhas" forte />
+        {(d.cenario.objetivo || ed) && (
+          <div className="mt"><small className="mudo">Objetivo</small><Texto v={d.cenario.objetivo} ed={ed} set={(s) => muda((x) => { x.cenario.objetivo = s; })} linhas={2} /></div>
+        )}
+        {(d.cenario.foco.length > 0 || ed) && (
+          <div className="mt">
+            <small className="mudo">Foco agora</small>
+            <ol style={{ margin: "6px 0 0", paddingLeft: 20 }}>
+              {d.cenario.foco.map((f, i) => (
+                <li key={i} style={{ marginBottom: 4 }}>
+                  {ed ? <div className="linha"><input type="text" value={f} onChange={(e) => muda((x) => { x.cenario.foco[i] = e.target.value; })} style={{ flex: 1 }} /><Tirar ed f={() => muda((x) => { x.cenario.foco.splice(i, 1); })} /></div> : f}
+                </li>
+              ))}
+            </ol>
+            <Mais ed={ed} rotulo="foco" f={() => muda((x) => { x.cenario.foco.push(""); })} />
+          </div>
+        )}
       </div>
 
-      <div className="secao">Os três números</div>
-      <div className="grade g3" style={NUM}>
-        <div className="card kpi">
-          <div className="linha entre"><small>PA · peças por venda</small><Selo valor={pa} ideal={PA_IDEAL} casas={1} /></div>
-          <b className="mt">{fmtPa(pa)}</b>
-          <Barra valor={pa} ideal={PA_IDEAL} />
-          <small>Ideal: {fmtPa(PA_IDEAL)}</small>
-        </div>
-        <div className="card kpi">
-          <div className="linha entre"><small>TKM · ticket médio</small><Selo valor={tkm} ideal={diag.tkmIdeal} /></div>
-          <b className="mt">{moeda(tkm)}</b>
-          <Barra valor={tkm} ideal={diag.tkmIdeal} />
-          <small>{diag.tkmIdeal != null ? `Ideal: ${moeda(diag.tkmIdeal)} (preço médio do estoque × 2,5)` : "Ideal: falta o preço médio do estoque"}</small>
-        </div>
-        <div className="card kpi">
-          <div className="linha entre"><small>PM · preço médio vendido</small><Selo valor={pm} ideal={pmEst?.valor ?? null} /></div>
-          <b className="mt">{moeda(pm)}</b>
-          <Barra valor={pm} ideal={pmEst?.valor ?? null} />
-          <small>
-            {pmEst ? <>Do estoque: {moeda(pmEst.valor)}{pmEst.calculado ? " (valor ÷ peças)" : ""}<Estimado pm={pmEst} /></> : "Do estoque: não preenchido"}
-          </small>
-        </div>
-      </div>
-      {varias && pmEst && (
-        <p className="ajuda">O preço médio do estoque é o mesmo para {lojas.join(" e ")}: por enquanto a Personalização é uma só para o portal.</p>
-      )}
-      {!pmEst && <SemPmEstoque />}
+      <div className="secao">Performance dos últimos 3 meses</div>
+      <Performance d={d} ed={ed} muda={muda} caixa={caixa} />
 
-      {diag.focos.length > 0 && (
+      <div className="secao">Estoque e cobertura</div>
+      <div className="grade g4">
+        {d.estoque.indicadores.map((k, i) => (
+          <div key={i} className="card card-borda kpi" style={{ ["--c" as string]: corNivel(k.nivel) }}>
+            {ed ? (
+              <div style={{ display: "grid", gap: 6 }}>
+                <input type="text" value={k.rotulo} placeholder="Indicador" onChange={(e) => muda((x) => { x.estoque.indicadores[i].rotulo = e.target.value; })} />
+                <input type="text" value={k.valor} placeholder="Valor" onChange={(e) => muda((x) => { x.estoque.indicadores[i].valor = e.target.value; })} />
+                <input type="text" value={k.ideal} placeholder="Ideal" onChange={(e) => muda((x) => { x.estoque.indicadores[i].ideal = e.target.value; })} />
+                <input type="text" value={k.nota} placeholder="Nota" onChange={(e) => muda((x) => { x.estoque.indicadores[i].nota = e.target.value; })} />
+                <EscolheNivel v={k.nivel} set={(n) => muda((x) => { x.estoque.indicadores[i].nivel = n; })} />
+                <Tirar ed f={() => muda((x) => { x.estoque.indicadores.splice(i, 1); })} />
+              </div>
+            ) : (
+              <>
+                <small>{k.rotulo}</small>
+                <b style={NUM}>{k.valor}</b>
+                {k.ideal && <small>Ideal: {k.ideal}</small>}
+                {k.nota && <small className="mudo">{k.nota}</small>}
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+      <Mais ed={ed} rotulo="indicador" f={() => muda((x) => { x.estoque.indicadores.push({ rotulo: "", valor: "", ideal: "", nivel: "atencao", nota: "" }); })} />
+      <Texto v={d.estoque.leitura} ed={ed} set={(s) => muda((x) => { x.estoque.leitura = s; })} ph="Leitura do estoque" />
+
+      {(d.alertas.length > 0 || ed) && (
         <>
-          <div className="secao">Ações de foco</div>
-          <div className="grade g2">
-            {diag.focos.map((f, n) => (
-              <div key={f.tipo} className="card card-borda" style={{ ["--c" as string]: n === 0 ? "var(--red)" : "var(--orange)" }}>
-                <div className="linha entre">
-                  <small className="mudo" style={{ fontWeight: 700, letterSpacing: ".08em" }}>{n + 1}º FOCO</small>
-                  <span className="selo andamento" style={NUM}>+{moeda(arredondarGanho(f.ganho))} {mesFechado ? "no mês" : "até agora"}</span>
+          <div className="secao">O que os dados mostram e o que fazer</div>
+          {alertas.map(({ a, i }) => (
+            <div key={i} className="card card-borda mb" style={{ ["--c" as string]: corNivel(a.nivel) }}>
+              <div className="grade-alerta">
+                <div>
+                  <div className="linha" style={{ gap: 6 }}>
+                    {ed ? <EscolheNivel v={a.nivel} set={(n) => muda((x) => { x.alertas[i].nivel = n; })} /> : <span className={`selo ${classeNivel(a.nivel)}`}>{rotuloNivel(a.nivel)}</span>}
+                  </div>
+                  {ed ? <input className="mt" type="text" value={a.alerta} placeholder="Alerta" onChange={(e) => muda((x) => { x.alertas[i].alerta = e.target.value; })} /> : <h3 style={{ margin: "8px 0 0" }}>{a.alerta}</h3>}
+                  <Texto v={a.dado} ed={ed} set={(s) => muda((x) => { x.alertas[i].dado = s; })} linhas={2} ph="O dado que mostra isso" />
                 </div>
-                <h3 style={{ margin: "6px 0" }}>{FOCOS[f.tipo].titulo}</h3>
-                <p className="mudo" style={{ marginTop: 0 }}>{FOCOS[f.tipo].resumo}</p>
-                <p style={NUM}>{fraseFoco(f, mesFechado)}</p>
-                <ol style={{ paddingLeft: 18, margin: 0 }}>
-                  {FOCOS[f.tipo].acoes.map((a) => (
-                    <li key={a.texto} style={{ marginBottom: 6 }}>
-                      {a.texto}{a.link && <> <Link href={a.link.href}>{a.link.rotulo} →</Link></>}
-                    </li>
-                  ))}
-                </ol>
+                <div className="acao-alerta">
+                  <small className="mudo">O que fazer</small>
+                  <Texto v={a.acao} ed={ed} set={(s) => muda((x) => { x.alertas[i].acao = s; })} linhas={3} ph="Ação" />
+                  {(a.prazo || a.quem || ed) && (
+                    <small className="mudo" style={{ display: "block", marginTop: 6 }}>
+                      {ed ? (
+                        <span className="linha" style={{ gap: 6 }}>
+                          <input type="text" value={a.prazo} placeholder="Prazo" onChange={(e) => muda((x) => { x.alertas[i].prazo = e.target.value; })} style={{ maxWidth: 160 }} />
+                          <input type="text" value={a.quem} placeholder="Quem" onChange={(e) => muda((x) => { x.alertas[i].quem = e.target.value; })} style={{ maxWidth: 160 }} />
+                        </span>
+                      ) : [a.prazo && `Prazo: ${a.prazo}`, a.quem && `Quem: ${a.quem}`].filter(Boolean).join(" · ")}
+                    </small>
+                  )}
+                </div>
+              </div>
+              {ed && <div className="mt"><Tirar ed f={() => muda((x) => { x.alertas.splice(i, 1); })} /></div>}
+            </div>
+          ))}
+          <Mais ed={ed} rotulo="alerta" f={() => muda((x) => { x.alertas.push({ nivel: "atencao", alerta: "", dado: "", acao: "", prazo: "", quem: "" }); })} />
+        </>
+      )}
+
+      {(d.abc.linhas.length > 0 || ed) && (
+        <>
+          <div className="secao">{ed ? "Curva ABC" : d.abc.titulo || "Curva ABC"}</div>
+          {ed && <input type="text" value={d.abc.titulo} placeholder="Título" onChange={(e) => muda((x) => { x.abc.titulo = e.target.value; })} className="mb" />}
+          <div className="card" style={{ overflowX: "auto" }}>
+            <table className="tabela">
+              <thead><tr><th>{d.abc.coluna || "Linha"}</th><th>Curva</th><th>Peças</th><th>% das peças</th><th>Faturado</th><th>Preço médio</th><th>Faixa que mais vende</th><th>Estoque (peças)</th>{ed && <th />}</tr></thead>
+              <tbody>
+                {d.abc.linhas.map((l, i) => (
+                  <tr key={i}>
+                    <td><Campo v={l.nome} ed={ed} set={(s) => muda((x) => { x.abc.linhas[i].nome = s; })} /></td>
+                    <td>{ed
+                      ? <select value={l.curva} onChange={(e) => muda((x) => { x.abc.linhas[i].curva = e.target.value as "A" | "B" | "C" | ""; })}><option value="">—</option><option>A</option><option>B</option><option>C</option></select>
+                      : l.curva && <span className={`selo ${l.curva === "A" ? "feito" : l.curva === "B" ? "andamento" : "espera"}`}>{l.curva}</span>}</td>
+                    <td style={NUM}><Numero v={l.pecas} ed={ed} set={(n) => muda((x) => { x.abc.linhas[i].pecas = n; })} fmt={(n) => (n == null ? "—" : String(n))} /></td>
+                    <td style={NUM}><Numero v={l.pct} ed={ed} set={(n) => muda((x) => { x.abc.linhas[i].pct = n; })} fmt={(n) => (n == null ? "—" : `${n}%`)} /></td>
+                    <td style={NUM}><Numero v={l.faturado} ed={ed} set={(n) => muda((x) => { x.abc.linhas[i].faturado = n; })} fmt={reais} /></td>
+                    <td style={NUM}><Numero v={l.pm} ed={ed} set={(n) => muda((x) => { x.abc.linhas[i].pm = n; })} fmt={reais} /></td>
+                    <td><Campo v={l.faixa} ed={ed} set={(s) => muda((x) => { x.abc.linhas[i].faixa = s; })} /></td>
+                    <td style={NUM}><Numero v={l.estoque} ed={ed} set={(n) => muda((x) => { x.abc.linhas[i].estoque = n; })} fmt={(n) => (n == null ? "—" : String(n))} /></td>
+                    {ed && <td><Tirar ed f={() => muda((x) => { x.abc.linhas.splice(i, 1); })} /></td>}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Mais ed={ed} rotulo="linha" f={() => muda((x) => { x.abc.linhas.push({ nome: "", pecas: null, pct: null, curva: "", faturado: null, pm: null, faixa: "", estoque: null }); })} />
+          </div>
+          <Texto v={d.abc.nota} ed={ed} set={(s) => muda((x) => { x.abc.nota = s; })} linhas={2} ph="Como ler a curva desta loja" />
+        </>
+      )}
+
+      {(d.marcas.length > 0 || ed) && (
+        <>
+          <div className="secao">Fornecedores e marcas</div>
+          <div className="grade g3">
+            {d.marcas.map((m, i) => (
+              <div key={i} className="card card-borda" style={{ ["--c" as string]: corNivel(m.nivel) }}>
+                <div className="linha entre">
+                  {ed ? <input type="text" value={m.nome} placeholder="Marca" onChange={(e) => muda((x) => { x.marcas[i].nome = e.target.value; })} style={{ flex: 1 }} /> : <h3 style={{ margin: 0 }}>{m.nome}</h3>}
+                  {ed ? <EscolheNivel v={m.nivel} set={(n) => muda((x) => { x.marcas[i].nivel = n; })} /> : <span className={`selo ${classeNivel(m.nivel)}`}>{rotuloNivel(m.nivel)}</span>}
+                </div>
+                <small className="mudo" style={{ display: "block", marginTop: 6 }}>
+                  {ed ? (
+                    <span style={{ display: "grid", gap: 6 }}>
+                      <input type="text" value={m.participacao} placeholder="Participação nas vendas" onChange={(e) => muda((x) => { x.marcas[i].participacao = e.target.value; })} />
+                      <input type="text" value={m.parado} placeholder="Parado" onChange={(e) => muda((x) => { x.marcas[i].parado = e.target.value; })} />
+                    </span>
+                  ) : [m.participacao, m.parado && `Parado: ${m.parado}`].filter(Boolean).join(" · ")}
+                </small>
+                <Texto v={m.leitura} ed={ed} set={(s) => muda((x) => { x.marcas[i].leitura = s; })} linhas={2} ph="Leitura" />
+                {(m.acao || ed) && <div className="mt"><small className="mudo">O que fazer</small><Texto v={m.acao} ed={ed} set={(s) => muda((x) => { x.marcas[i].acao = s; })} linhas={2} /></div>}
+                {ed && <div className="mt"><Tirar ed f={() => muda((x) => { x.marcas.splice(i, 1); })} /></div>}
               </div>
             ))}
+          </div>
+          <Mais ed={ed} rotulo="marca" f={() => muda((x) => { x.marcas.push({ nome: "", participacao: "", parado: "", nivel: "atencao", leitura: "", acao: "" }); })} />
+        </>
+      )}
+
+      {(d.linhas.length > 0 || ed) && (
+        <>
+          <div className="secao">Linhas que precisam de atenção e como gerar desejo</div>
+          <div className="grade g3">
+            {d.linhas.map((l, i) => (
+              <div key={i} className="card card-borda" style={{ ["--c" as string]: corNivel(l.nivel) }}>
+                <div className="linha entre">
+                  {ed ? <input type="text" value={l.nome} placeholder="Linha" onChange={(e) => muda((x) => { x.linhas[i].nome = e.target.value; })} style={{ flex: 1 }} /> : <h3 style={{ margin: 0 }}>{l.nome}</h3>}
+                  {ed ? <EscolheNivel v={l.nivel} set={(n) => muda((x) => { x.linhas[i].nivel = n; })} /> : <span className={`selo ${classeNivel(l.nivel)}`}>{rotuloNivel(l.nivel)}</span>}
+                </div>
+                {(l.parado || ed) && <small className="mudo" style={{ display: "block", marginTop: 6 }}>{ed ? <input type="text" value={l.parado} placeholder="Parado" onChange={(e) => muda((x) => { x.linhas[i].parado = e.target.value; })} /> : `Parado: ${l.parado}`}</small>}
+                <Texto v={l.leitura} ed={ed} set={(s) => muda((x) => { x.linhas[i].leitura = s; })} linhas={2} ph="Leitura" />
+                {(l.desejo || ed) && <div className="mt desejo"><small>Como gerar desejo</small><Texto v={l.desejo} ed={ed} set={(s) => muda((x) => { x.linhas[i].desejo = s; })} linhas={3} /></div>}
+                {ed && <div className="mt"><Tirar ed f={() => muda((x) => { x.linhas.splice(i, 1); })} /></div>}
+              </div>
+            ))}
+          </div>
+          <Mais ed={ed} rotulo="linha" f={() => muda((x) => { x.linhas.push({ nome: "", parado: "", nivel: "atencao", leitura: "", desejo: "" }); })} />
+        </>
+      )}
+
+      {(d.equipe.leitura || d.equipe.pessoas.length > 0 || ed) && (
+        <>
+          <div className="secao">Equipe</div>
+          <div className="card">
+            <Texto v={d.equipe.leitura} ed={ed} set={(s) => muda((x) => { x.equipe.leitura = s; })} ph="Leitura da equipe" />
+            {d.equipe.pessoas.map((p, i) => (
+              <div key={i} className="pessoa-diag">
+                {ed ? (
+                  <div className="linha" style={{ gap: 6 }}>
+                    <input type="text" value={p.nome} placeholder="Nome" onChange={(e) => muda((x) => { x.equipe.pessoas[i].nome = e.target.value; })} style={{ maxWidth: 180 }} />
+                    <input type="text" value={p.funcao} placeholder="Função" onChange={(e) => muda((x) => { x.equipe.pessoas[i].funcao = e.target.value; })} style={{ maxWidth: 220 }} />
+                    <Tirar ed f={() => muda((x) => { x.equipe.pessoas.splice(i, 1); })} />
+                  </div>
+                ) : <b>{p.nome}{p.funcao && <span className="mudo" style={{ fontWeight: 400 }}> · {p.funcao}</span>}</b>}
+                <Texto v={p.nota} ed={ed} set={(s) => muda((x) => { x.equipe.pessoas[i].nota = s; })} linhas={2} ph="O que observar e desenvolver" />
+              </div>
+            ))}
+            <Mais ed={ed} rotulo="pessoa" f={() => muda((x) => { x.equipe.pessoas.push({ nome: "", funcao: "", nota: "" }); })} />
+            {!equipeHub && <div className="mt"><Link className="btn s peq" href="/pessoas">Minha equipe e perfis</Link></div>}
           </div>
         </>
       )}
 
-      <div className="secao">Resultado do mês{onde}</div>
-      <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", ...NUM }}>
-        <div className="card kpi"><small>Faturamento</small><b>{moeda(ind.faturamento)}</b></div>
-        <div className="card kpi"><small>Vendas</small><b>{ind.vendas}</b></div>
-        <div className="card kpi"><small>Peças vendidas</small><b>{ind.pecas}</b></div>
-        <div className="card kpi"><small>Dias lançados</small><b>{ind.dias}</b></div>
-      </div>
-
-      {varias && !loja && (
-        <div className="card mt tabela-wrap">
-          <table className="tabela" style={NUM}>
-            <thead><tr><th>Loja</th><th>Faturamento</th><th>Vendas</th><th>PA</th><th>TKM</th><th>PM</th></tr></thead>
-            <tbody>
-              {[...lojas, ""].map((l) => {
-                const i = indicadores(somar(l ? dados.filter((c) => c.loja === l) : dados));
-                return (
-                  <tr key={l || "total"}>
-                    <td>{l ? <button type="button" className="chip" onClick={() => setLoja(l)}>{l}</button> : <b>Total</b>}</td>
-                    <td>{moeda(i.faturamento)}</td>
-                    <td>{i.vendas}</td>
-                    <td>{i.pa != null ? fmtPa(i.pa) : "—"}</td>
-                    <td>{i.tkm != null ? moeda(i.tkm) : "—"}</td>
-                    <td>{i.pm != null ? moeda(i.pm) : "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {(d.data_base || d.fontes || ed) && (
+        <div className="ajuda mt" style={{ marginTop: 28 }}>
+          {ed ? (
+            <div style={{ display: "grid", gap: 6 }}>
+              <input type="text" value={d.data_base} placeholder="Data base dos números (ex.: estoque de 01/10/2026)" onChange={(e) => muda((x) => { x.data_base = e.target.value; })} />
+              <textarea value={d.fontes} rows={2} placeholder="De onde vieram os números" onChange={(e) => muda((x) => { x.fontes = e.target.value; })} />
+            </div>
+          ) : <>{d.data_base && <>Base: {d.data_base}. </>}{d.fontes}</>}
         </div>
       )}
+    </>
+  );
+}
 
-      <div className="card mt">
-        <details>
-          <summary style={{ cursor: "pointer" }}><b>Como o painel calcula</b></summary>
-          <ul style={{ paddingLeft: 18, marginBottom: 0 }}>
-            <li><b>PA</b> = peças vendidas ÷ número de vendas. Ideal: 2,5.</li>
-            <li><b>TKM</b> (ticket médio) = faturamento ÷ número de vendas. É o PA × o preço médio.</li>
-            <li><b>PM</b> (preço médio) = faturamento ÷ peças vendidas.</li>
-            <li><b>TKM ideal</b> = preço médio do estoque × 2,5. O preço médio do estoque vem da Personalização, em Estoque e fornecedores.</li>
-            <li>O ganho em reais usa o seu número de vendas do mês: o mesmo movimento, vendendo melhor.</li>
-          </ul>
-        </details>
-      </div>
+function DiagnosticoDaLoja() {
+  const params = useSearchParams();
+  const { portal, equipe } = usePortal();
+  const varias = (portal.lojas ?? []).length > 1;
+  const [escolhida, setEscolhida] = useState<string | null>(params.get("loja"));
+  const [ed, setEd] = useState(false);
+  const [d, setD] = useState<Diagnostico | null>(null);
+  const [salvo, setSalvo] = useState(true);
+  const [msg, setMsg] = useState("");
+  const { dados, recarregar } = useDados(() => buscarDiagnosticos(portal.id), [portal.id]);
+
+  const linhas: LinhaDiagnostico[] = dados ?? [];
+  const atual = linhas.find((l) => l.loja === escolhida) ?? linhas[0] ?? null;
+  const chave = atual ? `${atual.loja}|${atual.updated_at}` : "";
+  const desde = (atual?.dados.performance?.meses ?? []).map((m) => m.mes).filter(Boolean).sort()[0] ?? "2026-01";
+  const { dados: caixa } = useDados(() => (atual ? caixaPorMes(portal.id, atual.loja, desde) : Promise.resolve(new Map<string, number>())), [portal.id, atual?.loja, desde]);
+
+  useEffect(() => { setD(atual ? completo(atual.dados) : null); setSalvo(true); setEd(false); }, [chave]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!dados) return <Carregando />;
+
+  const muda: Muda = (f) => setD((prev) => { const c = structuredClone(prev ?? vazio()); f(c); return c; });
+  const mudaSalvo: Muda = (f) => { muda(f); setSalvo(false); };
+  const fazer = async (f: () => Promise<void>, ok: string) => {
+    setMsg("");
+    try { await f(); setMsg(ok); recarregar(); } catch (e) { setMsg(e instanceof Error ? e.message : "Não deu certo."); }
+  };
+
+  const cabecalho = (
+    <>
+      <Titulo titulo="Diagnóstico da loja" sub="O retrato da loja hoje: cenário, performance, estoque, curva ABC, marcas, linhas e equipe. Cada alerta vem com a ação." />
+      {linhas.length > 1 && (
+        <div className="chips mb" role="group" aria-label="Escolher a loja">
+          {linhas.map((l) => (
+            <button key={l.loja} type="button" className={`chip ${atual?.loja === l.loja ? "escolhido" : ""}`} onClick={() => setEscolhida(l.loja)}>
+              {nomeDaVisao(l.loja, varias)}{equipe && l.status === "rascunho" ? " · rascunho" : ""}
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+
+  if (!atual || !d) {
+    return (
+      <>
+        {cabecalho}
+        {equipe ? (
+          <div className="card">
+            <h3 style={{ marginTop: 0 }}>Este portal ainda não tem diagnóstico</h3>
+            <p className="mudo">Crie o diagnóstico e preencha a partir dos relatórios da loja. Ele fica em rascunho até você liberar.</p>
+            <div className="linha">
+              {(varias ? ["", ...portal.lojas] : [""]).map((l, i) => (
+                <button key={l || "geral"} type="button" className="btn p peq" onClick={() => fazer(() => criarDiagnostico(portal.id, l, i), "Diagnóstico criado.")}>
+                  Criar {varias ? nomeDaVisao(l, true) : "o diagnóstico"}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+            <h3 style={{ marginTop: 0 }}>Seu diagnóstico está sendo montado</h3>
+            <p className="mudo" style={{ marginTop: 0 }}>A equipe está cruzando os seus relatórios e os Dados da loja. Assim que ficar pronto, ele aparece aqui. Enquanto isso, acompanhe o resultado do mês.</p>
+            <div className="linha"><Link className="btn s peq" href="/gestao/resultado">Resultado do mês</Link><Link className="btn s peq" href="/personalizacao">Dados da loja</Link></div>
+          </div>
+        )}
+        {msg && <div className="aviso mt">{msg}</div>}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {cabecalho}
+      {equipe && (
+        <div className={`barra-equipe mb ${atual.status === "liberada" ? "ok" : ""}`}>
+          <span>
+            <b>{atual.status === "liberada" ? "Liberado para a loja" : "Rascunho: só a equipe vê"}</b>
+            <small className="mudo"> · atualizado {dataHora(atual.updated_at)}</small>
+          </span>
+          <span className="linha" style={{ gap: 8 }}>
+            {ed ? (
+              <>
+                <button type="button" className="btn p peq" disabled={salvo} onClick={() => fazer(async () => { await salvarDiagnostico(portal.id, atual.loja, d); setSalvo(true); setEd(false); }, "Diagnóstico salvo.")}>Salvar</button>
+                <button type="button" className="btn s peq" onClick={() => { setD(completo(atual.dados)); setSalvo(true); setEd(false); }}>Cancelar</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="btn s peq" onClick={() => setEd(true)}>Editar</button>
+                {atual.status === "liberada"
+                  ? <button type="button" className="btn s peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, false), "Voltou para rascunho.")}>Voltar para rascunho</button>
+                  : <button type="button" className="btn p peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, true), "Liberado para a loja.")}>Liberar para a loja</button>}
+              </>
+            )}
+          </span>
+        </div>
+      )}
+      {msg && <div className={`aviso mb ${/salvo|Liberado|rascunho|criado/.test(msg) ? "ok" : ""}`}>{msg}</div>}
+      <Corpo d={d} ed={ed} muda={mudaSalvo} caixa={caixa ?? new Map()} equipeHub={equipe} />
+      {!ed && (
+        <div className="linha mt" style={{ marginTop: 24 }}>
+          <Link className="btn s peq" href="/gestao/resultado">Resultado do mês</Link>
+          <Link className="btn s peq" href="/gestao/caixa">Fechamento de caixa</Link>
+          <Link className="btn s peq" href="/assistente">Falar com a equipe sobre o diagnóstico</Link>
+        </div>
+      )}
     </>
   );
 }
 
 export default function Pagina() {
-  return <Suspense fallback={<Carregando />}><Painel /></Suspense>;
+  return <Suspense fallback={<Carregando />}><DiagnosticoDaLoja /></Suspense>;
 }

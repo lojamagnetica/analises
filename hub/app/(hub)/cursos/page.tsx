@@ -28,46 +28,42 @@ export default function Curso() {
   const vistas = (aulas: Aula[]) => aulas.filter((a) => c.assistidas.has(a.codigo)).length;
   const aula0 = c.aulas.filter((a) => a.modulo_id === "aula-0");
 
-  // O banner mostra sempre o próximo passo: Aula 0 → fundamento atual (na aula que falta) → Manual.
+  // O banner é a vitrine do curso (vale para quem compra só o curso). Dentro dele, o próximo passo:
+  // Boas-vindas → fundamento atual (na aula que falta) → Manual.
   const atualAulas = t.atual ? aulasDe(t.atual.codigo) : [];
   const proximaAula = atualAulas.find((a) => !c.assistidas.has(a.codigo)) ?? atualAulas[0];
-  const hero = !t.raioxFeito
-    ? {
-        olho: "Comece aqui", codigo: "0", topo: "Antes de tudo", pilar: null, titulo: <>Aula 0 · <b>Raio-X da sua loja</b></>,
-        texto: "Descubra onde a sua loja está nos 16 fundamentos e por onde começar.",
-        meta: [`${aula0.length} aulas`, `${minutos(aula0)} min`],
-        href: "/cursos/fundamento?c=aula-0", botao: "Começar", extra: { href: "/cursos/raio-x", rotulo: "Fazer o Raio-X" },
-      }
+  const segue = !t.raioxFeito
+    ? { olho: "Comece aqui", titulo: "Boas-vindas e mentalidade", texto: `${aula0.length} aulas · ${minutos(aula0)} min · termina com o Raio-X da sua loja`,
+        href: "/cursos/fundamento?c=aula-0", botao: vistas(aula0) ? "Continuar" : "Começar o curso", progresso: vistas(aula0) / Math.max(aula0.length, 1) }
     : t.atual
-      ? {
-          olho: "Continue de onde parou", codigo: t.atual.codigo, topo: `Pilar ${pilarDe(t.atual.codigo)}`, pilar: pilarDe(t.atual.codigo),
-          titulo: <>{t.atual.codigo} · <b>{t.atual.titulo}</b></>,
-          texto: `Missão de 7 dias: ${t.atual.missao}.`,
-          meta: [PILARES[pilarDe(t.atual.codigo)], `${vistas(atualAulas)} de ${atualAulas.length} ${atualAulas.length === 1 ? "aula" : "aulas"}`, `${minutos(atualAulas)} min`],
+      ? { olho: "Continue de onde parou", titulo: `${t.atual.codigo} · ${t.atual.titulo}`,
+          texto: `${PILARES[pilarDe(t.atual.codigo)]} · ${vistas(atualAulas)} de ${atualAulas.length} ${atualAulas.length === 1 ? "aula" : "aulas"} · ${minutos(atualAulas)} min`,
           href: `/cursos/fundamento?c=${t.atual.codigo}${proximaAula ? `&a=${proximaAula.codigo}` : ""}`,
-          botao: vistas(atualAulas) ? "Continuar aula" : "Assistir agora",
-          extra: { href: `/cursos/fundamento?c=${t.atual.codigo}#missao`, rotulo: "Ver missão e prova" },
-        }
-      : {
-          olho: "Reta final", codigo: "16", topo: "Encerramento", pilar: null, titulo: <>Manual da sua <b>Loja Magnética</b></>,
-          texto: "Os 16 fundamentos estão de pé. Monte o Manual e tire a Foto do Dia 90.",
-          meta: ["16/16 provas"], href: "/cursos/fundamento?c=fim", botao: "Montar o Manual", extra: null,
-        };
+          botao: vistas(atualAulas) ? "Continuar aula" : "Assistir agora", progresso: vistas(atualAulas) / Math.max(atualAulas.length, 1) }
+      : { olho: "Reta final", titulo: "Manual da sua Loja Magnética", texto: "Os 16 fundamentos estão de pé. Monte o Manual e tire a Foto do Dia 90.",
+          href: "/cursos/fundamento?c=fim", botao: "Montar o Manual", progresso: 1 };
+  const totalAulas = c.aulas.length;
 
   return (
     <>
-      <Titulo titulo="Curso Loja Magnética" aba="Curso" sub="16 fundamentos para a sua loja sair do improviso e funcionar com processo, com ou sem você no balcão." />
+      <Titulo titulo="" aba="Método Loja Magnética" />
 
-      <section className="mb-hero">
+      <section className="mb-hero mb-vitrine">
         <div className="mb-hero-txt">
-          <span className="mb-olho">{hero.olho}</span>
-          <h1>{hero.titulo}</h1>
-          <p>{hero.texto}</p>
-          <div className="mb-hero-meta">{hero.meta.map((m) => <span key={m}>{m}</span>)}</div>
-          <div className="mb-hero-acoes">
-            <Link className="btn-play" href={hero.href}><Icone nome="play" /> {hero.botao}</Link>
-            {hero.extra && <Link className="btn-vidro" href={hero.extra.href}>{hero.extra.rotulo}</Link>}
-          </div>
+          <span className="mb-olho">Curso · um método magnética</span>
+          <h1>Método<br /><b>Loja Magnética</b></h1>
+          <p>16 fundamentos para a sua loja sair do improviso e funcionar com processo, com ou sem você no balcão.</p>
+          <div className="mb-hero-meta"><span>{c.modulos.length} módulos</span><span>{c.fundamentos.length} fundamentos</span><span>{totalAulas} aulas de até 15 min</span></div>
+          <Link href={segue.href} className="mb-segue">
+            <span className="mb-segue-play"><Icone nome="play" /></span>
+            <span className="mb-segue-txt">
+              <small>{segue.olho}</small>
+              <b>{segue.titulo}</b>
+              <em>{segue.texto}</em>
+              <i className="mb-segue-barra"><i style={{ width: `${segue.progresso * 100}%` }} /></i>
+            </span>
+            <span className="mb-segue-botao">{segue.botao} →</span>
+          </Link>
         </div>
         <div className="mb-hero-foto">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -112,10 +108,10 @@ export default function Curso() {
             <div className="mb-linha">
               {m.id === "aula-0" && (
                 <Link href="/cursos/fundamento?c=aula-0" className={`mb-card${!t.raioxFeito ? " atual" : ""}`}>
-                  <CapaCurso codigo="0" titulo="Raio-X da sua loja" topo="Antes de tudo" feito={t.raioxFeito} progresso={vistas(aula0) / Math.max(aula0.length, 1)} />
+                  <CapaCurso codigo="00" titulo="Boas-vindas e mentalidade" topo="Comece aqui" feito={t.raioxFeito} progresso={vistas(aula0) / Math.max(aula0.length, 1)} />
                   <div className="mb-card-corpo">
                     <small>{aula0.length} aulas · {minutos(aula0)} min</small>
-                    <b>Raio-X, Foto do Dia Zero e Contrato de Foco</b>
+                    <b>Mentalidade do dono, como usar o curso e o Raio-X da loja</b>
                     <span className={`mb-estado${t.raioxFeito ? " ok" : " atual"}`}>{t.raioxFeito ? "Raio-X feito" : "Comece aqui"}</span>
                   </div>
                 </Link>

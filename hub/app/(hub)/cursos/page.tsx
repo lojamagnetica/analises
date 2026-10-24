@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CapaCurso } from "@/components/CapaCurso";
 import { Icone } from "@/components/Icone";
 import { Titulo } from "@/components/Titulo";
+import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PILARES, buscarCurso, pilarDe, trilha, type Aula } from "@/lib/curso";
@@ -68,8 +69,10 @@ export default function Curso() {
             {hero.extra && <Link className="btn-vidro" href={hero.extra.href}>{hero.extra.rotulo}</Link>}
           </div>
         </div>
-        <div className="mb-hero-arte">
-          <CapaCurso grande codigo={hero.codigo} topo={hero.topo} pilar={hero.pilar} progresso={t.atual ? vistas(atualAulas) / Math.max(atualAulas.length, 1) : undefined} />
+        <div className="mb-hero-foto">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${BASE}/curso/camilla-banner.jpg`} alt="Camilla Ribeiro" />
+          <span className="mb-hero-assina"><b>Camilla Ribeiro</b>Método Loja Magnética</span>
         </div>
       </section>
 

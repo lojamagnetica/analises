@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
+import { AtividadeRecente } from "@/components/AtividadeRecente";
 import { Carregando, primeiroNome, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS_JORNADA, buscarCarteira, contratoAtual, corTermometro } from "@/lib/carteira";
@@ -127,6 +128,7 @@ export default function PainelEmpresa() {
           <p className="mudo" style={{ marginTop: 0 }}>Vendas do mês e funil (fase 4), diagnósticos da semana e fila do dia da operação (fase 2).</p>
         </div>
       </div>
+      <AtividadeRecente />
     </>
   );
 }

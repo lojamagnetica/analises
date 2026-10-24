@@ -5,7 +5,8 @@ import { Ouvir } from "@/components/Gravador";
 import { dataHora } from "@/lib/formato";
 import { aberta, desde, classeStatus, classeTipo, prazoTexto, type Solicitacao } from "@/lib/assistente";
 
-/** Uma mensagem da Assistente com a conversa embaixo. A equipe usa a mesma, com os controles em children. */
+/** Uma mensagem do Fale com a Camilla com a conversa embaixo. A equipe usa a mesma, com os controles em children.
+ *  Para a loja, toda resposta da equipe aparece como da Camilla; a equipe vê quem respondeu de verdade. */
 export function Conversa({ s, equipe, children }: { s: Solicitacao; equipe?: boolean; children?: React.ReactNode }) {
   const prazo = aberta(s) ? prazoTexto({ created_at: desde(s) }) : null;
   return (
@@ -17,17 +18,22 @@ export function Conversa({ s, equipe, children }: { s: Solicitacao; equipe?: boo
         </div>
         <small className="mudo" style={{ textTransform: "capitalize" }}>{dataHora(s.created_at)}</small>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>
-        {s.responsavel_nome ? <>Quem cuida: <b style={{ color: "var(--ink)" }}>{s.responsavel_nome}</b></> : "A equipe vai definir quem cuida."}
-        {prazo && <> · <span style={prazo.atrasada ? { color: "var(--red)" } : undefined}>{equipe ? "prazo" : "resposta"} {prazo.texto}</span></>}
-      </p>
+      {(equipe || prazo) && (
+        <p className="ajuda" style={{ margin: "8px 0 0" }}>
+          {equipe && (s.responsavel_nome ? <>Quem cuida: <b style={{ color: "var(--ink)" }}>{s.responsavel_nome}</b></> : "Ninguém cuidando ainda.")}
+          {equipe && prazo && " · "}
+          {prazo && (equipe
+            ? <span style={prazo.atrasada ? { color: "var(--red)" } : undefined}>prazo {prazo.texto}</span>
+            : <span>Camilla responde {prazo.atrasada ? "em breve" : prazo.texto}</span>)}
+        </p>
+      )}
       {s.texto && <p style={{ whiteSpace: "pre-wrap", margin: "10px 0 0" }}><b>{s.texto}</b></p>}
       {s.audio && <Ouvir caminho={s.audio} transcricao={s.transcricao} />}
       {s.autor_nome && <small className="mudo">Enviado por {s.autor_nome}</small>}
 
       {s.respostas.map((r) => (
         <div key={r.id} className={`resposta ${r.equipe ? "da-equipe" : ""}`}>
-          <small><b>{r.autor_nome || (r.equipe ? "Equipe Loja Magnética" : "Loja")}</b> · <span className="mudo" style={{ textTransform: "capitalize" }}>{dataHora(r.created_at)}</span></small>
+          <small><b>{r.automatica ? `Assistente Magnética${equipe ? " (aviso automático de espera)" : ""}` : r.equipe ? (equipe ? `${r.autor_nome || "Equipe"} (a loja vê: Camilla)` : "Camilla") : r.autor_nome || "Loja"}</b> · <span className="mudo" style={{ textTransform: "capitalize" }}>{dataHora(r.created_at)}</span></small>
           {r.texto && <p style={{ whiteSpace: "pre-wrap", margin: "4px 0 0" }}>{r.texto}</p>}
           {r.audio && <Ouvir caminho={r.audio} transcricao={r.transcricao} />}
         </div>

@@ -48,7 +48,7 @@ export default function CaixaAssistente() {
 
   return (
     <>
-      <Titulo titulo="Caixa do Fale com a Camilla" sub="Tudo o que as lojas mandam pelo Fale com a Camilla: dúvidas, pedidos, avisos e urgências. Para a loja, é a Camilla que responde; quem cuida aparece com o nome em cada resposta. Prazo de 12 horas úteis." />
+      <Titulo titulo="Caixa do Fale com a Camilla" sub="Tudo o que as lojas mandam pelo Fale com a Camilla: dúvidas, pedidos, avisos e urgências. Para a loja, toda resposta aparece como da Camilla. Aqui dentro você vê quem cuida e quem respondeu. Prazo de 12 horas úteis." />
       <div className="chips mb">
         {FILTROS.map(([f, rotulo]) => (
           <button key={f} type="button" className={`chip ${filtro === f ? "escolhido" : ""}`} onClick={() => setFiltro(f)}>
@@ -91,7 +91,7 @@ export default function CaixaAssistente() {
                   <div className="mt">
                     <Escrever
                       rotulo="Responder à loja"
-                      placeholder="Sua resposta… (a loja vê o seu nome)"
+                      placeholder="Sua resposta… (para a loja, aparece como Camilla)"
                       enviar={async (e) => {
                         await responder(s, userId, nome, true, e);
                         if (!s.responsavel) await mudarResponsavel(s.id, { id: userId, nome });

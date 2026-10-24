@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { ConectarGoogle } from "@/components/ConectarGoogle";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import {
@@ -179,6 +180,8 @@ export default function AgendaEquipe() {
           </div>
         )}
       </div>
+
+      <ConectarGoogle aoSalvar={recarregar} />
     </>
   );
 }

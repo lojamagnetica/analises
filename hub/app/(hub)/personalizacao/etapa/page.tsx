@@ -8,6 +8,7 @@ import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { ETAPAS, SITUACOES, chaveSituacao, type Campo, type Respostas, type Situacao } from "@/lib/conteudo";
 import { salvarEtapa } from "@/lib/acoes";
 import { dataCurta } from "@/lib/formato";
+import { relatoriosNoDrive } from "@/lib/gestao";
 import { abrirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel } from "@/lib/relatorios";
 
 /** Um campo da etapa. Os dados (números, relatório) têm as 3 opções: tenho, estimativa, ainda não tenho. */
@@ -57,8 +58,9 @@ function CampoEtapa({ c, r, padrao }: { c: Campo; r: Respostas; padrao: string }
 function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome: string; loja: string; aoMudar: (n: number) => void }) {
   const { dados, recarregar } = useDados(async () => {
     const l = await listarRelatorios(portalId);
-    aoMudar(l.length);
-    return l;
+    const drive = await relatoriosNoDrive(portalId);
+    aoMudar(l.length + drive.length);
+    return Object.assign(l, { drive });
   }, [portalId]);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
@@ -80,6 +82,19 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
             <div key={a.caminho} className="linha entre marcar" style={{ cursor: "default" }}>
               <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📎 {a.nome} <small className="mudo">· {tamanhoLegivel(a.tamanho)} · {dataCurta(a.em)}</small></span>
               <button type="button" className="btn s peq" onClick={() => abrirRelatorio(a.caminho)}>Abrir</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!!dados?.drive.length && (
+        <div className="mt">
+          <b>Relatórios que você já mandou para a equipe</b>
+          <p className="ajuda" style={{ margin: "2px 0 6px" }}>Estão com a equipe e já entram nas análises. Não precisa subir de novo.</p>
+          {dados.drive.map((r) => (
+            <div key={r.id} className="linha entre marcar" style={{ cursor: "default" }}>
+              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📄 {r.nome} <small className="mudo">· {r.tipo}{r.periodo ? ` · ${r.periodo}` : ""}</small></span>
+              <a className="btn s peq" href={r.url} target="_blank" rel="noopener">Abrir</a>
             </div>
           ))}
         </div>

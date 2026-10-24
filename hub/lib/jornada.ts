@@ -16,7 +16,7 @@ export const ETAPAS: Etapa[] = [
   ] },
   { n: 1, nome: "Primeiros passos", quem: "CS", janela: [0, 7], checks: [
     { chave: "contrato", texto: "Contrato gerado e enviado para assinatura", prazo: 0, acao: "contrato" },
-    { chave: "grupo", texto: "Grupo criado + vídeo de boas-vindas da Camilla", prazo: 0 },
+    { chave: "grupo", texto: "Grupo criado + mensagem de boas-vindas com o horário do onboarding (o vídeo da Camilla fica no Comece aqui do Hub)", prazo: 0 },
     { chave: "onboarding_marcado", texto: "Onboarding marcado (até 24h)", prazo: 0, data: true },
     { chave: "onboarding", texto: "Onboarding feito e acesso ao Hub enviado na call", prazo: 1, acao: "acesso" },
     { chave: "pendencias", texto: "Mensagem de Pendências enviada no grupo", prazo: 1, acao: "pendencias" },

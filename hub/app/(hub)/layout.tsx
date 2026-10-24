@@ -31,6 +31,13 @@ function Casca({ children }: { children: React.ReactNode }) {
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (hub.equipe && hub.comoLoja && areaEquipe) hub.sairComoLoja(); }, [areaEquipe, hub.comoLoja]);
+  // Esc sai do modo apresentação.
+  useEffect(() => {
+    if (!hub.apresentacao) return;
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") hub.modoApresentacao(false); };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [hub.apresentacao]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!destino && semVideo) router.replace("/comece"); }, [destino, semVideo, router]);
   // Enquanto a entrada não termina, confere de novo a cada página (ex.: acabou de cadastrar a equipe).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -48,7 +55,7 @@ function Casca({ children }: { children: React.ReactNode }) {
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (
-          <button type="button" className="sair-apresentacao" onClick={() => hub.modoApresentacao(false)} title="Sair do modo apresentação">✕</button>
+          <button type="button" className="sair-apresentacao" onClick={() => hub.modoApresentacao(false)} title="Sair do modo apresentação (Esc)">✕</button>
         ) : hub.comoLoja && hub.portal ? (
           <div className="faixa equipe">
             👁 Você está vendo exatamente o que {hub.portal.loja} vê. O que você marcar aqui fica na conta da loja.

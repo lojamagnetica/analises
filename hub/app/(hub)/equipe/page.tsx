@@ -16,7 +16,7 @@ export default function Painel() {
       sb.from("plano_itens").select("portal_id, feito"),
       sb.from("reunioes").select("portal_id, data, titulo").gte("data", agora).order("data"),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
-      sb.from("duvidas").select("portal_id").is("resposta", null),
+      sb.from("solicitacoes").select("portal_id").in("status", ["Recebida", "Em andamento"]),
       sb.from("jornada_passos").select("numero, titulo"),
     ]);
     return { portais: portais ?? [], plano: plano ?? [], reunioes: reunioes ?? [], perfis: perfis ?? [], duvidas: duvidas ?? [], passos: passos ?? [] };
@@ -44,7 +44,7 @@ export default function Painel() {
         {([
           [ativos.length, "portais ativos", "var(--red)"],
           [naSemana, "reuniões nos próximos 7 dias", "var(--purple)"],
-          [dados.duvidas.length, "dúvidas pendentes", "var(--orange)"],
+          [dados.duvidas.length, "mensagens esperando resposta", "var(--orange)"],
           [parados, "portais sem acesso há 7+ dias", "var(--blue)"],
         ] as const).map(([n, r, c]) => (
           <div key={r} className="card card-borda kpi" style={{ ["--c" as string]: c }}><b>{n}</b><small>{r}</small></div>

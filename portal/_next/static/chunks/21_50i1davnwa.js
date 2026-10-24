@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,36421,e=>{"use strict";var t=e.i(43476),s=e.i(71645),i=e.i(18566),r=e.i(61175);e.s(["default",0,function(){let e=(0,i.useRouter)();return(0,s.useEffect)(()=>{e.replace("/assistente")},[e]),(0,t.jsx)(r.Carregando,{})}])}]);

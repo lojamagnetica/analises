@@ -71,11 +71,6 @@ export async function notaApagar(id: string) {
   await sb().from("notas").delete().eq("id", id);
 }
 
-export async function duvidaEnviar(portalId: string, autor: string, form: FormData) {
-  const pergunta = txt(form, "pergunta");
-  if (pergunta) await sb().from("duvidas").insert({ portal_id: portalId, autor, pergunta });
-}
-
 export async function limparChat(portalId: string) {
   await sb().from("chat_mensagens").delete().eq("portal_id", portalId);
 }
@@ -202,11 +197,6 @@ export async function reuniaoSalvar(portalId: string, id: string | null, form: F
 }
 export async function reuniaoApagar(id: string) {
   await sb().from("reunioes").delete().eq("id", id);
-}
-
-export async function responderDuvida(id: string, userId: string, form: FormData) {
-  const resposta = txt(form, "resposta", 8000);
-  if (resposta) await sb().from("duvidas").update({ resposta, respondida_por: userId, respondida_em: agora() }).eq("id", id);
 }
 
 // ───── Biblioteca ─────

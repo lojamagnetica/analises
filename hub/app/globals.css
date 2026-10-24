@@ -196,6 +196,18 @@ p { margin: 0 0 .8em; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { border: 1px solid var(--line); background: var(--soft); border-radius: 10px; padding: 6px 12px; font-size: 13px; font-weight: 500; text-decoration: none; color: var(--text); }
 .chip:hover { border-color: var(--red); color: var(--red); }
+button.chip { cursor: pointer; font-family: inherit; }
+.chip.escolhido { background: var(--ink); color: var(--card); border-color: var(--ink); }
+
+/* Assistente Magnética */
+.resposta { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--soft); }
+.resposta.da-equipe { background: var(--purple-soft, var(--soft)); border-left: 3px solid var(--purple); }
+.gravando { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--red); }
+.ponto-rec { width: 10px; height: 10px; border-radius: 50%; background: var(--red); animation: piscar 1s infinite; }
+@keyframes piscar { 50% { opacity: .25; } }
+.controles { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.controles label { display: grid; gap: 4px; font-size: 12.5px; color: var(--muted); min-width: 180px; flex: 1; }
+.link-loja { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 
 /* Cards de categoria (Scripts) */
 .cat {

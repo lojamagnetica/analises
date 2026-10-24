@@ -152,15 +152,42 @@ export async function montarRespostas(isca: string, cabecalho: string[], linhas:
 }
 
 /** Grava as respostas; as que já existem (mesma isca e mesmo conteúdo) são ignoradas. */
+type Parecida = { whatsapp: string | null; faturamento: string | null; funcionarios: string | null; desafio: string | null; motivo: string | null };
+/** A mesma pessoa com as mesmas respostas escritas. Sem resposta em texto não dá para afirmar que é repetida (null). */
+const assinatura = (r: Parecida) => (r.desafio || r.motivo ? normalizar([r.whatsapp, r.faturamento, r.funcionarios, r.desafio, r.motivo].map((x) => x ?? "").join("|")) : null);
+
+/**
+ * Grava as respostas. Pula as que já existem, mesmo quando o arquivo foi importado antes com outro nome de isca
+ * (o Respondi põe um código aleatório no nome do arquivo): mesma pessoa e mesmas respostas em qualquer isca.
+ */
 export async function importarRespostas(respostas: Awaited<ReturnType<typeof montarRespostas>>) {
   const sb = supabaseBrowser();
+  const zaps = [...new Set(respostas.map((r) => r.whatsapp).filter((z): z is string => !!z))];
+  const existentes = new Set<string>();
+  for (let i = 0; i < zaps.length; i += 100) {
+    const { data } = await sb.from("iscas_respostas").select("whatsapp, faturamento, funcionarios, desafio, motivo").in("whatsapp", zaps.slice(i, i + 100));
+    for (const r of (data ?? []) as Parecida[]) { const a = assinatura(r); if (a) existentes.add(a); }
+  }
+  const vistas = new Set<string>();
+  const paraGravar = respostas.filter((r) => {
+    const a = r.whatsapp ? assinatura(r) : null;
+    if (!a) return true;
+    if (existentes.has(a) || vistas.has(a)) return false;
+    vistas.add(a);
+    return true;
+  });
   let novas = 0;
-  for (let i = 0; i < respostas.length; i += 200) {
-    const { data, error } = await sb.from("iscas_respostas").upsert(respostas.slice(i, i + 200), { onConflict: "isca,chave", ignoreDuplicates: true }).select("id");
+  for (let i = 0; i < paraGravar.length; i += 200) {
+    const { data, error } = await sb.from("iscas_respostas").upsert(paraGravar.slice(i, i + 200), { onConflict: "isca,chave", ignoreDuplicates: true }).select("id");
     if (error) throw new Error(error.message);
     novas += data?.length ?? 0;
   }
   return { novas, jaExistiam: respostas.length - novas };
+}
+
+/** Nome da isca a partir do nome do arquivo, sem a data e o código aleatório que o Respondi coloca. */
+export function nomeDaIsca(arquivo: string) {
+  return arquivo.replace(/\.[^.]+$/, "").replace(/^\d{8}[-_ ]+/, "").replace(/[-_ ]+[a-z0-9]{16,}$/i, "").replace(/[-_]+/g, " ").trim();
 }
 
 export async function buscarRespostas() {

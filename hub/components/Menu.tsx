@@ -69,8 +69,9 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
     {
       id: "gestao", rotulo: "Gestão estratégica", icone: "chart",
       itens: [
-        { href: "/painel", rotulo: "Painel da loja", icone: "chart" },
+        { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
+        { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
         { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
         { href: "/estoque", rotulo: "Estoque x o que fazer", icone: "box", emBreve: true },
         { href: "/gestao/compras", rotulo: "Estoque e compras", icone: "box", emBreve: true },

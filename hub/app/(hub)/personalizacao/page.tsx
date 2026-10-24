@@ -16,7 +16,7 @@ function Personalizacao() {
 
   return (
     <>
-      <Titulo titulo="Dados da loja" sub={`${ETAPAS.length} etapas para o Hub conhecer a sua loja. Elas destravam o Painel, a Gestão estratégica e as Vendas. Quanto mais completo, mais certeiros ficam o Plano, os scripts e o Assistente.`} />
+      <Titulo titulo="Dados da loja" sub={`${ETAPAS.length} etapas para o Hub conhecer a sua loja. Elas destravam o Diagnóstico, a Gestão estratégica e as Vendas. Quanto mais completo, mais certeiros ficam o Plano, os scripts e o Assistente.`} />
       <div className="heroi mb" style={{ background: "var(--red)" }}>
         <div style={{ fontSize: 34, fontWeight: 800 }}>{feitas}/{ETAPAS.length}</div>
         <div style={{ flex: 1, minWidth: 200 }}>

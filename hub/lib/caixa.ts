@@ -1,6 +1,6 @@
 "use client";
 
-// Fechamento de caixa: os números de cada dia da loja e o que o Painel calcula com eles.
+// Fechamento de caixa: os números de cada dia da loja e o que o Resultado do mês calcula com eles.
 // PA = peças ÷ vendas · TKM (ticket médio) = faturamento ÷ vendas · PM (preço médio) = faturamento ÷ peças. TKM = PA × PM.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje, moeda } from "@/lib/formato";

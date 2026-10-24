@@ -9,7 +9,7 @@ export const STATUS: Status[] = ["Recebida", "Em andamento", "Respondida", "Conc
 
 export type Resposta = {
   id: string; solicitacao_id: string; autor: string | null; autor_nome: string | null; equipe: boolean;
-  texto: string; audio: string | null; transcricao: string | null; created_at: string;
+  texto: string; audio: string | null; transcricao: string | null; created_at: string; automatica?: boolean;
 };
 export type Solicitacao = {
   id: string; portal_id: string; autor: string | null; autor_nome: string | null; tipo: Tipo; texto: string;

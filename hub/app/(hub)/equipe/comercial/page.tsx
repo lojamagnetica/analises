@@ -27,7 +27,7 @@ function Comercial() {
         <div className="card card-borda kpi" style={{ ["--c" as string]: aguardando.length ? "var(--orange)" : "var(--green)" }}><b>{aguardando.length}</b><small>passagens esperando a CS</small></div>
         <div className="card card-borda kpi" style={{ ["--c" as string]: "var(--purple)" }}><b>{dados.oportunidades.length}</b><small>oportunidades nos próximos 30 dias</small></div>
       </div>
-      <div className="linha mb"><Link className="btn p" href="/equipe/comercial/venda">+ Nova venda</Link></div>
+      <div className="linha mb"><Link className="btn p" href="/equipe/comercial/venda">+ Nova venda</Link><Link className="btn s" href="/equipe/comercial/leads">Leads e funil</Link></div>
 
       <div className="secao">Oportunidades: renovação e upgrade</div>
       <div className="card tabela-wrap mb">

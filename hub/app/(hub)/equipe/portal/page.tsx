@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AnotacoesDaCliente } from "@/components/Anotacoes";
 import { CamposPortal } from "@/components/CamposPortal";
 import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
@@ -222,6 +223,8 @@ function EditarPortal() {
           </details>
         ))}
       </div>
+
+      <AnotacoesDaCliente portalId={id} nome={hub.nome} />
 
       <LinhaDoTempo portalId={id} />
 

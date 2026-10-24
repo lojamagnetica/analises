@@ -37,6 +37,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       id: "comercial", rotulo: "Comercial", icone: "target",
       itens: [
         { href: "/equipe/comercial", rotulo: "Painel comercial", icone: "chart" },
+        { href: "/equipe/comercial/leads", rotulo: "Leads e funil", icone: "funnel" },
         { href: "/equipe/comercial/venda", rotulo: "Nova venda", icone: "plus" },
       ],
     });

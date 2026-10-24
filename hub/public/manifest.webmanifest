@@ -1,11 +1,23 @@
 {
   "name": "magnética.hub",
-  "short_name": "magnética",
+  "short_name": "magnética.hub",
   "start_url": "/analises/portal/inicio/",
   "display": "standalone",
   "background_color": "#141210",
   "theme_color": "#141210",
   "icons": [
+    {
+      "src": "/analises/portal/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/analises/portal/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/analises/portal/icon.svg",
       "sizes": "any",

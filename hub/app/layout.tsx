@@ -6,7 +6,12 @@ export const metadata: Metadata = {
   title: { default: "magnética.hub", template: "%s · magnética.hub" },
   description: "Hub da Loja Magnética: o portal da loja e da equipe.",
   manifest: `${BASE}/manifest.webmanifest`,
-  icons: { icon: `${BASE}/icon.svg`, apple: `${BASE}/icon.svg` },
+  // O iPhone não usa SVG como ícone da tela inicial: precisa de PNG quadrado, sem cantos transparentes.
+  icons: {
+    icon: [{ url: `${BASE}/icon.svg`, type: "image/svg+xml" }, { url: `${BASE}/icon-192.png`, sizes: "192x192", type: "image/png" }],
+    apple: [{ url: `${BASE}/apple-touch-icon.png`, sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: { title: "magnética.hub" },
   robots: { index: false, follow: false },
 };
 

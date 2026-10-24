@@ -86,7 +86,7 @@ export function numeros(d: DadosGestao, periodo: Periodo) {
 }
 
 // ----- Linha do tempo da ficha -----
-export type TipoTempo = "venda" | "contrato" | "etapa" | "reuniao" | "mensagem";
+export type TipoTempo = "venda" | "contrato" | "etapa" | "reuniao" | "mensagem" | "anotacao";
 export type EventoTempo = { id: string; tipo: TipoTempo; quando: string; quem: string | null; texto: string; soDia?: boolean };
 
 export const ROTULO_TEMPO: Record<TipoTempo, { rotulo: string; selo: string }> = {
@@ -95,6 +95,7 @@ export const ROTULO_TEMPO: Record<TipoTempo, { rotulo: string; selo: string }> =
   etapa: { rotulo: "Etapa", selo: "espera" },
   reuniao: { rotulo: "Reunião", selo: "alerta" },
   mensagem: { rotulo: "Mensagem", selo: "erro" },
+  anotacao: { rotulo: "Anotação", selo: "feito" },
 };
 
 const textoDoCheck = new Map(ETAPAS.flatMap((e) => e.checks.map((k) => [k.chave, k.texto] as const)));
@@ -103,7 +104,7 @@ const diaInteiro = (dia: string) => inicioDoDia(dia.slice(0, 10));
 /** Tudo o que aconteceu com uma cliente, do mais recente para o mais antigo (o que está marcado para depois fica no topo). */
 export async function buscarLinhaDoTempo(portalId: string): Promise<EventoTempo[]> {
   const sb = supabaseBrowser();
-  const [contratos, vendas, checks, reunioes, mensagens, respostas, gerados] = await Promise.all([
+  const [contratos, vendas, checks, reunioes, mensagens, respostas, gerados, anotacoes] = await Promise.all([
     sb.from("contratos").select("id, inicio, fim, status").eq("portal_id", portalId),
     sb.from("passagens").select("vendido_por, criado_por, created_at, recebida_em, recebida_por").eq("portal_id", portalId),
     sb.from("jornada_checks").select("chave, por_nome, updated_at").eq("portal_id", portalId).eq("feito", true),
@@ -111,6 +112,7 @@ export async function buscarLinhaDoTempo(portalId: string): Promise<EventoTempo[
     sb.from("solicitacoes").select("id, tipo, status, autor_nome, created_at").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(30),
     sb.from("solicitacao_respostas").select("id, autor_nome, created_at").eq("portal_id", portalId).eq("equipe", true).order("created_at", { ascending: false }).limit(30),
     sb.from("contratos_gerados").select("id, status, gerado_por, created_at").eq("portal_id", portalId),
+    sb.from("cliente_anotacoes").select("id, texto, por_nome, created_at").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(50),
   ]);
   const lista: EventoTempo[] = [];
   for (const c of contratos.data ?? []) {
@@ -126,5 +128,6 @@ export async function buscarLinhaDoTempo(portalId: string): Promise<EventoTempo[
   for (const m of mensagens.data ?? []) lista.push({ id: `m-${m.id}`, tipo: "mensagem", quando: m.created_at, quem: m.autor_nome, texto: `Mensagem da loja (${String(m.tipo).toLowerCase()}) · ${String(m.status).toLowerCase()}` });
   for (const r of respostas.data ?? []) lista.push({ id: `mr-${r.id}`, tipo: "mensagem", quando: r.created_at, quem: r.autor_nome, texto: "Resposta da equipe no Fale com a Camilla" });
   for (const g of gerados.data ?? []) lista.push({ id: `g-${g.id}`, tipo: "contrato", quando: g.created_at, quem: g.gerado_por, texto: `Contrato gerado (${String(g.status).toLowerCase()})` });
+  for (const a of anotacoes.data ?? []) lista.push({ id: `a-${a.id}`, tipo: "anotacao", quando: a.created_at, quem: a.por_nome, texto: a.texto.length > 90 ? `${a.texto.slice(0, 87)}…` : a.texto });
   return lista.sort((a, b) => b.quando.localeCompare(a.quando));
 }

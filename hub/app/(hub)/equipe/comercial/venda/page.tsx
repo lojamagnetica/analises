@@ -1,21 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { buscarComercial, registrarVenda } from "@/lib/comercial";
+import { buscarLead, fecharLead } from "@/lib/leads";
 
 // Nova venda: o que o Comercial passa para a CS. Cria o portal (sem mandar o acesso) e a passagem de bastão.
-export default function NovaVenda() {
+// Vindo de um lead fechado (?lead=…), já vem com o que o lead tinha e, ao registrar, o lead guarda o portal criado.
+function NovaVenda() {
   const { nome } = useEquipe();
   const router = useRouter();
+  const leadId = useSearchParams().get("lead");
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
-  const { dados } = useDados(() => buscarComercial(), []);
+  const { dados } = useDados(async () => ({ ...(await buscarComercial()), lead: leadId ? await buscarLead(leadId) : null }), [leadId]);
   if (!dados) return <Carregando />;
   const planos = dados.planos.filter((p) => p.vendendo);
+  const lead = dados.lead;
 
   return (
     <>
@@ -27,16 +31,17 @@ export default function NovaVenda() {
           setSalvando(true); setErro("");
           try {
             const id = await registrarVenda(f, nome);
+            if (lead) await fecharLead(lead.id, id);
             router.push(`/equipe/comercial?nova=${id}`);
           } catch (e) { setErro((e as Error).message); setSalvando(false); }
         }}
       >
         <div className="secao" style={{ marginTop: 0 }}>A loja</div>
         <div className="grade g2" style={{ gap: 12 }}>
-          <div><label className="rotulo">Nome da loja</label><input name="loja" required /></div>
-          <div><label className="rotulo">Instagram</label><input name="instagram" placeholder="@loja" /></div>
-          <div><label className="rotulo">Responsável (como chamamos)</label><input name="responsavel" /></div>
-          <div><label className="rotulo">WhatsApp</label><input name="whatsapp" /></div>
+          <div><label className="rotulo">Nome da loja</label><input name="loja" required defaultValue={lead?.loja ?? ""} /></div>
+          <div><label className="rotulo">Instagram</label><input name="instagram" placeholder="@loja" defaultValue={lead?.instagram ?? ""} /></div>
+          <div><label className="rotulo">Responsável (como chamamos)</label><input name="responsavel" defaultValue={lead?.nome ?? ""} /></div>
+          <div><label className="rotulo">WhatsApp</label><input name="whatsapp" defaultValue={lead?.whatsapp ?? ""} /></div>
           <div><label className="rotulo">E-mail de acesso ao Hub</label><input name="email" type="email" /></div>
           <div><label className="rotulo">Lojas mentoradas (se for mais de uma)</label><input name="lojas_mentoradas" placeholder="Ex.: Loja Feminina e Loja Masculina" /></div>
         </div>
@@ -50,11 +55,11 @@ export default function NovaVenda() {
               {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}{p.meses ? ` · ${p.meses} meses` : ""}</option>)}
             </select>
           </div>
-          <div><label className="rotulo">Valor total (R$)</label><input name="valor" inputMode="decimal" placeholder="Ex.: 12000" /></div>
+          <div><label className="rotulo">Valor total (R$)</label><input name="valor" inputMode="decimal" placeholder="Ex.: 12000" defaultValue={lead?.valor_estimado ?? ""} /></div>
           <div><label className="rotulo">Data do pagamento confirmado</label><input name="pagamento_em" type="date" defaultValue={hoje()} required /></div>
           <div><label className="rotulo">Forma de pagamento</label><input name="forma_pagamento" placeholder="Ex.: cartão de crédito em 12x · PIX à vista" /></div>
-          <div><label className="rotulo">Vendido por</label><input name="vendido_por" defaultValue={nome} /></div>
-          <div><label className="rotulo">Como chegou</label><input name="origem" placeholder="Ex.: Instagram, indicação da Fulana, evento" /></div>
+          <div><label className="rotulo">Vendido por</label><input name="vendido_por" defaultValue={lead?.responsavel ?? nome} /></div>
+          <div><label className="rotulo">Como chegou</label><input name="origem" placeholder="Ex.: Instagram, indicação da Fulana, evento" defaultValue={lead?.origem ?? ""} /></div>
         </div>
         <label className="rotulo">Na call: &quot;Se a mentoria resolver uma coisa só em 90 dias, qual é?&quot;</label>
         <textarea name="resultado_90" rows={2} required />
@@ -62,7 +67,7 @@ export default function NovaVenda() {
         <label className="marcar"><input type="checkbox" name="bonus" /> Bônus comercial concedido (treinamento de vendas)</label>
         <label className="marcar"><input type="checkbox" name="garantia" /> Com a garantia de risco zero</label>
         <label className="rotulo">O que a CS precisa saber (combinados, perfil, cuidados)</label>
-        <textarea name="observacoes" rows={3} />
+        <textarea name="observacoes" rows={3} defaultValue={lead?.obs ?? ""} />
 
         <div className="secao">Dados para o contrato</div>
         <p className="ajuda" style={{ marginTop: -6 }}>Vão direto para o contrato que a Claudia gera. Só a equipe vê.</p>
@@ -81,4 +86,8 @@ export default function NovaVenda() {
       </form>
     </>
   );
+}
+
+export default function Pagina() {
+  return <Suspense fallback={<Carregando />}><NovaVenda /></Suspense>;
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
-import { CAMPOS, buscarRespostas, importarRespostas, lerArquivo, lerCsv, montarRespostas, ordemFaixa, paraCsv, sugerirMapa, type Campo, type Resposta } from "@/lib/iscas";
+import { CAMPOS, buscarRespostas, importarRespostas, lerArquivo, lerCsv, montarRespostas, nomeDaIsca, ordemFaixa, paraCsv, sugerirMapa, type Campo, type Resposta } from "@/lib/iscas";
 import { PERIODOS, intervalo, type Periodo } from "@/lib/gestao-clientes";
 import { chaveDia } from "@/lib/agenda";
 import { normalizar } from "@/lib/agenda-regras";
@@ -49,7 +49,7 @@ function Importar({ aoImportar }: { aoImportar: () => void }) {
       const tabela = lerCsv(await lerArquivo(arq));
       if (tabela.length < 2) throw new Error("O arquivo não tem respostas. Exporte de novo no Respondi, em Respostas, Exportar.");
       setCabecalho(tabela[0]); setLinhas(tabela.slice(1)); setMapa(sugerirMapa(tabela[0]));
-      setIsca(arq.name.replace(/\.[^.]+$/, ""));
+      setIsca(nomeDaIsca(arq.name));
     } catch (e) { setErro((e as Error).message); setCabecalho([]); setLinhas([]); }
   }
 
@@ -59,7 +59,7 @@ function Importar({ aoImportar }: { aoImportar: () => void }) {
       if (!isca.trim()) throw new Error("Escreva o nome da isca.");
       if (!mapa.includes("whatsapp")) throw new Error("Escolha qual coluna é o WhatsApp: é ele que evita contar a mesma pessoa duas vezes.");
       const r = await importarRespostas(await montarRespostas(isca.trim(), cabecalho, linhas, mapa));
-      setMsg(`Importado: ${r.novas} respostas novas${r.jaExistiam ? ` e ${r.jaExistiam} que já estavam` : ""}.`);
+      setMsg(`Importado: ${r.novas} respostas novas${r.jaExistiam ? ` e ${r.jaExistiam} que já estavam (mesma pessoa e mesmas respostas, em qualquer isca)` : ""}.`);
       setCabecalho([]); setLinhas([]);
       aoImportar();
     } catch (e) { setErro((e as Error).message); }

@@ -25,15 +25,16 @@ export const NOTAS = [
 export const pilarDe = (codigo: string) => codigo.slice(0, 2);
 export const nomeAula = (a: Pick<Aula, "codigo" | "titulo">) => (/^\d/.test(a.codigo) ? `Aula ${a.codigo} · ${a.titulo}` : a.titulo);
 
-export async function buscarCurso(portalId: string) {
+export async function buscarCurso(portalId: string | null) {
   const sb = supabaseBrowser();
+  const vazio = Promise.resolve({ data: [] as Record<string, unknown>[] });
   const [m, f, a, fe, r, p] = await Promise.all([
     sb.from("curso_modulos").select("*").order("ordem"),
     sb.from("curso_fundamentos").select("*").order("ordem"),
     sb.from("curso_aulas").select("*").order("ordem"),
     sb.from("curso_ferramentas").select("*").order("ordem"),
-    sb.from("curso_raiox").select("codigo, nota").eq("portal_id", portalId),
-    sb.from("curso_progresso").select("tipo, item, feito_em").eq("portal_id", portalId),
+    portalId ? sb.from("curso_raiox").select("codigo, nota").eq("portal_id", portalId) : vazio,
+    portalId ? sb.from("curso_progresso").select("tipo, item, feito_em").eq("portal_id", portalId) : vazio,
   ]);
   return {
     modulos: (m.data ?? []) as Modulo[],

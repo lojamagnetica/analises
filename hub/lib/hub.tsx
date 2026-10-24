@@ -173,6 +173,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal">) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   if (livre || hub.portal) return null;
+  // Sem portal aberto, a equipe vê o curso como prévia (sem progresso).
+  if (hub.equipe && (caminho === "/cursos" || caminho.startsWith("/cursos/fundamento"))) return null;
   return hub.equipe ? "/empresa" : "/sem-portal";
 }
 

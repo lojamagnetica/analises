@@ -59,7 +59,8 @@ function Fundamento() {
   const escolhida = params.get("a");
   const { portal, equipe } = usePortal();
   const [erro, setErro] = useState("");
-  const { dados, recarregar } = useDados(() => buscarCurso(portal.id), [portal.id]);
+  const { dados, recarregar } = useDados(() => buscarCurso(portal?.id ?? null), [portal?.id]);
+  const previa = !portal; // equipe sem portal aberto: só olha, não marca nada
   if (!dados) return <Carregando />;
   const t = trilha(dados, equipe);
   const fazer = async (acao: () => Promise<void>) => {
@@ -122,9 +123,9 @@ function Fundamento() {
             {aula && aula.topicos.length > 0 && <div className="mb-topicos">{aula.topicos.map((x) => <span key={x}>{x}</span>)}</div>}
             {aula && (
               <div className="linha mt" style={{ gap: 10 }}>
-                <button type="button" className={vista ? "btn s" : "btn p"} onClick={() => fazer(() => marcarAula(portal.id, aula.codigo, !vista))}>
+                {!previa && <button type="button" className={vista ? "btn s" : "btn p"} onClick={() => fazer(() => marcarAula(portal.id, aula.codigo, !vista))}>
                   <Icone nome="check" /> {vista ? "Aula assistida" : "Marcar como assistida"}
-                </button>
+                </button>}
                 {proxima && <Link className="btn s" href={href(proxima)}>Próxima aula →</Link>}
               </div>
             )}
@@ -156,7 +157,7 @@ function Fundamento() {
             <small>Missão antes da aula 1</small>
             <h3>Preencher o Raio-X e a Foto do Dia Zero</h3>
             <p>{t.raioxFeito ? "Raio-X preenchido. Seu radar já mostra por onde começar." : "Dê nota 0, 1 ou 2 para os 16 fundamentos. Leva poucos minutos."}</p>
-            <div><Link className="btn-play" href="/cursos/raio-x">{t.raioxFeito ? "Ver meu Raio-X" : "Fazer o Raio-X agora"}</Link></div>
+            {!previa && <div><Link className="btn-play" href="/cursos/raio-x">{t.raioxFeito ? "Ver meu Raio-X" : "Fazer o Raio-X agora"}</Link></div>}
           </div>
           <Ferramentas itens={ferramentas} />
         </div>
@@ -190,7 +191,7 @@ function Fundamento() {
           <div className="mb-bloco escuro">
             <small>Prova · libera o próximo fundamento</small>
             <h3>{f.prova}</h3>
-            {entregue ? (
+            {previa ? <p>Na loja, aqui fica o botão &quot;Entreguei a prova&quot;.</p> : entregue ? (
               <>
                 <p>Entregue em {dataCurta(entregue)}. +1 no seu Placar Magnético.</p>
                 <div className="linha" style={{ gap: 8 }}>

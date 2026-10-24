@@ -16,11 +16,13 @@ export default function Curso() {
   const { portal, equipe } = usePortal();
   const { dados } = useDados(async () => {
     const [curso, { data: gravacoes }] = await Promise.all([
-      buscarCurso(portal.id),
-      supabaseBrowser().from("reunioes").select("id, titulo, data, gravacao_url").eq("portal_id", portal.id).not("gravacao_url", "is", null).order("data", { ascending: false }),
+      buscarCurso(portal?.id ?? null),
+      portal
+        ? supabaseBrowser().from("reunioes").select("id, titulo, data, gravacao_url").eq("portal_id", portal.id).not("gravacao_url", "is", null).order("data", { ascending: false })
+        : Promise.resolve({ data: [] as { id: string; titulo: string; data: string; gravacao_url: string | null }[] }),
     ]);
     return { curso, gravacoes: gravacoes ?? [] };
-  }, [portal.id]);
+  }, [portal?.id]);
   if (!dados) return <Carregando />;
   const c = dados.curso;
   const t = trilha(c, equipe);
@@ -47,6 +49,7 @@ export default function Curso() {
   return (
     <>
       <Titulo titulo="" aba="Método Loja Magnética" />
+      {!portal && <div className="aviso mt" style={{ marginBottom: 16 }}>Prévia da equipe: você vê o curso como a loja vê, com tudo liberado. O progresso só conta dentro do portal de cada loja.</div>}
 
       <section className="mb-hero mb-vitrine">
         <div className="mb-hero-txt">

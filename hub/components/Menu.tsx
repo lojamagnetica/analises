@@ -255,7 +255,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             </div>
           ))}
 
-          {props.temPortal && (
+          {(props.temPortal || props.equipe) && (
             <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
               <Icone nome="play" /> CURSO
             </Link>

@@ -1,7 +1,7 @@
 "use client";
 
-import { EmBreve } from "@/components/EmBreve";
+import { AnaliseDaGestao } from "@/components/AnaliseGestao";
 
 export default function Fornecedores() {
-  return <EmBreve titulo="Estoque e fornecedores" oque="Quanto você compra de cada fornecedor e quanto cada um vende de volta. Mostra de quem comprar mais, de quem comprar menos e a dependência de uma marca só." adiantar={{ texto: "Para essa análise sair certa, ela usa os relatórios do seu sistema. Já pode subir agora.", href: "/personalizacao/etapa?n=8", botao: "Subir relatórios →" }} />;
+  return <AnaliseDaGestao area="fornecedores" titulo="Estoque e fornecedores" sub="Quanto cada marca vende, quanto tem parado e de quem comprar mais ou menos." oque="Quanto você compra de cada fornecedor e quanto cada um vende de volta. Mostra de quem comprar mais, de quem comprar menos e a dependência de uma marca só." />;
 }

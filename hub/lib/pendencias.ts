@@ -55,8 +55,11 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
   ]);
   const lista = (portais ?? []) as { id: string; loja: string; responsavel: string | null; tipo: string }[];
   const relatorios = new Map(await Promise.all(lista.map(async (p) => {
-    const { data } = await sb().storage.from("relatorios").list(p.id, { limit: 1 });
-    return [p.id, (data ?? []).filter((f) => f.id).length] as const;
+    const [{ data }, { count }] = await Promise.all([
+      sb().storage.from("relatorios").list(p.id, { limit: 1 }),
+      sb().from("loja_relatorios_drive").select("id", { count: "exact", head: true }).eq("portal_id", p.id),
+    ]);
+    return [p.id, (data ?? []).filter((f) => f.id).length + (count ?? 0)] as const;
   })));
   const nCaixa = conta(caixa), nClientes = conta(clientes), nReun = conta(reunioes), nInsta = conta(insta), nDiag = conta(diag), nAcesso = conta(acessos);
 

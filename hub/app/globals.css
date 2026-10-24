@@ -206,6 +206,7 @@ button.chip { cursor: pointer; font-family: inherit; }
 .acao-alerta { border-left: 1px solid var(--line); padding-left: 18px; }
 @media (max-width: 720px) { .grade-alerta { grid-template-columns: 1fr; } .acao-alerta { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; } }
 .grade .kpi small { display: block; margin-top: 2px; }
+.grade.g4 .kpi b { font-size: 24px; overflow-wrap: anywhere; }
 .desejo { padding: 10px 12px; border-radius: 12px; background: var(--purple-soft); }
 .desejo small { font-weight: 700; color: var(--purple); }
 .pessoa-diag { padding: 12px 0; border-top: 1px solid var(--line); }

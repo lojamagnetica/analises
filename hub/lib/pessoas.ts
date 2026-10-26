@@ -95,7 +95,8 @@ export function pontuar(respostas: Letra[]): Record<Letra, number> {
 export function principal(perfil: Record<Letra, number> | null) {
   if (!perfil) return null;
   const ord = (Object.keys(perfil) as Letra[]).sort((a, b) => perfil[b] - perfil[a]);
-  return { letra: ord[0], segunda: perfil[ord[1]] >= perfil[ord[0]] - 1 && perfil[ord[1]] > 0 ? ord[1] : null };
+  // Traço secundário: a segunda letra a até 2 pontos da primeira.
+  return { letra: ord[0], segunda: perfil[ord[1]] >= perfil[ord[0]] - 2 && perfil[ord[1]] > 0 ? ord[1] : null };
 }
 
 // ───── Dar retorno: cobrar e reconhecer ─────

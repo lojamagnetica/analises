@@ -28,15 +28,16 @@ function Teste() {
   if (t === undefined) return <div className="carregando">Carregando…</div>;
   if (pronto) {
     // A mesma conta do banco: o resultado aparece na hora para quem respondeu.
-    const pr = principal(pontuarMaisMenos(r.mais.filter((x): x is NonNullable<typeof x> => !!x), r.menos.filter((x): x is NonNullable<typeof x> => !!x)));
+    const pontos = pontuarMaisMenos(r.mais.filter((x): x is NonNullable<typeof x> => !!x), r.menos.filter((x): x is NonNullable<typeof x> => !!x));
+    const pr = principal(pontos);
     return (
       <>
         <div className="card mb" style={{ textAlign: "center" }}>
           <h2 style={{ margin: "0 0 4px" }}>Pronto, {t?.nome}!</h2>
           <p className="mudo" style={{ margin: 0 }}>Suas respostas foram enviadas. Obrigada por responder com sinceridade. Veja o que o seu teste mostrou:</p>
         </div>
-        {pr && <RetornoPerfil nome={t?.nome ?? ""} letra={pr.letra} segunda={pr.segunda} />}
-        <p className="ajuda" style={{ textAlign: "center" }}>Tire um print desta tela para guardar.</p>
+        {pr && <RetornoPerfil nome={t?.nome ?? ""} loja={t?.loja ?? ""} perfil={pontos} />}
+        <p className="ajuda" style={{ textAlign: "center" }}>A sua líder também pode te enviar este relatório por link.</p>
       </>
     );
   }

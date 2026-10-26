@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Texto } from "@/components/Texto";
 import { Titulo } from "@/components/Titulo";
@@ -12,6 +12,70 @@ import { PROJETOS_BASE, STATUS_ESTUDIO, TIPOS_ESTUDIO, apagarDoc, classeStatus, 
 
 /** Só as falas (linhas com "> "), para ler na gravação. */
 const falas = (md: string) => md.replace(/\r/g, "").split("\n").filter((l) => l.startsWith(">")).map((l) => l.replace(/^>\s?/, "")).join("\n");
+
+/** Teleprompter: as falas em blocos, com o nome da seção em cima. Sem falas marcadas, usa o texto todo. */
+function blocosTeleprompter(md: string) {
+  const blocos: { secao: string; linhas: string[] }[] = [];
+  let secao = "";
+  let atual: string[] | null = null;
+  for (const l of md.replace(/\r/g, "").split("\n")) {
+    if (l.startsWith("### ")) { secao = l.slice(4); atual = null; continue; }
+    if (l.startsWith(">")) {
+      if (!atual) { atual = []; blocos.push({ secao, linhas: atual }); secao = ""; }
+      atual.push(l.replace(/^>\s?/, ""));
+    } else atual = null;
+  }
+  if (blocos.length) return blocos;
+  return md.split(/\n{2,}/).map((b) => ({ secao: "", linhas: b.split("\n").filter(Boolean) })).filter((b) => b.linhas.length);
+}
+
+/** Tela cheia para gravar: letra grande, rolagem automática (espaço liga e desliga) e Esc para sair. */
+function Teleprompter({ titulo, md, aoSair }: { titulo: string; md: string; aoSair: () => void }) {
+  const [letra, setLetra] = useState(40);
+  const [rolando, setRolando] = useState(false);
+  const [velocidade, setVelocidade] = useState(3);
+  const tela = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") aoSair();
+      if (e.key === " ") { e.preventDefault(); setRolando((r) => !r); }
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [aoSair]);
+  useEffect(() => {
+    if (!rolando) return;
+    let quadro = 0;
+    const passo = () => { if (tela.current) tela.current.scrollTop += velocidade * 0.35; quadro = requestAnimationFrame(passo); };
+    quadro = requestAnimationFrame(passo);
+    return () => cancelAnimationFrame(quadro);
+  }, [rolando, velocidade]);
+  return (
+    <div className="estudio-gravacao" ref={tela} style={{ fontSize: letra }}>
+      <div className="estudio-gravacao-barra">
+        <b>{titulo}</b>
+        <span className="linha" style={{ gap: 8 }}>
+          <button type="button" onClick={() => setRolando(!rolando)}>{rolando ? "Pausar" : "Rolar"} (espaço)</button>
+          <button type="button" onClick={() => setVelocidade(Math.max(1, velocidade - 1))}>Mais devagar</button>
+          <span style={{ minWidth: 22, textAlign: "center" }}>{velocidade}</span>
+          <button type="button" onClick={() => setVelocidade(Math.min(10, velocidade + 1))}>Mais rápido</button>
+          <button type="button" onClick={() => setLetra(Math.max(24, letra - 4))}>A−</button>
+          <button type="button" onClick={() => setLetra(Math.min(72, letra + 4))}>A+</button>
+          <button type="button" onClick={aoSair}>Sair (Esc)</button>
+        </span>
+      </div>
+      <div className="estudio-prompter">
+        {blocosTeleprompter(md).map((b, i) => (
+          <div key={i} className="estudio-prompter-bloco">
+            {b.secao && <small>{b.secao}</small>}
+            {b.linhas.map((l, j) => <p key={j}>{l}</p>)}
+          </div>
+        ))}
+        <div style={{ height: "70vh" }} />
+      </div>
+    </div>
+  );
+}
 
 function Editor({ d, aoSalvar, aoFechar }: { d: DocEstudio; aoSalvar: () => void; aoFechar: () => void }) {
   const router = useRouter();
@@ -56,37 +120,16 @@ function Doc() {
   const id = params.get("id") ?? "";
   const [editar, setEditar] = useState(params.get("editar") === "1");
   const [gravacao, setGravacao] = useState(false);
-  const [letra, setLetra] = useState(30);
   const { dados, recarregar } = useDados(async () => ({ doc: estudio && id ? await lerDoc(id) : null }), [id, estudio]);
   const d = dados?.doc;
   useEffect(() => { if (d) document.title = `${d.titulo} · Meu estúdio`; }, [d]);
-  useEffect(() => {
-    if (!gravacao) return;
-    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") setGravacao(false); };
-    window.addEventListener("keydown", tecla);
-    return () => window.removeEventListener("keydown", tecla);
-  }, [gravacao]);
   if (!dados) return <Carregando />;
   if (!d) return <p className="mudo">Documento não encontrado. <Link href="/empresa/estudio">Voltar ao estúdio</Link></p>;
 
   const proximo = STATUS_ESTUDIO[STATUS_ESTUDIO.indexOf(d.status) + 1];
   const soFalas = falas(d.conteudo);
 
-  if (gravacao) {
-    return (
-      <div className="estudio-gravacao" style={{ fontSize: letra }}>
-        <div className="estudio-gravacao-barra">
-          <b>{d.ref ? `${d.ref} · ` : ""}{d.titulo}</b>
-          <span className="linha" style={{ gap: 8 }}>
-            <button type="button" onClick={() => setLetra(Math.max(18, letra - 4))}>A−</button>
-            <button type="button" onClick={() => setLetra(Math.min(56, letra + 4))}>A+</button>
-            <button type="button" onClick={() => setGravacao(false)}>Sair (Esc)</button>
-          </span>
-        </div>
-        <Texto md={d.conteudo} />
-      </div>
-    );
-  }
+  if (gravacao) return <Teleprompter titulo={`${d.ref ? `${d.ref} · ` : ""}${d.titulo}`} md={d.conteudo} aoSair={() => setGravacao(false)} />;
 
   return (
     <>
@@ -104,7 +147,7 @@ function Doc() {
           </div>
           <div className="linha" style={{ gap: 8 }}>
             {soFalas && <Copiar texto={soFalas} rotulo="Copiar só as falas" />}
-            <button type="button" className="btn s peq" onClick={() => setGravacao(true)}>Modo gravação</button>
+            <button type="button" className="btn s peq" onClick={() => setGravacao(true)}>Teleprompter</button>
             <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar edição" : "Editar"}</button>
           </div>
         </div>

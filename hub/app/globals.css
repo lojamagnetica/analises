@@ -567,3 +567,7 @@ a.mb-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(20,1
 .estudio-gravacao-barra { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 24px; background: rgba(20, 18, 16, .94); font-size: 14px; border-bottom: 1px solid #2E2A26; }
 .estudio-gravacao-barra button { background: #2E2A26; color: #F5F0EA; border: 0; border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
 @media (max-width: 780px) { .estudio-item { grid-template-columns: 44px 1fr; } .estudio-item .selo { grid-column: 2; justify-self: start; } }
+.estudio-prompter { max-width: 1000px; margin: 0 auto; }
+.estudio-prompter-bloco { margin: 0 0 1.4em; }
+.estudio-prompter-bloco small { display: block; font-size: 13px; letter-spacing: .2em; text-transform: uppercase; color: #D9622C; margin-bottom: 10px; font-weight: 600; }
+.estudio-prompter-bloco p { margin: 0 0 .25em; line-height: 1.35; color: #F5F0EA; }

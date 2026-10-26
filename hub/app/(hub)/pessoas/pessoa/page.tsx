@@ -10,7 +10,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { LETRAS, buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, retornoFeito, retornoExcluir, fichaExcluir } from "@/lib/pessoas";
 import { Excluir } from "@/components/Excluir";
 import { RetornoPerfil } from "@/components/RetornoPerfil";
-import { mensagemRetorno } from "@/lib/perfil-pessoa";
+import { linkDoRelatorio, mensagemRelatorio } from "@/lib/perfil-pessoa";
 import { BASE } from "@/lib/config";
 import { dataCurta, dia } from "@/lib/formato";
 
@@ -107,14 +107,23 @@ function Pessoa() {
             {pr!.segunda && <p className="ajuda">Tem traços de {PERFIS[pr!.segunda].nome}: {PERFIS[pr!.segunda].resumo.toLowerCase()}</p>}
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)", gridColumn: "1 / -1" }}>
-            <h2 style={{ marginTop: 0 }}>Retorno do teste para {p.nome.split(" ")[0]}</h2>
-            <p className="mudo" style={{ marginTop: -4 }}>Mande para ela o que o teste mostrou: os diferenciais, os desafios e como usar isso a seu favor. É um jeito de agradecer e dar vontade de continuar participando.</p>
+            <h2 style={{ marginTop: 0 }}>Relatório de perfil para {p.nome.split(" ")[0]}</h2>
+            <p className="mudo" style={{ marginTop: -4 }}>Um relatório com a marca da Loja Magnética: o que o teste mostrou, os diferenciais, os pontos de desenvolvimento e como potencializar o resultado. Ela abre pelo link, sem login, e pode salvar em PDF.</p>
             <div className="linha" style={{ gap: 8 }}>
-              <Copiar texto={mensagemRetorno(p.nome.split(" ")[0], portal.loja, pr!.letra, pr!.segunda)} rotulo="Copiar a mensagem" />
-              <a className="btn p peq" href={`https://wa.me/?text=${encodeURIComponent(mensagemRetorno(p.nome.split(" ")[0], portal.loja, pr!.letra, pr!.segunda))}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
+              <button type="button" className="btn p peq" onClick={async () => {
+                setErro("");
+                try {
+                  const l = await linkDoRelatorio(p.id, `${window.location.origin}${BASE}`);
+                  window.open(`https://wa.me/?text=${encodeURIComponent(mensagemRelatorio(p.nome.split(" ")[0], portal.loja, l))}`, "_blank", "noopener");
+                } catch (e) { setErro((e as Error).message); }
+              }}>Enviar o relatório no WhatsApp</button>
+              <button type="button" className="btn s peq" onClick={async () => {
+                setErro("");
+                try { window.open(await linkDoRelatorio(p.id, `${window.location.origin}${BASE}`), "_blank", "noopener"); } catch (e) { setErro((e as Error).message); }
+              }}>Abrir o relatório</button>
             </div>
-            <details className="mt"><summary style={{ cursor: "pointer" }}>Ver o que ela vai receber</summary>
-              <div className="mt"><RetornoPerfil nome={p.nome.split(" ")[0]} letra={pr!.letra} segunda={pr!.segunda} /></div>
+            <details className="mt"><summary style={{ cursor: "pointer" }}>Ver o relatório aqui</summary>
+              <div className="mt"><RetornoPerfil nome={p.nome.split(" ")[0]} loja={portal.loja} funcao={p.funcao} perfil={p.perfil!} data={p.perfil_em} /></div>
             </details>
           </div>
         </div>

@@ -11,7 +11,7 @@ const l = lojaBase();
 // Indicações em memória, com a mesma regra das funções do banco
 const indicacoes = [{ id: "i1", nome: "Bia Exemplo", loja: "Loja Exemplo", whatsapp: "81988887777", instagram: null, situacao: "Em conversa", criada_em: "2026-10-01T12:00:00Z" }];
 const rpc = {
-  minhas_indicacoes: () => indicacoes,
+  indicacoes_da_loja: () => indicacoes,
   indicar_loja: (a) => { indicacoes.unshift({ id: "i" + (indicacoes.length + 1), nome: a.p_nome, loja: a.p_loja, whatsapp: a.p_whatsapp, instagram: a.p_instagram, situacao: "Recebida", criada_em: new Date().toISOString() }); return "x"; },
   editar_indicacao: (a) => { Object.assign(indicacoes.find((i) => i.id === a.p_id), { nome: a.p_nome }); },
   retirar_indicacao: (a) => { indicacoes.splice(indicacoes.findIndex((i) => i.id === a.p_id), 1); },

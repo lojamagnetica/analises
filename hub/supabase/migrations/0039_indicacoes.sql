@@ -30,9 +30,24 @@ end $$;
 revoke execute on function public.indicar_loja(text, text, text, text, text, text, uuid) from public, anon;
 grant execute on function public.indicar_loja(text, text, text, text, text, text, uuid) to authenticated;
 
--- Indicação retirada pela loja não aparece mais para ela (fica no Comercial como Perdido).
-drop function if exists public.minhas_indicacoes(uuid);
-create function public.minhas_indicacoes(p_portal uuid default null)
+-- Nome e situação simplificada das indicações da loja.
+create or replace function public.minhas_indicacoes(p_portal uuid default null)
+returns table (nome text, loja text, situacao text, criada_em timestamptz)
+language sql stable security definer set search_path = public as $$
+  select l.nome, l.loja,
+         case l.etapa when 'Novo' then 'Recebida' when 'Conversando' then 'Em conversa' when 'Proposta' then 'Em conversa'
+                      when 'Fechou' then 'Entrou ✅' else 'Não fechou' end,
+         l.created_at
+  from public.leads l
+  where l.indicado_por = public.portal_alvo(p_portal)
+  order by l.created_at desc
+$$;
+revoke execute on function public.minhas_indicacoes(uuid) from public, anon;
+grant execute on function public.minhas_indicacoes(uuid) to authenticated;
+
+-- A lista da tela, com o id para editar e retirar. Indicação retirada pela loja não aparece mais
+-- para ela (fica no Comercial como Perdido).
+create or replace function public.indicacoes_da_loja(p_portal uuid default null)
 returns table (id uuid, nome text, loja text, whatsapp text, instagram text, situacao text, criada_em timestamptz)
 language sql stable security definer set search_path = public as $$
   select l.id, l.nome, l.loja, l.whatsapp, l.instagram,
@@ -43,8 +58,8 @@ language sql stable security definer set search_path = public as $$
   where l.indicado_por = public.portal_alvo(p_portal) and coalesce(l.motivo_perda, '') <> 'A loja retirou a indicação'
   order by l.created_at desc
 $$;
-revoke execute on function public.minhas_indicacoes(uuid) from public, anon;
-grant execute on function public.minhas_indicacoes(uuid) to authenticated;
+revoke execute on function public.indicacoes_da_loja(uuid) from public, anon;
+grant execute on function public.indicacoes_da_loja(uuid) to authenticated;
 
 -- Enquanto a indicação está como Recebida (a equipe ainda não chamou), a loja pode corrigir os dados ou retirar.
 create or replace function public.editar_indicacao(p_id uuid, p_nome text, p_loja text, p_whatsapp text, p_instagram text, p_portal uuid default null)

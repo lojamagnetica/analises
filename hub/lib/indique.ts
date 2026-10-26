@@ -10,7 +10,7 @@ const sb = () => supabaseBrowser();
 
 export async function buscarIndique(portalId: string) {
   const [{ data, error }, { data: premio }] = await Promise.all([
-    sb().rpc("minhas_indicacoes", { p_portal: portalId }),
+    sb().rpc("indicacoes_da_loja", { p_portal: portalId }),
     sb().from("hub_config").select("valor").eq("chave", CHAVE_PREMIO).maybeSingle(),
   ]);
   if (error) throw new Error(error.message);

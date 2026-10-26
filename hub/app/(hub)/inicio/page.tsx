@@ -10,6 +10,8 @@ import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
 import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/entrada";
+import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
+import { Renovacao } from "@/components/Renovacao";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
@@ -34,18 +36,21 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
+      buscarMeuContrato(portal.id).catch(() => null),
     ]);
-    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0 };
+    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passos, consult, respondidas } = dados;
+  const { prox, plano, datas, passos, consult, respondidas, contrato } = dados;
+  // 45 dias antes do fim do contrato: aviso de renovação.
+  const fimContrato = contrato?.atual && pertoDoFim(contrato.atual) ? tempoDoContrato(contrato.atual) : null;
   const passo = passos.find((p) => p.numero === portal.passo_atual);
 
   const total = plano?.length ?? 0;
@@ -137,6 +142,8 @@ export default function Inicio() {
           <span className="btn s peq">Ver resposta{respondidas === 1 ? "" : "s"}</span>
         </Link>
       )}
+
+      {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
 
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">

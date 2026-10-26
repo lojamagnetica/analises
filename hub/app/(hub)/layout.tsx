@@ -11,7 +11,7 @@ import { ETAPAS } from "@/lib/conteudo";
 import { liberado, requisito } from "@/lib/entrada";
 
 /** Páginas que abrem mesmo antes do vídeo de boas-vindas. */
-const ANTES_DO_VIDEO = ["/comece", "/conta", "/sem-portal"];
+const ANTES_DO_VIDEO = ["/comece", "/guia", "/conta", "/sem-portal"];
 
 function Casca({ children }: { children: React.ReactNode }) {
   const hub = useHub();

@@ -11,6 +11,7 @@ import { variaveisDaLoja } from "@/lib/scripts";
 import {
   COR_OBJETIVO, camposDe, carregarConteudo, ctaDe, ganchoDe, montarLegenda, postSalvar, postsCriar, preencherCampos, roteirosDaLoja, textoDoRoteiro,
 } from "@/lib/instagram";
+import { buscarPauta, ganchoDaPauta } from "@/lib/pautas";
 
 const AUTOMATICOS = ["gancho com outras palavras", "CTA"];
 
@@ -26,9 +27,20 @@ function Gerador() {
   const [data, setData] = useState(hoje());
   const [check, setCheck] = useState<number[]>([]);
   const [aviso, setAviso] = useState("");
-  const { dados } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
+  const pautaId = params.get("pauta");
+  const { dados } = useDados(async () => ({
+    ...(await carregarConteudo(portal.id, comoLoja)),
+    pauta: pautaId ? await buscarPauta(pautaId) : null,
+  }), [portal.id, comoLoja, pautaId]);
   const post = dados?.posts.find((p) => p.id === postId) ?? null;
+  const pauta = dados?.pauta ?? null;
   useEffect(() => { if (post?.data) setData(post.data); }, [post?.data]);
+  // Veio de uma pauta quente: o gancho sai do ângulo e o modelo segue o objetivo da pauta.
+  useEffect(() => {
+    if (!pauta || !dados?.a) return;
+    setGancho(ganchoDaPauta(pauta));
+    if (!params.get("m")) setModelo(roteirosDaLoja(dados.m, dados.a).find((r) => r.objetivo === pauta.objetivo)?.id ?? "");
+  }, [pauta?.id, !!dados?.a]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!dados) return <Carregando />;
   const { m, a } = dados;
   if (!a) return <Trancado titulo="Criar roteiro" texto={m.textos.trancado} />;
@@ -48,13 +60,20 @@ function Gerador() {
   const salvar = async () => {
     const campos = { modelo: r.id, formato: r.formato.includes("Carrossel") ? "Carrossel" : "Reels", objetivo: r.objetivo, gancho: ganchoFinal, roteiro, cta: ctaFinal, legenda, data };
     if (post) { await postSalvar(post.id, { ...campos, status: post.status === "Ideia" ? "Roteiro" : post.status }); setAviso("Post atualizado na programação."); }
-    else { await postsCriar([{ portal_id: portal.id, hora: dados.conteudo.ajustes.hora || m.textos.hora_padrao, tema: r.nome, origem: "roteiro", status: "Roteiro", ...campos }]); setAviso("Post salvo na programação."); }
+    else { await postsCriar([{ portal_id: portal.id, hora: dados.conteudo.ajustes.hora || m.textos.hora_padrao, tema: pauta?.titulo || r.nome, origem: pauta ? "pauta" : "roteiro", status: "Roteiro", ...campos }]); setAviso("Post salvo na programação."); }
     setTimeout(() => router.push("/conteudo/semana"), 900);
   };
 
   return (
     <>
       <Titulo voltar={{ href: "/conteudo/semana", rotulo: "Programação da semana" }} titulo="Criar roteiro" sub={m.textos.roteiro_sub} />
+      {pauta && !post && (
+        <div className="card card-borda mb" style={{ ["--c" as string]: COR_OBJETIVO[pauta.objetivo] }}>
+          <b>🔥 Pauta quente: {pauta.titulo}</b>
+          {pauta.porque && <p className="mudo" style={{ margin: "6px 0 0", fontSize: 14 }}><b>Por que agora:</b> {pauta.porque}</p>}
+          {pauta.angulo && <p style={{ margin: "6px 0 0", fontSize: 14 }}><b>Como a sua loja entra:</b> {pauta.angulo}</p>}
+        </div>
+      )}
       {post && <div className="aviso mb">Preenchendo o post de {post.data.split("-").reverse().join("/")}: {post.tema}</div>}
       {aviso && <div className="aviso ok mb">{aviso}</div>}
       <div className="grade g2">
@@ -69,6 +88,7 @@ function Gerador() {
             <label className="rotulo">Gancho</label>
             <select value={gancho} onChange={(e) => setGancho(e.target.value)}>
               <option value="">O do modelo: {ganchoDe(r)}</option>
+              {pauta && <option value={ganchoDaPauta(pauta)}>Da pauta: {ganchoDaPauta(pauta)}</option>}
               {ganchos.map((g, i) => <option key={i} value={g.texto}>{g.tipo}: {g.texto}</option>)}
             </select>
             <label className="rotulo">CTA</label>

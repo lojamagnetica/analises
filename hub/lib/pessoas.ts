@@ -243,6 +243,9 @@ export const perfilSalvar = (id: string, mais: Letra[], menos: Letra[], por: "pe
 export const retornoSalvar = (portalId: string, pessoaId: string, tipo: string, situacao: string, roteiro: string) =>
   ok(sb().from("loja_feedbacks").insert({ portal_id: portalId, pessoa_id: pessoaId, tipo, situacao: situacao.slice(0, 2000), roteiro: roteiro.slice(0, 8000) }));
 export const retornoFeito = (id: string, feito: boolean) => ok(sb().from("loja_feedbacks").update({ feito }).eq("id", id));
+export const retornoExcluir = (id: string) => ok(sb().from("loja_feedbacks").delete().eq("id", id));
+export const reuniaoTimeExcluir = (id: string) => ok(sb().from("loja_reunioes").delete().eq("id", id));
+export const fichaExcluir = (id: string) => ok(sb().from("loja_pdi").delete().eq("id", id));
 export const reuniaoSalvar = (portalId: string, tipo: "semanal" | "mensal", data: string, dados: object, pauta: string) =>
   ok(sb().from("loja_reunioes").insert({ portal_id: portalId, tipo, data, dados, pauta: pauta.slice(0, 20000) }));
 export const fichaSalvar = (portalId: string, id: string | null, form: FormData) => {

@@ -81,6 +81,8 @@ async function ok<T extends { error: { message: string } | null }>(p: PromiseLik
 
 export const ativarAcao = (portalId: string, acaoId: string, d: { base: number; meta: number; meta_pa: number | null; meta_cadastros: number | null; plano: Record<string, string> }) =>
   ok(sb().from("loja_acoes").upsert({ portal_id: portalId, acao_id: acaoId, base_diaria: d.base || null, meta: d.meta || null, meta_pa: d.meta_pa, meta_cadastros: d.meta_cadastros, plano: d.plano }, { onConflict: "portal_id,acao_id" }));
+export const vendaExcluir = (la: LojaAcao, data: string) =>
+  ok(sb().from("loja_acao_vendas").delete().eq("loja_acao_id", la.id).eq("data", data));
 export const marcarTarefa = (la: LojaAcao, chave: string, feita: boolean) =>
   ok(sb().from("loja_acoes").update({ feitas: feita ? [...new Set([...la.feitas, chave])] : la.feitas.filter((x) => x !== chave) }).eq("id", la.id));
 export const lancarVenda = (la: LojaAcao, data: string, valor: number, pa: number | null, cadastros: number | null) =>

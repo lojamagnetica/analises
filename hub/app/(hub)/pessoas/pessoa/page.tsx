@@ -7,7 +7,8 @@ import { CamposPessoa } from "@/components/CamposPessoa";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { LETRAS, buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, retornoFeito } from "@/lib/pessoas";
+import { LETRAS, buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, retornoFeito, retornoExcluir, fichaExcluir } from "@/lib/pessoas";
+import { Excluir } from "@/components/Excluir";
 import { BASE } from "@/lib/config";
 import { dataCurta, dia } from "@/lib/formato";
 
@@ -118,6 +119,7 @@ function Pessoa() {
               </summary>
               <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13.5 }}>{r.roteiro}</pre>
               <label className="marcar"><input type="checkbox" checked={r.feito} onChange={async (e) => { await retornoFeito(r.id, e.target.checked); recarregar(); }} /><span>Já conversei</span></label>
+              <Excluir pergunta="Excluir este retorno?" fazer={() => retornoExcluir(r.id)} aoFim={recarregar} />
             </details>
           ))}
         </div>
@@ -129,6 +131,7 @@ function Pessoa() {
               <span className={`selo ${f.status === "Concluído" ? "feito" : "andamento"}`} style={{ marginRight: 8 }}>{f.status}</span>
               <b>{f.competencia}</b> · {f.estagio}{f.prazo ? ` · até ${dia(f.prazo)}` : ""}
               <div className="mudo" style={{ fontSize: 13 }}>Como vou saber que aprendeu: {f.objetivo}</div>
+              <Excluir pergunta="Excluir esta ficha de desenvolvimento?" fazer={() => fichaExcluir(f.id)} aoFim={recarregar} />
             </div>
           ))}
         </div>

@@ -12,8 +12,8 @@ import { dia, hoje, moeda } from "@/lib/formato";
 import { preencher, trechos, variaveisDaLoja } from "@/lib/scripts";
 import {
   ROTULO_TIPO, TIPOS_MATERIAL, ativarAcao, buscarAcao, concluirAcao, dataDaEtapa, diasDeVenda, etapaAtual, lancarVenda,
-  marcarTarefa, metaSugerida, placar, situacao, type Acao, type LojaAcao,
-} from "@/lib/acoes-mes";
+  marcarTarefa, metaSugerida, placar, situacao, type Acao, type LojaAcao, vendaExcluir } from "@/lib/acoes-mes";
+import { Excluir } from "@/components/Excluir";
 
 function Ativar({ acao, loja, aoSalvar }: { acao: Acao; loja: LojaAcao | null; aoSalvar: (d: Parameters<typeof ativarAcao>[2]) => Promise<void> }) {
   const [plano, setPlano] = useState<Record<string, string>>(loja?.plano ?? {});
@@ -173,8 +173,8 @@ function Acao() {
               <h2>Dia a dia</h2>
               {vendas.length === 0 ? <p className="mudo">Nenhum dia lançado ainda.</p> : (
                 <table className="tabela">
-                  <thead><tr><th>Dia</th><th>Faturamento</th><th>PA</th><th>Cadastros</th></tr></thead>
-                  <tbody>{vendas.map((v) => <tr key={v.data}><td>{dia(v.data)}</td><td>{moeda(Number(v.valor))}</td><td>{v.pa ?? "—"}</td><td>{v.cadastros ?? "—"}</td></tr>)}</tbody>
+                  <thead><tr><th>Dia</th><th>Faturamento</th><th>PA</th><th>Cadastros</th><th></th></tr></thead>
+                  <tbody>{vendas.map((v) => <tr key={v.data}><td>{dia(v.data)}</td><td>{moeda(Number(v.valor))}</td><td>{v.pa ?? "—"}</td><td>{v.cadastros ?? "—"}</td><td>{loja && <Excluir pergunta={`Excluir o lançamento de ${dia(v.data)}?`} fazer={() => vendaExcluir(loja, v.data)} aoFim={recarregar} />}</td></tr>)}</tbody>
                 </table>
               )}
             </div>

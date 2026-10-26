@@ -7,7 +7,8 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
-import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa } from "@/lib/pessoas";
+import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa, reuniaoTimeExcluir } from "@/lib/pessoas";
+import { Excluir } from "@/components/Excluir";
 import { INDICADOR_DA_CHAVE } from "@/lib/gincanas";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; conversao: string };
@@ -112,6 +113,7 @@ export default function ReuniaoSemanal() {
               <details key={r.id} className="marcar" style={{ display: "block" }}>
                 <summary style={{ cursor: "pointer" }}>{dia(r.data)}</summary>
                 <pre style={{ whiteSpace: "pre-wrap", fontFamily: "inherit", fontSize: 13.5 }}>{r.pauta}</pre>
+                <Excluir pergunta="Excluir o registro desta reunião?" fazer={() => reuniaoTimeExcluir(r.id)} aoFim={recarregar} />
               </details>
             ))}
           </div>

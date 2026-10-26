@@ -8,6 +8,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
 import { carregarConteudo, metaViews, postSalvar, resultados, roteirosDaLoja, segundaDe, taxaEnvio, type Post } from "@/lib/instagram";
 import { somarDias } from "@/lib/acoes-mes";
+import { cliquesDaBio, rotuloDoBloco } from "@/lib/bio";
 
 const NUMEROS: [keyof Post, string][] = [["views", "Views"], ["alcance", "Alcance"], ["envios", "Envios"], ["salvamentos", "Salvos"], ["comentarios", "Coment."], ["mensagens", "DMs/Whats"], ["vendas", "Vendas"]];
 
@@ -37,9 +38,12 @@ function Linha({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
 
 export default function Resultados() {
   const { portal, comoLoja } = usePortal();
-  const { dados, recarregar } = useDados(() => carregarConteudo(portal.id, comoLoja), [portal.id, comoLoja]);
+  const { dados, recarregar } = useDados(async () => ({
+    ...(await carregarConteudo(portal.id, comoLoja)),
+    bio: await cliquesDaBio(portal.id).catch(() => null),
+  }), [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
-  const { m, a, posts } = dados;
+  const { m, a, posts, bio } = dados;
   if (!a) return <Trancado titulo="Resultados" texto={m.textos.trancado} />;
 
   const r = resultados(posts);
@@ -60,6 +64,19 @@ export default function Resultados() {
         <div className="card kpi"><small className="mudo">Vendas que vieram do conteúdo</small><div style={{ fontSize: 28, fontWeight: 800, color: "var(--green)" }}>{r.vendas}</div></div>
       </div>
       <p className="ajuda">{m.textos.metrica}</p>
+
+      <div className="card card-borda mb" style={{ ["--c" as string]: "var(--accent)" }}>
+        <div className="linha entre">
+          <b>Cliques no Link da Bio</b>
+          <Link className="btn s peq" href="/conteudo/bio">{bio ? "Abrir o Link da Bio" : "Criar o Link da Bio"}</Link>
+        </div>
+        {!bio ? <p className="mudo" style={{ margin: "6px 0 0", fontSize: 13.5 }}>Monte a página do link da bio e veja aqui quantas pessoas clicam no WhatsApp, na ação do mês e no mapa.</p> : (
+          <>
+            <div style={{ fontSize: 28, fontWeight: 800 }}>{bio.total.toLocaleString("pt-BR")}<small className="mudo" style={{ fontSize: 13, fontWeight: 500 }}> cliques no total{bio.publicada ? "" : " · página fora do ar"}</small></div>
+            {bio.porBloco.length > 0 && <div className="chips mt">{bio.porBloco.map((x) => <span key={x.bloco!.id} className="chip">{rotuloDoBloco(x.bloco!)}: {x.total}</span>)}</div>}
+          </>
+        )}
+      </div>
 
       <div className="grade g3 mb">
         <div className="card">

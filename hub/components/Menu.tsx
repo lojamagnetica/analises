@@ -86,16 +86,23 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       ],
     },
     {
-      id: "gestao", rotulo: "Gestão estratégica", icone: "chart",
+      // O resultado do Diagnóstico: o resumo, as análises de estoque e a do Instagram.
+      id: "diagnostico", rotulo: "Diagnóstico", icone: "chart",
       itens: [
         { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
-        { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
-        { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
-        { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
         { href: "/estoque", rotulo: "Estoque x o que fazer", icone: "box" },
         { href: "/gestao/compras", rotulo: "Estoque e compras", icone: "box" },
         { href: "/gestao/linhas", rotulo: "Estoque e linhas", icone: "box" },
         { href: "/gestao/fornecedores", rotulo: "Estoque e fornecedores", icone: "box" },
+        { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
+      ],
+    },
+    {
+      id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
+      itens: [
+        { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
+        { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
+        { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
       ],
     },
     {
@@ -129,7 +136,6 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
     {
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
-        { href: "/conteudo", rotulo: "Análise do perfil", icone: "insta" },
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
         { href: "/conteudo/resultados", rotulo: "Resultados", icone: "chart" },

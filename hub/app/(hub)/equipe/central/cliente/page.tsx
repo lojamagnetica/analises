@@ -11,6 +11,7 @@ import { BASE } from "@/lib/config";
 import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/formato";
 import { gerarLink } from "@/lib/acoes";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
+import { mensagemDiagnosticoPronto } from "@/lib/entrada";
 import {
   etapasDoPlano, buscarJornada, mensagemBoasVindas, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
   type Check, type ClienteJornada,
@@ -83,7 +84,13 @@ function Cliente() {
         <Link className="btn s peq" href={`/equipe/portal?id=${c.id}#pendencias`}>Ver pendências</Link>
       </span>
     );
-    if (k.acao === "diagnostico") return <button type="button" className="btn s peq" onClick={() => abrirPortal(c.id, "/painel")}>Abrir o Diagnóstico da loja</button>;
+    if (k.acao === "diagnostico") return (
+      <span className="linha" style={{ gap: 8 }}>
+        <button type="button" className="btn s peq" onClick={() => abrirPortal(c.id, "/painel")}>Abrir o Diagnóstico da loja</button>
+        <Copiar texto={mensagemDiagnosticoPronto((c.responsavel ?? "").split(" ")[0], site)} rotulo="Copiar aviso: Diagnóstico pronto" />
+        {c.whatsapp && <a className="btn s peq" target="_blank" rel="noopener" href={`https://wa.me/${c.whatsapp.replace(/\D/g, "").replace(/^(?!55)/, "55")}?text=${encodeURIComponent(mensagemDiagnosticoPronto((c.responsavel ?? "").split(" ")[0], site))}`}>Mandar no WhatsApp</a>}
+      </span>
+    );
     if (k.acao === "plano") return <button type="button" className="btn s peq" onClick={() => abrirPortal(c.id, c.tipo === "Consultoria" ? "/consultoria" : "/plano")}>Abrir o {c.tipo === "Consultoria" ? "Painel da consultoria" : "Plano de Ação"}</button>;
     if (k.acao === "reunioes") return <Link className="btn s peq" href={`/equipe/portal?id=${c.id}#reunioes`}>Reuniões do portal</Link>;
     return null;

@@ -10,12 +10,13 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
 type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
 
-function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean): Grupo[] {
+function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
       id: "empresa", rotulo: "Minha empresa", icone: "home",
       itens: [
+        ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
@@ -56,7 +57,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       ],
     });
   }
-  if (!temPortal) return g;
+  if (!temPortal || soCurso) return g;
   const consultoriaOuMentoria: Grupo = consultoria
     ? {
         id: "consultoria", rotulo: "Minha consultoria", icone: "target",
@@ -141,11 +142,11 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
   return g;
 }
 
-export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null }) {
+export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria);
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso);
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
@@ -185,7 +186,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
         </div>
 
         <nav className="nav">
-          {props.temPortal && (
+          {props.temPortal && !props.soCurso && (
             <div className="nav-linha">
               <Link href="/inicio" className={`nav-item ${ativo("/inicio") ? "ativo" : ""}`}>
                 <Icone nome="home" /> INÍCIO
@@ -214,7 +215,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             </div>
           )}
 
-          {props.temPortal && (
+          {props.temPortal && !props.soCurso && (
             <div className="nav-linha">
               <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
                 <Icone nome="play" /> COMECE AQUI
@@ -222,7 +223,7 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             </div>
           )}
 
-          {props.temPortal && (
+          {props.temPortal && !props.soCurso && (
             <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
                 <Icone nome="chat" /> Fale com a Camilla

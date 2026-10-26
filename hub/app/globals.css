@@ -547,3 +547,23 @@ a.mb-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(20,1
   .mb-segue { grid-template-columns: auto minmax(0, 1fr); }
   .mb-segue-botao { display: none; }
 }
+
+/* ───── Meu estúdio ───── */
+.estudio-cont { text-align: left; cursor: pointer; font: inherit; color: inherit; display: grid; gap: 4px; }
+.estudio-cont small { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mudo, #6B645E); }
+.estudio-cont b { font-size: 28px; font-weight: 600; }
+.estudio-cont.ativo { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset; }
+.estudio-item { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; padding: 11px 4px; border-top: 1px solid var(--line, #E7E2DC); color: inherit; text-decoration: none; }
+.estudio-item:hover { background: rgba(183, 64, 14, .04); }
+.estudio-ref { font-weight: 600; color: var(--red); font-size: 15px; }
+.estudio-tit { display: grid; gap: 2px; min-width: 0; }
+.estudio-tit small { color: var(--mudo, #6B645E); font-size: 12.5px; }
+.estudio-leitura .texto { max-width: 760px; }
+.estudio-leitura .texto .aviso { background: #F5F0EA; border-left: 3px solid var(--red); color: #141210; font-size: 15.5px; line-height: 1.6; }
+.estudio-gravacao { position: fixed; inset: 0; z-index: 200; background: #141210; color: #F5F0EA; overflow-y: auto; padding: 80px max(24px, calc(50% - 520px)) 120px; line-height: 1.5; }
+.estudio-gravacao .texto h3 { color: #D9622C; font-size: .7em; letter-spacing: .12em; text-transform: uppercase; margin-top: 1.6em; }
+.estudio-gravacao .texto .aviso { background: transparent; border: 0; color: #F5F0EA; padding: 0; font-size: 1em; }
+.estudio-gravacao .texto p, .estudio-gravacao .texto li { color: #8C847C; font-size: .55em; }
+.estudio-gravacao-barra { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 24px; background: rgba(20, 18, 16, .94); font-size: 14px; border-bottom: 1px solid #2E2A26; }
+.estudio-gravacao-barra button { background: #2E2A26; color: #F5F0EA; border: 0; border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
+@media (max-width: 780px) { .estudio-item { grid-template-columns: 44px 1fr; } .estudio-item .selo { grid-column: 2; justify-self: start; } }

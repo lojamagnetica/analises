@@ -33,6 +33,8 @@ export type Hub = {
   nome: string;
   email: string;
   foto: string | null;
+  /** Tem o "Meu estúdio" (espaço particular de criação de produtos e roteiros). */
+  estudio: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -85,7 +87,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -102,7 +104,8 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
-    const entrada = portal ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
+    // Quem comprou só o curso não passa pela entrada da mentoria.
+    const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
     // A loja terminou de mandar tudo: começa o prazo do Diagnóstico.
     if (entrada && !equipe && !entrada.dadosEm && dadosCompletos(entrada)) {
       await marcarDadosEnviados();
@@ -114,6 +117,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       nome: perfil?.nome ?? user.email ?? "",
       email: perfil?.email ?? user.email ?? "",
       foto: perfil?.foto ?? null,
+      estudio: !!perfil?.estudio,
       equipe,
       portal,
       pers,
@@ -178,6 +182,8 @@ export function useEquipe() {
 export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal">) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
+  // Portal só do curso: tudo que não é o curso leva para a área de membros.
+  if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";
   if (livre || hub.portal) return null;
   // Sem portal aberto, a equipe vê o curso como prévia (sem progresso).
   if (hub.equipe && (caminho === "/cursos" || caminho.startsWith("/cursos/fundamento"))) return null;

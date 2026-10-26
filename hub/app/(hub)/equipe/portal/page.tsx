@@ -103,7 +103,7 @@ function EditarPortal() {
 
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }] = await Promise.all([
+    const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }, { data: passos }] = await Promise.all([
       sb.from("portais").select("*").eq("id", id).maybeSingle(),
       sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa").eq("portal_id", id),
       sb.from("plano_itens").select("id, mes, texto, feito").eq("portal_id", id).order("mes").order("ordem"),
@@ -111,10 +111,12 @@ function EditarPortal() {
       sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", id),
       sb.from("portal_entrada").select("video_visto_em, livre").eq("portal_id", id).maybeSingle(),
       sb.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", id).eq("ativo", true),
+      sb.from("jornada_passos").select("numero, titulo").order("numero"),
     ]);
     return {
       portal: portal as Portal | null, pessoas: pessoas ?? [], plano: plano ?? [], reunioes: (reunioes ?? []) as Reuniao[], pers: pers ?? [],
       entrada: entrada as { video_visto_em: string | null; livre: boolean } | null, equipeLoja: equipeLoja ?? 0,
+      passos: (passos ?? []) as { numero: number; titulo: string }[],
     };
   }, [id]);
   if (!dados) return <Carregando />;
@@ -165,7 +167,10 @@ function EditarPortal() {
           <div className="grade g2" style={{ gap: 12 }}>
             <div>
               <label className="rotulo">Passo atual da jornada</label>
-              <select name="passo_atual" defaultValue={p.passo_atual}>{[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n}</option>)}</select>
+              <select name="passo_atual" defaultValue={p.passo_atual}>
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n} · {dados.passos.find((x) => x.numero === n)?.titulo ?? ""}</option>)}
+              </select>
+              <p className="ajuda" style={{ margin: "4px 0 0" }}>É o passo que a loja vê como &quot;agora&quot; nos 7 passos. Os anteriores aparecem como feitos.</p>
             </div>
             <label className="marcar" style={{ alignSelf: "end" }}><input type="checkbox" name="ativo" defaultChecked={p.ativo} /><span>Portal ativo</span></label>
           </div>

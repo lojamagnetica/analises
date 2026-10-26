@@ -6,11 +6,14 @@ import { PerguntasDisc, faltamDisc, type MaisMenos } from "@/components/Pergunta
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
+import { liberado } from "@/lib/entrada";
 
 function Teste() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
-  const { portal } = usePortal();
+  const { portal, entrada, equipe } = usePortal();
+  // Antes do Diagnóstico, a ficha da pessoa ainda está fechada: volta para a etapa Time de vendas.
+  const fichaAberta = equipe || !entrada || liberado("diagnostico", entrada);
   const [r, setR] = useState<MaisMenos>({ mais: [], menos: [] });
   const [por, setPor] = useState<"pessoa" | "gestor">("gestor");
   const [erro, setErro] = useState("");
@@ -24,7 +27,7 @@ function Teste() {
 
   return (
     <>
-      <Titulo voltar={{ href: `/pessoas/pessoa?id=${p.id}`, rotulo: p.nome }} titulo={`Perfil de ${nome}`}
+      <Titulo voltar={fichaAberta ? { href: `/pessoas/pessoa?id=${p.id}`, rotulo: p.nome } : { href: "/personalizacao/etapa?n=5", rotulo: "Time de vendas" }} titulo={`Perfil de ${nome}`}
         sub={`${PERGUNTAS.length} situações de loja. Em cada uma, marque a frase que MAIS parece e a que MENOS parece com a pessoa no dia a dia. Não existe resposta certa.`} />
       <div className="card mb">
         <label className="rotulo">Quem está respondendo?</label>
@@ -47,7 +50,7 @@ function Teste() {
             setErro("");
             try {
               await perfilSalvar(p.id, r.mais as Letra[], r.menos as Letra[], por);
-              router.push(`/pessoas/pessoa?id=${p.id}`);
+              router.push(fichaAberta ? `/pessoas/pessoa?id=${p.id}` : "/personalizacao/etapa?n=5");
             } catch (e) { setErro((e as Error).message); }
           }}
         >{faltam ? `Faltam ${faltam}` : "Ver o perfil"}</button>

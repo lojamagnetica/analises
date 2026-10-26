@@ -83,7 +83,6 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       itens: [
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
-        { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
       ],
     },
     {
@@ -102,6 +101,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
     {
       id: "pessoas", rotulo: "Gestão de pessoas", icone: "team",
       itens: [
+        { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
         { href: "/pessoas/retorno", rotulo: "Dar retorno", icone: "chat" },
         { href: "/pessoas/reuniao-semanal", rotulo: "Reunião semanal", icone: "cal" },
         { href: "/pessoas/reuniao-mensal", rotulo: "Reunião do mês", icone: "chart" },

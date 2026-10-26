@@ -1,6 +1,6 @@
 // A entrada da loja no Hub segue a jornada:
 // 1) primeiro acesso: Início, Comece aqui, 7 passos, Reuniões, Curso, Fale com a Camilla e a Análise do Instagram;
-// 2) depois do vídeo: o que alimenta o Diagnóstico (Dados da loja, Estoque e relatórios, Minha equipe e perfis);
+// 2) depois do vídeo: o que alimenta o Diagnóstico (Dados da loja, com o time e o teste de perfil na etapa Time de vendas);
 // 3) com o Diagnóstico liberado pela equipe: Diagnóstico, Plano de Ação, Gestão de pessoas e o resto.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { diasUteisDepois } from "@/lib/jornada";
@@ -25,9 +25,7 @@ const SEMPRE_EXATA = ["/conteudo"];
 /** Do mais específico para o mais geral: a primeira regra que casa decide. O que não está aqui espera o Diagnóstico. */
 const REGRAS: [string, Requisito][] = [
   ["/personalizacao", "video"],
-  ["/pessoas/retorno", "diagnostico"], ["/pessoas/reuniao-semanal", "diagnostico"], ["/pessoas/reuniao-mensal", "diagnostico"],
-  ["/pessoas/desenvolvimento", "diagnostico"], ["/pessoas/gincanas", "diagnostico"],
-  ["/pessoas", "video"],
+  ["/pessoas/teste", "video"],
 ];
 
 const casa = (caminho: string, base: string) => caminho === base || caminho.startsWith(base + "/");

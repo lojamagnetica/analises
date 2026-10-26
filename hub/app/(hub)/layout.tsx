@@ -73,7 +73,7 @@ function Casca({ children }: { children: React.ReactNode }) {
           <div className="faixa">
             {!ent.loja
               ? <>Próximo passo: Dados da loja · falta{hub.persFaltam > 1 ? "m" : ""} {hub.persFaltam} de {ETAPAS.length}<Link href="/personalizacao">Continuar →</Link></>
-              : <>Próximo passo: cadastrar a sua equipe<Link href="/pessoas">Cadastrar →</Link></>}
+              : <>Próximo passo: cadastrar a sua equipe<Link href="/personalizacao/etapa?n=5">Cadastrar →</Link></>}
           </div>
         ) : null}
         <Ferramentas temPortal={!!hub.portal} />

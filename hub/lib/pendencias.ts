@@ -81,8 +81,8 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
       if (faltam.length) add(`dados_${e.numero}`, `Dados da loja · ${e.titulo}`, "Loja", faltam.map((c) => c.rotulo).join(" · "), `/personalizacao/etapa/?n=${e.numero}`);
     }
     const time = (equipe ?? []).filter((x) => x.portal_id === p.id);
-    if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja", undefined, "/pessoas/");
-    else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Minha equipe e perfis", "/pessoas/");
+    if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja", undefined, "/personalizacao/etapa/?n=5");
+    else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Dados da loja · Time de vendas", "/personalizacao/etapa/?n=5");
     const rel = relatorios.get(p.id);
     if (rel && !rel.antigos) {
       for (const r of RELATORIOS) if (!rel.tipos.has(r.chave)) add(`rel_${r.chave}`, `Relatório do sistema: ${r.titulo}`, "Loja", r.oque, "/personalizacao/etapa/?n=8");
@@ -125,7 +125,7 @@ export const aberta = (p: Pendencia) => p.status === "pendente" || p.status === 
 function ondeResolver(texto: string) {
   const t = texto.toLowerCase();
   if (/relat[óo]rio|estoque|vendas|planilha|faturamento|custo|compras/.test(t)) return "/personalizacao/etapa/?n=8";
-  if (/equipe|vendedor|time\b|funcion/.test(t)) return "/pessoas/";
+  if (/equipe|vendedor|time\b|funcion/.test(t)) return "/personalizacao/etapa/?n=5";
   if (/cliente/.test(t)) return "/clientes/";
   return "/assistente/";
 }

@@ -24,7 +24,7 @@ const ATALHOS = [
 const PASSOS_ENTRADA = [
   { chave: "video" as const, titulo: "Assistir ao vídeo de boas-vindas", href: "/comece" },
   { chave: "loja" as const, titulo: "Preencher os Dados da loja", href: "/personalizacao" },
-  { chave: "equipe" as const, titulo: "Cadastrar a sua equipe e fazer o teste de perfil", href: "/pessoas" },
+  { chave: "equipe" as const, titulo: "Cadastrar a sua equipe e fazer o teste de perfil", href: "/personalizacao/etapa?n=5" },
 ];
 
 export default function Inicio() {

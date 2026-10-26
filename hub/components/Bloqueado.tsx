@@ -8,7 +8,7 @@ import { NOME_REQUISITO, PRAZO_DIAGNOSTICO, dadosCompletos, prazoDiagnostico, ty
 const PASSOS: { chave: keyof Pick<Entrada, "video" | "loja" | "equipe">; titulo: string; href: string }[] = [
   { chave: "video", titulo: "Assistir ao vídeo de boas-vindas", href: "/comece" },
   { chave: "loja", titulo: "Preencher os Dados da loja", href: "/personalizacao" },
-  { chave: "equipe", titulo: "Cadastrar a sua equipe e fazer o teste de perfil", href: "/pessoas" },
+  { chave: "equipe", titulo: "Cadastrar a sua equipe e fazer o teste de perfil", href: "/personalizacao/etapa?n=5" },
 ];
 
 /** O que a loja vê numa área que ainda não abriu: o caminho até ela e o atalho para o próximo passo. */

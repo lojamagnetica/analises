@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --no-warnings lib/agenda-regras.test.ts",
+    "test": "node --experimental-strip-types --no-warnings lib/agenda-regras.test.ts && node --experimental-strip-types --no-warnings lib/otb-conta.test.ts",
     "publicar": "rm -rf .next out && next build && rm -rf ../portal && cp -r out ../portal && touch ../.nojekyll"
   },
   "dependencies": {

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmBreve } from "@/components/EmBreve";
 import { Titulo } from "@/components/Titulo";
@@ -8,10 +9,10 @@ import { dataHora } from "@/lib/formato";
 import { classeNivel, corNivel, rotuloNivel } from "@/lib/diagnostico";
 import { buscarGestao, completa, liberarGestao, salvarGestao, type AnaliseGestao, type Area } from "@/lib/gestao";
 
-type Props = { area: Area; titulo: string; sub: string; oque: string };
+type Props = { area: Area; titulo: string; sub: string; oque: string; embutida?: boolean };
 
 /** Uma área da Gestão estratégica: mostra a análise da loja quando existe; senão, o que a área vai ter e como adiantar. */
-export function AnaliseDaGestao({ area, titulo, sub, oque }: Props) {
+export function AnaliseDaGestao({ area, titulo, sub, oque, embutida }: Props) {
   const { portal, equipe } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
   const [escolhida, setEscolhida] = useState<string | null>(null);
@@ -26,6 +27,13 @@ export function AnaliseDaGestao({ area, titulo, sub, oque }: Props) {
 
   if (!dados) return <Carregando />;
   if (!atual || !d) {
+    // Dentro do Diagnóstico de estoque: um aviso curto no lugar da página "em breve".
+    if (embutida) return (
+      <div className="card mb">
+        <p style={{ margin: 0 }}>{oque}</p>
+        <p className="ajuda" style={{ marginBottom: 0 }}>A equipe monta esta parte com os relatórios do seu sistema. <Link href="/personalizacao/etapa?n=8">Subir relatórios →</Link></p>
+      </div>
+    );
     return <EmBreve titulo={titulo} oque={oque} adiantar={{ texto: "Para essa análise sair certa, ela usa os relatórios do seu sistema. Já pode subir agora.", href: "/personalizacao/etapa?n=8", botao: "Subir relatórios →" }} />;
   }
 
@@ -37,7 +45,7 @@ export function AnaliseDaGestao({ area, titulo, sub, oque }: Props) {
 
   return (
     <>
-      <Titulo titulo={titulo} sub={sub} />
+      {!embutida && <Titulo titulo={titulo} sub={sub} />}
       {linhas.length > 1 && (
         <div className="chips mb" role="group" aria-label="Escolher a loja">
           {linhas.map((l) => (

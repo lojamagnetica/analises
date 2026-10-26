@@ -14,10 +14,7 @@ export const GUIA: Record<string, TextoGuia> = {
   "/personalizacao/etapa?n=8": { oque: "O estoque da loja e os relatórios do seu sistema.", passos: ["Suba o relatório do sistema ou responda estimando.", "Atualize sempre que tiver um relatório novo."] },
   // Diagnóstico
   "/painel": { oque: "O retrato da loja hoje: números, estoque, marcas, linhas e equipe, cada alerta com a ação.", passos: ["Leia os alertas de cima para baixo.", "Veja a ação sugerida em cada um.", "As tarefas vão para o seu Plano de Ação."] },
-  "/estoque": { oque: "O que fazer com cada parte do estoque: o que gira, o que está parado e o que repor.", passos: ["Comece pelas peças paradas.", "Siga a ação indicada para cada grupo."] },
-  "/gestao/compras": { oque: "Quanto comprar e quando, a partir do que a loja vende.", passos: ["Confira o limite de compra do mês.", "Use antes de ir ao fornecedor."] },
-  "/gestao/linhas": { oque: "Quanto cada linha de produto pesa no estoque e nas vendas.", passos: ["Veja as linhas que vendem mais do que ocupam.", "Ajuste a compra das que sobram."] },
-  "/gestao/fornecedores": { oque: "Quais fornecedores trazem resultado para a loja.", passos: ["Compare o que cada um vende e o que fica parado.", "Use na hora de negociar."] },
+  "/estoque": { oque: "O estoque numa página só: a foto do estoque, as linhas, os fornecedores e o Guia de compras com quanto você pode comprar em cada um dos próximos 6 meses.", passos: ["Comece pela foto do estoque e pelo que está parado.", "Veja as linhas e os fornecedores antes de ir às compras.", "No Guia de compras, lance os pedidos já feitos e não passe da compra liberada do mês."] },
   "/conteudo": { oque: "A análise do seu Instagram feita pela equipe: correções do perfil, o que parar e o que começar.", passos: ["Faça as correções do perfil.", "Marque cada uma quando terminar.", "Depois vá para a Programação da semana."] },
   // Gestão estratégica
   "/gestao/caixa": { oque: "O fechamento do dia: faturamento, vendas e peças.", passos: ["Todo dia, ao fechar a loja, lance os números.", "Edite ou exclua um lançamento se errar."] },

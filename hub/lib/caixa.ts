@@ -17,7 +17,13 @@ export type Forma = (typeof FORMAS)[number]["chave"];
 /** Reais por forma de pagamento (só as que tiveram valor). */
 export type Pagamentos = Partial<Record<Forma, number>>;
 
-export type Caixa = { id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null; pagamentos: Pagamentos | null };
+/** Um dia de uma vendedora (pessoa_id null = outras vendas: a dona, o online). */
+export type LinhaVendedora = { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number };
+
+export type Caixa = {
+  id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null;
+  pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null;
+};
 export type NovoCaixa = Omit<Caixa, "id"> & { id?: string };
 
 /** Peças por atendimento ideal do método. */
@@ -50,7 +56,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -62,6 +68,7 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     portal_id: portalId, loja: c.loja || null, dia: c.dia,
     faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, obs: c.obs?.trim().slice(0, 500) || null,
     pagamentos: c.pagamentos && Object.keys(c.pagamentos).length ? c.pagamentos : null,
+    vendedoras: c.vendedoras?.length ? c.vendedoras : null,
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -97,6 +104,48 @@ export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos 
     if (v) t[f.chave] = (t[f.chave] ?? 0) + v;
   }
   return t;
+}
+
+/** Total de cada vendedora no período (pela pessoa; "outras vendas" juntas). */
+export function somarVendedoras(lista: Pick<Caixa, "vendedoras">[]) {
+  const t = new Map<string, LinhaVendedora & { dias: number }>();
+  for (const c of lista) for (const v of c.vendedoras ?? []) {
+    const k = v.pessoa_id ?? "outras";
+    const a = t.get(k) ?? { ...v, faturamento: 0, vendas: 0, pecas: 0, dias: 0 };
+    a.faturamento += v.faturamento; a.vendas += v.vendas; a.pecas += v.pecas; a.dias += v.vendas > 0 ? 1 : 0; a.nome = v.nome;
+    t.set(k, a);
+  }
+  return [...t.values()];
+}
+
+/** O fechamento do dia em texto de WhatsApp, para mandar para a dona ou para o grupo da loja. */
+export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturamento: number; dias: number; meta: number | null }) {
+  const i = indicadores({ faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, dias: 1 });
+  const ind = (x: { faturamento: number; vendas: number; pecas: number }) => {
+    const k = indicadores({ ...x, dias: 1 });
+    return k.pa != null ? `PA ${fmtPa(k.pa)} · TKM ${moeda(k.tkm!)}` : "";
+  };
+  const [, m, d] = c.dia.split("-");
+  const linhas = [
+    `📊 *Fechamento de caixa · ${loja}${c.loja ? ` · ${c.loja}` : ""}*`,
+    `${diaDaSemana(c.dia)}, ${d}/${m}`,
+    "",
+    `💰 Faturamento: *${moeda(c.faturamento)}*`,
+    `🛍️ ${c.vendas} ${c.vendas === 1 ? "venda" : "vendas"} · ${c.pecas} ${c.pecas === 1 ? "peça" : "peças"}`,
+    i.pa != null ? `PA ${fmtPa(i.pa)} · Ticket ${moeda(i.tkm!)} · Preço médio ${moeda(i.pm!)}` : "",
+  ];
+  const vs = (c.vendedoras ?? []).filter((v) => v.faturamento || v.vendas);
+  if (vs.length) {
+    linhas.push("", "👥 *Por vendedora*");
+    for (const v of vs) linhas.push(`• ${v.nome}: ${moeda(v.faturamento)} · ${v.vendas} ${v.vendas === 1 ? "venda" : "vendas"}${ind(v) ? ` · ${ind(v)}` : ""}`);
+  }
+  if (c.pagamentos && Object.keys(c.pagamentos).length) {
+    linhas.push("", "💳 *Formas de pagamento*", FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => `${x.nome} ${moeda(c.pagamentos![x.chave]!)}`).join(" · "));
+  }
+  linhas.push("", `📅 *No mês:* ${moeda(mes.faturamento)} em ${mes.dias} ${mes.dias === 1 ? "dia" : "dias"}`);
+  if (mes.meta) linhas.push(`🎯 Meta ${moeda(mes.meta)} · ${Math.round((mes.faturamento / mes.meta) * 100)}% · ${mes.faturamento >= mes.meta ? "meta batida! 🎉" : `faltam ${moeda(mes.meta - mes.faturamento)}`}`);
+  if (c.obs) linhas.push("", `📝 ${c.obs}`);
+  return linhas.filter((l, n, a) => l !== "" || (n > 0 && a[n - 1] !== "")).join("\n").trim();
 }
 
 export type Totais = { faturamento: number; vendas: number; pecas: number; dias: number };

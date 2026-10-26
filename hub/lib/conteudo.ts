@@ -41,11 +41,12 @@ export const chaveSituacao = (id: string) => `${id}__st`;
 
 export type Etapa = { numero: number; titulo: string; descricao: string; campos: Campo[] };
 
+// As etapas de Dados da loja, na ordem em que a loja responde. O número é a chave no banco (2 e 6 saíram em 10/2026).
 export const ETAPAS: Etapa[] = [
   {
     numero: 1,
-    titulo: "Diagnóstico da loja",
-    descricao: "As respostas que montam o seu Plano de Ação.",
+    titulo: "A loja hoje",
+    descricao: "Onde a loja está e onde você quer chegar.",
     campos: [
       { id: "tempo_loja", rotulo: "Há quanto tempo a loja existe?", tipo: "texto" },
       { id: "segmento", rotulo: "Segmento", tipo: "opcao", opcoes: ["Multimarca feminina", "Multimarca masculina", "Moda praia", "Infantil", "Plus size", "Marca própria", "Outro"] },
@@ -53,20 +54,36 @@ export const ETAPAS: Etapa[] = [
       { id: "maior_desafio", rotulo: "Hoje, qual é o maior desafio da loja?", tipo: "textarea" },
       { id: "o_que_funciona", rotulo: "O que já funciona bem?", tipo: "textarea" },
       { id: "onde_quer_chegar", rotulo: "Onde você quer que a loja esteja daqui a 12 meses?", tipo: "textarea" },
+      { id: "o_que_movimenta", rotulo: "O que hoje você acredita que mais movimenta a loja?", tipo: "textarea" },
     ],
   },
   {
-    numero: 2,
-    titulo: "Sua loja e tom de voz",
-    descricao: "Nome, cidade, Instagram e como você fala com a cliente. Personaliza os scripts.",
+    numero: 9,
+    titulo: "Gestão da loja",
+    descricao: "Como é a rotina, as reuniões e os treinamentos do time.",
     campos: [
-      { id: "loja", rotulo: "Nome da loja", tipo: "texto" },
-      { id: "seu_nome", rotulo: "Seu primeiro nome (como assina as mensagens)", tipo: "texto" },
-      { id: "cidade", rotulo: "Cidade", tipo: "texto" },
-      { id: "instagram", rotulo: "Instagram da loja", tipo: "texto", ajuda: "Ex.: @minhaloja" },
-      { id: "whatsapp", rotulo: "Link ou número do WhatsApp da loja", tipo: "texto" },
-      { id: "tom", rotulo: "Tom de voz", tipo: "opcao", opcoes: ["Próximo e carinhoso", "Elegante e sofisticado", "Descontraído e divertido", "Direto e objetivo"] },
-      { id: "palavras", rotulo: "Palavras e expressões que são a sua cara", tipo: "textarea" },
+      { id: "freq_reuniao", rotulo: "Com que frequência você faz reunião com o time?", tipo: "opcao", opcoes: ["Toda semana", "A cada 15 dias", "Uma vez por mês", "Só quando precisa", "Não faço reunião"] },
+      { id: "reconhece", rotulo: "Quando você faz as reuniões, costuma mostrar o resultado de todos e reconhecer publicamente?", tipo: "textarea" },
+      { id: "rotina_dona", rotulo: "Me descreva a sua rotina hoje na loja", tipo: "textarea" },
+      { id: "ultimo_treinamento", rotulo: "Qual foi a última vez que foi feito um treinamento com o seu time? Conte um pouco sobre o resultado.", tipo: "textarea" },
+    ],
+  },
+  {
+    numero: 10,
+    titulo: "Ações e resultados",
+    descricao: "O que já deu certo e o que não deu, para não repetir o que não funciona.",
+    campos: [
+      { id: "acao_sucesso", rotulo: "Qual a ação de maior sucesso da loja até hoje? Me descreva como foi feita e qual resultado teve.", tipo: "textarea" },
+      { id: "acao_sem_retorno", rotulo: "Em qual ação você fez um grande investimento de energia ou dinheiro e não teve o retorno esperado? Descreva com detalhes.", tipo: "textarea" },
+    ],
+  },
+  {
+    numero: 5,
+    titulo: "Time de vendas",
+    descricao: "Quem atende e o teste de perfil de cada pessoa.",
+    campos: [
+      { id: "tamanho_time", rotulo: "Quantas pessoas atendem?", tipo: "numero" },
+      { id: "comissao", rotulo: "Como funciona a comissão?", tipo: "textarea" },
     ],
   },
   {
@@ -94,7 +111,7 @@ export const ETAPAS: Etapa[] = [
   },
   {
     numero: 8,
-    titulo: "Estoque e fornecedores",
+    titulo: "Estoque e relatórios",
     descricao: "Situação do estoque, preço médio, linhas e fornecedores. Suba o relatório do sistema ou responda estimando.",
     campos: [
       { id: "valor_estoque", rotulo: "Quanto você tem em estoque, a preço de venda (R$)?", tipo: "numero", dado: true },
@@ -107,36 +124,17 @@ export const ETAPAS: Etapa[] = [
     ],
   },
   {
-    numero: 5,
-    titulo: "Time de vendas",
-    descricao: "Quem atende, metas individuais e rotina.",
-    campos: [
-      { id: "tamanho_time", rotulo: "Quantas pessoas atendem?", tipo: "numero" },
-      { id: "quem", rotulo: "Nomes e funções", tipo: "textarea" },
-      { id: "comissao", rotulo: "Como funciona a comissão?", tipo: "textarea" },
-      { id: "rotina", rotulo: "Existe reunião ou rotina com o time?", tipo: "opcao", opcoes: ["Sim, toda semana", "Às vezes", "Não"] },
-    ],
-  },
-  {
-    numero: 6,
-    titulo: "Metas e números",
-    descricao: "Faturamento, ticket médio, peças por atendimento.",
-    campos: [
-      { id: "meta_mensal", rotulo: "Meta de faturamento do mês (R$)", tipo: "numero", dado: true },
-      { id: "dias_abertos", rotulo: "Dias de loja aberta no mês", tipo: "numero" },
-      { id: "ticket", rotulo: "Ticket médio (R$)", tipo: "numero", dado: true },
-      { id: "pa", rotulo: "Peças por atendimento", tipo: "numero", dado: true },
-      { id: "conversao", rotulo: "Conversão (% de quem entra e compra)", tipo: "numero", dado: true },
-    ],
-  },
-  {
     numero: 7,
-    titulo: "Canais de venda",
-    descricao: "Loja física, WhatsApp, Instagram, site, malinha.",
+    titulo: "Canais e conteúdo",
+    descricao: "Onde você vende e como a loja usa o conteúdo hoje.",
     campos: [
       { id: "canais", rotulo: "Onde você vende hoje?", tipo: "multi", opcoes: ["Loja física", "WhatsApp", "Instagram (Direct)", "Site / e-commerce", "Malinha / condicional"] },
       { id: "principal", rotulo: "Qual canal traz mais faturamento?", tipo: "texto" },
       { id: "base_clientes", rotulo: "Quantas clientes tem na base (com WhatsApp)?", tipo: "numero", dado: true },
+      { id: "freq_posts", rotulo: "Com que frequência você posta os conteúdos da loja hoje?", tipo: "opcao", opcoes: ["Todo dia", "3 a 5 vezes por semana", "1 a 2 vezes por semana", "Menos de 1 vez por semana", "Quase nunca"] },
+      { id: "como_pensa", rotulo: "Como você pensa nos conteúdos hoje?", tipo: "textarea" },
+      { id: "dificuldade_conteudo", rotulo: "O que você acha mais difícil na hora de produzir os conteúdos da loja?", tipo: "textarea" },
+      { id: "resultado_conteudo", rotulo: "O quanto você acha que postar conteúdo hoje traz resultado para a loja?", tipo: "opcao", opcoes: ["Traz muito resultado", "Traz algum resultado", "Traz pouco resultado", "Não traz resultado", "Não sei dizer"] },
     ],
   },
 ];

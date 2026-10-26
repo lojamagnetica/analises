@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
+import { EquipeDaEtapa } from "@/components/EquipeDaEtapa";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { ETAPAS, SITUACOES, chaveSituacao, type Campo, type Respostas, type Situacao } from "@/lib/conteudo";
@@ -136,6 +137,7 @@ function Etapa() {
     <>
       <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} sub={etapa.descricao} />
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
+      {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} />}
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
       <form
         className="card"

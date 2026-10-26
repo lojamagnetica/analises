@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
 type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
 
-function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
@@ -225,6 +225,14 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             <div className="nav-linha">
               <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
                 <Icone nome="play" /> COMECE AQUI
+              </Link>
+            </div>
+          )}
+
+          {props.temPortal && !props.soCurso && (
+            <div className="nav-linha">
+              <Link href="/guia" className={`nav-item ${ativo("/guia") ? "ativo" : ""}`}>
+                <Icone nome="help" /> Como usar o Hub
               </Link>
             </div>
           )}

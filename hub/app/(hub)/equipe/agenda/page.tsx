@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ConectarGoogle } from "@/components/ConectarGoogle";
+import { NovoCompromisso } from "@/components/NovoCompromisso";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import {
@@ -86,7 +87,8 @@ export default function AgendaEquipe() {
 
   return (
     <>
-      <Titulo titulo="Agenda" sub="Os Google Agendas da equipe num lugar só, só para ver. Para marcar ou mudar um horário, use o Google Agenda." />
+      <Titulo titulo="Agenda" sub="Os Google Agendas da equipe num lugar só. Para marcar um compromisso, use o botão abaixo: ele abre o Google Agenda já preenchido." />
+      <div className="mb"><NovoCompromisso /></div>
 
       <ConectarGoogle aoSalvar={recarregar} />
 

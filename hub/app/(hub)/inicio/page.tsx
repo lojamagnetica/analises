@@ -177,8 +177,6 @@ export default function Inicio() {
 
       {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
 
-      {!trancado("/gestao/caixa") && <MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} />}
-
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
         {atalhos.map((a) => (
@@ -239,7 +237,10 @@ export default function Inicio() {
         </div>
       </div>
 
-      {!consultoria && passos.length > 0 && (
+      {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
+      {!trancado("/gestao/caixa") ? (
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} /></div>
+      ) : !consultoria && passos.length > 0 && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>
           <SetePassos passos={passos} atual={portal.passo_atual} />

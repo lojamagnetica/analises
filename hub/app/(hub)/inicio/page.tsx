@@ -13,6 +13,7 @@ import { SetePassos, type Passo } from "@/components/SetePassos";
 import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/entrada";
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
+import { MeuDia } from "@/components/MeuDia";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
@@ -175,6 +176,8 @@ export default function Inicio() {
       )}
 
       {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
+
+      {!trancado("/gestao/caixa") && <MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} />}
 
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">

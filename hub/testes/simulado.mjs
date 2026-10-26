@@ -145,3 +145,27 @@ export function lojaBase({ diagnostico = true, video = true, tipo = "Mentoria" }
     },
   };
 }
+
+/** Método de conteúdo mínimo (o real fica só no banco). */
+export function metodoConteudo() {
+  const roteiro = { id: "r1", nome: "Modelo teste", formato: "Reels", objetivo: "Atrair", quando: "Quando quiser.", linhas: [
+    { rotulo: "Gancho", fala: "Olha essa [peça]", nota: "" }, { rotulo: "Cena", fala: "Mostre a [peça] no corpo", nota: "" }, { rotulo: "CTA", fala: "Chama no direct", nota: "" },
+  ] };
+  return {
+    algoritmo: [], vender_sem_catalogo: { titulo: "", texto: "" }, checklist: ["Gancho nos 3 primeiros segundos"], pare: [], comece: [], estrategia: [],
+    objetivos: { Atrair: { sinal: "", texto: "Alcance" }, Conectar: { sinal: "", texto: "Confiança" }, Vender: { sinal: "", texto: "Venda" } },
+    formatos: ["Reels", "Carrossel", "Stories"], roteiros: [roteiro], ganchos: [], ideias: [], ctas: [], legenda: { linhas: ["[gancho com outras palavras]", "[CTA]"], regras: [] },
+    workflow: [], ferramentas: [], cronograma: [], bio: { limite: 150, linhas: [], regras: [] }, destaques: [], correcoes: [],
+    semana: [{ dia: 1, papel: "Série", roteiro: "r1", objetivo: "Atrair", formato: "Reels" }], codigos: [], fundamentos: [], complementar: [], rotina: [], caminho: "",
+    textos: { trancado: "Trancado.", semana_sub: "Seus posts.", hora_padrao: "19:00", hora_nota: "", data_antes: "", roteiro_sub: "", resultados_sub: "" },
+  };
+}
+
+/** Conteúdo liberado para a loja de teste (análise do perfil liberada). */
+export function conteudoLiberado(portal) {
+  return {
+    metodo: [{ chave: "conteudo", dados: metodoConteudo() }],
+    loja_analise_perfil: [{ portal_id: portal, status: "liberada", dados: {}, liberada_em: "2026-09-20T12:00:00Z", updated_at: "2026-09-20T12:00:00Z" }],
+    loja_conteudo: [{ portal_id: portal, feitas: [], ajustes: {}, desafio: {} }],
+  };
+}

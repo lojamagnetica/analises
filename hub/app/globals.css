@@ -567,3 +567,16 @@ a.mb-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(20,1
 .estudio-gravacao-barra { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 24px; background: rgba(20, 18, 16, .94); font-size: 14px; border-bottom: 1px solid #2E2A26; }
 .estudio-gravacao-barra button { background: #2E2A26; color: #F5F0EA; border: 0; border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; }
 @media (max-width: 780px) { .estudio-item { grid-template-columns: 44px 1fr; } .estudio-item .selo { grid-column: 2; justify-self: start; } }
+
+/* Programação: visão Mês */
+.mes-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.mes-cab { font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; text-transform: uppercase; }
+.mes-dia { min-height: 86px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 8px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); font: inherit; color: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.mes-dia:hover { border-color: var(--red); }
+.mes-dia.fora { opacity: .45; }
+.mes-dia.hoje { background: var(--accent-soft); border-color: var(--red); }
+.mes-pontos { display: flex; flex-wrap: wrap; gap: 3px; }
+.mes-ponto { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 99px; background: var(--card); border: 2.5px solid var(--c); font-size: 11px; line-height: 1; }
+i.mes-ponto { min-width: 12px; width: 12px; height: 12px; background: var(--c); border: 0; }
+.mes-marca { font-size: 11px; line-height: 1.25; color: var(--muted); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+@media (max-width: 700px) { .mes-dia { min-height: 64px; padding: 5px; } .mes-marca { display: none; } }

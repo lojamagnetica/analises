@@ -3,17 +3,74 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { Excluir } from "@/components/Excluir";
 import { Titulo } from "@/components/Titulo";
 import { Trancado } from "@/components/Trancado";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
+import { MESES } from "@/lib/conteudo";
 import { somarDias } from "@/lib/acoes-mes";
 import { variaveisDaLoja } from "@/lib/scripts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
   COR_OBJETIVO, DIAS_SEMANA, OBJETIVOS, STATUS, agendaIcs, baixar, carregarConteudo, conteudoSalvar, datasProximas, diaDaSemana,
   gerarSemana, postApagar, postSalvar, postsCriar, roteirosDaLoja, segundaDe, type Ajustes, type MetodoConteudo, type Post,
+  type Status,
 } from "@/lib/instagram";
+
+const ICONE_STATUS: Record<Status, string> = { Ideia: "💡", Roteiro: "✍️", Gravado: "🎬", Programado: "⏰", Publicado: "✅" };
+const plural = (n: number, s: string) => `${n} ${s}${n === 1 ? "" : "s"}`;
+
+/** O mês inteiro: um ponto por post (cor do objetivo, ícone da etapa), datas comerciais e lançamentos. Clicar no dia abre a semana. */
+function Mes({ inicio, posts, datas, lancamentos, aoMudarMes, aoAbrirDia }: {
+  inicio: string; posts: Post[]; datas: { mes: number; dia: number | null; titulo: string }[]; lancamentos: { titulo: string; data: string }[];
+  aoMudarMes: (n: number) => void; aoAbrirDia: (d: string) => void;
+}) {
+  const [ano, mes] = inicio.split("-").map(Number);
+  const ultimo = somarDias(`${mes === 12 ? ano + 1 : ano}-${String(mes === 12 ? 1 : mes + 1).padStart(2, "0")}-01`, -1);
+  const comeco = segundaDe(inicio);
+  const semanas = Math.ceil((Math.round((Date.parse(ultimo) - Date.parse(comeco)) / 86_400_000) + 1) / 7);
+  const dias = Array.from({ length: semanas * 7 }, (_, i) => somarDias(comeco, i));
+  const doMes = posts.filter((p) => p.data >= inicio && p.data <= ultimo);
+  const datasDoMes = datas.filter((d) => d.mes === mes - 1 && d.dia != null);
+  return (
+    <div className="card mb">
+      <div className="linha entre">
+        <div className="linha" style={{ gap: 6 }}>
+          <button type="button" className="btn s peq" aria-label="Mês anterior" onClick={() => aoMudarMes(-1)}>←</button>
+          <b>{MESES[mes - 1]} de {ano}</b>
+          <button type="button" className="btn s peq" aria-label="Próximo mês" onClick={() => aoMudarMes(1)}>→</button>
+          {inicio !== hoje().slice(0, 8) + "01" && <button type="button" className="btn s peq" onClick={() => aoMudarMes(0)}>Hoje</button>}
+        </div>
+        <small className="mudo">{plural(doMes.length, "post")} no mês · {plural(doMes.filter((p) => p.status === "Publicado").length, "publicado")}</small>
+      </div>
+      <div className="linha mt" style={{ gap: 10, fontSize: 12.5 }}>
+        {OBJETIVOS.map((o) => <span key={o} className="linha" style={{ gap: 4 }}><i className="mes-ponto" style={{ ["--c" as string]: COR_OBJETIVO[o] }} />{o}</span>)}
+        <span className="mudo">{STATUS.map((x) => `${ICONE_STATUS[x]} ${x}`).join(" · ")}</span>
+      </div>
+      <div className="mes-grade mt">
+        {[1, 2, 3, 4, 5, 6, 0].map((d) => <div key={d} className="mes-cab">{DIAS_SEMANA[d]}</div>)}
+        {dias.map((d) => {
+          const fora = d < inicio || d > ultimo;
+          const ps = posts.filter((p) => p.data === d);
+          const comerciais = fora ? [] : datasDoMes.filter((x) => x.dia === Number(d.slice(8)));
+          const lanc = lancamentos.filter((l) => l.data === d);
+          return (
+            <button key={d} type="button" className={`mes-dia ${fora ? "fora" : ""} ${d === hoje() ? "hoje" : ""}`} onClick={() => aoAbrirDia(d)} aria-label={`Abrir a semana de ${dia(d)}`}>
+              <b>{Number(d.slice(8))}</b>
+              <span className="mes-pontos">
+                {ps.map((p) => <span key={p.id} className="mes-ponto" title={`${p.objetivo} · ${p.status} · ${p.gancho || p.tema}`} style={{ ["--c" as string]: COR_OBJETIVO[p.objetivo] }}>{ICONE_STATUS[p.status]}</span>)}
+              </span>
+              {comerciais.map((x) => <small key={x.titulo} className="mes-marca">📆 {x.titulo}</small>)}
+              {lanc.map((l) => <small key={l.titulo} className="mes-marca">🚀 {l.titulo}</small>)}
+            </button>
+          );
+        })}
+      </div>
+      <p className="ajuda">Clique num dia para abrir a semana dele.</p>
+    </div>
+  );
+}
 
 function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: () => void }) {
   const [aberto, setAberto] = useState(false);
@@ -64,7 +121,7 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
           {erro && <div className="aviso mt">{erro}</div>}
           <div className="linha mt" style={{ gap: 6 }}>
             <button type="button" className="btn p peq" onClick={() => salvar()}>Salvar</button>
-            <button type="button" className="btn s peq" onClick={async () => { await postApagar(p.id); aoMudar(); }}>Apagar</button>
+            <Excluir pergunta="Apagar este post da programação?" fazer={() => postApagar(p.id)} aoFim={aoMudar} rotulo="Apagar" />
           </div>
         </div>
       )}
@@ -78,6 +135,8 @@ export default function Semana() {
   const [ajustes, setAjustes] = useState<Ajustes | null>(null);
   const [aviso, setAviso] = useState("");
   const [gravacao, setGravacao] = useState(false);
+  const [vista, setVista] = useState<"semana" | "mes">("semana");
+  const [mesInicio, setMesInicio] = useState(hoje().slice(0, 8) + "01");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
     const [c, datas, la] = await Promise.all([
@@ -108,8 +167,24 @@ export default function Semana() {
   return (
     <>
       <Titulo titulo="Programação da semana" sub={m.textos.semana_sub} />
+      <div className="chips mb" role="tablist">
+        {(["semana", "mes"] as const).map((v) => (
+          <button key={v} type="button" role="tab" aria-selected={vista === v} className={`chip ${vista === v ? "escolhido" : ""}`} onClick={() => setVista(v)}>{v === "semana" ? "Semana" : "Mês"}</button>
+        ))}
+      </div>
       {aviso && <div className="aviso ok mb">{aviso}</div>}
 
+      {vista === "mes" ? (
+        <Mes inicio={mesInicio} posts={posts} datas={dados.datas} lancamentos={dados.lancamentos}
+          aoMudarMes={(n) => {
+            if (n === 0) { setMesInicio(hoje().slice(0, 8) + "01"); return; }
+            const [y, mm] = mesInicio.split("-").map(Number);
+            const t = y * 12 + (mm - 1) + n;
+            setMesInicio(`${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}-01`);
+          }}
+          aoAbrirDia={(d) => { setSegunda(segundaDe(d)); setVista("semana"); }} />
+      ) : (
+      <>
       <div className="card mb">
         <div className="linha entre">
           <div className="linha" style={{ gap: 6 }}>
@@ -171,6 +246,8 @@ export default function Semana() {
           );
         })}
       </div>
+      </>
+      )}
 
       <details className="card mt">
         <summary style={{ cursor: "pointer" }}><b>Ajustes da programação</b> <span className="mudo" style={{ fontSize: 13.5 }}>· dias, horário, cadência e série fixa</span></summary>

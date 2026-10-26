@@ -14,6 +14,7 @@ import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/ent
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
+import { EncontroGrupo } from "@/components/EncontroGrupo";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
@@ -111,6 +112,8 @@ export default function Inicio() {
           )}
         </div>
       </div>
+
+      {portal.tipo === "Mentoria" && <EncontroGrupo />}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>

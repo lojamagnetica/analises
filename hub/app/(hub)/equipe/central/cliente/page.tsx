@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { LinkAcesso } from "@/components/LinkAcesso";
+import { MensagensCS } from "@/components/MensagensCS";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/formato";
@@ -13,11 +14,10 @@ import { gerarLink } from "@/lib/acoes";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
 import { mensagemDiagnosticoPronto } from "@/lib/entrada";
 import {
-  etapasDoPlano, buscarJornada, mensagemBoasVindas, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
+  etapasDoPlano, buscarJornada, mensagensCS, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
   type Check, type ClienteJornada,
 } from "@/lib/jornada";
 
-const NOME_PLANO: Record<string, string> = { premium: "Premium", gold: "Gold", start: "Start" };
 
 function Item({ c, k, nome, recarregar, extra }: { c: ClienteJornada; k: Check; nome: string; recarregar: () => void; extra?: React.ReactNode }) {
   const feito = c.checks.get(k.chave);
@@ -69,7 +69,10 @@ function Cliente() {
   const site = typeof window !== "undefined" ? `${location.origin}${BASE}` : "";
 
   const extra = (k: Check) => {
-    if (k.acao === "boasvindas") return <Copiar texto={mensagemBoasVindas(c, nome.split(" ")[0], NOME_PLANO[c.plano ?? ""] ?? null)} rotulo={k.chave === "grupo" ? "Copiar boas-vindas" : "Copiar boas-vindas com o horário"} />;
+    if (k.acao === "boasvindas") {
+      const quais: Record<string, string[]> = { grupo: ["boasvindas", "contrato"], onboarding_marcado: ["assinado", "agendado"], clube: ["clube_aviso", "clube_boasvindas"] };
+      return <MensagensCS mensagens={mensagensCS(c).filter((m) => (quais[k.chave] ?? []).includes(m.chave))} />;
+    }
     if (k.acao === "contrato") return <Link className="btn s peq" href={`/equipe/central/contrato?id=${c.id}`}>Gerar o contrato</Link>;
     if (k.acao === "acesso") {
       if (!c.email) return <small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small>;
@@ -138,6 +141,11 @@ function Cliente() {
           )}
         </div>
       )}
+
+      <details className="card mb">
+        <summary style={{ cursor: "pointer" }}><b>Mensagens padrão do CS</b> <small className="mudo">· as 6 mensagens da entrada da cliente, já com o nome dela</small></summary>
+        <div className="mt"><MensagensCS mensagens={mensagensCS(c)} /></div>
+      </details>
 
       <details className="card">
         <summary style={{ cursor: "pointer" }}><b>A jornada inteira</b> <small className="mudo">· todas as etapas e o que já foi feito</small></summary>

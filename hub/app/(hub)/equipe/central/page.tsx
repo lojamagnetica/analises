@@ -42,7 +42,7 @@ export default function Central() {
     ]);
     // Lojas que mandaram tudo e ainda esperam o Diagnóstico (prazo de 5 dias úteis).
     const prontos = new Set((liberados ?? []).map((d) => d.portal_id as string));
-    const esperando = (enviados ?? []).filter((e) => !prontos.has(e.portal_id as string))
+    const esperando = (enviados ?? []).filter((e) => e.dados_enviados_em && !prontos.has(e.portal_id as string))
       .map((e) => ({ id: e.portal_id as string, prazo: prazoDiagnostico(e.dados_enviados_em as string) }))
       .sort((a, b) => a.prazo.localeCompare(b.prazo));
     return { jornada, esperando };

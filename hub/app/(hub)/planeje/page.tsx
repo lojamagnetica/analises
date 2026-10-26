@@ -20,8 +20,13 @@ export default function Planeje() {
   }, [portal.id]);
   if (!dados) return <Carregando />;
   const atual = hoje().slice(0, 7);
-  const proximos = [0, 1, 2].map((n) => somarMes(atual, n));
-  const anteriores = dados.planos.filter((p) => p.mes < atual);
+  // Os 3 próximos meses para planejar; o mês atual (já em andamento) fica junto dos anteriores.
+  const proximos = [1, 2, 3].map((n) => somarMes(atual, n));
+  const anteriores: { mes: string; status: keyof typeof STATUS_PLANO | null }[] = [
+    // O mês atual aparece mesmo sem plano, para dar para planejar a meta dele.
+    ...(dados.planos.some((p) => p.mes === atual) ? [] : [{ mes: atual, status: null }]),
+    ...dados.planos.filter((p) => p.mes <= atual),
+  ];
 
   return (
     <>
@@ -37,7 +42,7 @@ export default function Planeje() {
           return (
             <Link key={mes} href={`/planeje/mes?m=${mes}`} className="card card-borda etapa" style={{ ["--c" as string]: CORES[i], textDecoration: "none", color: "inherit" }}>
               <div className="linha entre">
-                {i === 0 ? <span className="selo andamento">este mês</span> : <span />}
+                {i === 0 ? <span className="selo andamento">próximo mês</span> : <span />}
                 {p ? <span className={`selo ${STATUS_PLANO[p.status].classe}`}>{STATUS_PLANO[p.status].texto}</span> : <span className="selo espera">a planejar</span>}
               </div>
               <h3 style={{ fontSize: 18 }}>{nomeMes(mes)}</h3>
@@ -52,12 +57,12 @@ export default function Planeje() {
       </div>
       {anteriores.length > 0 && (
         <>
-          <div className="secao">Planos anteriores</div>
+          <div className="secao">Este mês e os anteriores</div>
           <div className="grade g4">
             {anteriores.map((p) => (
               <Link key={p.mes} href={`/planeje/mes?m=${p.mes}`} className="card" style={{ textDecoration: "none", color: "inherit" }}>
                 <b>{nomeMes(p.mes)}</b>
-                <div><span className={`selo ${STATUS_PLANO[p.status].classe}`}>{STATUS_PLANO[p.status].texto}</span></div>
+                <div>{p.status ? <span className={`selo ${STATUS_PLANO[p.status].classe}`}>{STATUS_PLANO[p.status].texto}</span> : <span className="selo espera">a planejar</span>}{p.mes === atual && <small className="mudo"> · este mês</small>}</div>
               </Link>
             ))}
           </div>

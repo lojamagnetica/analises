@@ -73,7 +73,12 @@ function gravarApresentacao(sim: boolean) {
 }
 
 function lerPortalEscolhido() {
-  try { return localStorage.getItem(CHAVE_PORTAL); } catch { return null; }
+  try {
+    // Link direto da equipe para um portal: ?portal=<id> abre aquele portal e fica escolhido.
+    const daUrl = new URLSearchParams(window.location.search).get("portal");
+    if (daUrl && /^[0-9a-f-]{36}$/.test(daUrl)) localStorage.setItem(CHAVE_PORTAL, daUrl);
+    return localStorage.getItem(CHAVE_PORTAL);
+  } catch { return null; }
 }
 
 /** Carrega quem está logado e o portal aberto. Sem sessão, manda para o login. */

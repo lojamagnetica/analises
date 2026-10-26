@@ -68,6 +68,11 @@ export default function Central() {
       </div>
       {erro && <div className="aviso mb">{erro}</div>}
 
+      <Link href="/equipe/aprovar" className="card card-borda mb linha entre" style={{ ["--c" as string]: "var(--purple)", textDecoration: "none", color: "inherit" }}>
+        <span><b>Para aprovar:</b> Diagnósticos, Gestão, Análises do Instagram e planos esperando a sua revisão, todos num lugar só.</span>
+        <span className="btn s peq">Abrir</span>
+      </Link>
+
       {tudo.planos > 0 && (
         <Link href="/equipe/planos" className="card card-borda mb linha entre" style={{ ["--c" as string]: "var(--orange)", textDecoration: "none", color: "inherit" }}>
           <span><b>{tudo.planos === 1 ? "1 plano do mês" : `${tudo.planos} planos do mês`}</b> esperando o seu retorno.</span>

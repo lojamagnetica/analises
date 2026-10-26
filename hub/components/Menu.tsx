@@ -30,6 +30,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     g.push({
       id: "central", rotulo: "Central do Cliente", icone: "kanban",
       itens: [
+        { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },

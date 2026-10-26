@@ -8,7 +8,7 @@ import { MESES } from "@/lib/conteudo";
 import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { PA_IDEAL, buscarCaixa, fimDoMes, fmtPa, indicadores, somar, somarMes, type Caixa } from "@/lib/caixa";
-import { buscarPlano, metaDoPlano, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
+import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
 import { principal, type Letra } from "@/lib/pessoas";
 import { moeda } from "@/lib/formato";
 
@@ -139,11 +139,14 @@ export function placar(d: DadosMeuDia) {
   const meta = plano ? metaDoPlano(plano.dados) : null;
   const ate = somar(caixa.filter((c) => c.dia < agora)).faturamento;
   const deHoje = somar(caixa.filter((c) => c.dia === agora)).faturamento;
-  const diaDoMes = Number(agora.slice(8));
-  const ultimo = Number(fimDoMes(agora.slice(0, 7)).slice(8));
-  const restantes = ultimo - diaDoMes + 1;
+  // Domingo não conta: a meta do dia divide o que falta pelos dias de loja aberta.
+  const mes = agora.slice(0, 7);
+  const ontemIso = somarDias(agora, -1);
+  const restantes = Math.max(1, diasDeLoja(agora, fimDoMes(mes)));
+  const passados = ontemIso.startsWith(mes) ? diasDeLoja(`${mes}-01`, ontemIso) : 0;
   const metaHoje = meta ? Math.max(0, (meta - ate) / restantes) : null;
-  const ritmo = diaDoMes > 1 ? ate / (diaDoMes - 1) : null;
+  const ritmo = passados > 0 ? ate / passados : null;
+  const ontemConta = ontemIso.startsWith(mes) && new Date(`${ontemIso}T12:00:00Z`).getUTCDay() !== 0;
   const ontem = somar(d.caixaOntem);
   return {
     meta, vendido: ate + deHoje, ate, deHoje, restantes, metaHoje, ritmo,
@@ -151,22 +154,22 @@ export function placar(d: DadosMeuDia) {
     abaixo: metaHoje && ritmo != null && metaHoje > 0 ? Math.max(0, 1 - ritmo / metaHoje) : null,
     ontem: d.caixaOntem.length ? ontem.faturamento : null,
     // Meta de ontem: o que faltava dividido pelos dias que restavam ontem.
-    metaOntem: meta && diaDoMes > 1 ? Math.max(0, (meta - (ate - ontem.faturamento)) / (restantes + 1)) : null,
+    metaOntem: meta && ontemConta ? Math.max(0, (meta - (ate - ontem.faturamento)) / (restantes + 1)) : null,
   };
 }
 
 export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[] {
   const meta = d.plano ? metaDoPlano(d.plano.dados) : null;
-  const n = d.equipe.length;
-  const diaDoMes = Number(d.agora.slice(8));
-  const ultimo = Number(fimDoMes(d.agora.slice(0, 7)).slice(8));
-  // Proporção do mês já passada (até ontem).
-  const passou = Math.max(1, diaDoMes - 1) / ultimo;
+  const metas = metasDoTime(meta, d.equipe.map((p) => p.id), d.plano?.dados.metas);
+  // Proporção do mês já passada (até ontem), em dias de loja aberta.
+  const mes = d.agora.slice(0, 7);
+  const ontemIso = somarDias(d.agora, -1);
+  const passou = Math.max(1, ontemIso.startsWith(mes) ? diasDeLoja(`${mes}-01`, ontemIso) : 0) / Math.max(1, diasDeLoja(`${mes}-01`, fimDoMes(mes)));
   return d.equipe.map((p) => {
     const linhas = d.caixa.filter((c) => c.dia < d.agora).flatMap((c) => (c.vendedoras ?? []).filter((v) => v.pessoa_id === p.id));
     const t = linhas.reduce((a, v) => ({ faturamento: a.faturamento + v.faturamento, vendas: a.vendas + v.vendas, pecas: a.pecas + v.pecas }), { faturamento: 0, vendas: 0, pecas: 0 });
     const i = indicadores({ ...t, dias: 1 });
-    const metaV = meta && n ? meta / n : null;
+    const metaV = metas[p.id] || null;
     const nome = p.nome.split(" ")[0];
     let problema: Problema = "ok";
     let diagnostico = "";

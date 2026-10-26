@@ -91,7 +91,10 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
 
       {vs.length > 0 && (
         <>
-          <div className="secao">Seu time no mês</div>
+          <div className="linha entre">
+            <div className="secao">Seu time no mês</div>
+            <Link className="link-loja" style={{ fontSize: 13.5 }} href={`/planeje/mes?m=${d.agora.slice(0, 7)}`}>Ajustar a meta de cada vendedora →</Link>
+          </div>
           <div className="grade g2 mb">
             {vs.map((v) => {
               const fb = feedback(v);

@@ -32,6 +32,8 @@ export type DadosPlano = {
   produtos: string[];
   semanas: SemanaPlano[];
   obs: string;
+  /** Meta do mês de cada vendedora que a lojista ajustou (id da pessoa → R$). As outras dividem o resto por igual. */
+  metas?: Record<string, number>;
 };
 export type StatusPlano = "rascunho" | "enviado" | "ok" | "ajustar";
 export type LinhaPlano = {
@@ -60,6 +62,25 @@ export function semanasDoMes(mes: string) {
 }
 /** Índice (0–3) da semana do mês em que o dia cai. */
 export const semanaDoDia = (diaDoMes: number) => Math.min(3, Math.floor((diaDoMes - 1) / 7));
+
+/** Dias de loja aberta entre duas datas (inclusive): todos menos os domingos. */
+export function diasDeLoja(de: string, ate: string) {
+  let n = 0;
+  for (let t = Date.parse(`${de}T12:00:00Z`); t <= Date.parse(`${ate}T12:00:00Z`); t += 86_400_000) if (new Date(t).getUTCDay() !== 0) n++;
+  return n;
+}
+
+/** A meta de cada vendedora: a que a lojista ajustou; o resto da meta da loja dividido por igual entre as outras. */
+export function metasDoTime(meta: number | null, ids: string[], ajustes: Record<string, number> | undefined) {
+  const out: Record<string, number> = {};
+  if (!meta || !ids.length) return out;
+  const fixas = ids.filter((id) => ajustes?.[id] != null);
+  const resto = Math.max(0, meta - fixas.reduce((s, id) => s + (ajustes![id] ?? 0), 0));
+  const livres = ids.filter((id) => ajustes?.[id] == null);
+  for (const id of fixas) out[id] = ajustes![id];
+  for (const id of livres) out[id] = Math.round(resto / livres.length);
+  return out;
+}
 
 export const metaDoPlano = (d: Partial<DadosPlano>) =>
   d.base ? Math.round((d.base * (1 + (d.crescimento ?? CRESCIMENTO_PADRAO) / 100)) / 100) * 100 : null;

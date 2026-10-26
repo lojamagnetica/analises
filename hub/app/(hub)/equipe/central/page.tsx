@@ -35,17 +35,18 @@ export default function Central() {
   const [erro, setErro] = useState("");
   const { dados: tudo, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [jornada, { data: enviados }, { data: liberados }] = await Promise.all([
+    const [jornada, { data: enviados }, { data: liberados }, { count: planos }] = await Promise.all([
       buscarJornada(),
       sb.from("portal_entrada").select("portal_id, dados_enviados_em").not("dados_enviados_em", "is", null),
       sb.from("loja_diagnostico").select("portal_id").eq("status", "liberada"),
+      sb.from("loja_plano_mes").select("portal_id", { count: "exact", head: true }).eq("status", "enviado"),
     ]);
     // Lojas que mandaram tudo e ainda esperam o Diagnóstico (prazo de 5 dias úteis).
     const prontos = new Set((liberados ?? []).map((d) => d.portal_id as string));
     const esperando = (enviados ?? []).filter((e) => e.dados_enviados_em && !prontos.has(e.portal_id as string))
       .map((e) => ({ id: e.portal_id as string, prazo: prazoDiagnostico(e.dados_enviados_em as string) }))
       .sort((a, b) => a.prazo.localeCompare(b.prazo));
-    return { jornada, esperando };
+    return { jornada, esperando, planos: planos ?? 0 };
   }, []);
   if (!tudo) return <Carregando />;
   const dados = tudo.jornada;
@@ -66,6 +67,13 @@ export default function Central() {
         <div className="card card-borda kpi" style={{ ["--c" as string]: "var(--purple)" }}><b>{dados.length}</b><small>clientes ativas</small></div>
       </div>
       {erro && <div className="aviso mb">{erro}</div>}
+
+      {tudo.planos > 0 && (
+        <Link href="/equipe/planos" className="card card-borda mb linha entre" style={{ ["--c" as string]: "var(--orange)", textDecoration: "none", color: "inherit" }}>
+          <span><b>{tudo.planos === 1 ? "1 plano do mês" : `${tudo.planos} planos do mês`}</b> esperando o seu retorno.</span>
+          <span className="btn s peq">Revisar</span>
+        </Link>
+      )}
 
       {tudo.esperando.length > 0 && (
         <div className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>

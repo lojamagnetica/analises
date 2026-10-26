@@ -30,7 +30,7 @@ export const GUIA: Record<string, TextoGuia> = {
   // Vendas
   "/acoes": { oque: "Ações de venda prontas para a sua loja, com cronograma, mensagens, conteúdo e placar.", passos: ["Escolha a ação do mês.", "Siga o cronograma dia a dia.", "Lance os resultados no placar."] },
   "/scripts": { oque: "Scripts de venda para o time usar no atendimento e no WhatsApp.", passos: ["Escolha a situação.", "Copie e adapte com o jeito da loja."] },
-  "/planeje": { oque: "Um card por mês: datas comerciais, produtos em destaque, ações, meta e as 4 semanas.", passos: ["Abra o mês.", "Preencha o que vai acontecer em cada semana."] },
+  "/planeje": { oque: "O plano de ação de cada mês, no jeito da Camilla planejar: meta, ações, datas especiais, produtos em destaque e as 4 semanas.", passos: ["Abra o próximo mês até o dia 20.", "Responda os 5 passos: a meta, o que fez no ano passado, as datas, os produtos e as semanas.", "Clique em Enviar para a Camilla e espere o retorno dela."] },
   // De cliente a fã
   "/clientes": { oque: "As suas clientes: quando compraram e quanto gastaram, separadas por tipo.", passos: ["Cadastre ou importe as clientes.", "Edite ou exclua quando precisar.", "Veja com quem falar hoje."] },
   "/clientes/tipos": { oque: "O que fazer com cada tipo de cliente (nova, fiel, sumida…).", passos: ["Escolha o tipo.", "Siga a ação indicada."] },

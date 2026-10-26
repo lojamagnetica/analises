@@ -14,6 +14,7 @@ import { MESES } from "@/lib/conteudo";
 import { somarDias } from "@/lib/acoes-mes";
 import { variaveisDaLoja } from "@/lib/scripts";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { buscarPlanos, mesDoPlano, semanaDoDia } from "@/lib/plano-mes";
 import {
   COR_OBJETIVO, DIAS_SEMANA, OBJETIVOS, STATUS, agendaIcs, baixar, carregarConteudo, conteudoSalvar, datasProximas, diaDaSemana,
   gerarSemana, postApagar, postSalvar, postsCriar, roteirosDaLoja, segundaDe, type Ajustes, type MetodoConteudo, type Post,
@@ -142,15 +143,18 @@ export default function Semana() {
   const [mesInicio, setMesInicio] = useState(hoje().slice(0, 8) + "01");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [c, datas, la, pautas] = await Promise.all([
+    const [c, datas, la, pautas, planos] = await Promise.all([
       carregarConteudo(portal.id, comoLoja),
       sb.from("datas_comerciais").select("mes, dia, titulo"),
       sb.from("loja_acoes").select("acao_id").eq("portal_id", portal.id),
       pautasDaLoja(segundaDe(hoje()), segmento),
+      buscarPlanos(portal.id).catch(() => []),
     ]);
     const ids = (la.data ?? []).map((x) => x.acao_id as string);
     const acoes = ids.length ? (await sb.from("acoes").select("id, titulo, venda_inicio, data_acao").in("id", ids)).data ?? [] : [];
-    return { ...c, pautas, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })) };
+    // As ações do plano do mês (PLANEJE AQUI) também ganham stories de espera.
+    const doPlano = planos.flatMap((pl) => (pl.dados.acoes ?? []).filter((x) => x.titulo && x.inicio && !(x.acao_id && ids.includes(x.acao_id))).map((x) => ({ titulo: x.titulo, data: x.inicio })));
+    return { ...c, pautas, planos, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: [...acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })), ...doPlano] };
   }, [portal.id, comoLoja, segmento]);
   if (!dados) return <Carregando />;
   const { m, a, conteudo, posts } = dados;
@@ -159,6 +163,11 @@ export default function Semana() {
   const aj: Ajustes = ajustes ?? conteudo.ajustes ?? {};
   const vars = variaveisDaLoja(pers.get(2)?.respostas, portal.loja);
   const domingo = somarDias(segunda, 6);
+  // O plano do mês em que a semana cai (pela quinta-feira) e o foco dessa semana.
+  const quinta = somarDias(segunda, 3);
+  const plano = dados.planos.find((pl) => pl.mes === quinta.slice(0, 7));
+  const semanaPlano = plano?.dados.semanas?.[semanaDoDia(Number(quinta.slice(8)))];
+  const destaques = (plano?.dados.produtos ?? []).filter(Boolean);
   const daSemana = posts.filter((p) => p.data >= segunda && p.data <= domingo);
   const dias = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
   const proximas = datasProximas(dados.datas, hoje(), 21);
@@ -211,7 +220,7 @@ export default function Semana() {
           </div>
           <div className="linha" style={{ gap: 6 }}>
             <button type="button" className="btn p" disabled={domingo < hoje()} onClick={async () => {
-              const novos = gerarSemana({ m, analise: a, portalId: portal.id, segunda, ajustes: aj, existentes: posts, lancamentos: dados.lancamentos, datas: dados.datas, vars });
+              const novos = gerarSemana({ m, analise: a, portalId: portal.id, segunda, ajustes: aj, existentes: posts, lancamentos: dados.lancamentos, datas: dados.datas, vars, destaques });
               if (!novos.length) { setAviso("A semana já está montada. Apague um post para o Hub sugerir outro no lugar."); return; }
               await postsCriar(novos); setAviso(`${novos.length} posts na semana. Abra cada um, ajuste com as suas peças e siga o checklist antes de postar.`); recarregar();
             }}>✨ Montar a minha semana</button>
@@ -224,6 +233,18 @@ export default function Semana() {
           {OBJETIVOS.map((o) => <span key={o} className="chip" style={{ borderColor: COR_OBJETIVO[o], color: COR_OBJETIVO[o] }}>{o}: {daSemana.filter((p) => p.objetivo === o).length}</span>)}
         </div>
       </div>
+
+      {semanaPlano?.foco?.trim() && plano && (
+        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+          <div className="linha entre">
+            <b>🎯 Foco da semana · plano de {mesDoPlano(plano.mes).toLowerCase()}</b>
+            <Link className="link-loja" style={{ fontSize: 13.5 }} href={`/planeje/mes?m=${plano.mes}`}>Abrir o plano →</Link>
+          </div>
+          <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{semanaPlano.foco}</div>
+          {semanaPlano.conteudo?.trim() && <div className="mudo" style={{ whiteSpace: "pre-wrap", marginTop: 6, fontSize: 14 }}><b>Conteúdo planejado:</b> {semanaPlano.conteudo}</div>}
+          {destaques.length > 0 && <p className="ajuda" style={{ marginBottom: 0 }}>O &quot;Montar a minha semana&quot; já coloca os seus produtos em destaque ({destaques.join(", ")}) nos posts.</p>}
+        </div>
+      )}
 
       {gravacao && (
         <div className="card mb card-borda" style={{ ["--c" as string]: "var(--accent)" }}>

@@ -267,7 +267,7 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
     t.push({ chave: "planejamento", texto: `Montar o plano de ${proximo} no PLANEJE AQUI (até dia 20)`, href: `/planeje/mes?m=${somarMes(d.agora.slice(0, 7), 1)}` });
   }
   for (const v of vs.filter((x) => x.problema === "pa" || x.problema === "pm" || x.problema === "volume")) {
-    t.push({ chave: `feedback_${v.id}`, texto: `Chamar a ${v.nome}: ${SITUACOES[v.problema].titulo.toLowerCase()}. O feedback está pronto abaixo.` });
+    t.push({ chave: `feedback_${v.id}`, texto: `Chamar a ${v.nome}: ${SITUACOES[v.problema].titulo.replace(/^[A-Z][a-zá-ú]/, (x) => x.toLowerCase())}. O feedback está pronto abaixo.` });
   }
   const c = carteira(d);
   if (c.aniversarioHoje) t.push({ chave: "aniversario", texto: `Mandar parabéns para ${c.aniversarioHoje} ${c.aniversarioHoje === 1 ? "cliente" : "clientes"}`, href: "/clientes" });

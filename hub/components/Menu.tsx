@@ -235,14 +235,6 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
 
           {props.temPortal && !props.soCurso && (
             <div className="nav-linha">
-              <Link href="/guia" className={`nav-item ${ativo("/guia") ? "ativo" : ""}`}>
-                <Icone nome="help" /> Como usar o Hub
-              </Link>
-            </div>
-          )}
-
-          {props.temPortal && !props.soCurso && (
-            <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
                 <Icone nome="chat" /> Fale com a Camilla
               </Link>
@@ -284,6 +276,12 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
             <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
               <Icone nome="gift" /> Indique uma loja 🎁
               {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}
+            </Link>
+          )}
+
+          {props.temPortal && !props.soCurso && (
+            <Link href="/guia" className={`nav-item ${ativo("/guia") ? "ativo" : ""}`}>
+              <Icone nome="help" /> Como usar o Hub
             </Link>
           )}
         </nav>

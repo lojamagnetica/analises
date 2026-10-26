@@ -21,6 +21,7 @@ const browser = await chromium.launch();
   ok(await page.locator("section#vendas").getByText("🔒 Abre quando você receber o seu Diagnóstico").count() > 0, "páginas de Vendas mostram quando abrem");
   ok(await page.locator("section#jornada").getByText("Os 7 passos").count() > 0, "blocos gerados a partir do menu");
   ok(await page.locator(".nav-item", { hasText: "Como usar o Hub" }).count() === 1, "item no menu");
+  ok(await page.locator(".nav > *").last().innerText().then((t) => t.includes("Como usar o Hub")), "item no fim do menu, depois de Indique uma loja");
   ok(await page.getByText("Fale com a Camilla", { exact: true }).count() > 0, "fim com Fale com a Camilla");
   await page.screenshot({ path: process.env.SHOTS + "/guia.png", fullPage: true });
   await page.close();

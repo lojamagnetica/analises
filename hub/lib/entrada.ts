@@ -20,7 +20,7 @@ export type Entrada = {
 export type VideoBoasVindas = { url: string; segundos: number };
 
 /** Páginas que nunca travam. */
-const SEMPRE = ["/inicio", "/comece", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria"];
+const SEMPRE = ["/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
 /** Só a página exata (as subpáginas seguem as regras). */
 const SEMPRE_EXATA = ["/conteudo"];
 /** Do mais específico para o mais geral: a primeira regra que casa decide. O que não está aqui espera o Diagnóstico. */

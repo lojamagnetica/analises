@@ -69,6 +69,7 @@ export default function LeadsEPipeline() {
           {l.origem && <> · {l.origem}</>}{l.valor_estimado ? <> · {moeda(Number(l.valor_estimado))}</> : null}
         </div>
         <div className="linha" style={{ flexWrap: "wrap", gap: 6, margin: "6px 0" }}>
+          {l.indicado_por && <span className="selo feito">indicada por {dados.indicadoras[l.indicado_por] ?? "uma loja"}</span>}
           {l.responsavel && <span className="selo espera">{l.responsavel.split(" ")[0]}</span>}
           {l.proximo_contato && <span className={`selo ${atrasado(l) ? "erro" : "andamento"}`}>{atrasado(l) ? "atrasado" : "contato"} {dataCurta(l.proximo_contato)}</span>}
           {l.etapa === "Perdido" && l.motivo_perda && <span className="selo alerta">{l.motivo_perda}</span>}

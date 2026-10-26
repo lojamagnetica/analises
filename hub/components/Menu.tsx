@@ -10,7 +10,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
 type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
 
-function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
@@ -65,6 +65,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
+          { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },
         ],
       }
     : {
@@ -74,6 +75,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
           { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
           { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
+          { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },
         ],
       };
   if (consultoria) g.push(consultoriaOuMentoria);
@@ -138,7 +140,9 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
+        { href: "/conteudo/pautas", rotulo: "Pautas quentes", icone: "spark" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
+        { href: "/conteudo/bio", rotulo: "Link da Bio", icone: "link" },
         { href: "/conteudo/resultados", rotulo: "Resultados", icone: "chart" },
         { href: "/conteudo/desafio", rotulo: "Desafio Loja Viral", icone: "spark" },
       ],
@@ -231,6 +235,14 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
 
           {props.temPortal && !props.soCurso && (
             <div className="nav-linha">
+              <Link href="/guia" className={`nav-item ${ativo("/guia") ? "ativo" : ""}`}>
+                <Icone nome="help" /> Como usar o Hub
+              </Link>
+            </div>
+          )}
+
+          {props.temPortal && !props.soCurso && (
+            <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
                 <Icone nome="chat" /> Fale com a Camilla
               </Link>
@@ -265,6 +277,13 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
           {(props.temPortal || props.equipe) && (
             <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
               <Icone nome="play" /> CURSO
+            </Link>
+          )}
+
+          {props.temPortal && !props.soCurso && (
+            <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
+              <Icone nome="gift" /> Indique uma loja 🎁
+              {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}
             </Link>
           )}
         </nav>

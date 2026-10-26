@@ -135,8 +135,11 @@ export default function Comece() {
               </div>
             );
           })}
-          <p className="ajuda">Sempre abertos: Início, Reuniões, Cursos e o Fale com a Camilla.</p>
-          {visto && <Link className="btn s peq" href="/inicio">Ir para o Início</Link>}
+          <p className="ajuda">Sempre abertos: Início, Como usar o Hub, Reuniões, Cursos e o Fale com a Camilla.</p>
+          <div className="linha">
+            {visto && <Link className="btn s peq" href="/inicio">Ir para o Início</Link>}
+            <Link className="btn s peq" href="/guia">Como usar o Hub →</Link>
+          </div>
         </div>
       </div>
     </>

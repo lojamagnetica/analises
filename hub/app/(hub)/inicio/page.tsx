@@ -66,6 +66,8 @@ export default function Inicio() {
   const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
   // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
   const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;
+  // Diagnóstico liberado nos últimos 15 dias: avisa no Início.
+  const diagnosticoNovo = !!ent?.diagnosticoEm && Date.now() - new Date(ent.diagnosticoEm).getTime() < 15 * 86_400_000;
 
   return (
     <>
@@ -116,6 +118,16 @@ export default function Inicio() {
             Seu Diagnóstico fica pronto em até 5 dias úteis{ent.dadosEm ? <>, até <b>{dataCurta(prazoDiagnostico(ent.dadosEm))}</b></> : ""}.
             Assim que ele sair, o Plano de Ação e as outras áreas abrem para você.
           </p>
+          <p style={{ margin: "10px 0 0" }}><b>Enquanto isso, comece pelo Curso:</b> o módulo Carteira Ativa já te ajuda a vender mais para quem já é sua cliente.</p>
+          <Link className="btn p peq mt" href="/cursos">Começar pelo Curso · Carteira Ativa →</Link>
+        </div>
+      )}
+
+      {diagnosticoNovo && (
+        <div className="card card-borda mt" style={{ ["--c" as string]: "var(--green)" }}>
+          <h3 style={{ marginTop: 0 }}>Seu Diagnóstico está pronto! 🎉</h3>
+          <p className="mudo" style={{ margin: 0 }}>Veja como a sua loja está hoje: estoque, compras, linhas, fornecedores e a análise do seu Instagram. O seu Plano de Ação e as ferramentas da mentoria também já abriram.</p>
+          <Link className="btn p peq mt" href="/painel">Ver o meu Diagnóstico →</Link>
         </div>
       )}
 

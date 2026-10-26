@@ -11,6 +11,7 @@ export type Entrada = {
   loja: boolean;        // terminou todas as etapas de Dados da loja
   equipe: boolean;      // cadastrou pelo menos uma pessoa da equipe
   diagnostico: boolean; // a equipe liberou o Diagnóstico
+  diagnosticoEm: string | null; // quando foi liberado
   livre: boolean;       // a equipe liberou tudo para esta loja
   videoEm: string | null;
   dadosEm: string | null; // quando a loja terminou de mandar tudo
@@ -51,6 +52,17 @@ export const PRAZO_DIAGNOSTICO = 5;
 export const prazoDiagnostico = (dadosEm: string) =>
   diasUteisDepois(new Date(dadosEm).toLocaleDateString("sv-SE", { timeZone: "America/Recife" }), PRAZO_DIAGNOSTICO);
 
+/** Mensagem que a equipe manda no WhatsApp quando o Diagnóstico é liberado. */
+export const mensagemDiagnosticoPronto = (nome: string, site: string) =>
+  `Oiê, ${nome || "tudo bem"}! 🎉 Seu Diagnóstico está pronto!
+
+Ele mostra como a sua loja está hoje: estoque, compras, linhas, fornecedores e a análise do seu Instagram. A partir dele abrem também o seu Plano de Ação e todas as ferramentas da mentoria.
+
+É só entrar no Hub e abrir o Diagnóstico:
+${site}/painel/
+
+Qualquer dúvida, me chama no Fale com a Camilla.`;
+
 export const NOME_REQUISITO: Record<Requisito, string> = {
   video: "assistir ao vídeo de boas-vindas",
   diagnostico: "receber o seu Diagnóstico",
@@ -64,17 +76,18 @@ export function videoVistoNaAba(portalId: string) {
 
 export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean): Promise<Entrada> {
   const sb = supabaseBrowser();
-  const [{ data: e }, { count }, { count: diag }] = await Promise.all([
+  const [{ data: e }, { count }, { data: diag }] = await Promise.all([
     sb.from("portal_entrada").select("video_visto_em, livre, dados_enviados_em").eq("portal_id", portalId).maybeSingle(),
     sb.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),
-    sb.from("loja_diagnostico").select("loja", { count: "exact", head: true }).eq("portal_id", portalId).eq("status", "liberada"),
+    sb.from("loja_diagnostico").select("liberada_em").eq("portal_id", portalId).eq("status", "liberada"),
   ]);
   const pessoas = count ?? 0;
   return {
     video: !!e?.video_visto_em || (comoLoja && videoVistoNaAba(portalId)),
     loja: etapasFeitas,
     equipe: pessoas > 0,
-    diagnostico: (diag ?? 0) > 0,
+    diagnostico: (diag ?? []).length > 0,
+    diagnosticoEm: (diag ?? []).map((d) => d.liberada_em as string | null).filter(Boolean).sort()[0] ?? null,
     livre: !!e?.livre,
     videoEm: e?.video_visto_em ?? null,
     dadosEm: e?.dados_enviados_em ?? null,

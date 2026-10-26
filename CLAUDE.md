@@ -36,6 +36,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Tudo o que a loja cadastra no Hub (pessoas, clientes, lançamentos, notas, arquivos) precisa ter **editar e excluir/remover**:
   a lojista pode errar ou precisar tirar alguém. Excluir sempre com confirmação.
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
+- Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
 - Notion é só leitura.
 - Fuso: America/Recife.
 

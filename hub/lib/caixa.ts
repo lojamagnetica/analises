@@ -6,7 +6,18 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje, moeda } from "@/lib/formato";
 import { MESES, type Respostas } from "@/lib/conteudo";
 
-export type Caixa = { id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null };
+export const FORMAS = [
+  { chave: "pix", nome: "Pix" },
+  { chave: "credito", nome: "Crédito" },
+  { chave: "debito", nome: "Débito" },
+  { chave: "dinheiro", nome: "Dinheiro" },
+  { chave: "crediario", nome: "Crediário" },
+] as const;
+export type Forma = (typeof FORMAS)[number]["chave"];
+/** Reais por forma de pagamento (só as que tiveram valor). */
+export type Pagamentos = Partial<Record<Forma, number>>;
+
+export type Caixa = { id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null; pagamentos: Pagamentos | null };
 export type NovoCaixa = Omit<Caixa, "id"> & { id?: string };
 
 /** Peças por atendimento ideal do método. */
@@ -39,7 +50,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -50,6 +61,7 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
   const linha = {
     portal_id: portalId, loja: c.loja || null, dia: c.dia,
     faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, obs: c.obs?.trim().slice(0, 500) || null,
+    pagamentos: c.pagamentos && Object.keys(c.pagamentos).length ? c.pagamentos : null,
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -72,6 +84,19 @@ export function numeroDe(v: unknown) {
   if (!t) return null;
   const n = Number(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : /^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, "") : t);
   return Number.isFinite(n) ? n : null;
+}
+
+/** Soma das formas de pagamento (0 se nenhuma foi informada). */
+export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduce((s, f) => s + (p?.[f.chave] ?? 0), 0);
+
+/** Total de cada forma no período. */
+export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos {
+  const t: Pagamentos = {};
+  for (const c of lista) for (const f of FORMAS) {
+    const v = c.pagamentos?.[f.chave];
+    if (v) t[f.chave] = (t[f.chave] ?? 0) + v;
+  }
+  return t;
 }
 
 export type Totais = { faturamento: number; vendas: number; pecas: number; dias: number };

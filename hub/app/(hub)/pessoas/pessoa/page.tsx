@@ -9,6 +9,8 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { LETRAS, buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, retornoFeito, retornoExcluir, fichaExcluir } from "@/lib/pessoas";
 import { Excluir } from "@/components/Excluir";
+import { RetornoPerfil } from "@/components/RetornoPerfil";
+import { mensagemRetorno } from "@/lib/perfil-pessoa";
 import { BASE } from "@/lib/config";
 import { dataCurta, dia } from "@/lib/formato";
 
@@ -103,6 +105,17 @@ function Pessoa() {
             <p><b>Evite:</b> {perfil.evitar}</p>
             <p style={{ marginBottom: 0 }}><b>Onde rende mais na loja:</b> {perfil.rende}</p>
             {pr!.segunda && <p className="ajuda">Tem traços de {PERFIS[pr!.segunda].nome}: {PERFIS[pr!.segunda].resumo.toLowerCase()}</p>}
+          </div>
+          <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)", gridColumn: "1 / -1" }}>
+            <h2 style={{ marginTop: 0 }}>Retorno do teste para {p.nome.split(" ")[0]}</h2>
+            <p className="mudo" style={{ marginTop: -4 }}>Mande para ela o que o teste mostrou: os diferenciais, os desafios e como usar isso a seu favor. É um jeito de agradecer e dar vontade de continuar participando.</p>
+            <div className="linha" style={{ gap: 8 }}>
+              <Copiar texto={mensagemRetorno(p.nome.split(" ")[0], portal.loja, pr!.letra, pr!.segunda)} rotulo="Copiar a mensagem" />
+              <a className="btn p peq" href={`https://wa.me/?text=${encodeURIComponent(mensagemRetorno(p.nome.split(" ")[0], portal.loja, pr!.letra, pr!.segunda))}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
+            </div>
+            <details className="mt"><summary style={{ cursor: "pointer" }}>Ver o que ela vai receber</summary>
+              <div className="mt"><RetornoPerfil nome={p.nome.split(" ")[0]} letra={pr!.letra} segunda={pr!.segunda} /></div>
+            </details>
           </div>
         </div>
       )}

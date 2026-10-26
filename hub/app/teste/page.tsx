@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PerguntasDisc, faltamDisc, type MaisMenos, type Pergunta } from "@/components/PerguntasDisc";
+import { RetornoPerfil } from "@/components/RetornoPerfil";
+import { pontuarMaisMenos, principal } from "@/lib/pessoas";
 
 type Aberto = { nome: string; loja: string; perguntas: Pergunta[] };
 
@@ -25,11 +27,17 @@ function Teste() {
 
   if (t === undefined) return <div className="carregando">Carregando…</div>;
   if (pronto) {
+    // A mesma conta do banco: o resultado aparece na hora para quem respondeu.
+    const pr = principal(pontuarMaisMenos(r.mais.filter((x): x is NonNullable<typeof x> => !!x), r.menos.filter((x): x is NonNullable<typeof x> => !!x)));
     return (
-      <div className="card" style={{ textAlign: "center" }}>
-        <h2>Pronto, {t?.nome}!</h2>
-        <p className="mudo">Suas respostas foram enviadas. Obrigada por responder com sinceridade.</p>
-      </div>
+      <>
+        <div className="card mb" style={{ textAlign: "center" }}>
+          <h2 style={{ margin: "0 0 4px" }}>Pronto, {t?.nome}!</h2>
+          <p className="mudo" style={{ margin: 0 }}>Suas respostas foram enviadas. Obrigada por responder com sinceridade. Veja o que o seu teste mostrou:</p>
+        </div>
+        {pr && <RetornoPerfil nome={t?.nome ?? ""} letra={pr.letra} segunda={pr.segunda} />}
+        <p className="ajuda" style={{ textAlign: "center" }}>Tire um print desta tela para guardar.</p>
+      </>
     );
   }
   if (!t) {

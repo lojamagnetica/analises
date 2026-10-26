@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
+import { EncontroEditar } from "@/components/EncontroEditar";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora } from "@/lib/formato";
@@ -19,6 +20,7 @@ export default function ReunioesEquipe() {
   return (
     <>
       <Titulo titulo="Reuniões" sub="Próximas reuniões de todos os portais. Para marcar uma reunião, abra o portal da loja em Editar → Reuniões." />
+      <EncontroEditar />
       <div className="card tabela-wrap">
         <table className="tabela">
           <thead><tr><th>Quando</th><th>Loja</th><th>Tema</th><th>Status</th><th /></tr></thead>

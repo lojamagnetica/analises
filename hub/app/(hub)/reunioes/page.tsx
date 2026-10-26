@@ -1,6 +1,7 @@
 "use client";
 
 import { Titulo } from "@/components/Titulo";
+import { EncontroGrupo } from "@/components/EncontroGrupo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora } from "@/lib/formato";
@@ -18,6 +19,7 @@ export default function Reunioes() {
   return (
     <>
       <Titulo titulo="Reuniões individuais" sub="As reuniões aparecem aqui sozinhas assim que são marcadas na agenda. Depois do encontro, a gravação fica disponível." />
+      {portal.tipo === "Mentoria" && <EncontroGrupo />}
       {portal.meet_url && (
         <div className="card mb linha entre">
           <div><b>Link fixo do Meet</b><div className="mudo">{portal.meet_url}</div></div>

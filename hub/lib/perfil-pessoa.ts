@@ -14,8 +14,17 @@ export const RELATORIO_PERFIL: Record<Letra, TextoPerfil> = {
     sintese: "Seu perfil é orientado a resultado. Você se motiva com objetivos claros, toma decisões com rapidez e assume a iniciativa diante de desafios.",
     venda: {
       diferenciais: ["Agilidade no atendimento e na tomada de decisão", "Foco em meta e em resultado mensurável", "Iniciativa para resolver situações sem depender de orientação"],
-      atencao: ["Respeitar o tempo de decisão de clientes mais cautelosas", "Cuidar do tom na comunicação com a equipe", "Manter constância nas tarefas de rotina"],
-      potencializar: ["Acompanhe diariamente a sua meta individual e o seu PA", "Antes de apresentar a oferta, faça mais uma pergunta sobre a necessidade da cliente", "Assuma o protagonismo nos dias de maior movimento e nas ações de venda"],
+      atencao: [
+        "Respeitar o tempo de decisão de clientes mais cautelosas",
+        "Cuidar do tom na comunicação com a equipe",
+        "Organização: na pressa de vender, peças, provador e combinados podem ficar para depois, e isso sobrecarrega quem trabalha com você",
+      ],
+      potencializar: [
+        "Acompanhe diariamente a sua meta individual e o seu PA",
+        "Antes de apresentar a oferta, faça mais uma pergunta sobre a necessidade da cliente",
+        "Feche cada atendimento com tudo no lugar: peças na arara, provador livre e cadastro feito. Organização também é resultado de equipe",
+        "Assuma o protagonismo nos dias de maior movimento e nas ações de venda",
+      ],
     },
     apoio: {
       diferenciais: ["Agilidade para resolver pendências", "Foco em prazo e em entrega", "Iniciativa e autonomia na função"],

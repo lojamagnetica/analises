@@ -10,7 +10,8 @@ import { ETAPAS, SITUACOES, chaveSituacao, type Campo, type Respostas, type Situ
 import { salvarEtapa } from "@/lib/acoes";
 import { dataCurta } from "@/lib/formato";
 import { relatoriosNoDrive } from "@/lib/gestao";
-import { abrirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel } from "@/lib/relatorios";
+import { RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
+import { Excluir } from "@/components/Excluir";
 
 /** Um campo da etapa. Os dados (números, relatório) têm as 3 opções: tenho, estimativa, ainda não tenho. */
 function CampoEtapa({ c, r, padrao }: { c: Campo; r: Respostas; padrao: string }) {
@@ -55,7 +56,7 @@ function CampoEtapa({ c, r, padrao }: { c: Campo; r: Respostas; padrao: string }
   );
 }
 
-/** Etapa de estoque: subir os relatórios do sistema e a mensagem pronta para pedir ao suporte. */
+/** Etapa de estoque: um lugar para cada relatório do sistema e a mensagem pronta para pedir ao suporte. */
 function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome: string; loja: string; aoMudar: (n: number) => void }) {
   const { dados, recarregar } = useDados(async () => {
     const l = await listarRelatorios(portalId);
@@ -63,30 +64,62 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
     aoMudar(l.length + drive.length);
     return Object.assign(l, { drive });
   }, [portalId]);
-  const [enviando, setEnviando] = useState(false);
+  const [enviando, setEnviando] = useState<string | null>(null);
   const [erro, setErro] = useState("");
   const msg = mensagemSuporte(nome, loja);
+  const subir = async (tipo: TipoRelatorio, arquivos: FileList | null) => {
+    setErro(""); setEnviando(tipo);
+    try { for (const f of [...(arquivos ?? [])]) await subirRelatorio(portalId, f, tipo); recarregar(); } catch (x) { setErro((x as Error).message); }
+    setEnviando(null);
+  };
+  const Lista = ({ tipo }: { tipo: string }) => (
+    <>
+      {(dados ?? []).filter((a) => a.tipo === tipo).map((a) => (
+        <div key={a.caminho} className="linha entre" style={{ padding: "4px 0" }}>
+          <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📎 {a.nome} <small className="mudo">· {tamanhoLegivel(a.tamanho)} · {dataCurta(a.em)}</small></span>
+          <span className="linha" style={{ gap: 10 }}>
+            <button type="button" className="link-loja" onClick={() => abrirRelatorio(a.caminho)}>Abrir</button>
+            <Excluir pergunta={`Excluir o arquivo ${a.nome}?`} fazer={() => excluirRelatorio(a.caminho)} aoFim={recarregar} />
+          </span>
+        </div>
+      ))}
+    </>
+  );
+  const recebidos = RELATORIOS.filter((r) => dados?.some((a) => a.tipo === r.chave)).length;
   return (
     <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 720 }}>
-      <h2 style={{ marginTop: 0 }}>Tem relatório do sistema? Suba aqui</h2>
-      <p className="mudo" style={{ marginTop: -4 }}>Planilha do Excel, CSV, PDF ou até foto da tela. A gente lê e organiza. Os arquivos ficam guardados só para a sua loja e a equipe.</p>
-      <input type="file" accept=".xlsx,.xls,.csv,.ods,.pdf,image/*" multiple disabled={enviando} onChange={async (e) => {
-        setErro(""); setEnviando(true);
-        try { for (const f of [...(e.target.files ?? [])]) await subirRelatorio(portalId, f); recarregar(); } catch (x) { setErro((x as Error).message); }
-        setEnviando(false); e.target.value = "";
-      }} />
-      {enviando && <p className="ajuda">Enviando…</p>}
-      {erro && <div className="aviso mt">{erro}</div>}
-      {!!dados?.length && (
-        <div className="mt">
-          {dados.map((a) => (
-            <div key={a.caminho} className="linha entre marcar" style={{ cursor: "default" }}>
-              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📎 {a.nome} <small className="mudo">· {tamanhoLegivel(a.tamanho)} · {dataCurta(a.em)}</small></span>
-              <button type="button" className="btn s peq" onClick={() => abrirRelatorio(a.caminho)}>Abrir</button>
+      <h2 style={{ marginTop: 0 }}>Os relatórios do seu sistema · {recebidos} de {RELATORIOS.length}</h2>
+      <p className="mudo" style={{ marginTop: -4 }}>São eles que mostram de verdade como a loja está: o que vende, o que está parado e quem são as suas clientes. Pode ser planilha do Excel, CSV, PDF ou até foto da tela. Os arquivos ficam guardados só para a sua loja e a equipe.</p>
+      {RELATORIOS.map((r, i) => {
+        const tem = dados?.some((a) => a.tipo === r.chave);
+        return (
+          <div key={r.chave} style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
+            <div className="linha" style={{ gap: 10, alignItems: "flex-start" }}>
+              <span className={`selo ${tem ? "feito" : "espera"}`}>{tem ? "✓" : i + 1}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <b>{r.titulo}</b>
+                <div className="ajuda" style={{ margin: "2px 0 8px" }}>Precisa ter: {r.oque}</div>
+                <Lista tipo={r.chave} />
+                <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
+                  📎 {tem ? "Subir outro arquivo" : "Subir arquivo"}
+                  <input type="file" hidden accept=".xlsx,.xls,.csv,.ods,.pdf,image/*" multiple disabled={!!enviando} onChange={(e) => { subir(r.chave, e.target.files); e.target.value = ""; }} />
+                </label>
+                {enviando === r.chave && <p className="ajuda">Enviando…</p>}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        );
+      })}
+      <div style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
+        <b>Outros relatórios (opcional)</b>
+        <div className="ajuda" style={{ margin: "2px 0 8px" }}>Compras por fornecedor, contas a receber, vendas por vendedora ou o que mais achar útil.</div>
+        <Lista tipo="outros" />
+        <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
+          📎 Subir arquivo
+          <input type="file" hidden accept=".xlsx,.xls,.csv,.ods,.pdf,image/*" multiple disabled={!!enviando} onChange={(e) => { subir("outros", e.target.files); e.target.value = ""; }} />
+        </label>
+      </div>
+      {erro && <div className="aviso mt">{erro}</div>}
 
       {!!dados?.drive.length && (
         <div className="mt">
@@ -102,7 +135,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
       )}
 
       <details className="mt">
-        <summary style={{ cursor: "pointer" }}><b>Não sabe como tirar o relatório? Peça ao suporte do seu sistema</b></summary>
+        <summary style={{ cursor: "pointer" }}><b>Não sabe como tirar os relatórios? Peça ao suporte do seu sistema</b></summary>
         <p className="mudo">Copie a mensagem e mande no WhatsApp ou no e-mail do suporte. Ela diz exatamente o que pedir.</p>
         <pre style={{ whiteSpace: "pre-wrap", background: "var(--soft)", borderRadius: 12, padding: 14, fontFamily: "inherit", fontSize: 14 }}>{msg}</pre>
         <div className="linha" style={{ gap: 8 }}>
@@ -110,9 +143,8 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
           <a className="btn s peq" href={`https://wa.me/?text=${encodeURIComponent(msg)}`} target="_blank" rel="noopener">Abrir no WhatsApp</a>
         </div>
         <ul className="ajuda" style={{ paddingLeft: 18 }}>
-          <li>Se o suporte só conseguir um, peça o <b>número 1</b>: ele sozinho já mostra a situação do seu estoque.</li>
-          <li>Recebeu? É só subir aqui do jeito que veio.</li>
-          <li>Ainda não tem? Responda as perguntas abaixo estimando e siga a jornada.</li>
+          <li>Recebeu? Suba cada um no lugar certo, do jeito que veio.</li>
+          <li>Não tem sistema ou ainda não conseguiu? Responda as perguntas abaixo estimando e siga a jornada.</li>
         </ul>
       </details>
     </div>

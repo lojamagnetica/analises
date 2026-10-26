@@ -16,8 +16,9 @@ export const ETAPAS: Etapa[] = [
   ] },
   { n: 1, nome: "Primeiros passos", quem: "CS", janela: [0, 7], checks: [
     { chave: "contrato", texto: "Contrato gerado e enviado para assinatura", prazo: 0, acao: "contrato" },
-    { chave: "grupo", texto: "Grupo criado + boas-vindas da Claudia com o horário do onboarding (o vídeo da Camilla fica no Comece aqui do Hub)", prazo: 0, acao: "boasvindas" },
-    { chave: "onboarding_marcado", texto: "Onboarding marcado (até 24h)", prazo: 0, data: true, acao: "boasvindas" },
+    { chave: "grupo", texto: "Grupo individual criado + boas-vindas e envio do contrato (mensagens 1 e 2)", prazo: 0, acao: "boasvindas" },
+    { chave: "onboarding_marcado", texto: "Contrato assinado e onboarding marcado (mensagens 3 e 4)", prazo: 0, data: true, acao: "boasvindas" },
+    { chave: "clube", texto: "Cliente adicionada ao Clube da Loja Magnética (mensagens 5 e 6)", prazo: 1, acao: "boasvindas" },
     { chave: "onboarding", texto: "Onboarding feito e acesso ao Hub enviado na call", prazo: 1, acao: "acesso" },
     { chave: "pendencias", texto: "Mensagem de Pendências enviada no grupo", prazo: 1, acao: "pendencias" },
     { chave: "lembrete", texto: "Lembrete do dia 3 (só o que falta)", prazo: 4, acao: "pendencias" },
@@ -171,23 +172,57 @@ export async function receberPassagem(portalId: string, porNome: string) {
 }
 
 /** Mensagem de boas-vindas que a Claudia manda no grupo assim que cria (com o horário do onboarding, se já marcado). */
-export function mensagemBoasVindas(c: ClienteJornada, quem: string, plano: string | null) {
-  const nome = (c.responsavel ?? "").trim().split(/\s+/)[0];
-  const quando = c.checks.get("onboarding_marcado")?.marcado_para;
-  const dataOnb = quando
-    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(quando))
-    : null;
+/** Meses de cada plano, para as mensagens do CS. */
+const MESES_DO_PLANO: Record<string, number> = { premium: 6, gold: 6, start: 4 };
+
+export type MensagemCS = { chave: string; titulo: string; quando: string; baloes: string[] };
+
+/** As mensagens padrão do CS, na ordem da entrada da cliente. Cada balão é uma mensagem separada no WhatsApp.
+ *  O que o Hub sabe entra sozinho; o resto fica entre colchetes para a CS completar. */
+export function mensagensCS(c: ClienteJornada): MensagemCS[] {
+  const nome = (c.responsavel ?? "").trim().split(/\s+/)[0] || "[NOME]";
+  const meses = c.plano && MESES_DO_PLANO[c.plano] ? `${MESES_DO_PLANO[c.plano]} meses` : "[X MESES]";
+  const marcado = c.checks.get("onboarding_marcado")?.marcado_para;
+  const quando = marcado && !Number.isNaN(new Date(marcado).getTime()) ? marcado : null;
+  const dia = quando ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "long", day: "2-digit", month: "2-digit" }).format(new Date(quando)) : "[DIA]";
+  const hora = quando ? new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", hour: "2-digit", minute: "2-digit" }).format(new Date(quando)) : "[HORÁRIO]";
   return [
-    `Oi${nome ? `, ${nome}` : ""}! Seja muito bem-vinda à Mentoria Loja Magnética${plano ? ` · ${plano}` : ""}!`,
-    "",
-    `Eu sou a ${quem}, do Sucesso do Cliente. Vou te acompanhar em cada etapa da mentoria, e este grupo é o nosso canal para avisos, lembretes e para comemorar as suas vitórias.`,
-    "",
-    `Seu contrato já foi enviado para o e-mail${(c.passagem?.email_contrato ?? c.email) ? ` ${c.passagem?.email_contrato ?? c.email}` : ""}, para assinatura digital. É só abrir o e-mail e assinar.`,
-    "",
-    dataOnb
-      ? `Nosso onboarding está marcado para ${dataOnb} (30 minutos). Nele eu te explico os próximos passos e você já recebe o acesso ao Hub da sua loja, onde estão o vídeo de boas-vindas da Camilla e tudo da mentoria.`
-      : "Agora vamos marcar o nosso onboarding (30 minutos, ainda hoje ou amanhã): me diga o melhor horário para você. Nele eu te explico os próximos passos e você já recebe o acesso ao Hub da sua loja, onde estão o vídeo de boas-vindas da Camilla e tudo da mentoria.",
-    "",
-    "Até lá, qualquer coisa é só me chamar por aqui.",
-  ].join("\n");
+    { chave: "boasvindas", titulo: "1 · Boas-vindas", quando: "Assim que o grupo individual for criado", baloes: [
+      `Olá, ${nome}! Seja muito bem-vinda! 🧡`,
+      "Aqui é a Cláudia, do time da Camilla Ribeiro, e é uma alegria enorme ter você aqui!",
+      "A partir de agora, vou te acompanhar bem de pertinho nessa jornada dentro da Loja Magnética.",
+      `Esse grupo será o nosso canal oficial de acompanhamento, onde vamos centralizar todas as informações, direcionamentos e próximos passos da mentoria durante esses primeiros ${meses}.`,
+      "Para darmos o start, já vou enviar o contrato para assinatura e formalizarmos sua entrada.",
+      "Fique à vontade para falar comigo por aqui para qualquer coisa que precisar. Estou aqui para te ajudar em cada etapa!",
+    ] },
+    { chave: "contrato", titulo: "2 · Envio do contrato", quando: "Assim que o contrato estiver disponível", baloes: [
+      `@${nome}, acabei de enviar o contrato da sua participação na Loja Magnética para o seu e-mail. Para facilitar, vou deixar o link por aqui também:`,
+      "[LINK DO CONTRATO]",
+      "Assim que conseguir assinar, me avisa por aqui, por favor. Depois disso, seguimos com os próximos passos da sua entrada 💛",
+    ] },
+    { chave: "assinado", titulo: "3 · Contrato assinado + marcar o onboarding", quando: "Depois que a cliente assinar (abra o e-mail do suporte e assine também)", baloes: [
+      `Perfeito, ${nome}! Contrato assinado por aqui também!`,
+      "Agora vamos para o próximo passo da sua entrada na Loja Magnética: o nosso onboarding.",
+      "Nesse encontro, vamos alinhar o início da sua jornada, te orientar sobre como vai funcionar o acompanhamento e organizar os próximos passos por aqui.",
+      "Teríamos horário [DIA] às [X]h e [DIA] às [Y]h. Qual fica melhor pra você?",
+    ] },
+    { chave: "agendado", titulo: "4 · Onboarding agendado", quando: "Depois de confirmar o horário (marque o horário no checklist para entrar aqui sozinho)", baloes: [
+      `Perfeito, ${nome}! Seu Onboarding ficou agendado para ${dia}, às ${hora}. 🧲`,
+      "Esse será o nosso primeiro passo para organizar a sua jornada dentro da Loja Magnética e garantir que você saiba exatamente como aproveitar o acompanhamento desde o início.",
+      "Segue o link do nosso Onboarding:",
+      "[LINK DO ONBOARDING]",
+    ] },
+    { chave: "clube_aviso", titulo: "5 · Entrada no Clube", quando: "No grupo individual, antes de adicionar ao Clube", baloes: [
+      "Agora vou te adicionar ao nosso Clube da Loja Magnética 🧲",
+      "É nesse grupo que você vai estar junto com os outros lojistas que fazem parte da mentoria e também vai receber todos os avisos importantes sobre o acompanhamento, como datas e horários dos nossos encontros 🚀",
+    ] },
+    { chave: "clube_boasvindas", titulo: "6 · Boas-vindas no Clube", quando: "No grupo do Clube, logo depois de adicionar", baloes: [
+      `Seja muito bem-vinda à Loja Magnética, ${nome}! 🧲✨`,
+      "É uma alegria enorme te receber no nosso Clube!",
+      "Você agora faz parte de um grupo de lojistas que vivem os mesmos desafios e objetivos que você. Aqui a gente cresce junto!",
+      `@${nome}, se apresenta aqui pra gente? Conta de onde você é, qual é a sua loja e deixa seu @ do Insta pra gente te acompanhar de pertinho!`,
+      "Time, bora acolher nossa nova magnética? 👇",
+      "Deixa aqui seu oi e seu @ também pra darmos as boas-vindas com muito carinho!",
+    ] },
+  ];
 }

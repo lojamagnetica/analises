@@ -121,6 +121,7 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
       itens: [
         { href: "/acoes", rotulo: "Ações do Mês", icone: "bolt" },
         { href: "/scripts", rotulo: "Scripts de venda", icone: "chat" },
+        { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "kanban" },
       ],
     },
     {
@@ -140,7 +141,6 @@ function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consult
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
         { href: "/conteudo/resultados", rotulo: "Resultados", icone: "chart" },
         { href: "/conteudo/desafio", rotulo: "Desafio Loja Viral", icone: "spark" },
-        { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "kanban" },
       ],
     },
   );

@@ -45,7 +45,7 @@ export default function Estudio() {
       </div>
 
       <div className="linha entre mb" style={{ gap: 10, flexWrap: "wrap" }}>
-        <input type="search" placeholder="Buscar pelo título ou código da aula…" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ maxWidth: 360 }} />
+        <input type="search" placeholder="Buscar pelo título ou código da aula…" value={busca} onChange={(e) => setBusca(e.target.value)} style={{ width: "100%", maxWidth: 360 }} />
         <button type="button" className="btn p" onClick={() => setNovo(!novo)}>+ Novo documento</button>
       </div>
 

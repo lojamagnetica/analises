@@ -35,6 +35,8 @@ export type Hub = {
   foto: string | null;
   /** Tem o "Meu estúdio" (espaço particular de criação de produtos e roteiros). */
   estudio: boolean;
+  /** Acesso só do caixa: vê só o Fechamento de caixa da loja. */
+  soCaixa: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -87,7 +89,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -118,6 +120,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       email: perfil?.email ?? user.email ?? "",
       foto: perfil?.foto ?? null,
       estudio: !!perfil?.estudio,
+      soCaixa: !equipe && !!perfil?.so_caixa,
       equipe,
       portal,
       pers,
@@ -179,8 +182,10 @@ export function useEquipe() {
 }
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal">) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
+  // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
+  if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.
   if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";

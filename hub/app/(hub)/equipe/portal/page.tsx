@@ -105,7 +105,7 @@ function EditarPortal() {
     const sb = supabaseBrowser();
     const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }] = await Promise.all([
       sb.from("portais").select("*").eq("id", id).maybeSingle(),
-      sb.from("perfis").select("id, nome, email, ultimo_acesso").eq("portal_id", id),
+      sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa").eq("portal_id", id),
       sb.from("plano_itens").select("id, mes, texto, feito").eq("portal_id", id).order("mes").order("ordem"),
       sb.from("reunioes").select("*").eq("portal_id", id).order("data", { ascending: false }),
       sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", id),
@@ -178,7 +178,18 @@ function EditarPortal() {
           {dados.pessoas.length === 0 && <p className="mudo">Ninguém ainda. Crie o acesso abaixo.</p>}
           {dados.pessoas.map((u) => (
             <div key={u.id} className="linha entre marcar" style={{ cursor: "default" }}>
-              <div><b>{u.nome}</b><div className="mudo" style={{ fontSize: 13 }}>{u.email} · último acesso {haQuanto(u.ultimo_acesso)}</div></div>
+              <div>
+                <b>{u.nome}</b>{u.so_caixa && <span className="selo andamento" style={{ marginLeft: 6 }}>só caixa</span>}
+                <div className="mudo" style={{ fontSize: 13 }}>{u.email} · último acesso {haQuanto(u.ultimo_acesso)}</div>
+                <label className="linha" style={{ gap: 6, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
+                  <input type="checkbox" checked={!!u.so_caixa} onChange={async (e) => {
+                    const { error } = await supabaseBrowser().from("perfis").update({ so_caixa: e.target.checked }).eq("id", u.id);
+                    setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${u.nome ?? "A pessoa"} agora vê só o Fechamento de caixa.` : `${u.nome ?? "A pessoa"} voltou a ver o portal inteiro.` });
+                    recarregar();
+                  }} />
+                  Só o fechamento de caixa (quem fecha o caixa não vê o resto do portal)
+                </label>
+              </div>
               <div className="linha" style={{ flexWrap: "nowrap" }}>
                 <button className="btn s peq" type="button" onClick={() => acesso(async () => {
                   try { return { link: await gerarLink(u.email ?? "", u.nome ?? "") }; } catch (e) { return { aviso: (e as Error).message }; }

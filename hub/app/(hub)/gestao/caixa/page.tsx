@@ -44,7 +44,7 @@ function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vend
 
 function FechamentoCaixa() {
   const params = useSearchParams();
-  const { portal } = usePortal();
+  const { portal, soCaixa } = usePortal();
   const lojas = portal.lojas ?? [];
   const varias = lojas.length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
@@ -249,7 +249,7 @@ function FechamentoCaixa() {
               {f.soTotal ? "Lançar por vendedora" : "Lançar só o total da loja"}
             </button></>
           )}
-          {!equipe.length && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
+          {!equipe.length && !soCaixa && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
@@ -289,7 +289,7 @@ function FechamentoCaixa() {
           <b style={{ minWidth: 150, textAlign: "center" }}>{nomeMes(mes)}</b>
           <button type="button" className="btn s peq" aria-label="Próximo mês" disabled={noMesAtual} onClick={() => setMes(somarMes(mes, 1))}>›</button>
         </div>
-        <Link className="btn s peq" href={`/gestao/resultado?mes=${mes}`}>Ver o resultado do mês</Link>
+        {!soCaixa && <Link className="btn s peq" href={`/gestao/resultado?mes=${mes}`}>Ver o resultado do mês</Link>}
       </div>
 
       {varias && (

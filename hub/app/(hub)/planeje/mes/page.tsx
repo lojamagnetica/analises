@@ -13,7 +13,7 @@ import { buscarAcoes } from "@/lib/acoes-mes";
 import { fimDoMes, mesValido } from "@/lib/caixa";
 import {
   CRESCIMENTO_PADRAO, RESULTADOS, STATUS_PLANO, buscarPlano, completar, faltaNoPlano, metaDoPlano, nomeMes, prazoDoPlano, salvarPlano,
-  semanasDoMes, sugerirSemanas, vendaDoAnoPassado, type DadosPlano, type StatusPlano,
+  diasDeLoja, metasDoTime, semanasDoMes, sugerirSemanas, vendaDoAnoPassado, type DadosPlano, type StatusPlano,
 } from "@/lib/plano-mes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
@@ -47,19 +47,21 @@ function Plano({ mes }: { mes: string }) {
   const anoPassado = Number(mes.slice(0, 4)) - 1;
   const { dados: base, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [linha, { data: datas }, { data: antigo }, acoes, venda, { data: diag }] = await Promise.all([
+    const [linha, { data: datas }, { data: antigo }, acoes, venda, { data: diag }, { data: time }] = await Promise.all([
       buscarPlano(portal.id, mes),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", nMes).order("dia", { nullsFirst: true }),
       sb.from("planeje").select("bloco, texto").eq("portal_id", portal.id).eq("mes", nMes),
       buscarAcoes().catch(() => []),
       vendaDoAnoPassado(portal.id, mes).catch(() => null),
       sb.from("loja_diagnostico").select("dados").eq("portal_id", portal.id).eq("status", "liberada"),
+      sb.from("loja_equipe").select("id, nome").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
     ]);
     const fim = fimDoMes(mes);
     const opcoes = acoes.filter((a) => a.publicada && (a.venda_inicio ?? a.data_acao) <= fim && a.fim >= `${mes}-01`);
     const linhasDiag = (diag ?? []).flatMap((d) => ((d.dados as { abc?: { linhas?: { nome: string }[] } })?.abc?.linhas ?? []).map((l) => l.nome)).slice(0, 6);
     return {
       linha, datas: (datas ?? []) as { dia: number | null; titulo: string }[], venda, opcoes, linhasDiag,
+      time: (time ?? []) as { id: string; nome: string }[],
       antigo: (antigo ?? []).filter((b) => (b.texto as string).trim()) as { bloco: string; texto: string }[],
     };
   }, [portal.id, mes]);
@@ -99,7 +101,9 @@ function Plano({ mes }: { mes: string }) {
   const muda = (x: Partial<DadosPlano>) => setD({ ...d, ...x });
   const meta = metaDoPlano(d);
   const semanas = semanasDoMes(mes);
-  const diasNoMes = semanas[3].ate;
+  // Domingo não conta: a meta do dia é sobre os dias de loja aberta.
+  const diasNoMes = diasDeLoja(`${mes}-01`, fimDoMes(mes));
+  const metas = metasDoTime(meta, base.time.map((p) => p.id), d.metas);
   const prazo = prazoDoPlano(mes);
   const falta = faltaNoPlano(d);
   const st = STATUS_PLANO[status];
@@ -139,7 +143,27 @@ function Plano({ mes }: { mes: string }) {
           <div className="grade g3 mt" style={NUM}>
             <div className="kpi"><small>Meta do mês</small><b style={{ fontSize: 24 }}>{moeda(meta)}</b></div>
             <div className="kpi"><small>Por semana</small><b style={{ fontSize: 24 }}>{moeda(meta / 4)}</b></div>
-            <div className="kpi"><small>Por dia ({diasNoMes} dias)</small><b style={{ fontSize: 24 }}>{moeda(meta / diasNoMes)}</b></div>
+            <div className="kpi"><small>Por dia ({diasNoMes} dias, sem domingos)</small><b style={{ fontSize: 24 }}>{moeda(meta / diasNoMes)}</b></div>
+          </div>
+        )}
+        {meta && base.time.length > 0 && (
+          <div className="mt">
+            <div className="linha entre">
+              <b>Meta de cada vendedora</b>
+              {d.metas && Object.keys(d.metas).length > 0 && (
+                <button type="button" className="link-loja" onClick={() => muda({ metas: {} })}>Voltar a dividir por igual</button>
+              )}
+            </div>
+            <p className="ajuda" style={{ marginTop: 2 }}>O Hub divide a meta da loja por igual. Mude o valor de quem precisar: o resto se divide entre as outras. Quem não vende (estoque, caixa), coloque 0.</p>
+            <div className="grade g3" style={{ gap: "0 12px" }}>
+              {base.time.map((p) => (
+                <CampoReais key={p.id} rotulo={`${p.nome.split(" ")[0]}${d.metas?.[p.id] != null ? " (ajustada)" : ""}`} valor={metas[p.id] ?? 0}
+                  mudar={(v) => muda({ metas: { ...(d.metas ?? {}), [p.id]: v } })} />
+              ))}
+            </div>
+            {Object.values(metas).reduce((a, b) => a + b, 0) > meta + 1 && (
+              <div className="aviso mt">As metas das vendedoras somam {moeda(Object.values(metas).reduce((a, b) => a + b, 0))}, mais que a meta da loja ({moeda(meta)}).</div>
+            )}
           </div>
         )}
       </Passo>

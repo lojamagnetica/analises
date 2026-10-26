@@ -11,7 +11,7 @@ import {
   somaPagamentos, somar, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
+import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 
@@ -60,7 +60,9 @@ function FechamentoCaixa() {
       supabaseBrowser().from("loja_equipe").select("id, nome").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
       buscarPlano(portal.id, mes).catch(() => null),
     ]);
-    return { caixa, equipe: (equipe ?? []) as { id: string; nome: string }[], meta: plano ? metaDoPlano(plano.dados) : null };
+    const time = (equipe ?? []) as { id: string; nome: string }[];
+    const meta = plano ? metaDoPlano(plano.dados) : null;
+    return { caixa, equipe: time, meta, metas: metasDoTime(meta, time.map((p) => p.id), plano?.dados.metas) };
   }, [portal.id, mes]);
   if (!tudo) return <Carregando />;
   const dados = tudo.caixa;
@@ -344,8 +346,8 @@ function FechamentoCaixa() {
               <tbody>
                 {vendMes.map((v) => {
                   const i = indicadores({ ...v, dias: 1 });
-                  // A meta da loja dividida por igual entre as vendedoras.
-                  const meta = tudo.meta && v.pessoa_id && equipe.length ? tudo.meta / equipe.length : null;
+                  // A meta de cada vendedora (ajustada no PLANEJE AQUI ou a meta da loja dividida por igual).
+                  const meta = v.pessoa_id ? tudo.metas[v.pessoa_id] || null : null;
                   return (
                     <tr key={v.pessoa_id ?? OUTRAS} style={NUM}>
                       <td><b>{v.nome}</b></td>

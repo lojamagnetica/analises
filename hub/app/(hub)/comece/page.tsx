@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { BASE } from "@/lib/config";
 import { buscarVideo, idYoutube, marcarVideoVisto, salvarVideo, type VideoBoasVindas } from "@/lib/entrada";
 
 type YTPlayer = { destroy: () => void };
@@ -19,10 +20,14 @@ const PASSOS = [
   { n: 3, titulo: "Cadastrar a sua equipe", abre: "Gestão de pessoas" },
 ];
 
+/** Vídeo de boas-vindas que vem junto com o Hub. A equipe pode trocar pelo link de outro vídeo. */
+const VIDEO_PADRAO: VideoBoasVindas = { url: `${BASE}/video/boas-vindas.mp4`, segundos: 179 };
+
 /** Vídeo do YouTube que avisa quando terminou. Se a API do YouTube não carregar, vale o tempo do vídeo. */
 function Video({ v, aoTerminar }: { v: VideoBoasVindas; aoTerminar: () => void }) {
   const yt = idYoutube(v.url);
-  const [restam, setRestam] = useState<number | null>(yt ? null : v.segundos);
+  const arquivo = !yt && /\.mp4(\?|$)/i.test(v.url);
+  const [restam, setRestam] = useState<number | null>(yt || arquivo ? null : v.segundos);
   const fim = useRef(aoTerminar);
   fim.current = aoTerminar;
 
@@ -56,6 +61,16 @@ function Video({ v, aoTerminar }: { v: VideoBoasVindas; aoTerminar: () => void }
     const t = setTimeout(() => setRestam(restam - 1), 1000);
     return () => clearTimeout(t);
   }, [restam]);
+
+  if (arquivo) {
+    return (
+      <>
+        <video src={v.url} poster={`${BASE}/video/boas-vindas.jpg`} controls playsInline preload="none" onEnded={() => fim.current()}
+          style={{ display: "block", width: "100%", aspectRatio: "16 / 9", borderRadius: 16, background: "#000" }} />
+        <p className="ajuda">No celular, gire a tela e use a tela cheia para ler melhor.</p>
+      </>
+    );
+  }
 
   return (
     <>
@@ -97,7 +112,7 @@ export default function Comece() {
   const [indo, setIndo] = useState(false);
   const { dados, recarregar } = useDados(async () => ({ v: await buscarVideo() }), []);
   if (!dados) return <Carregando />;
-  const v = dados.v;
+  const v = dados.v ?? VIDEO_PADRAO;
   const visto = !!entrada?.video;
   const pode = visto || terminou || !v;
   const quem = (typeof pers.get(2)?.respostas?.seu_nome === "string" && (pers.get(2)?.respostas?.seu_nome as string)) || (comoLoja ? portal.responsavel : null) || primeiroNome(nome);

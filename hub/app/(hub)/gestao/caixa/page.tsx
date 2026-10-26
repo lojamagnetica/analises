@@ -7,14 +7,24 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
-  FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa, somaPagamentos,
-  somar, somarMes, somarPagamentos, type Caixa, type Forma, type Pagamentos,
+  FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
+  somaPagamentos, somar, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 
-type Form = { id?: string; dia: string; loja: string; faturamento: string; vendas: string; pecas: string; obs: string; pag: Partial<Record<Forma, string>> };
-const novo = (loja: string): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {} });
+type Numeros = { faturamento: string; vendas: string; pecas: string };
+type Form = {
+  id?: string; dia: string; loja: string; faturamento: string; vendas: string; pecas: string; obs: string; pag: Partial<Record<Forma, string>>;
+  /** Por vendedora (chave = id da pessoa ou "outras"). */
+  vend: Record<string, Numeros>;
+  /** Lançar só o total da loja, sem dividir. */
+  soTotal: boolean;
+};
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal });
+const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
 
@@ -43,20 +53,49 @@ function FechamentoCaixa() {
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
-  const { dados, recarregar } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
-  if (!dados) return <Carregando />;
+  const [enviar, setEnviar] = useState<string | null>(null);
+  const { dados: tudo, recarregar } = useDados(async () => {
+    const [caixa, { data: equipe }, plano] = await Promise.all([
+      buscarCaixa(portal.id, mes),
+      supabaseBrowser().from("loja_equipe").select("id, nome").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
+      buscarPlano(portal.id, mes).catch(() => null),
+    ]);
+    return { caixa, equipe: (equipe ?? []) as { id: string; nome: string }[], meta: plano ? metaDoPlano(plano.dados) : null };
+  }, [portal.id, mes]);
+  if (!tudo) return <Carregando />;
+  const dados = tudo.caixa;
+  const equipe = tudo.equipe;
+  // Com time cadastrado, o dia é lançado por vendedora e o total da loja é a soma.
+  const porPessoa = equipe.length > 0 && !f.soTotal;
+  const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
+  const linhasVend: LinhaVendedora[] = pessoas.map((p) => ({
+    pessoa_id: p.chave === OUTRAS ? null : p.chave, nome: p.chave === OUTRAS ? "Outras vendas" : p.nome,
+    faturamento: numeroDe(f.vend[p.chave]?.faturamento) ?? 0, vendas: numeroDe(f.vend[p.chave]?.vendas) ?? 0, pecas: numeroDe(f.vend[p.chave]?.pecas) ?? 0,
+  }));
+  const somaVend = linhasVend.reduce((a, v) => ({ faturamento: a.faturamento + v.faturamento, vendas: a.vendas + v.vendas, pecas: a.pecas + v.pecas }), { faturamento: 0, vendas: 0, pecas: 0 });
+  const mudarVend = (chave: string, campo: keyof Numeros, v: string) =>
+    setF({ ...f, vend: { ...f.vend, [chave]: { ...(f.vend[chave] ?? { faturamento: "", vendas: "", pecas: "" }), [campo]: v } } });
+  /** O mês até o dia (mesma loja), com a meta do plano, para a mensagem do WhatsApp. */
+  const mesAte = (c: Pick<Caixa, "dia" | "loja">, extra?: number) => {
+    const ate = dados.filter((x) => x.dia <= c.dia && x.dia.slice(0, 7) === c.dia.slice(0, 7) && (x.loja ?? "") === (c.loja ?? ""));
+    const s = somar(ate);
+    return { faturamento: s.faturamento + (extra ?? 0), dias: s.dias + (extra != null ? 1 : 0), meta: c.dia.slice(0, 7) === mes ? tudo.meta : null };
+  };
+  const linkWhats = (c: Omit<Caixa, "id">, mesInfo: ReturnType<typeof mesAte>) =>
+    `https://wa.me/?text=${encodeURIComponent(mensagemCaixa(c, portal.loja, mesInfo))}`;
+  const vendMes = somarVendedoras(dados.filter((c) => daLoja(c, filtro)));
 
   const lista = dados.filter((c) => daLoja(c, filtro));
   const t = indicadores(somar(lista));
   const noMesAtual = mes === mesDeHoje();
-  const valor = { faturamento: numeroDe(f.faturamento) ?? 0, vendas: numeroDe(f.vendas) ?? 0, pecas: numeroDe(f.pecas) ?? 0 };
+  const valor = porPessoa ? somaVend : { faturamento: numeroDe(f.faturamento) ?? 0, vendas: numeroDe(f.vendas) ?? 0, pecas: numeroDe(f.pecas) ?? 0 };
   const pag: Pagamentos = {};
   for (const x of FORMAS) { const v = numeroDe(f.pag[x.chave]); if (v) pag[x.chave] = v; }
   const somaPag = somaPagamentos(pag);
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const formasMes = somarPagamentos(lista);
   const somaMes = somaPagamentos(formasMes);
-  const mudar = (campo: Exclude<keyof Form, "pag">) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [campo]: e.target.value });
+  const mudar = (campo: "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "obs") => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [campo]: e.target.value });
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -70,6 +109,14 @@ function FechamentoCaixa() {
     if (faturamento < 0 || vendas < 0 || pecas < 0 || FORMAS.some((x) => (pag[x.chave] ?? 0) < 0)) return setErro("Os números não podem ser negativos.");
     if (difere && !confirm(`A soma das formas de pagamento (${moeda(somaPag)}) está diferente do faturamento (${moeda(faturamento)}). Salvar assim mesmo?`)) return;
     if (!Number.isInteger(vendas) || !Number.isInteger(pecas)) return setErro("Vendas e peças são números inteiros.");
+    if (porPessoa) {
+      for (const v of linhasVend) {
+        if (v.faturamento < 0 || v.vendas < 0 || v.pecas < 0) return setErro(`${v.nome}: os números não podem ser negativos.`);
+        if (!Number.isInteger(v.vendas) || !Number.isInteger(v.pecas)) return setErro(`${v.nome}: vendas e peças são números inteiros.`);
+        if (v.faturamento > 0 && v.vendas === 0) return setErro(`${v.nome}: teve faturamento, informe quantas vendas foram.`);
+        if (v.vendas > 0 && v.pecas === 0) return setErro(`${v.nome}: informe quantas peças saíram.`);
+      }
+    }
     if (faturamento > 0 && vendas === 0) return setErro("Teve faturamento: informe quantas vendas foram.");
     if (vendas > 0 && pecas === 0) return setErro("Informe quantas peças saíram nessas vendas.");
     const loja = varias ? f.loja : null;
@@ -83,9 +130,16 @@ function FechamentoCaixa() {
     }
     setSalvando(true);
     try {
-      await salvarCaixa(portal.id, { id, loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs, pagamentos: pag });
+      const vendedoras = porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null;
+      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras };
+      await salvarCaixa(portal.id, { id, ...salvo });
+      // Mês até este dia, sem contar a versão antiga do mesmo dia.
+      const antes = dados!.filter((x) => x.id !== id);
+      const ate = antes.filter((x) => x.dia <= f.dia && x.dia.slice(0, 7) === f.dia.slice(0, 7) && (x.loja ?? "") === (loja ?? ""));
+      const s = somar(ate);
+      setEnviar(linkWhats(salvo, { faturamento: s.faturamento + faturamento, dias: s.dias + 1, meta: f.dia.slice(0, 7) === mes ? tudo!.meta : null }));
       setAviso(`Fechamento de ${dia(f.dia)} salvo.`);
-      setF(novo(f.loja));
+      setF(novo(f.loja, f.soTotal));
       if (f.dia.slice(0, 7) !== mes) setMes(f.dia.slice(0, 7));
       else recarregar();
     } catch (x) {
@@ -96,9 +150,12 @@ function FechamentoCaixa() {
   }
 
   function editar(c: Caixa) {
-    setErro(""); setAviso("");
+    setErro(""); setAviso(""); setEnviar(null);
     setF({ id: c.id, dia: c.dia, loja: c.loja ?? "", faturamento: texto(c.faturamento), vendas: String(c.vendas), pecas: String(c.pecas), obs: c.obs ?? "",
-      pag: Object.fromEntries(FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => [x.chave, texto(c.pagamentos![x.chave]!)])) });
+      pag: Object.fromEntries(FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => [x.chave, texto(c.pagamentos![x.chave]!)])),
+      vend: Object.fromEntries((c.vendedoras ?? []).map((v) => [v.pessoa_id ?? OUTRAS, { faturamento: texto(v.faturamento), vendas: String(v.vendas), pecas: String(v.pecas) }])),
+      // Dia antigo lançado só no total continua só no total.
+      soTotal: !c.vendedoras?.length && c.faturamento > 0 });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -106,7 +163,7 @@ function FechamentoCaixa() {
     if (!confirm(`Tirar o fechamento de ${dia(c.dia)}${c.loja ? ` da ${c.loja}` : ""}?`)) return;
     try {
       await removerCaixa(c.id);
-      if (f.id === c.id) setF(novo(f.loja));
+      if (f.id === c.id) setF(novo(f.loja, f.soTotal));
       recarregar();
     } catch (x) {
       setErro((x as Error).message);
@@ -115,12 +172,12 @@ function FechamentoCaixa() {
 
   return (
     <>
-      <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: faturamento, vendas, peças e formas de pagamento. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
+      <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: o que cada vendedora vendeu e as formas de pagamento. Depois é só mandar no WhatsApp. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
 
       <form className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }} onSubmit={salvar}>
         <div className="linha entre">
           <h3 style={{ margin: 0 }}>{f.id ? `Corrigindo ${dia(f.dia)}` : "Lançar o dia"}</h3>
-          {f.id && <button type="button" className="btn s peq" onClick={() => setF(novo(f.loja))}>Cancelar</button>}
+          {f.id && <button type="button" className="btn s peq" onClick={() => setF(novo(f.loja, f.soTotal))}>Cancelar</button>}
         </div>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0 12px" }}>
           <div>
@@ -136,20 +193,64 @@ function FechamentoCaixa() {
               </select>
             </div>
           )}
-          <div>
-            <label className="rotulo" htmlFor="cx-fat">Faturamento (R$)</label>
-            <input id="cx-fat" type="text" inputMode="decimal" placeholder="Ex.: 2.340,00" value={f.faturamento} onChange={mudar("faturamento")} style={NUM} />
-          </div>
-          <div>
-            <label className="rotulo" htmlFor="cx-vendas">Número de vendas</label>
-            <input id="cx-vendas" type="text" inputMode="numeric" placeholder="Ex.: 12" value={f.vendas} onChange={mudar("vendas")} style={NUM} />
-          </div>
-          <div>
-            <label className="rotulo" htmlFor="cx-pecas">Peças vendidas</label>
-            <input id="cx-pecas" type="text" inputMode="numeric" placeholder="Ex.: 25" value={f.pecas} onChange={mudar("pecas")} style={NUM} />
-          </div>
+          {!porPessoa && (
+            <>
+              <div>
+                <label className="rotulo" htmlFor="cx-fat">Faturamento (R$)</label>
+                <input id="cx-fat" type="text" inputMode="decimal" placeholder="Ex.: 2.340,00" value={f.faturamento} onChange={mudar("faturamento")} style={NUM} />
+              </div>
+              <div>
+                <label className="rotulo" htmlFor="cx-vendas">Número de vendas</label>
+                <input id="cx-vendas" type="text" inputMode="numeric" placeholder="Ex.: 12" value={f.vendas} onChange={mudar("vendas")} style={NUM} />
+              </div>
+              <div>
+                <label className="rotulo" htmlFor="cx-pecas">Peças vendidas</label>
+                <input id="cx-pecas" type="text" inputMode="numeric" placeholder="Ex.: 25" value={f.pecas} onChange={mudar("pecas")} style={NUM} />
+              </div>
+            </>
+          )}
         </div>
-        <div className="ajuda">Vendas = atendimentos que viraram venda (cupons). Peças = total de peças dessas vendas.</div>
+        {porPessoa && (
+          <div className="tabela-wrap mt">
+            <table className="tabela">
+              <thead><tr><th>Quem vendeu</th><th>Faturamento (R$)</th><th>Vendas</th><th>Peças</th><th /></tr></thead>
+              <tbody>
+                {pessoas.map((p, n) => {
+                  const v = linhasVend[n];
+                  return (
+                    <tr key={p.chave}>
+                      <td><b>{p.nome}</b></td>
+                      {(["faturamento", "vendas", "pecas"] as const).map((campo) => (
+                        <td key={campo}>
+                          <input type="text" inputMode={campo === "faturamento" ? "decimal" : "numeric"} aria-label={`${campo} de ${p.nome}`} style={{ ...NUM, minWidth: 80 }}
+                            placeholder={campo === "faturamento" ? "0,00" : "0"} value={f.vend[p.chave]?.[campo] ?? ""} onChange={(e) => mudarVend(p.chave, campo, e.target.value)} />
+                        </td>
+                      ))}
+                      <td className="mudo" style={{ fontSize: 13, whiteSpace: "nowrap" }}>{v.vendas > 0 ? <Indicadores {...v} /> : ""}</td>
+                    </tr>
+                  );
+                })}
+                <tr>
+                  <td><b>Total da loja</b></td>
+                  <td style={NUM}><b>{moeda(somaVend.faturamento)}</b></td>
+                  <td style={NUM}><b>{somaVend.vendas}</b></td>
+                  <td style={NUM}><b>{somaVend.pecas}</b></td>
+                  <td />
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="ajuda">
+          Vendas = atendimentos que viraram venda (cupons). Peças = total de peças dessas vendas.
+          {porPessoa && " \"Outras vendas\" é o que não foi de nenhuma vendedora (a dona, o online)."}
+          {equipe.length > 0 && (
+            <> <button type="button" className="link-loja" onClick={() => setF({ ...f, soTotal: !f.soTotal })}>
+              {f.soTotal ? "Lançar por vendedora" : "Lançar só o total da loja"}
+            </button></>
+          )}
+          {!equipe.length && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
+        </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
@@ -171,7 +272,12 @@ function FechamentoCaixa() {
         <input id="cx-obs" type="text" maxLength={500} placeholder="Ex.: chuva forte, ação de sábado, vitrine nova" value={f.obs} onChange={mudar("obs")} />
         {valor.vendas > 0 && <div className="ajuda mt">Este dia: <Indicadores {...valor} faturamento={valor.faturamento || somaPag} /></div>}
         {erro && <div className="aviso mt" role="alert">{erro}</div>}
-        {aviso && <div className="aviso ok mt" role="status">{aviso}</div>}
+        {aviso && (
+          <div className="aviso ok mt linha entre" role="status">
+            <span>{aviso}</span>
+            {enviar && <a className="btn p peq" href={enviar} target="_blank" rel="noopener">📲 Enviar no WhatsApp</a>}
+          </div>
+        )}
         <div className="linha mt">
           <button className="btn p" type="submit" disabled={salvando}>{salvando ? "Salvando…" : f.id ? "Salvar correção" : "Salvar o dia"}</button>
         </div>
@@ -229,6 +335,36 @@ function FechamentoCaixa() {
         )}
       </div>
 
+      {vendMes.length > 0 && (
+        <div className="card mb">
+          <h3 style={{ marginTop: 0 }}>Por vendedora no mês{filtro ? ` · ${filtro}` : ""}</h3>
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead><tr><th>Quem</th><th>Faturamento</th>{tudo.meta && equipe.length > 0 && <th>Meta</th>}<th>Vendas</th><th>Peças</th><th>PA</th><th>Ticket médio</th><th>Preço médio</th></tr></thead>
+              <tbody>
+                {vendMes.map((v) => {
+                  const i = indicadores({ ...v, dias: 1 });
+                  // A meta da loja dividida por igual entre as vendedoras.
+                  const meta = tudo.meta && v.pessoa_id && equipe.length ? tudo.meta / equipe.length : null;
+                  return (
+                    <tr key={v.pessoa_id ?? OUTRAS} style={NUM}>
+                      <td><b>{v.nome}</b></td>
+                      <td>{moeda(v.faturamento)}</td>
+                      {tudo.meta && equipe.length > 0 && <td>{meta ? `${moeda(meta)} · ${Math.round((v.faturamento / meta) * 100)}%` : "—"}</td>}
+                      <td>{v.vendas}</td>
+                      <td>{v.pecas}</td>
+                      <td>{i.pa != null ? fmtPa(i.pa) : "—"}</td>
+                      <td>{i.tkm != null ? moeda(i.tkm) : "—"}</td>
+                      <td>{i.pm != null ? moeda(i.pm) : "—"}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <h3>Dias lançados</h3>
         {!lista.length && <p className="mudo" style={{ margin: 0 }}>Nenhum fechamento em {nomeMes(mes).toLowerCase()}{filtro ? ` na ${filtro}` : ""}.</p>}
@@ -241,10 +377,12 @@ function FechamentoCaixa() {
                 {moeda(c.faturamento)} · {c.vendas} {c.vendas === 1 ? "venda" : "vendas"} · {c.pecas} {c.pecas === 1 ? "peça" : "peças"}
               </div>
               {c.vendas > 0 && <div className="mudo" style={{ fontSize: 13 }}><Indicadores {...c} /></div>}
+              {c.vendedoras && <div className="mudo" style={{ fontSize: 13, ...NUM }}>{c.vendedoras.map((v) => `${v.nome} ${moeda(v.faturamento)}`).join(" · ")}</div>}
               {c.pagamentos && <div className="mudo" style={{ fontSize: 13, ...NUM }}><ListaFormas p={c.pagamentos} /></div>}
               {c.obs && <div className="ajuda" style={{ margin: 0 }}>{c.obs}</div>}
             </div>
             <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>
+              <a className="btn s peq" href={linkWhats(c, mesAte(c))} target="_blank" rel="noopener" aria-label={`Enviar o fechamento de ${dia(c.dia)} no WhatsApp`}>📲</a>
               <button type="button" className="btn s peq" onClick={() => editar(c)}>Corrigir</button>
               <button type="button" className="btn s peq" aria-label={`Tirar o fechamento de ${dia(c.dia)}`} onClick={() => remover(c)}>✕</button>
             </div>

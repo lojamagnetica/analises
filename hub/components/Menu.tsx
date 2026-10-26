@@ -65,6 +65,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
+          { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },
         ],
       }
     : {
@@ -74,6 +75,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
           { href: "/plano", rotulo: "Plano de Ação 90 dias", icone: "target" },
           { href: "/reunioes", rotulo: "Reuniões", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
+          { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },
         ],
       };
   if (consultoria) g.push(consultoriaOuMentoria);

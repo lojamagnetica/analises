@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
-import { dataHora, moeda } from "@/lib/formato";
+import { dataCurta, dataHora, moeda } from "@/lib/formato";
 import { ETAPAS, buscarJornada, receberPassagem, situacao, type ClienteJornada } from "@/lib/jornada";
 import { corTermometro } from "@/lib/carteira";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { prazoDiagnostico } from "@/lib/entrada";
 
 const NOME_PLANO: Record<string, string> = { premium: "Premium", gold: "Gold", start: "Start", "consultoria-3m": "Consultoria", "consultoria-6m": "Consultoria", "pro-12": "PRO 12", "grupo-6m": "Grupo 6M" };
 
@@ -31,8 +33,23 @@ export default function Central() {
   const { nome } = useEquipe();
   const [soAlerta, setSoAlerta] = useState(false);
   const [erro, setErro] = useState("");
-  const { dados, recarregar } = useDados(() => buscarJornada(), []);
-  if (!dados) return <Carregando />;
+  const { dados: tudo, recarregar } = useDados(async () => {
+    const sb = supabaseBrowser();
+    const [jornada, { data: enviados }, { data: liberados }] = await Promise.all([
+      buscarJornada(),
+      sb.from("portal_entrada").select("portal_id, dados_enviados_em").not("dados_enviados_em", "is", null),
+      sb.from("loja_diagnostico").select("portal_id").eq("status", "liberada"),
+    ]);
+    // Lojas que mandaram tudo e ainda esperam o Diagnóstico (prazo de 5 dias úteis).
+    const prontos = new Set((liberados ?? []).map((d) => d.portal_id as string));
+    const esperando = (enviados ?? []).filter((e) => !prontos.has(e.portal_id as string))
+      .map((e) => ({ id: e.portal_id as string, prazo: prazoDiagnostico(e.dados_enviados_em as string) }))
+      .sort((a, b) => a.prazo.localeCompare(b.prazo));
+    return { jornada, esperando };
+  }, []);
+  if (!tudo) return <Carregando />;
+  const dados = tudo.jornada;
+  const hojeIso = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Recife" });
 
   const novas = dados.filter((c) => c.passagem && !c.passagem.recebida_em);
   const lista = dados.filter((c) => !soAlerta || situacao(c).alerta);
@@ -49,6 +66,23 @@ export default function Central() {
         <div className="card card-borda kpi" style={{ ["--c" as string]: "var(--purple)" }}><b>{dados.length}</b><small>clientes ativas</small></div>
       </div>
       {erro && <div className="aviso mb">{erro}</div>}
+
+      {tudo.esperando.length > 0 && (
+        <div className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>
+          <h3 style={{ marginTop: 0 }}>Prontas para o Diagnóstico</h3>
+          <p className="ajuda" style={{ marginTop: -4 }}>Mandaram todos os dados. O Diagnóstico precisa ser liberado em até 5 dias úteis.</p>
+          {tudo.esperando.map((e) => {
+            const c = dados.find((x) => x.id === e.id);
+            const atrasado = e.prazo < hojeIso;
+            return (
+              <div key={e.id} className="linha entre" style={{ padding: "4px 0" }}>
+                <Link href={`/equipe/central/cliente?id=${e.id}`}>{c?.loja ?? "Loja"}</Link>
+                <span className={`selo ${atrasado ? "erro" : "andamento"}`}>{atrasado ? "atrasado · " : ""}até {dataCurta(e.prazo)}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {novas.length > 0 && (
         <>

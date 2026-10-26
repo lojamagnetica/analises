@@ -5,36 +5,26 @@ import { useEffect } from "react";
 import { Icone } from "@/components/Icone";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
+import { dataCurta, dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
-import { liberado, requisito } from "@/lib/entrada";
+import { SetePassos, type Passo } from "@/components/SetePassos";
+import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/entrada";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
-  { href: "/conteudo/semana", rotulo: "Conteúdo", icone: "insta", cor: "var(--orange)" },
+  { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta", cor: "var(--orange)" },
   { href: "/clientes", rotulo: "Clientes", icone: "users", cor: "var(--purple)" },
   { href: "/assistente", rotulo: "Fale com a Camilla", icone: "chat", cor: "var(--purple)" },
   { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
 ];
 
-const TUDO = [
-  { titulo: "Minha mentoria", icone: "map", cor: "var(--purple)", itens: [["/jornada", "Os 7 passos"], ["/plano", "Plano de Ação"], ["/reunioes", "Reuniões"], ["/notas", "Notas"]] },
-  { titulo: "Minha loja", icone: "folder", cor: "var(--red)", itens: [["/comece", "Comece aqui"], ["/personalizacao", "Dados da loja"], ["/personalizacao/etapa?n=8", "Estoque e relatórios"], ["/pessoas", "Minha equipe e perfis"]] },
-  { titulo: "Gestão estratégica", icone: "chart", cor: "var(--red)", itens: [["/painel", "Diagnóstico da loja"], ["/gestao/caixa", "Fechamento de caixa"], ["/gestao/resultado", "Resultado do mês"], ["/metas", "Metas e calculadora"], ["/estoque", "Estoque x o que fazer"]] },
-  { titulo: "Gestão de pessoas", icone: "team", cor: "var(--purple)", itens: [["/pessoas/retorno", "Dar retorno"], ["/pessoas/reuniao-semanal", "Reunião semanal"], ["/pessoas/reuniao-mensal", "Reunião do mês"], ["/pessoas/desenvolvimento", "Desenvolvimento"], ["/pessoas/gincanas", "Gincanas"]] },
-  { titulo: "Vendas", icone: "funnel", cor: "var(--orange)", itens: [["/acoes", "Ações do Mês"], ["/scripts", "Scripts de venda"]] },
-  { titulo: "De cliente a fã", icone: "users", cor: "var(--accent)", itens: [["/clientes", "Minhas clientes"], ["/clientes/tipos", "Ações por tipo"], ["/clientes/resgate", "Resgate"], ["/clientes/campanhas", "Top 10 campanhas"], ["/clientes/experiencia", "Experiência do cliente"]] },
-  { titulo: "Conteúdo", icone: "insta", cor: "var(--accent)", itens: [["/conteudo", "Análise do perfil"], ["/conteudo/semana", "Programação da semana"], ["/conteudo/desafio", "Desafio Loja Viral"], ["/planeje", "PLANEJE AQUI"]] },
-  { titulo: "Aprender", icone: "play", cor: "var(--blue)", itens: [["/cursos", "Cursos e gravações"], ["/assistente", "Fale com a Camilla"]] },
-];
-
 const PASSOS_ENTRADA = [
   { chave: "video" as const, titulo: "Assistir ao vídeo de boas-vindas", href: "/comece" },
   { chave: "loja" as const, titulo: "Preencher os Dados da loja", href: "/personalizacao" },
-  { chave: "equipe" as const, titulo: "Cadastrar a sua equipe", href: "/pessoas" },
+  { chave: "equipe" as const, titulo: "Cadastrar a sua equipe e fazer o teste de perfil", href: "/pessoas" },
 ];
 
 export default function Inicio() {
@@ -44,18 +34,19 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passo }, consult, { count: respondidas }] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
-      sb.from("jornada_passos").select("titulo").eq("numero", portal.passo_atual).maybeSingle(),
+      sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
     ]);
-    return { prox, plano, datas, passo, consult, respondidas: respondidas ?? 0 };
+    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0 };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passo, consult, respondidas } = dados;
+  const { prox, plano, datas, passos, consult, respondidas } = dados;
+  const passo = passos.find((p) => p.numero === portal.passo_atual);
 
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
@@ -69,13 +60,12 @@ export default function Inicio() {
   const atalhos = consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
     : ATALHOS;
-  const tudo = consultoria
-    ? TUDO.map((g) => (g.titulo === "Minha mentoria" ? { ...g, titulo: "Minha consultoria", itens: [["/consultoria", "Painel da consultoria"], ["/reunioes", "Encontros"], ["/notas", "Notas"]] } : g))
-    : TUDO;
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
   const trancado = (href: string) => { const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
-  const entradaAberta = !!ent && !ent.livre && !(ent.video && ent.loja && ent.equipe);
+  const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
+  // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
+  const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;
 
   return (
     <>
@@ -106,8 +96,8 @@ export default function Inicio() {
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
-          <h3 style={{ marginTop: 0 }}>Sua entrada no Hub · {PASSOS_ENTRADA.filter((p) => ent[p.chave]).length} de 3</h3>
-          <p className="mudo" style={{ marginTop: -4 }}>Cada passo abre novas áreas. Não pule etapas: é assim que o Hub fica certo para a sua loja.</p>
+          <h3 style={{ marginTop: 0 }}>Para montar o seu Diagnóstico · {PASSOS_ENTRADA.filter((p) => ent[p.chave]).length} de 3</h3>
+          <p className="mudo" style={{ marginTop: -4 }}>Com esses dados a equipe monta o Diagnóstico da sua loja em até 5 dias úteis. É dele que saem o seu Plano de Ação e o resto do Hub.</p>
           <div className="grade g3" style={{ gap: 10 }}>
             {PASSOS_ENTRADA.map((p, i) => (
               <Link key={p.chave} href={p.href} className="marcar" style={{ gap: 10 }}>
@@ -116,6 +106,16 @@ export default function Inicio() {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {esperandoDiag && ent && (
+        <div className="card card-borda mt" style={{ ["--c" as string]: "var(--green)" }}>
+          <h3 style={{ marginTop: 0 }}>Recebemos tudo! 🎉</h3>
+          <p className="mudo" style={{ margin: 0 }}>
+            Seu Diagnóstico fica pronto em até 5 dias úteis{ent.dadosEm ? <>, até <b>{dataCurta(prazoDiagnostico(ent.dadosEm))}</b></> : ""}.
+            Assim que ele sair, o Plano de Ação e as outras áreas abrem para você.
+          </p>
         </div>
       )}
 
@@ -164,10 +164,16 @@ export default function Inicio() {
               <Link className="btn s peq mt" href="/jornada">Ver os 7 passos</Link>
             </div>
             <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
-              <h3>Plano de Ação 90 dias</h3>
-              <p className="mudo">{total ? `${feitos} de ${total} tarefas feitas` : "Seu plano está sendo montado"}</p>
-              <div className="barra"><i style={{ width: `${pct}%` }} /></div>
-              <Link className="btn s peq mt" href="/plano">Abrir plano</Link>
+              <h3>Plano de Ação 90 dias{trancado("/plano") ? " 🔒" : ""}</h3>
+              {trancado("/plano") ? (
+                <p className="mudo">Seu plano é montado a partir do seu Diagnóstico. Ele abre quando o Diagnóstico ficar pronto.</p>
+              ) : (
+                <>
+                  <p className="mudo">{total ? `${feitos} de ${total} tarefas feitas` : "Seu plano está sendo montado"}</p>
+                  <div className="barra"><i style={{ width: `${pct}%` }} /></div>
+                  <Link className="btn s peq mt" href="/plano">Abrir plano</Link>
+                </>
+              )}
             </div>
           </>
         )}
@@ -180,24 +186,12 @@ export default function Inicio() {
         </div>
       </div>
 
-      <div className="secao">Tudo aqui na plataforma</div>
-      <div className="card">
-        <div className="tudo" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {tudo.map((g) => (
-            <div key={g.titulo}>
-              <h3>
-                <span className="quadrado" style={{ ["--c" as string]: g.cor }}><Icone nome={g.icone} /></span>
-                {g.titulo}
-              </h3>
-              <div className="chips">
-                {g.itens.map(([href, rotulo]) => (
-                  <Link key={href} className="chip" href={href}>{rotulo}{trancado(href) ? " 🔒" : ""}</Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {!consultoria && passos.length > 0 && (
+        <>
+          <div className="secao">Os 7 passos da sua mentoria</div>
+          <SetePassos passos={passos} atual={portal.passo_atual} />
+        </>
+      )}
     </>
   );
 }

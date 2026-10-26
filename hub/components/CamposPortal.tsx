@@ -9,6 +9,7 @@ export function CamposPortal({ p }: { p?: Partial<Portal> }) {
         <div><label className="rotulo">Responsável</label><input type="text" name="responsavel" defaultValue={p?.responsavel ?? ""} /></div>
         <div><label className="rotulo">E-mail</label><input type="email" name="email" defaultValue={p?.email ?? ""} /></div>
         <div><label className="rotulo">WhatsApp</label><input type="text" name="whatsapp" defaultValue={p?.whatsapp ?? ""} /></div>
+        <div><label className="rotulo">Aniversário da responsável</label><input type="date" name="aniversario" defaultValue={p?.aniversario ?? ""} /></div>
         <div>
           <label className="rotulo">Tipo</label>
           <select name="tipo" defaultValue={p?.tipo ?? "Mentoria"}>

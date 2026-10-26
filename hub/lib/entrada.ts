@@ -1,48 +1,61 @@
-// A entrada da loja no Hub: primeiro o vídeo de boas-vindas, depois os dados da loja e a equipe.
-// A loja vê tudo o que existe, mas cada área só abre quando a etapa que ela depende foi feita.
+// A entrada da loja no Hub segue a jornada:
+// 1) primeiro acesso: Início, Comece aqui, 7 passos, Reuniões, Curso, Fale com a Camilla e a Análise do Instagram;
+// 2) depois do vídeo: o que alimenta o Diagnóstico (Dados da loja, Estoque e relatórios, Minha equipe e perfis);
+// 3) com o Diagnóstico liberado pela equipe: Diagnóstico, Plano de Ação, Gestão de pessoas e o resto.
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { diasUteisDepois } from "@/lib/jornada";
 
-export type Requisito = "video" | "loja" | "equipe";
+export type Requisito = "video" | "diagnostico";
 export type Entrada = {
   video: boolean;       // assistiu ao vídeo de boas-vindas
   loja: boolean;        // terminou todas as etapas de Dados da loja
   equipe: boolean;      // cadastrou pelo menos uma pessoa da equipe
+  diagnostico: boolean; // a equipe liberou o Diagnóstico
   livre: boolean;       // a equipe liberou tudo para esta loja
   videoEm: string | null;
+  dadosEm: string | null; // quando a loja terminou de mandar tudo
   pessoas: number;
 };
 export type VideoBoasVindas = { url: string; segundos: number };
 
 /** Páginas que nunca travam. */
-const SEMPRE = ["/inicio", "/comece", "/conta", "/sem-portal", "/jornada", "/plano", "/reunioes", "/notas", "/cursos", "/duvidas", "/assistente", "/consultoria"];
-/** Do mais específico para o mais geral: a primeira regra que casa decide. */
+const SEMPRE = ["/inicio", "/comece", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria"];
+/** Só a página exata (as subpáginas seguem as regras). */
+const SEMPRE_EXATA = ["/conteudo"];
+/** Do mais específico para o mais geral: a primeira regra que casa decide. O que não está aqui espera o Diagnóstico. */
 const REGRAS: [string, Requisito][] = [
-  ["/pessoas/retorno", "equipe"], ["/pessoas/reuniao-semanal", "equipe"], ["/pessoas/reuniao-mensal", "equipe"],
-  ["/pessoas/desenvolvimento", "equipe"], ["/pessoas/gincanas", "equipe"],
-  ["/painel", "loja"], ["/gestao", "loja"], ["/metas", "loja"], ["/estoque", "loja"],
-  ["/acoes", "loja"], ["/scripts", "loja"], ["/clientes", "loja"],
+  ["/personalizacao", "video"],
+  ["/pessoas/retorno", "diagnostico"], ["/pessoas/reuniao-semanal", "diagnostico"], ["/pessoas/reuniao-mensal", "diagnostico"],
+  ["/pessoas/desenvolvimento", "diagnostico"], ["/pessoas/gincanas", "diagnostico"],
+  ["/pessoas", "video"],
 ];
 
 const casa = (caminho: string, base: string) => caminho === base || caminho.startsWith(base + "/");
 
 /** O que a página precisa para abrir (null = abre sempre). */
 export function requisito(caminho: string): Requisito | null {
-  if (SEMPRE.some((b) => casa(caminho, b))) return null;
-  return REGRAS.find(([b]) => casa(caminho, b))?.[1] ?? "video";
+  if (SEMPRE.some((b) => casa(caminho, b)) || SEMPRE_EXATA.includes(caminho)) return null;
+  return REGRAS.find(([b]) => casa(caminho, b))?.[1] ?? "diagnostico";
 }
 
 /** A página pode abrir? Equipe e lojas liberadas pela equipe veem tudo. */
 export function liberado(req: Requisito | null, e: Entrada) {
   if (!req || e.livre) return true;
   if (req === "video") return e.video;
-  if (req === "loja") return e.video && e.loja;
-  return e.video && e.equipe;
+  return e.video && e.diagnostico;
 }
+
+/** A loja já mandou tudo o que o Diagnóstico precisa. */
+export const dadosCompletos = (e: Entrada) => e.video && e.loja && e.equipe;
+
+/** Até quando o Diagnóstico fica pronto: 5 dias úteis depois que a loja mandou tudo. */
+export const PRAZO_DIAGNOSTICO = 5;
+export const prazoDiagnostico = (dadosEm: string) =>
+  diasUteisDepois(new Date(dadosEm).toLocaleDateString("sv-SE", { timeZone: "America/Recife" }), PRAZO_DIAGNOSTICO);
 
 export const NOME_REQUISITO: Record<Requisito, string> = {
   video: "assistir ao vídeo de boas-vindas",
-  loja: "terminar os Dados da loja",
-  equipe: "cadastrar a sua equipe",
+  diagnostico: "receber o seu Diagnóstico",
 };
 
 const chaveVideo = (portalId: string) => `lm_video_visto_${portalId}`;
@@ -53,17 +66,20 @@ export function videoVistoNaAba(portalId: string) {
 
 export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean): Promise<Entrada> {
   const sb = supabaseBrowser();
-  const [{ data: e }, { count }] = await Promise.all([
-    sb.from("portal_entrada").select("video_visto_em, livre").eq("portal_id", portalId).maybeSingle(),
+  const [{ data: e }, { count }, { count: diag }] = await Promise.all([
+    sb.from("portal_entrada").select("video_visto_em, livre, dados_enviados_em").eq("portal_id", portalId).maybeSingle(),
     sb.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),
+    sb.from("loja_diagnostico").select("loja", { count: "exact", head: true }).eq("portal_id", portalId).eq("status", "liberada"),
   ]);
   const pessoas = count ?? 0;
   return {
     video: !!e?.video_visto_em || (comoLoja && videoVistoNaAba(portalId)),
     loja: etapasFeitas,
     equipe: pessoas > 0,
+    diagnostico: (diag ?? 0) > 0,
     livre: !!e?.livre,
     videoEm: e?.video_visto_em ?? null,
+    dadosEm: e?.dados_enviados_em ?? null,
     pessoas,
   };
 }
@@ -75,6 +91,11 @@ export async function marcarVideoVisto(portalId: string, comoLoja: boolean) {
     return;
   }
   await supabaseBrowser().rpc("marcar_video_visto");
+}
+
+/** A loja terminou de mandar tudo: começa a contar o prazo do Diagnóstico. Na visão "como a loja", não marca nada. */
+export async function marcarDadosEnviados() {
+  await supabaseBrowser().rpc("marcar_dados_enviados");
 }
 
 export async function buscarVideo(): Promise<VideoBoasVindas | null> {

@@ -2,6 +2,7 @@
 
 // Pendências por cliente: o que falta para o portal ficar completo. As automáticas saem dos dados do Hub e somem
 // sozinhas quando o dado entra; a equipe marca o andamento (pedido à loja, recebido, dispensado) e escreve as que faltarem.
+import { RELATORIOS } from "@/lib/relatorios";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS, chaveSituacao } from "@/lib/conteudo";
 
@@ -58,10 +59,14 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
   const lista = (portais ?? []) as { id: string; loja: string; responsavel: string | null; tipo: string }[];
   const relatorios = new Map(await Promise.all(lista.map(async (p) => {
     const [{ data }, { count }] = await Promise.all([
-      sb().storage.from("relatorios").list(p.id, { limit: 1 }),
+      sb().storage.from("relatorios").list(p.id, { limit: 200 }),
       sb().from("loja_relatorios_drive").select("id", { count: "exact", head: true }).eq("portal_id", p.id),
     ]);
-    return [p.id, (data ?? []).filter((f) => f.id).length + (count ?? 0)] as const;
+    // Arquivos novos têm o tipo no nome (<data>-<tipo>__arquivo); antigos e os do Drive contam como "já mandou".
+    const nomes = (data ?? []).filter((f) => f.id).map((f) => f.name.replace(/^\d{13}-/, ""));
+    const tipos = new Set(nomes.map((n) => n.split("__")[0]));
+    const antigos = nomes.some((n) => !RELATORIOS.some((r) => n.startsWith(r.chave + "__")) && !n.startsWith("outros__")) || (count ?? 0) > 0;
+    return [p.id, { tipos, antigos }] as const;
   })));
   const nCaixa = conta(caixa), nClientes = conta(clientes), nReun = conta(reunioes), nInsta = conta(insta), nDiag = conta(diag), nAcesso = conta(acessos);
 
@@ -78,9 +83,9 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
     const time = (equipe ?? []).filter((x) => x.portal_id === p.id);
     if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja", undefined, "/pessoas/");
     else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Minha equipe e perfis", "/pessoas/");
-    if (!relatorios.get(p.id)) {
-      add("rel_estoque", "Relatório de estoque atual do sistema (lista de produtos com custo, preço, marca e fornecedor)", "Loja", undefined, "/personalizacao/etapa/?n=8");
-      add("rel_vendas", "Relatório de vendas por produto dos últimos 12 meses (com quantidade e valor)", "Loja", undefined, "/personalizacao/etapa/?n=8");
+    const rel = relatorios.get(p.id);
+    if (rel && !rel.antigos) {
+      for (const r of RELATORIOS) if (!rel.tipos.has(r.chave)) add(`rel_${r.chave}`, `Relatório do sistema: ${r.titulo}`, "Loja", r.oque, "/personalizacao/etapa/?n=8");
     }
     if (!nClientes.get(p.id)) add("clientes", "Lista de clientes (nome, WhatsApp e data da última compra)", "Loja", undefined, "/clientes/");
     if (!nCaixa.get(p.id)) add("caixa", "Começar o fechamento de caixa diário no Hub", "Loja", undefined, "/gestao/caixa/");

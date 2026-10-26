@@ -140,6 +140,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
+        { href: "/conteudo/pautas", rotulo: "Pautas quentes", icone: "spark" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
         { href: "/conteudo/resultados", rotulo: "Resultados", icone: "chart" },
         { href: "/conteudo/desafio", rotulo: "Desafio Loja Viral", icone: "spark" },

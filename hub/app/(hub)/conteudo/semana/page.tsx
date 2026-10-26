@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Excluir } from "@/components/Excluir";
+import { PautaCartao } from "@/components/PautaCartao";
+import { pautasDaLoja } from "@/lib/pautas";
 import { Titulo } from "@/components/Titulo";
 import { Trancado } from "@/components/Trancado";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
@@ -131,6 +133,7 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
 
 export default function Semana() {
   const { portal, pers, comoLoja } = usePortal();
+  const segmento = (pers.get(1)?.respostas?.segmento as string | undefined) ?? null;
   const [segunda, setSegunda] = useState(segundaDe(hoje()));
   const [ajustes, setAjustes] = useState<Ajustes | null>(null);
   const [aviso, setAviso] = useState("");
@@ -139,15 +142,16 @@ export default function Semana() {
   const [mesInicio, setMesInicio] = useState(hoje().slice(0, 8) + "01");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [c, datas, la] = await Promise.all([
+    const [c, datas, la, pautas] = await Promise.all([
       carregarConteudo(portal.id, comoLoja),
       sb.from("datas_comerciais").select("mes, dia, titulo"),
       sb.from("loja_acoes").select("acao_id").eq("portal_id", portal.id),
+      pautasDaLoja(segundaDe(hoje()), segmento),
     ]);
     const ids = (la.data ?? []).map((x) => x.acao_id as string);
     const acoes = ids.length ? (await sb.from("acoes").select("id, titulo, venda_inicio, data_acao").in("id", ids)).data ?? [] : [];
-    return { ...c, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })) };
-  }, [portal.id, comoLoja]);
+    return { ...c, pautas, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })) };
+  }, [portal.id, comoLoja, segmento]);
   if (!dados) return <Carregando />;
   const { m, a, conteudo, posts } = dados;
   if (!a) return <Trancado titulo="Programação da semana" texto={m.textos.trancado} />;
@@ -173,6 +177,18 @@ export default function Semana() {
         ))}
       </div>
       {aviso && <div className="aviso ok mb">{aviso}</div>}
+
+      {dados.pautas.length > 0 && (
+        <div className="mb">
+          <div className="linha entre" style={{ marginBottom: 8 }}>
+            <b>🔥 Pautas quentes da semana</b>
+            <Link className="link-loja" style={{ fontSize: 13.5 }} href="/conteudo/pautas">Ver todas →</Link>
+          </div>
+          <div className="grade g3">
+            {dados.pautas.slice(0, 3).map((p) => <PautaCartao key={p.id} p={p} portalId={portal.id} hora={aj.hora || m.textos.hora_padrao} compacta aoColocar={recarregar} />)}
+          </div>
+        </div>
+      )}
 
       {vista === "mes" ? (
         <Mes inicio={mesInicio} posts={posts} datas={dados.datas} lancamentos={dados.lancamentos}

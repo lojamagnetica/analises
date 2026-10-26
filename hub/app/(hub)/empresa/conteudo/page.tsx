@@ -69,6 +69,7 @@ function Conteudo() {
   return (
     <>
       <Titulo titulo="Conteúdo da casa" sub="Planejamento, roteiros e carrosséis prontos da empresa e do seu perfil." />
+      <Link className="btn s peq mb" href="/empresa/conteudo/pautas">🔥 Pautas quentes das lojas →</Link>
 
       <div className="grade g2 mb">
         {(Object.keys(PERFIS) as Perfil[]).map((p) => (

@@ -36,6 +36,34 @@ export default function Painel() {
   const parados = ativos.filter((l) => diasDesde(l.acesso) >= 7).length;
   const naSemana = dados.reunioes.filter((r) => r.data <= semana).length;
   const passo = (n: number) => dados.passos.find((x) => x.numero === n)?.titulo ?? n;
+  // Quem já encerrou a mentoria fica numa aba fechada embaixo, para não misturar com as atuais.
+  const encerradas = linhas.filter((l) => !l.ativo);
+  const tabela = (lista: typeof linhas, vazio: string) => (
+    <div className="card tabela-wrap">
+      <table className="tabela">
+        <thead><tr><th>Loja</th><th>Passo</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th>Dúvidas</th><th /></tr></thead>
+        <tbody>
+          {lista.length === 0 && <tr><td colSpan={7} className="mudo">{vazio}</td></tr>}
+          {lista.map((l) => (
+            <tr key={l.id}>
+              <td><b>{l.loja}</b><div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}</div></td>
+              <td>{l.passo_atual}. {passo(l.passo_atual)}</td>
+              <td style={{ minWidth: 130 }}><div className="barra"><i style={{ width: `${l.pct}%` }} /></div><small className="mudo">{l.pct}%</small></td>
+              <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data</span>}</td>
+              <td>{l.ativo && diasDesde(l.acesso) >= 7 ? <span className="selo erro">{haQuanto(l.acesso)}</span> : haQuanto(l.acesso)}</td>
+              <td>{l.pendentes ? <span className="selo alerta">{l.pendentes}</span> : <span className="mudo">—</span>}</td>
+              <td>
+                <div className="linha" style={{ flexWrap: "nowrap" }}>
+                  <button className="btn p peq" type="button" onClick={() => hub.abrirPortal(l.id)}>Abrir portal</button>
+                  <Link className="btn s peq" href={`/equipe/portal?id=${l.id}`}>Editar</Link>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <>
@@ -51,30 +79,13 @@ export default function Painel() {
         ))}
       </div>
       <div className="linha mb"><Link className="btn p" href="/equipe/portais/novo">+ Novo portal</Link></div>
-      <div className="card tabela-wrap">
-        <table className="tabela">
-          <thead><tr><th>Loja</th><th>Passo</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th>Dúvidas</th><th /></tr></thead>
-          <tbody>
-            {linhas.length === 0 && <tr><td colSpan={7} className="mudo">Nenhum portal ainda. Crie o primeiro.</td></tr>}
-            {linhas.map((l) => (
-              <tr key={l.id} style={{ opacity: l.ativo ? 1 : 0.5 }}>
-                <td><b>{l.loja}</b><div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}{!l.ativo && " · inativo"}</div></td>
-                <td>{l.passo_atual}. {passo(l.passo_atual)}</td>
-                <td style={{ minWidth: 130 }}><div className="barra"><i style={{ width: `${l.pct}%` }} /></div><small className="mudo">{l.pct}%</small></td>
-                <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data</span>}</td>
-                <td>{diasDesde(l.acesso) >= 7 ? <span className="selo erro">{haQuanto(l.acesso)}</span> : haQuanto(l.acesso)}</td>
-                <td>{l.pendentes ? <span className="selo alerta">{l.pendentes}</span> : <span className="mudo">—</span>}</td>
-                <td>
-                  <div className="linha" style={{ flexWrap: "nowrap" }}>
-                    <button className="btn p peq" type="button" onClick={() => hub.abrirPortal(l.id)}>Abrir portal</button>
-                    <Link className="btn s peq" href={`/equipe/portal?id=${l.id}`}>Editar</Link>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {tabela(ativos, "Nenhum portal ativo. Crie o primeiro.")}
+      {encerradas.length > 0 && (
+        <details className="mt">
+          <summary style={{ cursor: "pointer" }}><b>Ex-mentoradas · {encerradas.length}</b> <span className="mudo">· já encerraram a mentoria ou a consultoria</span></summary>
+          <div className="mt">{tabela(encerradas, "")}</div>
+        </details>
+      )}
     </>
   );
 }

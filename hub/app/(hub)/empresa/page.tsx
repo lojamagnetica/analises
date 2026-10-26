@@ -8,19 +8,29 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS_JORNADA, buscarCarteira, contratoAtual, corTermometro } from "@/lib/carteira";
 import { dataHora, dia, diasAte, diasDesde, haQuanto } from "@/lib/formato";
 
+/** Quantos dias faltam para o próximo aniversário (0 = hoje), no fuso de Recife. */
+function diasParaAniversario(data: string) {
+  const hoje = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "America/Recife" }) + "T12:00:00");
+  const [, m, d] = data.split("-").map(Number);
+  let prox = new Date(hoje.getFullYear(), m - 1, d, 12);
+  if (prox < hoje) prox = new Date(hoje.getFullYear() + 1, m - 1, d, 12);
+  return Math.round((prox.getTime() - hoje.getTime()) / 86_400_000);
+}
+
 export default function PainelEmpresa() {
   const hub = useEquipe();
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
     const agora = new Date().toISOString();
     const semana = new Date(Date.now() + 7 * 86_400_000).toISOString();
-    const [carteira, { data: reunioes }, { data: duvidas }, { data: acessos }] = await Promise.all([
+    const [carteira, { data: reunioes }, { data: duvidas }, { data: acessos }, { data: aniversarios }] = await Promise.all([
       buscarCarteira(),
       sb.from("reunioes").select("portal_id, data, titulo").gte("data", agora).lte("data", semana).order("data"),
       sb.from("solicitacoes").select("portal_id").in("status", ["Recebida", "Em andamento"]),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
+      sb.from("portais").select("id, loja, responsavel, aniversario").eq("ativo", true).not("aniversario", "is", null),
     ]);
-    return { ...carteira, reunioes: reunioes ?? [], duvidas: duvidas ?? [], acessos: acessos ?? [] };
+    return { ...carteira, reunioes: reunioes ?? [], duvidas: duvidas ?? [], acessos: acessos ?? [], aniversarios: aniversarios ?? [] };
   }, []);
   if (!dados) return <Carregando />;
 
@@ -37,6 +47,11 @@ export default function PainelEmpresa() {
   const vencendo = ativas
     .filter((l) => l.c?.fim && diasAte(l.c.fim) <= 60)
     .sort((a, b) => (a.c?.fim ?? "").localeCompare(b.c?.fim ?? ""));
+  // Aniversário das clientes nos próximos 15 dias: dá tempo de preparar algo especial.
+  const proximosAniversarios = dados.aniversarios
+    .map((a) => ({ ...a, faltam: diasParaAniversario(a.aniversario as string) }))
+    .filter((a) => a.faltam <= 15)
+    .sort((a, b) => a.faltam - b.faltam);
   const ultimoAcesso = (id: string) =>
     dados.acessos.filter((a) => a.portal_id === id && a.ultimo_acesso).map((a) => a.ultimo_acesso as string).sort().reverse()[0] ?? null;
   const atencao = ativas
@@ -48,6 +63,17 @@ export default function PainelEmpresa() {
   return (
     <>
       <Titulo titulo={`Olá, ${primeiroNome(hub.nome)}`} sub="O painel da empresa: quem está ativa, o que vence e quem precisa de atenção." />
+      {proximosAniversarios.length > 0 && (
+        <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)" }}>
+          <h3 style={{ marginTop: 0 }}>🎂 Aniversários chegando</h3>
+          {proximosAniversarios.map((a) => (
+            <div key={a.id} className="linha entre" style={{ padding: "4px 0" }}>
+              <span><b>{a.responsavel || a.loja}</b> <small className="mudo">· {a.loja} · {dia(a.aniversario as string).slice(0, 5)}</small></span>
+              <span className={`selo ${a.faltam <= 3 ? "alerta" : "espera"}`}>{a.faltam === 0 ? "hoje" : a.faltam === 1 ? "amanhã" : `em ${a.faltam} dias`}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="grade g4 mb">
         {([
           [ativas.length, "clientes ativas", "var(--red)", "/empresa/carteira"],

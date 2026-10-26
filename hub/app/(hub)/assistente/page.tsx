@@ -36,7 +36,7 @@ export default function FaleComACamilla() {
         <div className="linha" style={{ gap: 14, alignItems: "center", flexWrap: "nowrap", marginBottom: 12 }}>
           <span className="avatar-camilla">{camilla?.foto ? <img src={camilla.foto} alt="Camilla Ribeiro" /> : "C"}</span>
           <div>
-            <h3 style={{ margin: "0 0 2px" }}>Oi, {primeiroNome(nome)}! Me conta o que você precisa.</h3>
+            <h3 style={{ margin: "0 0 2px" }}>Oiê, {primeiroNome(nome)}! Me conta o que você precisa.</h3>
             <p className="ajuda" style={{ margin: 0 }}>Me escreve ou manda um áudio. Eu e a minha equipe respondemos em até 12 horas úteis (segunda a sexta, das 9h às 18h).</p>
           </div>
         </div>

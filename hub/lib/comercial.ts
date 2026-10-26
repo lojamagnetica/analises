@@ -29,6 +29,7 @@ export async function registrarVenda(f: FormData, porNome: string) {
     responsavel: txt(f, "responsavel", 200) || null,
     email: txt(f, "email", 200).toLowerCase() || null,
     whatsapp: txt(f, "whatsapp", 60) || null,
+    aniversario: txt(f, "aniversario", 10) || null,
     tipo: plano?.tipo === "Consultoria" ? "Consultoria" : "Mentoria",
     inicio: pagamento,
   }).select("id").single();

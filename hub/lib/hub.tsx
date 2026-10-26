@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS, type Respostas } from "@/lib/conteudo";
-import { buscarEntrada, type Entrada } from "@/lib/entrada";
+import { buscarEntrada, dadosCompletos, marcarDadosEnviados, type Entrada } from "@/lib/entrada";
 
 export const CHAVE_PORTAL = "lm_portal";
 export const CHAVE_RESULTADO = "lm_resultado_portal";
@@ -17,6 +17,7 @@ export type Portal = {
   responsavel: string | null;
   email: string | null;
   whatsapp: string | null;
+  aniversario?: string | null;
   tipo: string;
   inicio: string | null;
   passo_atual: number;
@@ -102,6 +103,11 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
     const entrada = portal ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
+    // A loja terminou de mandar tudo: começa o prazo do Diagnóstico.
+    if (entrada && !equipe && !entrada.dadosEm && dadosCompletos(entrada)) {
+      await marcarDadosEnviados();
+      entrada.dadosEm = new Date().toISOString();
+    }
 
     setHub({
       userId: user.id,

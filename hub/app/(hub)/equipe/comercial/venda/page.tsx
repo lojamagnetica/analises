@@ -42,6 +42,7 @@ function NovaVenda() {
           <div><label className="rotulo">Instagram</label><input name="instagram" placeholder="@loja" defaultValue={lead?.instagram ?? ""} /></div>
           <div><label className="rotulo">Responsável (como chamamos)</label><input name="responsavel" defaultValue={lead?.nome ?? ""} /></div>
           <div><label className="rotulo">WhatsApp</label><input name="whatsapp" defaultValue={lead?.whatsapp ?? ""} /></div>
+          <div><label className="rotulo">Aniversário da responsável</label><input type="date" name="aniversario" /></div>
           <div><label className="rotulo">E-mail de acesso ao Hub</label><input name="email" type="email" /></div>
           <div><label className="rotulo">Lojas mentoradas (se for mais de uma)</label><input name="lojas_mentoradas" placeholder="Ex.: Loja Feminina e Loja Masculina" /></div>
         </div>

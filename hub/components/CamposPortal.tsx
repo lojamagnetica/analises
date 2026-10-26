@@ -13,7 +13,7 @@ export function CamposPortal({ p }: { p?: Partial<Portal> }) {
         <div>
           <label className="rotulo">Tipo</label>
           <select name="tipo" defaultValue={p?.tipo ?? "Mentoria"}>
-            <option>Mentoria</option><option>Mentoria VIP Anual</option><option>Consultoria</option>
+            <option>Mentoria</option><option>Mentoria VIP Anual</option><option>Consultoria</option><option value="Curso">Curso (só a área de membros)</option>
           </select>
         </div>
         <div><label className="rotulo">Início</label><input type="date" name="inicio" defaultValue={p?.inicio ?? ""} /></div>

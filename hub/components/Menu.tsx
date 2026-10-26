@@ -277,6 +277,13 @@ export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: 
               <Icone nome="play" /> CURSO
             </Link>
           )}
+
+          {props.temPortal && !props.soCurso && (
+            <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
+              <Icone nome="gift" /> Indique uma loja 🎁
+              {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}
+            </Link>
+          )}
         </nav>
 
         <div className="side-pe">

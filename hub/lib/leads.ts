@@ -11,10 +11,12 @@ export type Lead = {
   id: string; nome: string; loja: string | null; whatsapp: string | null; instagram: string | null; origem: string | null;
   etapa: EtapaLead; valor_estimado: number | null; responsavel: string | null; proximo_contato: string | null; obs: string | null;
   motivo_perda: string | null; portal_id: string | null; created_at: string; etapa_em: string;
+  /** Loja que indicou (Indique uma loja). */
+  indicado_por: string | null;
 };
 
 const sb = () => supabaseBrowser();
-const COLUNAS = "id, nome, loja, whatsapp, instagram, origem, etapa, valor_estimado, responsavel, proximo_contato, obs, motivo_perda, portal_id, created_at, etapa_em";
+const COLUNAS = "id, nome, loja, whatsapp, instagram, origem, etapa, valor_estimado, responsavel, proximo_contato, obs, motivo_perda, portal_id, created_at, etapa_em, indicado_por";
 const txt = (f: FormData, k: string, max = 500) => String(f.get(k) ?? "").trim().slice(0, max) || null;
 const num = (v: string | null) => { if (!v) return null; const n = Number(v.replace(/\./g, "").replace(",", ".")); return Number.isNaN(n) ? null : n; };
 
@@ -23,7 +25,12 @@ export async function buscarLeads() {
     sb().from("leads").select(COLUNAS).order("created_at", { ascending: false }).limit(1000),
     sb().from("perfis").select("id, nome").eq("papel", "equipe").order("nome"),
   ]);
-  return { leads: (leads ?? []) as Lead[], equipe: (equipe ?? []) as { id: string; nome: string | null }[] };
+  const lista = (leads ?? []) as Lead[];
+  // Nome das lojas que indicaram, para o selo "indicada por".
+  const ids = [...new Set(lista.map((l) => l.indicado_por).filter(Boolean))] as string[];
+  const { data: lojas } = ids.length ? await sb().from("portais").select("id, loja").in("id", ids) : { data: [] };
+  const indicadoras = Object.fromEntries((lojas ?? []).map((p) => [p.id as string, p.loja as string]));
+  return { leads: lista, equipe: (equipe ?? []) as { id: string; nome: string | null }[], indicadoras };
 }
 
 export async function buscarLead(id: string) {

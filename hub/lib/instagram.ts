@@ -205,6 +205,8 @@ export function datasProximas(datas: DataComercial[], de: string, ate = 9) {
 export function gerarSemana(p: {
   m: MetodoConteudo; analise: Analise | null; portalId: string; segunda: string; ajustes: Ajustes;
   existentes: Post[]; lancamentos: Lancamento[]; datas: DataComercial[]; vars: Record<string, string>;
+  /** Produtos em destaque do plano do mês (PLANEJE AQUI): entram no tema dos posts. */
+  destaques?: string[];
 }): PostNovo[] {
   const { m, analise, portalId, segunda, ajustes, vars } = p;
   const roteiros = roteirosDaLoja(m, analise);
@@ -265,7 +267,7 @@ export function gerarSemana(p: {
     if (ideia) usadas.add(ideia.titulo);
     novos.push(doRoteiro(r, {
       data, origem: serie ? "serie" : "ideia",
-      tema: `${serie ? "Série fixa" : papel.papel} · ${r.nome}${ideia ? ` · ideia: ${ideia.titulo}` : ""}`,
+      tema: `${serie ? "Série fixa" : papel.papel} · ${r.nome}${ideia ? ` · ideia: ${ideia.titulo}` : ""}${p.destaques?.length ? ` · destaque: ${p.destaques[i % p.destaques.length]}` : ""}`,
     }));
     complemento(data, i);
   }

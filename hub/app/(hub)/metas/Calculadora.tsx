@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { numeroDe } from "@/lib/caixa";
+import { CampoReais } from "@/components/CampoReais";
 
 const brl = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
@@ -12,25 +12,6 @@ function Campo({ rotulo, valor, mudar, passo }: { rotulo: string; valor: number;
     <div>
       <label className="rotulo">{rotulo}</label>
       <input type="number" step={passo ?? "any"} value={valor} onChange={(e) => mudar(Number(e.target.value))} />
-    </div>
-  );
-}
-
-const reais = (n: number) => n.toLocaleString("pt-BR", Number.isInteger(n) ? {} : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/** Campo em reais: mostra "R$ 60.000" e aceita "60000", "60.000" ou "89,90". sem = número sem "R$" (markup). */
-function CampoReais({ rotulo, valor, mudar, sem }: { rotulo: string; valor: number; mudar: (v: number) => void; sem?: boolean }) {
-  const [texto, setTexto] = useState<string | null>(null);
-  return (
-    <div>
-      <label className="rotulo">{rotulo}</label>
-      <div style={{ position: "relative" }}>
-        {!sem && <span className="mudo" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>R$</span>}
-        <input type="text" inputMode="decimal" style={{ paddingLeft: sem ? undefined : 40, fontVariantNumeric: "tabular-nums" }}
-          value={texto ?? reais(valor)}
-          onChange={(e) => { setTexto(e.target.value); mudar(numeroDe(e.target.value) ?? 0); }}
-          onBlur={() => setTexto(null)} />
-      </div>
     </div>
   );
 }

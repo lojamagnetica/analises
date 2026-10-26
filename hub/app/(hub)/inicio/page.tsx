@@ -5,7 +5,8 @@ import { useEffect } from "react";
 import { Icone } from "@/components/Icone";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { dataCurta, dataHora, mesAtual, MESES_ABREV } from "@/lib/formato";
+import { dataCurta, dataHora, dia, hoje, mesAtual, MESES_ABREV } from "@/lib/formato";
+import { buscarPlanos, mesDoPlano, mesesDoInicio, prazoDoPlano, semanaDoDia } from "@/lib/plano-mes";
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
@@ -36,7 +37,7 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
@@ -44,11 +45,12 @@ export default function Inicio() {
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
       buscarMeuContrato(portal.id).catch(() => null),
+      buscarPlanos(portal.id).catch(() => []),
     ]);
-    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato };
+    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passos, consult, respondidas, contrato } = dados;
+  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes } = dados;
   // 45 dias antes do fim do contrato: aviso de renovação.
   const fimContrato = contrato?.atual && pertoDoFim(contrato.atual) ? tempoDoContrato(contrato.atual) : null;
   const passo = passos.find((p) => p.numero === portal.passo_atual);
@@ -72,6 +74,14 @@ export default function Inicio() {
   // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
   const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;
   // Diagnóstico liberado nos últimos 15 dias: avisa no Início.
+  // PLANEJE AQUI: o foco da semana do plano deste mês e o lembrete do próximo (até o dia 20).
+  const meses = mesesDoInicio();
+  const planoAtual = planosMes.find((p) => p.mes === meses.atual);
+  const planoProx = planosMes.find((p) => p.mes === meses.proximo);
+  const focoSemana = planoAtual?.dados?.semanas?.[semanaDoDia(Number(hoje().slice(8)))]?.foco?.trim();
+  const prazoProx = prazoDoPlano(meses.proximo);
+  const lembrarPlano = !consultoria && !trancado("/planeje") && (!planoProx || planoProx.status === "rascunho");
+  const ajustar = [planoAtual, planoProx].find((p) => p?.status === "ajustar");
   const diagnosticoNovo = !!ent?.diagnosticoEm && Date.now() - new Date(ent.diagnosticoEm).getTime() < 15 * 86_400_000;
 
   return (
@@ -134,6 +144,27 @@ export default function Inicio() {
           <p className="mudo" style={{ margin: 0 }}>Veja como a sua loja está hoje: estoque, compras, linhas, fornecedores e a análise do seu Instagram. O seu Plano de Ação e as ferramentas da mentoria também já abriram.</p>
           <Link className="btn p peq mt" href="/painel">Ver o meu Diagnóstico →</Link>
         </div>
+      )}
+
+      {!trancado("/planeje") && focoSemana && (
+        <Link href={`/planeje/mes?m=${meses.atual}`} className="card card-borda mt" style={{ ["--c" as string]: "var(--purple)", display: "block", textDecoration: "none", color: "inherit" }}>
+          <small className="mudo">🎯 Foco desta semana · do seu plano de {mesDoPlano(meses.atual).toLowerCase()}</small>
+          <div style={{ whiteSpace: "pre-wrap", fontWeight: 600, marginTop: 4 }}>{focoSemana}</div>
+        </Link>
+      )}
+
+      {ajustar && (
+        <Link href={`/planeje/mes?m=${ajustar.mes}`} className="card card-borda mt linha entre" style={{ ["--c" as string]: "var(--orange)", textDecoration: "none", color: "inherit" }}>
+          <span><b>A Camilla pediu ajustes</b> no seu plano de {mesDoPlano(ajustar.mes).toLowerCase()}.</span>
+          <span className="btn s peq">Ver</span>
+        </Link>
+      )}
+
+      {lembrarPlano && (
+        <Link href={`/planeje/mes?m=${meses.proximo}`} className="card card-borda mt linha entre" style={{ ["--c" as string]: hoje() > prazoProx ? "var(--red)" : "var(--green)", textDecoration: "none", color: "inherit" }}>
+          <span>🗓️ <b>Planeje {mesDoPlano(meses.proximo).toLowerCase()}</b> {hoje() > prazoProx ? `· o prazo era ${dia(prazoProx)}` : `até ${dia(prazoProx)}`} e mande para a Camilla.</span>
+          <span className="btn s peq">{planoProx ? "Continuar" : "Começar"}</span>
+        </Link>
       )}
 
       {respondidas > 0 && (

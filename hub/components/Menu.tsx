@@ -32,6 +32,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
+        { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },
         { href: "/equipe/duvidas", rotulo: "Caixa do Fale com a Camilla", icone: "inbox" },
       ],
     });

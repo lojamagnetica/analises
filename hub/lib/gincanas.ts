@@ -46,6 +46,7 @@ async function ok<T extends { error: { message: string } | null }>(p: PromiseLik
 
 export const rodarGincana = (portalId: string, gincanaId: string, d: { indicador: string | null; inicio: string; fim: string; premio: string }) =>
   ok(sb().from("loja_gincanas").insert({ portal_id: portalId, gincana_id: gincanaId, indicador: d.indicador, inicio: d.inicio, fim: d.fim || null, premio: d.premio.trim() || null }));
+export const gincanaExcluir = (id: string) => ok(sb().from("loja_gincanas").delete().eq("id", id));
 export const fecharGincana = (id: string, vencedor: string, resultado: string) =>
   ok(sb().from("loja_gincanas").update({ vencedor: vencedor.trim() || null, resultado: resultado.trim() || null }).eq("id", id));
 

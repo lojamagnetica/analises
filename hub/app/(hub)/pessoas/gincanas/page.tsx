@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
-import { INDICADORES, buscarGincanas, fecharGincana, rodarGincana, type Gincana } from "@/lib/gincanas";
+import { INDICADORES, buscarGincanas, fecharGincana, rodarGincana, type Gincana, gincanaExcluir } from "@/lib/gincanas";
+import { Excluir } from "@/components/Excluir";
 
 function CartaoGincana({ g, indicador, aoRodar }: { g: Gincana; indicador: string | null; aoRodar: (d: { inicio: string; fim: string; premio: string }) => Promise<void> }) {
   const [rodar, setRodar] = useState(false);
@@ -99,6 +100,7 @@ function Gincanas() {
             {dados.minhas.map((m) => (
               <div key={m.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--line)" }}>
                 <b>{nome(m.gincana_id)}</b> · {dia(m.inicio)}{m.fim ? ` a ${dia(m.fim)}` : ""}{m.indicador ? ` · ${m.indicador}` : ""}{m.premio ? ` · prêmio: ${m.premio}` : ""}
+                {" "}<Excluir pergunta="Excluir esta gincana da sua loja?" fazer={() => gincanaExcluir(m.id)} aoFim={recarregar} />
                 {m.resultado ? (
                   <div className="mudo" style={{ fontSize: 13.5 }}>Quem venceu: {m.vencedor ?? "—"} · {m.resultado}</div>
                 ) : (

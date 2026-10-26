@@ -6,7 +6,8 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
-import { ESTAGIOS, buscarMetodo, buscarPessoas, fichaSalvar, principal, type Estagio, type Ficha, type Metodo } from "@/lib/pessoas";
+import { ESTAGIOS, buscarMetodo, buscarPessoas, fichaSalvar, principal, type Estagio, type Ficha, type Metodo, fichaExcluir } from "@/lib/pessoas";
+import { Excluir } from "@/components/Excluir";
 
 const em30 = () => new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
 
@@ -120,6 +121,7 @@ function Desenvolvimento() {
             </summary>
             <div className="mt">
               <FormFicha m={m} f={f} pessoas={ativos} aoSalvar={async (form) => { await fichaSalvar(portal.id, f.id, form); recarregar(); }} />
+              <div className="mt"><Excluir pergunta="Excluir esta ficha de desenvolvimento?" fazer={() => fichaExcluir(f.id)} aoFim={recarregar} /></div>
             </div>
           </details>
         ))}

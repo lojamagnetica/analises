@@ -34,6 +34,8 @@ export type DadosPlano = {
   obs: string;
   /** Meta do mês de cada vendedora que a lojista ajustou (id da pessoa → R$). As outras dividem o resto por igual. */
   metas?: Record<string, number>;
+  /** O que o time ganha ao bater a meta (regras da premiação). */
+  premiacao?: string;
 };
 export type StatusPlano = "rascunho" | "enviado" | "ok" | "ajustar";
 export type LinhaPlano = {

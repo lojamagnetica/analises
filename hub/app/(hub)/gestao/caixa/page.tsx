@@ -65,7 +65,7 @@ function FechamentoCaixa() {
     const lancados = caixa.flatMap((c) => (c.vendedoras ?? []).map((v) => v.pessoa_id ?? ""));
     const time = quemVende((equipe ?? []) as { id: string; nome: string; funcao: string | null }[], lancados);
     const meta = plano ? metaDoPlano(plano.dados) : null;
-    return { caixa, equipe: time, meta, metas: metasDoTime(meta, time.map((p) => p.id), plano?.dados.metas) };
+    return { caixa, equipe: time, meta, premiacao: plano?.dados.premiacao?.trim() ?? "", metas: metasDoTime(meta, time.map((p) => p.id), plano?.dados.metas) };
   }, [portal.id, mes]);
   if (!tudo) return <Carregando />;
   const dados = tudo.caixa;
@@ -367,6 +367,7 @@ function FechamentoCaixa() {
               </tbody>
             </table>
           </div>
+          {tudo.premiacao && <div className="aviso ok mt" style={{ whiteSpace: "pre-wrap" }}><b>🏆 Premiação do mês</b>{"\n"}{tudo.premiacao}</div>}
         </div>
       )}
 

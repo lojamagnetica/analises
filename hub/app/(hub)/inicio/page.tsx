@@ -15,6 +15,7 @@ import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { EncontroGrupo } from "@/components/EncontroGrupo";
+import { buscarEncontro, proximoEncontro } from "@/lib/encontro";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
@@ -39,7 +40,7 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
@@ -48,11 +49,17 @@ export default function Inicio() {
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
       buscarMeuContrato(portal.id).catch(() => null),
       buscarPlanos(portal.id).catch(() => []),
+      portal.tipo === "Mentoria" ? buscarEncontro().catch(() => null) : Promise.resolve(null),
     ]);
-    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes };
+    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes } = dados;
+  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
+  // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
+  const pg = grupo ? proximoEncontro(grupo) : null;
+  const usaGrupo = !!grupo && !!pg && (!prox || pg.iso < new Date(prox.data).toISOString());
+  const proxEncontro = usaGrupo ? { data: pg!.iso, titulo: grupo!.titulo } : prox;
+  const salaMeet = usaGrupo ? grupo!.link : portal.meet_url;
   // 45 dias antes do fim do contrato: aviso de renovação.
   const fimContrato = contrato?.atual && pertoDoFim(contrato.atual) ? tempoDoContrato(contrato.atual) : null;
   const passo = passos.find((p) => p.numero === portal.passo_atual);
@@ -97,17 +104,17 @@ export default function Inicio() {
         </div>
         <div className="meet">
           <small>Próximo encontro no Meet</small>
-          {prox ? (
+          {proxEncontro ? (
             <>
-              <b style={{ textTransform: "capitalize" }}>{dataHora(prox.data)}</b>
-              <div style={{ opacity: 0.9 }}>{prox.titulo}</div>
+              <b style={{ textTransform: "capitalize" }}>{dataHora(proxEncontro.data)}</b>
+              <div style={{ opacity: 0.9 }}>{proxEncontro.titulo}</div>
             </>
           ) : (
             <b>Ainda sem data marcada</b>
           )}
-          {portal.meet_url && (
+          {salaMeet && (
             <div className="mt">
-              <a className="btn b peq" href={portal.meet_url} target="_blank" rel="noopener">Entrar na sala</a>
+              <a className="btn b peq" href={salaMeet} target="_blank" rel="noopener">Entrar na sala</a>
             </div>
           )}
         </div>

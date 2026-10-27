@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
@@ -24,6 +25,7 @@ export default function Materiais() {
     <>
       <Titulo titulo="Materiais" sub="Tudo o que a consultoria entregou para a sua loja, num lugar só: planos, análises e planilhas." />
       {equipe && <Link href="/consultoria/materiais/ver?id=novo" className="btn p peq mb" style={{ display: "inline-block" }}>+ material</Link>}
+      <RascunhoComoLoja />
       {!visiveis.length && <div className="card mudo">Os materiais aparecem aqui assim que forem entregues.</div>}
       {ordem.map((mes) => {
         const doMes = visiveis.filter((m) => (m.mes ?? "") === mes || (mes === "" && m.mes && !dados.meses.some((x) => x.mes === m.mes)));

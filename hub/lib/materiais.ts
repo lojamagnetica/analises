@@ -11,7 +11,6 @@ export type Material = {
 
 const sb = () => supabaseBrowser();
 const BALDE = "relatorios";
-const LIMITE = 25 * 1024 * 1024;
 
 export async function buscarMateriais(portalId: string): Promise<Material[]> {
   const { data } = await sb().from("consultoria_materiais").select("*").eq("portal_id", portalId).order("created_at");
@@ -40,7 +39,6 @@ export async function excluirMaterial(m: Material) {
 
 /** Sobe o anexo (planilha, PDF) para a pasta de materiais do portal e devolve o caminho. */
 export async function subirAnexo(portalId: string, arquivo: File) {
-  if (arquivo.size > LIMITE) throw new Error("O arquivo passa de 25 MB.");
   const limpo = arquivo.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
   const caminho = `${portalId}/materiais/${Date.now()}__${limpo}`;
   const { error } = await sb().storage.from(BALDE).upload(caminho, arquivo, { upsert: false });

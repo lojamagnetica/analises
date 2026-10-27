@@ -15,7 +15,6 @@ export type TipoRelatorio = (typeof RELATORIOS)[number]["chave"] | "outros";
 const TIPOS = RELATORIOS.map((r) => r.chave as string);
 
 const BALDE = "relatorios";
-const LIMITE = 25 * 1024 * 1024;
 
 export async function listarRelatorios(portalId: string): Promise<Arquivo[]> {
   const { data } = await supabaseBrowser().storage.from(BALDE).list(portalId, { sortBy: { column: "created_at", order: "desc" } });
@@ -35,7 +34,6 @@ export async function listarRelatorios(portalId: string): Promise<Arquivo[]> {
 }
 
 export async function subirRelatorio(portalId: string, arquivo: File, tipo: TipoRelatorio = "outros") {
-  if (arquivo.size > LIMITE) throw new Error("O arquivo passa de 25 MB. Exporte só o período pedido ou mande em partes.");
   const limpo = arquivo.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
   const { error } = await supabaseBrowser().storage.from(BALDE).upload(`${portalId}/${Date.now()}-${tipo}__${limpo}`, arquivo, { upsert: false });
   if (error) throw new Error("Não deu para subir o arquivo. Confira a internet e tente de novo.");

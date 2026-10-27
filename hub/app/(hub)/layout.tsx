@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bloqueado } from "@/components/Bloqueado";
 import { Menu } from "@/components/Menu";
 import { Ferramentas } from "@/components/Ferramentas";
 import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { liberado, requisito } from "@/lib/entrada";
+import { buscarCursoAberto } from "@/lib/curso";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 /** Páginas que abrem mesmo antes do vídeo de boas-vindas. */
@@ -44,6 +45,9 @@ function Casca({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { if (!completa) hub.recarregar(); }, [caminho]);
 
+  const [cursoFechado, setCursoFechado] = useState(false);
+  useEffect(() => { buscarCursoAberto().then((a) => setCursoFechado(!a)); }, [caminho]);
+
   const trava = (href: string) => {
     if (!ent) return false;
     const r = requisito(href.split("?")[0]);
@@ -65,7 +69,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
+      <Menu cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (

@@ -42,6 +42,9 @@ export type Analise = {
   posts: { titulo: string; views: string; acerto: boolean; errado: string; certo: string }[];
   pare: string[]; comece: string[]; estrategia: Regra[]; roteiros: Roteiro[]; workflow: Passo[];
   ganchos: string[]; ideias: Ideia[]; ctas: Cta[]; ferramentas: string[]; cronograma: Passo[];
+  // Lojas fora da moda: a programação própria (papel de cada dia, posts complementares e os 2 roteiros de
+  // campanha das datas comerciais) no lugar da padrão do Método, que fala de look e provador.
+  semana?: MetodoConteudo["semana"]; complementar?: string[]; campanha?: [string, string];
 };
 /** O que o agente de análise está fazendo (preenchido pela função analise-perfil). */
 export type Agente = {
@@ -156,6 +159,8 @@ export const postApagar = (id: string) => ok(sb().from("loja_posts").delete().eq
 /** Os roteiros da loja: os da análise primeiro (ajustados pela equipe), depois o resto do método. */
 export function roteirosDaLoja(m: MetodoConteudo, a: Analise | null) {
   const proprios = a?.roteiros ?? [];
+  // Com programação própria (loja fora da moda), só os roteiros da loja: os do Método falam de look e provador.
+  if (a?.semana?.length && proprios.length) return proprios;
   const ids = new Set(proprios.map((r) => r.id));
   return [...proprios, ...m.roteiros.filter((r) => !ids.has(r.id))];
 }
@@ -224,9 +229,11 @@ export function gerarSemana(p: {
   });
 
   // Cadência dupla do Método Loja Viral: 1 reel + 1 post complementar (carrossel, look do dia, prova social).
+  const semanaDoMetodo = analise?.semana?.length ? analise.semana : m.semana;
+  const complementares = analise?.complementar?.length ? analise.complementar : m.complementar;
   function complemento(dataC: string, n: number) {
-    if ((ajustes.por_dia ?? 2) < 2 || !m.complementar?.length) return;
-    const rc = porId(m.complementar[n % m.complementar.length]);
+    if ((ajustes.por_dia ?? 2) < 2 || !complementares?.length) return;
+    const rc = porId(complementares[n % complementares.length]);
     novos.push(doRoteiro(rc, { data: dataC, hora: "12:00", origem: "complementar", tema: `Post complementar · ${rc.nome}` }));
   }
 
@@ -253,14 +260,16 @@ export function gerarSemana(p: {
     const dc = datasProximas(p.datas, data, 9).find((d) => !usadas.has(d.titulo));
     if (dc && (dow === 2 || dow === 5)) {
       usadas.add(dc.titulo);
-      const r = porId("looks-numerados");
-      novos.push(doRoteiro(r, { data, origem: "data", tema: `${dc.titulo} (${dc.data.slice(8, 10)}/${dc.data.slice(5, 7)}) · ${r.nome}`, gancho: `Looks para ${dc.titulo}: do mais básico ao mais arrumado.` }));
-      const pov = porId("pov-provador");
+      const [idCampanha, idCampanha2] = analise?.campanha ?? ["looks-numerados", "pov-provador"];
+      const r = porId(idCampanha);
+      const gancho = analise?.campanha ? ganchoDe(r, { ...vars, data: dc.titulo }) : `Looks para ${dc.titulo}: do mais básico ao mais arrumado.`;
+      novos.push(doRoteiro(r, { data, origem: "data", tema: `${dc.titulo} (${dc.data.slice(8, 10)}/${dc.data.slice(5, 7)}) · ${r.nome}`, gancho }));
+      const pov = porId(idCampanha2);
       if ((ajustes.por_dia ?? 2) >= 2) novos.push(doRoteiro(pov, { data, origem: "data", tema: `${dc.titulo} · ${pov.nome}` }));
       continue;
     }
 
-    const papel = m.semana.find((s) => s.dia === dow) ?? m.semana[i % m.semana.length];
+    const papel = semanaDoMetodo.find((s) => s.dia === dow) ?? semanaDoMetodo[i % semanaDoMetodo.length];
     const serie = ajustes.serie && dow === 1 ? porId(ajustes.serie) : null;
     const r = serie ?? porId(papel.roteiro);
     const ideia = ideias.find((x) => !usadas.has(x.titulo) && x.formato === r.formato && (!x.objetivo || x.objetivo === r.objetivo));

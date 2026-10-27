@@ -33,11 +33,12 @@ export const STATUS_ACAO = ["A fazer", "Fazendo", "Feito"];
 
 export async function buscarConsultoria(portalId: string) {
   const sb = supabaseBrowser();
-  const [{ data: c }, { data: entregas }, { data: acoes }, { data: materiais }] = await Promise.all([
+  const [{ data: c }, { data: entregas }, { data: acoes }, { data: materiais }, { count: encontros }] = await Promise.all([
     sb.from("consultoria").select("dados").eq("portal_id", portalId).maybeSingle(),
     sb.from("consultoria_entregas").select("id, ordem, mes, frente, entrega, status, material_url, loja").eq("portal_id", portalId).order("ordem"),
     sb.from("consultoria_acoes").select("id, acao, quem, prazo, tipo, status, obs, loja").eq("portal_id", portalId).order("prazo", { nullsFirst: false }),
     sb.from("consultoria_materiais").select("id, entrega_id, liberado").eq("portal_id", portalId),
+    sb.from("reunioes").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("selecionar", "Realizado"),
   ]);
   return {
     dados: (c?.dados as DadosConsultoria | undefined) ?? null,
@@ -45,6 +46,7 @@ export async function buscarConsultoria(portalId: string) {
     acoes: (acoes ?? []) as Acao[],
     // Material do Hub ligado a cada entrega (a loja só recebe os liberados).
     materiais: (materiais ?? []) as { id: string; entrega_id: string | null; liberado: boolean }[],
+    encontros: encontros ?? 0,
   };
 }
 

@@ -117,7 +117,7 @@ export default function Consultoria() {
         {c.visita && <div className="meet"><small>Agenda</small><b>{c.visita}</b></div>}
       </div>
 
-      <ConsultoriaEvolucao portalId={portal.id} c={c} equipe={equipe} aoSalvar={recarregar} />
+      <ConsultoriaEvolucao portalId={portal.id} c={c} equipe={equipe} encontros={dados.encontros} aoSalvar={recarregar} />
 
       {varias && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">

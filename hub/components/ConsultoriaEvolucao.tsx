@@ -58,7 +58,7 @@ function Item({ it, equipe, mudar, tirar }: { it: ItemEvolucao; equipe: boolean;
   );
 }
 
-export function ConsultoriaEvolucao({ portalId, c, equipe, aoSalvar }: { portalId: string; c: DadosConsultoria; equipe: boolean; aoSalvar: () => void }) {
+export function ConsultoriaEvolucao({ portalId, c, equipe, encontros, aoSalvar }: { portalId: string; c: DadosConsultoria; equipe: boolean; encontros: number; aoSalvar: () => void }) {
   const [erro, setErro] = useState("");
   const ev: Evolucao = c.evolucao ?? { resumo: "", liberado: false, itens: [] };
   if (!equipe && (!ev.liberado || !ev.itens.length)) return null;
@@ -91,6 +91,7 @@ export function ConsultoriaEvolucao({ portalId, c, equipe, aoSalvar }: { portalI
           </label>
         ) : ev.resumo && <p style={{ margin: "0 0 10px", fontSize: 15.5 }}>{ev.resumo}</p>}
         <div className="linha" style={{ gap: 16, marginTop: 8 }}>
+          {encontros > 0 && <span><b style={{ fontSize: 22 }}>{encontros}</b> <small className="mudo">encontros realizados</small></span>}
           <span><b style={{ fontSize: 22 }}>{feitos}</b> <small className="mudo">feitos</small></span>
           <span><b style={{ fontSize: 22 }}>{mudou.length - feitos}</b> <small className="mudo">em andamento</small></span>
           <span><b style={{ fontSize: 22 }}>{vem.length}</b> <small className="mudo">a construir</small></span>

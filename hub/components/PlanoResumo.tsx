@@ -16,6 +16,7 @@ export function PlanoResumo({ linha }: { linha: LinhaPlano }) {
     <div style={{ display: "grid", gap: 12 }}>
       <div>
         <b>1 · Meta:</b> {meta ? <>{moeda(meta)} <span className="mudo">({moeda(d.base ?? 0)} em {MESES[nMes].toLowerCase()} do ano passado + {d.crescimento}%)</span></> : <span className="mudo">sem meta</span>}
+        {d.premiacao?.trim() && <div style={{ whiteSpace: "pre-wrap" }}><b>🏆 Premiação:</b> {d.premiacao.trim()}</div>}
       </div>
       <div>
         <b>2 · Ano passado:</b>

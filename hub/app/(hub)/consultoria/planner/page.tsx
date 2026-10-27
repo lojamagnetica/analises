@@ -5,7 +5,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
 import {
-  COR_FRENTE, DIAS_SEMANA, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, modeloPlanner, novoBloco, salvarPlanner,
+  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, modeloPlanner, novoBloco, salvarPlanner,
   type Bloco, type Freq, type Frente, type Planner,
 } from "@/lib/planner";
 
@@ -57,6 +57,9 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
         <input type="text" placeholder="A demanda" value={b.titulo} onChange={(e) => mudar({ ...b, titulo: e.target.value })} />
         <input type="text" placeholder="Para que serve (opcional)" value={b.detalhe} onChange={(e) => mudar({ ...b, detalhe: e.target.value })} />
         <input type="text" placeholder="Quem faz" value={b.quem} onChange={(e) => mudar({ ...b, quem: e.target.value })} />
+        <label className="ajuda" style={{ display: "block" }}>Começa em (deixe vazio se já vale agora)
+          <input type="month" value={b.inicio ?? ""} onChange={(e) => mudar({ ...b, inicio: e.target.value || null })} />
+        </label>
         <textarea rows={5} placeholder="Como fazer: um passo por linha" value={b.como} onChange={(e) => mudar({ ...b, como: e.target.value })} />
         <div className="linha" style={{ gap: 6 }}>
           <button type="button" className="btn p peq" disabled={!b.titulo.trim()} onClick={() => setEditando(false)}>Pronto</button>
@@ -69,7 +72,9 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
   return (
     <div className="card" style={borda}>
       <div className="linha entre">
-        <small style={{ color: COR_FRENTE[b.frente], fontWeight: 700 }}>{b.frente}</small>
+        <small style={{ color: COR_FRENTE[b.frente], fontWeight: 700 }}>
+          {b.frente}{!ativa(b) && b.inicio && <span className="selo espera" style={{ marginLeft: 6 }}>a partir de {mesCurto(b.inicio)}</span>}
+        </small>
         <button type="button" className="link-loja" style={{ fontSize: 12.5 }} onClick={() => setEditando(true)}>Editar</button>
       </div>
       <div style={{ fontWeight: 700, fontSize: 14.5 }}>{b.titulo}</div>
@@ -118,9 +123,11 @@ export default function PlannerGestao() {
   const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d}T12:00:00Z`));
   const hojeDow = new Date(`${d}T12:00:00Z`).getUTCDay();
   const ordem = (b: Bloco) => FRENTES.indexOf(b.frente) * 100 + (b.dia === null ? 99 : b.dia || 32);
-  const semDia = atual.blocos.filter((b) => b.freq !== "diaria" && b.dia === null).length;
-  const semQuem = atual.blocos.filter((b) => !b.quem.trim()).length;
-  const semanais = atual.blocos.filter((b) => b.freq === "semanal");
+  const ativos = atual.blocos.filter((b) => ativa(b, d));
+  const depois = atual.blocos.filter((b) => !ativa(b, d) && (!filtro || b.frente === filtro)).sort((a, b) => (a.inicio ?? "").localeCompare(b.inicio ?? ""));
+  const semDia = ativos.filter((b) => b.freq !== "diaria" && b.dia === null).length;
+  const semQuem = ativos.filter((b) => !b.quem.trim()).length;
+  const semanais = ativos.filter((b) => b.freq === "semanal");
 
   return (
     <>
@@ -185,7 +192,7 @@ export default function PlannerGestao() {
         </div>
       </div>
       {FREQS.map((fq) => {
-        const itens = atual.blocos.filter((b) => b.freq === fq.id && (!filtro || b.frente === filtro)).sort((a, b) => ordem(a) - ordem(b));
+        const itens = ativos.filter((b) => b.freq === fq.id && (!filtro || b.frente === filtro)).sort((a, b) => ordem(a) - ordem(b));
         return (
           <div key={fq.id} className="mb">
             <div className="secao">{fq.titulo} · {itens.length}</div>
@@ -197,6 +204,15 @@ export default function PlannerGestao() {
           </div>
         );
       })}
+      {depois.length > 0 && (
+        <div className="mb">
+          <div className="secao">Começam depois · {depois.length}</div>
+          <p className="mudo" style={{ margin: "-4px 0 10px", fontSize: 13.5 }}>Demandas que só entram no planner a partir do mês marcado. Até lá, ficam fora do Hoje e da semana.</p>
+          <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+            {depois.map((b) => <Cartao key={b.id} b={b} mudar={mudar} tirar={() => tirar(b.id)} />)}
+          </div>
+        </div>
+      )}
       {!dados.salvo && !p && equipe && <p className="ajuda">Este é o modelo de partida. Ele é salvo assim que você mexer em alguma coisa.</p>}
     </>
   );

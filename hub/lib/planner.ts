@@ -20,8 +20,14 @@ export const FREQS: { id: Freq; titulo: string; sub: string }[] = [
 ];
 
 /** Uma demanda da gestão. dia: semanal 1 (seg) a 6 (sáb); mensal 1 a 28 ou 0 (último dia); null = a definir.
- * como: o passo a passo, um passo por linha. */
-export type Bloco = { id: string; freq: Freq; dia: number | null; frente: Frente; titulo: string; detalhe: string; como: string; quem: string };
+ * como: o passo a passo, um passo por linha. inicio: AAAA-MM em que a demanda começa a valer (vazio = já vale). */
+export type Bloco = { id: string; freq: Freq; dia: number | null; frente: Frente; titulo: string; detalhe: string; como: string; quem: string; inicio?: string | null };
+
+/** A demanda já vale no mês da data (as que começam depois ficam fora do Hoje e da semana). */
+export const ativa = (b: Bloco, d = hoje()) => !b.inicio || b.inicio <= d.slice(0, 7);
+const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+/** "2027-01" → "jan/2027". */
+export const mesCurto = (m: string) => `${MESES[Number(m.slice(5, 7)) - 1]}/${m.slice(0, 4)}`;
 // mensal: formato antigo (datas do mês numa lista separada); ao abrir, vira demanda mensal em blocos.
 export type Planner = { blocos: Bloco[]; mensal: Bloco[]; feitos: Record<string, string[]>; liberado: boolean };
 
@@ -80,10 +86,10 @@ const ultimoDia = (d: string) => new Date(Date.UTC(+d.slice(0, 4), +d.slice(5, 7
 /** O que é de hoje: as diárias (fora o domingo), as semanais do dia e as mensais da data. */
 export function deHoje(p: Planner, d = hoje()) {
   const n = Number(d.slice(8)), w = dow(d);
-  return p.blocos.filter((b) =>
+  return p.blocos.filter((b) => ativa(b, d) && (
     b.freq === "diaria" ? w !== 0
     : b.freq === "semanal" ? b.dia === w
-    : b.dia === n || (b.dia === 0 && n === ultimoDia(d)));
+    : b.dia === n || (b.dia === 0 && n === ultimoDia(d))));
 }
 
 /** "Segunda", "Dia 5", "Último dia do mês", "Dia a definir". */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { ConsultoriaEvolucao } from "@/components/ConsultoriaEvolucao";
 import { EditarAcao, EditarEntrega, EstruturaEditor, NovaAcao, NovaEntrega } from "@/components/ConsultoriaEquipe";
 import { Titulo } from "@/components/Titulo";
@@ -181,7 +182,11 @@ export default function Consultoria() {
                     <b>{e.entrega}</b>
                     <div className="mudo" style={{ fontSize: 13 }}>
                       {doisDigitos(e.frente)} · {frenteDe(e.frente)?.nome}
-                      {e.material_url && <> · <a href={e.material_url} target="_blank" rel="noopener">abrir material</a></>}
+                      {(() => {
+                        const mat = dados.materiais.find((x) => x.entrega_id === e.id);
+                        if (mat) return <> · <Link href={`/consultoria/materiais/ver?id=${mat.id}`}>abrir material</Link>{equipe && !mat.liberado ? " (rascunho)" : ""}</>;
+                        return e.material_url && <> · <a href={e.material_url} target="_blank" rel="noopener">abrir material</a></>;
+                      })()}
                     </div>
                     <Etiqueta tabela="consultoria_entregas" item={e} />
                     {equipe && <EditarEntrega e={e} c={c} lojas={lojas} aoSalvar={recarregar} />}

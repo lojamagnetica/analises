@@ -66,6 +66,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         itens: [
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
           { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal" },
+          { href: "/consultoria/materiais", rotulo: "Materiais", icone: "folder" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
           { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },

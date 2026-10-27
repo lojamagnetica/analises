@@ -154,7 +154,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
+export function Menu(props: { cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -271,7 +271,7 @@ export function Menu(props: { ocultos?: string[]; equipe: boolean; temPortal: bo
 
           {(props.temPortal || props.equipe) && (
             <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
-              <Icone nome="play" /> CURSO
+              <Icone nome="play" /> CURSO{props.cursoFechado ? " 🔒" : ""}
             </Link>
           )}
 

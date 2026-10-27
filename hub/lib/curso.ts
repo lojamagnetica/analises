@@ -120,3 +120,19 @@ export async function ferramentaLink(id: string, form: FormData) {
   const { error } = await sb().from("curso_ferramentas").update({ url: url || null }).eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+// Cadeado do curso para as lojas de mentoria e consultoria (quem comprou só o curso nunca fica trancado).
+// Fica em hub_config "curso": { aberto: boolean }. Sem a linha, o curso está aberto.
+let cursoAberto: Promise<boolean> | null = null;
+export function buscarCursoAberto(): Promise<boolean> {
+  cursoAberto ??= (async () => {
+    const { data } = await supabaseBrowser().from("hub_config").select("valor").eq("chave", "curso").maybeSingle();
+    return (data?.valor as { aberto?: boolean } | undefined)?.aberto !== false;
+  })();
+  return cursoAberto;
+}
+export async function salvarCursoAberto(aberto: boolean) {
+  const { error } = await supabaseBrowser().from("hub_config").upsert({ chave: "curso", valor: { aberto }, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  cursoAberto = Promise.resolve(aberto);
+}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Bloqueado } from "@/components/Bloqueado";
-import { Menu } from "@/components/Menu";
+import { Menu, grupoDaPagina, grupos } from "@/components/Menu";
 import { Ferramentas } from "@/components/Ferramentas";
 import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
@@ -48,6 +48,12 @@ function Casca({ children }: { children: React.ReactNode }) {
   const [cursoFechado, setCursoFechado] = useState(false);
   useEffect(() => { buscarCursoAberto().then((a) => setCursoFechado(!a)); }, [caminho]);
 
+  // Área com cadeado nesta loja (Equipe › portal › Áreas que esta loja vê).
+  const area = !equipe && hub.portal?.menu_trancado?.length
+    ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso"), caminho)
+    : undefined;
+  const areaTrancada = area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
+
   const trava = (href: string) => {
     if (!ent) return false;
     const r = requisito(href.split("?")[0]);
@@ -69,7 +75,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
+      <Menu trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (
@@ -96,7 +102,13 @@ function Casca({ children }: { children: React.ReactNode }) {
         ) : null}
         <Ferramentas temPortal={!!hub.portal} />
         <main className="conteudo">
-          {destino || semVideo ? <Carregando /> : travado && ent && req ? <Bloqueado req={req} entrada={ent} faltamEtapas={hub.persFaltam} /> : children}
+          {destino || semVideo ? <Carregando /> : travado && ent && req ? <Bloqueado req={req} entrada={ent} faltamEtapas={hub.persFaltam} /> : areaTrancada ? (
+            <div className="card" style={{ textAlign: "center", padding: 40, marginTop: 24 }}>
+              <div style={{ fontSize: 40 }}>🔒</div>
+              <h2 style={{ margin: "8px 0" }}>{areaTrancada.rotulo} abre em breve</h2>
+              <p className="mudo" style={{ margin: 0 }}>A Camilla libera esta parte no momento certo da sua consultoria.</p>
+            </div>
+          ) : children}
         </main>
       </div>
     </div>

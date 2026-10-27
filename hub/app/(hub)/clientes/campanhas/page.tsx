@@ -1,5 +1,6 @@
 "use client";
 
+import { RascunhoClientes } from "@/components/RascunhoClientes";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { buscarMetodoClientes, estadoConteudo } from "@/lib/clientes";
@@ -29,7 +30,7 @@ export default function Campanhas() {
   return (
     <>
       <Titulo titulo="Top 10 campanhas" voltar={voltar} sub={m.textos?.campanhas_sub} />
-      {estado === "rascunho" && <div className="aviso mb"><b>Rascunho:</b> a loja ainda não vê este conteúdo.</div>}
+      {estado === "rascunho" && <RascunhoClientes />}
       <div className="grade g2">
         {m.campanhas.map((c, i) => (
           <div key={c.nome} className="card card-borda">

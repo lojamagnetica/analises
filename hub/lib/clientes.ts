@@ -412,6 +412,15 @@ export function buscarMetodoClientes(): Promise<MetodoClientes | null> {
   return metodo;
 }
 
+/** Equipe: libera (ou volta para rascunho) o conteúdo de "De cliente a fã" para todas as lojas. */
+export async function liberarMetodoClientes(liberar: boolean) {
+  const r = await sb().from("metodo").select("dados").eq("chave", "clientes").single();
+  if (r.error) throw new Error(r.error.message);
+  const { error } = await sb().from("metodo").update({ dados: { ...(r.data.dados as MetodoClientes), rascunho: !liberar } }).eq("chave", "clientes");
+  if (error) throw new Error(error.message);
+  metodo = null;
+}
+
 /** Campos do formulário de cliente → dados para salvar. */
 export function dadosDoForm(form: FormData) {
   const txt = (k: string, max: number) => String(form.get(k) ?? "").trim().slice(0, max) || null;

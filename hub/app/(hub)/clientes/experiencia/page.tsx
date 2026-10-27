@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { RascunhoClientes } from "@/components/RascunhoClientes";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { buscarMetodoClientes, estadoConteudo } from "@/lib/clientes";
@@ -44,7 +45,7 @@ export default function Experiencia() {
   return (
     <>
       <Titulo titulo="Experiência do cliente" voltar={voltar} sub={m.textos?.experiencia_sub} />
-      {estado === "rascunho" && <div className="aviso mb"><b>Rascunho:</b> a loja ainda não vê este conteúdo.</div>}
+      {estado === "rascunho" && <RascunhoClientes />}
       <p className="mudo">Marque o que a sua loja já faz: {marcados} de {total}. As marcações ficam salvas neste aparelho.</p>
       <div className="grade g3">
         {ETAPAS.map(([k, titulo]) => (

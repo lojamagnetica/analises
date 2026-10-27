@@ -56,6 +56,14 @@ export function blocoDoTeste(funcao: string | null | undefined): "venda" | "apoi
   return "venda";
 }
 
+/** Quem entra na meta e no caixa por vendedora: só quem tem função de venda.
+ *  Se ninguém tem função de venda cadastrada, vale o time todo. `manter` = ids que já têm número lançado. */
+export function quemVende<T extends { id: string; funcao: string | null }>(time: T[], manter: string[] = []): T[] {
+  const vende = (p: T) => /vend|consult|atend/i.test(p.funcao ?? "");
+  if (!time.some(vende)) return time;
+  return time.filter((p) => vende(p) || manter.includes(p.id));
+}
+
 /** As perguntas do teste para a função da pessoa. */
 export function perguntasDaFuncao(m: Metodo, funcao: string | null | undefined) {
   const b = blocoDoTeste(funcao);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { RascunhoClientes } from "@/components/RascunhoClientes";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Icone } from "@/components/Icone";
@@ -40,7 +41,7 @@ export default function AcoesPorTipo() {
       <Titulo titulo="Ações por tipo de cliente" voltar={{ href: "/clientes", rotulo: "Minhas clientes" }}
         sub={(estado !== "preparo" && m?.textos?.tipos_sub) || "Cada tipo pede uma conversa diferente. Escolha o tipo, veja quem está nele e mande a mensagem pelo WhatsApp."} />
 
-      {estado === "rascunho" && <div className="aviso mb"><b>Rascunho:</b> a loja ainda não vê este conteúdo.</div>}
+      {estado === "rascunho" && <RascunhoClientes />}
 
       {varias && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">

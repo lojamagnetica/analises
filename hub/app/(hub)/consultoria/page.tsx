@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ConsultoriaEvolucao } from "@/components/ConsultoriaEvolucao";
 import { EditarAcao, EditarEntrega, EstruturaEditor, NovaAcao, NovaEntrega } from "@/components/ConsultoriaEquipe";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
@@ -114,6 +115,8 @@ export default function Consultoria() {
         </div>
         {c.visita && <div className="meet"><small>Agenda</small><b>{c.visita}</b></div>}
       </div>
+
+      <ConsultoriaEvolucao portalId={portal.id} c={c} equipe={equipe} aoSalvar={recarregar} />
 
       {varias && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">

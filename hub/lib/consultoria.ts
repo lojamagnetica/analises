@@ -15,7 +15,16 @@ export type DadosConsultoria = {
   visita?: string;
   frentes: Frente[];
   como: { titulo: string; texto: string }[];
+  evolucao?: Evolucao;
 };
+
+/** "Do diagnóstico até aqui": cada ponto com o antes, o que já mudou e o próximo passo. */
+export const STATUS_EVOLUCAO = ["Feito", "Em andamento", "A construir", "Próximo ano"] as const;
+export type ItemEvolucao = {
+  id: string; tema: string; titulo: string; antes: string; hoje: string; proximo: string; quando: string;
+  status: (typeof STATUS_EVOLUCAO)[number];
+};
+export type Evolucao = { resumo: string; liberado: boolean; itens: ItemEvolucao[] };
 export type Entrega = { id: string; ordem: number; mes: string; frente: number; entrega: string; status: string; material_url: string | null; loja: string | null };
 export type Acao = { id: string; acao: string; quem: string | null; prazo: string | null; tipo: string; status: string; obs: string | null; loja: string | null };
 

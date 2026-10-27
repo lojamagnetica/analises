@@ -12,6 +12,7 @@ import {
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
+import { quemVende } from "@/lib/pessoas";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 
@@ -57,10 +58,12 @@ function FechamentoCaixa() {
   const { dados: tudo, recarregar } = useDados(async () => {
     const [caixa, { data: equipe }, plano] = await Promise.all([
       buscarCaixa(portal.id, mes),
-      supabaseBrowser().from("loja_equipe").select("id, nome").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
+      supabaseBrowser().from("loja_equipe").select("id, nome, funcao").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
       buscarPlano(portal.id, mes).catch(() => null),
     ]);
-    const time = (equipe ?? []) as { id: string; nome: string }[];
+    // Só quem vende (quem já tem venda lançada no mês continua aparecendo).
+    const lancados = caixa.flatMap((c) => (c.vendedoras ?? []).map((v) => v.pessoa_id ?? ""));
+    const time = quemVende((equipe ?? []) as { id: string; nome: string; funcao: string | null }[], lancados);
     const meta = plano ? metaDoPlano(plano.dados) : null;
     return { caixa, equipe: time, meta, metas: metasDoTime(meta, time.map((p) => p.id), plano?.dados.metas) };
   }, [portal.id, mes]);

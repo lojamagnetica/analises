@@ -111,6 +111,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "pessoas", rotulo: "Gestão de pessoas", icone: "team",
       itens: [
         { href: "/pessoas", rotulo: "Minha equipe e perfis", icone: "users" },
+        { href: "/pessoas/organograma", rotulo: "Organograma", icone: "team" },
         { href: "/pessoas/retorno", rotulo: "Dar retorno", icone: "chat" },
         { href: "/pessoas/reuniao-semanal", rotulo: "Reunião semanal", icone: "cal" },
         { href: "/pessoas/reuniao-mensal", rotulo: "Reunião do mês", icone: "chart" },

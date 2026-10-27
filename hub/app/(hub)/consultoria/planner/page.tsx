@@ -26,6 +26,19 @@ function EscolherDia({ b, mudar }: { b: Bloco; mudar: (b: Bloco) => void }) {
   );
 }
 
+/** Quem faz: preenchido direto no cartão (na reunião, junto com o dia). */
+function QuemFaz({ b, mudar }: { b: Bloco; mudar: (b: Bloco) => void }) {
+  const [v, setV] = useState(b.quem);
+  return (
+    <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, fontSize: 13 }}>
+      👤
+      <input type="text" placeholder="Quem faz?" value={v} onChange={(e) => setV(e.target.value)}
+        onBlur={() => { if (v.trim() !== b.quem) mudar({ ...b, quem: v.trim() }); }}
+        style={{ margin: 0, padding: "6px 8px", fontSize: 13, borderColor: b.quem ? undefined : "var(--red)" }} />
+    </label>
+  );
+}
+
 /** Uma demanda: o que é, quem faz, o dia fixo e o passo a passo, com editar e excluir. */
 function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tirar: () => void }) {
   const [editando, setEditando] = useState(!b.titulo);
@@ -61,13 +74,13 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
       </div>
       <div style={{ fontWeight: 700, fontSize: 14.5 }}>{b.titulo}</div>
       {b.detalhe && <small className="mudo">{b.detalhe}</small>}
-      {b.quem && <div><small>👤 {b.quem}</small></div>}
       {lista.length > 0 && (
         <details style={{ marginTop: 6 }}>
           <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Como fazer</summary>
           <ol style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13.5 }}>{lista.map((x, i) => <li key={i} style={{ marginBottom: 3 }}>{x}</li>)}</ol>
         </details>
       )}
+      <QuemFaz key={b.quem} b={b} mudar={mudar} />
       <EscolherDia b={b} mudar={mudar} />
     </div>
   );
@@ -106,6 +119,7 @@ export default function PlannerGestao() {
   const hojeDow = new Date(`${d}T12:00:00Z`).getUTCDay();
   const ordem = (b: Bloco) => FRENTES.indexOf(b.frente) * 100 + (b.dia === null ? 99 : b.dia || 32);
   const semDia = atual.blocos.filter((b) => b.freq !== "diaria" && b.dia === null).length;
+  const semQuem = atual.blocos.filter((b) => !b.quem.trim()).length;
   const semanais = atual.blocos.filter((b) => b.freq === "semanal");
 
   return (
@@ -145,6 +159,7 @@ export default function PlannerGestao() {
           </div>
         ))}
         {semDia > 0 && <p className="ajuda" style={{ marginTop: 10 }}>{semDia} {semDia === 1 ? "demanda ainda está" : "demandas ainda estão"} sem dia fixo. Elas entram aqui assim que o dia for escolhido.</p>}
+        {semQuem > 0 && <p className="ajuda" style={{ marginTop: 4 }}>{semQuem} {semQuem === 1 ? "demanda ainda está" : "demandas ainda estão"} sem quem faz.</p>}
       </div>
 
       <div className="secao">A semana</div>

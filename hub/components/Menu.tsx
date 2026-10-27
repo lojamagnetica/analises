@@ -8,7 +8,17 @@ import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
-type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
+export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
+
+/** O grupo do menu a que a página pertence: o item de endereço mais longo que contém a página. */
+export function grupoDaPagina(lista: Grupo[], caminho: string) {
+  let melhor: { g: Grupo; n: number } | null = null;
+  for (const g of lista) for (const i of g.itens) {
+    const h = i.href.split("?")[0];
+    if ((caminho === h || caminho.startsWith(h + "/")) && (!melhor || h.length > melhor.n)) melhor = { g, n: h.length };
+  }
+  return melhor?.g;
+}
 
 export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
   const g: Grupo[] = [];
@@ -154,7 +164,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -251,7 +261,7 @@ export function Menu(props: { cursoFechado?: boolean; ocultos?: string[]; equipe
                 aria-expanded={!!abertos[g.id]}
                 onClick={() => setAbertos((a) => ({ ...a, [g.id]: !a[g.id] }))}
               >
-                <Icone nome={g.icone} /> {g.rotulo}
+                <Icone nome={g.icone} /> {g.rotulo}{props.trancados?.includes(g.id) ? " 🔒" : ""}
                 <Icone nome="chevron" className="seta" />
               </button>
               {abertos[g.id] && (

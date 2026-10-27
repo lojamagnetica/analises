@@ -181,6 +181,27 @@ function EditarPortal() {
         </div>
       </div>
 
+      <div className="card mb">
+        <h2 style={{ marginTop: 0 }}>🔒 Áreas com cadeado</h2>
+        <p className="ajuda" style={{ marginTop: -4 }}>A área continua no menu da loja com cadeado e as páginas mostram que ela abre em breve. Desmarque para liberar.</p>
+        <div className="chips">
+          {AREAS_MENU.map(([id, nome]) => {
+            const trancada = (p.menu_trancado ?? []).includes(id);
+            return (
+              <label key={id} className={`chip ${trancada ? "escolhido" : ""}`} style={{ cursor: "pointer" }}>
+                <input type="checkbox" checked={trancada} style={{ marginRight: 6 }} onChange={async (e) => {
+                  const lista = e.target.checked ? [...(p.menu_trancado ?? []), id] : (p.menu_trancado ?? []).filter((x) => x !== id);
+                  const { error } = await supabaseBrowser().from("portais").update({ menu_trancado: lista }).eq("id", p.id);
+                  setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${nome} ficou com cadeado para a loja.` : `${nome} foi liberada para a loja.` });
+                  recarregar();
+                }} />
+                {trancada ? "🔒 " : ""}{nome}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grade g2">
         <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>
           <h2>Dados do portal</h2>

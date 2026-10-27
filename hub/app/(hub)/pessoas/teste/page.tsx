@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PerguntasDisc, faltamDisc, type MaisMenos } from "@/components/PerguntasDisc";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { buscarMetodo, buscarPessoas, perfilSalvar, type Letra } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, perfilSalvar, perguntasDaFuncao, type Letra } from "@/lib/pessoas";
 import { liberado } from "@/lib/entrada";
 
 function Teste() {
@@ -21,14 +21,14 @@ function Teste() {
   if (!dados) return <Carregando />;
   const p = dados.pessoas.find((x) => x.id === id);
   if (!p) return <div className="card">Pessoa não encontrada.</div>;
-  const PERGUNTAS = dados.m.perguntas;
+  const PERGUNTAS = perguntasDaFuncao(dados.m, p.funcao);
   const faltam = faltamDisc(PERGUNTAS, r);
   const nome = p.nome.split(" ")[0];
 
   return (
     <>
       <Titulo voltar={fichaAberta ? { href: `/pessoas/pessoa?id=${p.id}`, rotulo: p.nome } : { href: "/personalizacao/etapa?n=5", rotulo: "Time de vendas" }} titulo={`Perfil de ${nome}`}
-        sub={`${PERGUNTAS.length} situações de loja. Em cada uma, marque a frase que MAIS parece e a que MENOS parece com a pessoa no dia a dia. Não existe resposta certa.`} />
+        sub={`${PERGUNTAS.length} situações do dia a dia. Em cada uma, marque a frase que MAIS parece e a que MENOS parece com a pessoa no dia a dia. Não existe resposta certa.`} />
       <div className="card mb">
         <label className="rotulo">Quem está respondendo?</label>
         <div className="linha">

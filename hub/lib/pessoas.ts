@@ -26,8 +26,11 @@ export type Perfil = {
   motivar: string; retorno: string; cobrar: string; ensinar: string; evitar: string; rende: string;
 };
 export type Habilidade = { nome: string; treino: string; medida: string; aula?: string };
+type PerguntaDisc = { pergunta: string; opcoes: Record<Letra, string> };
 export type Metodo = {
-  perguntas: { pergunta: string; opcoes: Record<Letra, string> }[];
+  // perguntas: versão de atendimento; perguntas_funcao: versões de apoio e de gestão (13 comuns + 11 da função).
+  perguntas: PerguntaDisc[];
+  perguntas_funcao?: Partial<Record<"apoio" | "gestao", PerguntaDisc[]>>;
   perfis: Record<Letra, Perfil>;
   motores: Record<Motor, string>;
   diagnostico: Record<Falta, { sinal: string; lider: string }>;
@@ -43,6 +46,21 @@ export const LETRAS: Letra[] = ["D", "I", "S", "C"];
 export const MOTORES: Motor[] = ["Ganho", "Reconhecimento", "Pertencimento", "Consequência"];
 export const FALTAS: Falta[] = ["Saber", "Poder", "Querer"];
 export const ESTAGIOS: Estagio[] = ["Começando", "Evoluindo", "Pronto"];
+
+/** A versão do teste pela função cadastrada (igual a bloco_teste no banco). */
+export function blocoDoTeste(funcao: string | null | undefined): "venda" | "apoio" | "gestao" {
+  const f = (funcao ?? "").toLowerCase();
+  if (/dono|dona|propriet|s[óo]ci|gestor|gerente|diretor|supervis|coordena|l[íi]der|encarregad/.test(f)) return "gestao";
+  if (/vend|consult|atend|atacado|comercial/.test(f)) return "venda";
+  if (/caixa|financ|estoqu|mkt|marketing|conte[úu]do|administr|compras|log[íi]stica|limpeza|cadastro|faturamento|entrega|motorista/.test(f)) return "apoio";
+  return "venda";
+}
+
+/** As perguntas do teste para a função da pessoa. */
+export function perguntasDaFuncao(m: Metodo, funcao: string | null | undefined) {
+  const b = blocoDoTeste(funcao);
+  return (b !== "venda" && m.perguntas_funcao?.[b]) || m.perguntas;
+}
 
 let metodo: Promise<Metodo> | null = null;
 /** O método vem do banco uma vez por sessão. */

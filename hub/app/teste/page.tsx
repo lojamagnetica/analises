@@ -56,7 +56,7 @@ function Teste() {
       <div className="card mb">
         <h1 style={{ margin: "0 0 6px" }}>Oi, {t.nome}!</h1>
         <p className="mudo" style={{ margin: 0 }}>
-          São {t.perguntas.length} situações da loja. Em cada uma, marque a frase que <b>mais</b> parece com você
+          São {t.perguntas.length} situações do dia a dia. Em cada uma, marque a frase que <b>mais</b> parece com você
           e a que <b>menos</b> parece. Leva uns 8 minutos. Não existe resposta certa: responda como você é no dia a dia,
           não como acha que deveria ser.
         </p>

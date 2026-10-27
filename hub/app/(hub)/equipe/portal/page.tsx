@@ -160,6 +160,27 @@ function EditarPortal() {
         );
       })()}
 
+      <div className="card mb">
+        <h2 style={{ marginTop: 0 }}>Áreas que esta loja vê</h2>
+        <p className="ajuda" style={{ marginTop: -4 }}>Para personalizar consultorias: desmarque o que não faz sentido para esta loja. Some do menu e dos atalhos dela (você continua vendo tudo).</p>
+        <div className="chips">
+          {AREAS_MENU.map(([id, nome]) => {
+            const oculto = (p.menu_oculto ?? []).includes(id);
+            return (
+              <label key={id} className="chip" style={{ cursor: "pointer", opacity: oculto ? 0.55 : 1 }}>
+                <input type="checkbox" checked={!oculto} style={{ marginRight: 6 }} onChange={async (e) => {
+                  const lista = e.target.checked ? (p.menu_oculto ?? []).filter((x) => x !== id) : [...(p.menu_oculto ?? []), id];
+                  const { error } = await supabaseBrowser().from("portais").update({ menu_oculto: lista }).eq("id", p.id);
+                  setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${nome} voltou para o menu da loja.` : `${nome} saiu do menu da loja.` });
+                  recarregar();
+                }} />
+                {nome}
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
       <div className="grade g2">
         <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>
           <h2>Dados do portal</h2>
@@ -291,6 +312,11 @@ function EditarPortal() {
     </>
   );
 }
+
+const AREAS_MENU: [string, string][] = [
+  ["loja", "Minha loja"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
+  ["vendas", "Vendas"], ["clientes", "De cliente a fã"], ["conteudo", "Conteúdo"],
+];
 
 export default function Pagina() {
   return <Suspense fallback={<Carregando />}><EditarPortal /></Suspense>;

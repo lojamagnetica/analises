@@ -65,6 +65,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         id: "consultoria", rotulo: "Minha consultoria", icone: "target",
         itens: [
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
+          { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
           { href: "/contrato", rotulo: "Contrato e renovação", icone: "note" },
@@ -151,11 +152,12 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
+export function Menu(props: { ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso);
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso)
+    .filter((g) => !props.ocultos?.includes(g.id));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),

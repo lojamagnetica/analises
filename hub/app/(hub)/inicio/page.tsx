@@ -73,9 +73,12 @@ export default function Inicio() {
   const nMes = c ? mesDaConsultoria(c.inicio) : 0;
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
   const abertas = consult ? consult.acoes.filter((a) => a.tipo === "Ação da loja" && a.status !== "Feito").length : 0;
-  const atalhos = consultoria
+  // Áreas que a equipe tirou do menu desta loja (consultorias personalizadas) somem também dos atalhos.
+  const ocultos = equipe && !comoLoja ? [] : portal.menu_oculto ?? [];
+  const escondido = (href: string) => (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
+  const atalhos = (consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
-    : ATALHOS;
+    : ATALHOS).filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
   const trancado = (href: string) => { const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
@@ -248,7 +251,7 @@ export default function Inicio() {
       </div>
 
       {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
-      {!trancado("/gestao/caixa") ? (
+      {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
         <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} /></div>
       ) : !consultoria && passos.length > 0 && (
         <>

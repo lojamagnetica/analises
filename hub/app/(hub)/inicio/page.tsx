@@ -74,7 +74,7 @@ export default function Inicio() {
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
   const abertas = consult ? consult.acoes.filter((a) => a.tipo === "Ação da loja" && a.status !== "Feito").length : 0;
   // Áreas que a equipe tirou do menu desta loja (consultorias personalizadas) somem também dos atalhos.
-  const ocultos = equipe && !comoLoja ? [] : portal.menu_oculto ?? [];
+  const ocultos = portal.menu_oculto ?? [];
   const escondido = (href: string) => (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
   const atalhos = (consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))

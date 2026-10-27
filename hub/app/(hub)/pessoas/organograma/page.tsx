@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { buscarPessoas } from "@/lib/pessoas";
@@ -100,6 +101,7 @@ export default function OrganogramaPagina() {
     return (
       <>
         <Titulo titulo="Organograma" />
+        <RascunhoComoLoja />
         <div className="card">O organograma da sua loja está sendo montado pela Camilla. Ele aparece aqui assim que estiver pronto.</div>
       </>
     );

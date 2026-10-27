@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
@@ -104,6 +105,7 @@ export default function PlannerGestao() {
     return (
       <>
         <Titulo titulo="Planner de gestão" />
+        <RascunhoComoLoja />
         <div className="card">O seu planner de gestão está sendo montado pela Camilla. Ele aparece aqui assim que estiver pronto.</div>
       </>
     );

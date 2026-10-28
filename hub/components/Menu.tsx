@@ -35,6 +35,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
         { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
+        { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
       ],
     });
     g.push({
@@ -99,6 +100,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
+        { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
       ],
     },
     {

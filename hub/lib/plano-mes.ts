@@ -36,7 +36,26 @@ export type DadosPlano = {
   metas?: Record<string, number>;
   /** O que o time ganha ao bater a meta (regras da premiação). */
   premiacao?: string;
+  /** Lojas com mais de um canal (loja, site, atacado): a meta de cada canal em 3 faixas. */
+  canais?: MetaCanal[];
+  /** Bônus de quem cuida de todos os canais (ex.: supervisor), pago quando TODOS batem a mesma faixa. */
+  bonus_geral?: { quem: string; valores: number[] };
 };
+/** Uma faixa de meta: o valor, a comissão do time (%) e a da gerente (%). */
+export type FaixaMeta = { valor: number; comissao: number; gerente: number };
+export type MetaCanal = { canal: string; base: number | null; faixas: FaixaMeta[] };
+export const NOMES_FAIXA = ["Meta 1", "Meta 2", "Meta 3"];
+const NOME_CANAL: Record<string, string> = { loja: "Loja", site: "Site", atacado: "Atacado" };
+/** Os canais do plano: os já salvos e, se faltar, um em branco para cada canal da loja (a loja física sempre). */
+export function canaisDoPlano(d: Partial<DadosPlano>, canaisDaLoja: string[]): MetaCanal[] {
+  const salvos = d.canais ?? [];
+  if (!canaisDaLoja.length && !salvos.length) return [];
+  const nomes = ["Loja", ...canaisDaLoja.map((c) => NOME_CANAL[c] ?? c)];
+  const vazio = (canal: string): MetaCanal => ({ canal, base: null, faixas: NOMES_FAIXA.map(() => ({ valor: 0, comissao: 0, gerente: 0 })) });
+  return [...salvos, ...nomes.filter((n) => !salvos.some((c) => c.canal === n)).map(vazio)];
+}
+/** Qual faixa o canal bateu com o valor vendido (0 = nenhuma). */
+export const faixaBatida = (c: MetaCanal, vendido: number) => c.faixas.filter((f) => f.valor > 0 && vendido >= f.valor).length;
 export type StatusPlano = "rascunho" | "enviado" | "ok" | "ajustar";
 export type LinhaPlano = {
   portal_id: string; mes: string; dados: Partial<DadosPlano>; status: StatusPlano;
@@ -84,8 +103,12 @@ export function metasDoTime(meta: number | null, ids: string[], ajustes: Record<
   return out;
 }
 
-export const metaDoPlano = (d: Partial<DadosPlano>) =>
-  d.base ? Math.round((d.base * (1 + (d.crescimento ?? CRESCIMENTO_PADRAO) / 100)) / 100) * 100 : null;
+/** A meta do mês da loja física. Com metas por canal, é a Meta 1 do canal Loja. */
+export const metaDoPlano = (d: Partial<DadosPlano>) => {
+  const loja = d.canais?.find((c) => c.canal === "Loja")?.faixas[0]?.valor;
+  if (loja) return loja;
+  return d.base ? Math.round((d.base * (1 + (d.crescimento ?? CRESCIMENTO_PADRAO) / 100)) / 100) * 100 : null;
+};
 
 export function planoVazio(datas: { dia: number | null; titulo: string }[]): DadosPlano {
   return {
@@ -214,4 +237,15 @@ export async function vendaDoAnoPassado(portalId: string, mes: string): Promise<
 export function mesesDoInicio() {
   const atual = hoje().slice(0, 7);
   return { atual, proximo: somarMes(atual, 1) };
+}
+
+/** As metas de um canal no plano do mês atual (ou do próximo, se o atual não tiver). */
+export async function metasDoCanal(portalId: string, canal: string) {
+  const atual = hoje().slice(0, 7);
+  for (const mes of [atual, somarMes(atual, 1)]) {
+    const linha = await buscarPlano(portalId, mes).catch(() => null);
+    const c = linha?.dados.canais?.find((x) => x.canal === canal);
+    if (c && c.faixas.some((f) => f.valor)) return { mes, nome: nomeMes(mes), canal: c };
+  }
+  return null;
 }

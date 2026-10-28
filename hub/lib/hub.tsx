@@ -24,6 +24,7 @@ export type Portal = {
   /** Grupos do menu que esta loja não vê (consultorias personalizadas). */
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
+  canais?: string[] | null;
   meet_url: string | null;
   apelidos: string[];
   ativo: boolean;

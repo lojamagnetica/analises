@@ -55,7 +55,7 @@ export default function Guia() {
   const ent = equipe ? null : entrada;
   const passos = primeirosPassos(entrada, persFaltam);
   const lista = [
-    ...grupos(false, true, persFaltam, consultoria),
+    ...grupos(false, true, persFaltam, consultoria, false, false, portal.canais ?? []),
     { id: "mais", rotulo: "Curso e indicação", icone: "play", itens: [{ href: "/cursos", rotulo: "Curso", icone: "play" }, { href: "/indique", rotulo: "Indique uma loja 🎁", icone: "gift" }] },
   ];
 

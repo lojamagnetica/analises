@@ -20,7 +20,7 @@ export function grupoDaPagina(lista: Grupo[], caminho: string) {
   return melhor?.g;
 }
 
-export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = []): Grupo[] {
   const g: Grupo[] = [];
   if (equipe) {
     g.push({
@@ -168,17 +168,37 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       ],
     },
   );
+  // Canais extras só nas lojas que têm (Equipe › portal): atacado e site.
+  if (canais.includes("atacado")) g.push({
+    id: "atacado", rotulo: "Atacado", icone: "box",
+    itens: [
+      { href: "/atacado", rotulo: "Painel do atacado", icone: "chart" },
+      { href: "/atacado/carteira", rotulo: "Carteira de lojistas", icone: "users" },
+      { href: "/atacado/reativacao", rotulo: "Reativação dos parados", icone: "bolt" },
+      { href: "/atacado/vendedoras", rotulo: "Carteira por vendedora", icone: "team" },
+      { href: "/atacado/pracas", rotulo: "Praças", icone: "map" },
+    ],
+  });
+  if (canais.includes("site")) g.push({
+    id: "site", rotulo: "Site", icone: "link",
+    itens: [
+      { href: "/site", rotulo: "Painel do site", icone: "chart" },
+      { href: "/site/recompra", rotulo: "Recompra da base", icone: "chat" },
+      { href: "/site/atendimento", rotulo: "Atendimento", icone: "inbox" },
+      { href: "/site/operacao", rotulo: "Operação do site", icone: "check" },
+    ],
+  });
   if (!consultoria) g.push(consultoriaOuMentoria);
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[] }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso)
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais)
     .filter((g) => !props.ocultos?.includes(g.id));
-  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
+  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );

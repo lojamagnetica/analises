@@ -50,7 +50,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   // Área com cadeado nesta loja (Equipe › portal › Áreas que esta loja vê).
   const area = !equipe && hub.portal?.menu_trancado?.length
-    ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso"), caminho)
+    ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso", hub.portal.canais ?? []), caminho)
     : undefined;
   const areaTrancada = area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
 
@@ -75,7 +75,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
+      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (

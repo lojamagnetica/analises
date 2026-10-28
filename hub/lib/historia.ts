@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 export type Valor = { nome: string; como: string };
 export type Respostas = {
-  comeco?: string; motivo?: string; dificil?: string; conquista?: string;
+  comeco?: string; nome?: string; motivo?: string; dificil?: string; conquista?: string;
   cliente?: string; sentir?: string; jeito?: string; valores?: Valor[]; futuro?: string;
 };
 export type Foto = { caminho: string; ano: string; legenda: string };
@@ -21,6 +21,8 @@ type Campo = Exclude<keyof Respostas, "valores">;
 export const PERGUNTAS: { id: Campo; pergunta: string; sub: string; ex: string; titulo: string }[] = [
   { id: "comeco", titulo: "Como tudo começou", pergunta: "Como tudo começou?", sub: "Quando e como a loja nasceu? O que você fazia antes?",
     ex: "Eu era professora e vendia roupa para as colegas na sala dos professores, numa mala. Em 2012, com R$ 5 mil emprestados da minha mãe, abri uma salinha de 20 m² no centro." },
+  { id: "nome", titulo: "Por que esse nome", pergunta: "Por que esse nome?", sub: "Como você escolheu o nome da loja? O que ele significa para você?",
+    ex: "\"Flor de Lis\" era como a minha avó me chamava. Ela costurava para a cidade inteira e foi quem me ensinou a gostar de roupa. Dar o nome dela à loja foi o meu jeito de levar ela comigo todo dia." },
   { id: "motivo", titulo: "Por que a loja existe", pergunta: "Por que você decidiu abrir a loja?", sub: "O que você queria fazer diferente?",
     ex: "Eu não encontrava roupa bonita no meu tamanho sem pagar caro. Queria uma loja em que a mulher real se sentisse linda, e não envergonhada no provador." },
   { id: "dificil", titulo: "O momento mais difícil", pergunta: "Um momento difícil, que quase te fez desistir.", sub: "O que aconteceu e como você superou?",
@@ -36,6 +38,8 @@ export const PERGUNTAS: { id: Campo; pergunta: string; sub: string; ex: string; 
   { id: "futuro", titulo: "Para onde vamos", pergunta: "Para onde vamos?", sub: "Qual é o seu sonho para a loja nos próximos anos?",
     ex: "Ser a loja da cidade em que a mulher pensa primeiro quando quer se sentir bonita, e ter uma equipe que atende como eu atenderia." },
 ];
+/** Quantas perguntas o formulário tem (as de texto + a dos valores). */
+export const TOTAL_PERGUNTAS = PERGUNTAS.length + 1;
 export const VALORES = ["Acolhimento", "Verdade", "Cuidado com o detalhe", "Alegria", "Compromisso", "Respeito", "Família", "Excelência", "Simplicidade", "Coragem"];
 export const EX_VALOR = "Verdade: se a peça não ficou boa, a gente fala com carinho e procura outra.";
 

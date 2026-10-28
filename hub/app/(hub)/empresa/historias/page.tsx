@@ -7,7 +7,7 @@ import { Carregando, useDados } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PERGUNTAS, buscarHistorias, excluirHistoria, salvarHistoria, tirarFoto, urlsDasFotos, type Historia, type Respostas,
+  PERGUNTAS, TOTAL_PERGUNTAS, buscarHistorias, excluirHistoria, salvarHistoria, tirarFoto, urlsDasFotos, type Historia, type Respostas,
 } from "@/lib/historia";
 
 const LINK = "https://lojamagnetica.github.io/analises/portal/historia/";
@@ -72,7 +72,7 @@ function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string
       <div className="linha entre" style={{ alignItems: "flex-start", gap: 8 }}>
         <div>
           <h3 style={{ margin: 0 }}>{h.loja || "(sem nome)"}</h3>
-          <small className="mudo">{h.nome}{h.whatsapp ? ` · ${h.whatsapp}` : ""} · {respondidas} de 9 respostas · {h.fotos?.length ?? 0} fotos · {dia(h.updated_at.slice(0, 10))}</small>
+          <small className="mudo">{h.nome}{h.whatsapp ? ` · ${h.whatsapp}` : ""} · {respondidas} de {TOTAL_PERGUNTAS} respostas · {h.fotos?.length ?? 0} fotos · {dia(h.updated_at.slice(0, 10))}</small>
         </div>
         <span className={`selo ${selo[0]}`}>{selo[1]}</span>
       </div>

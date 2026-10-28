@@ -27,7 +27,7 @@ export function NossaHistoria({ h, urls }: { h: Historia; urls: Record<string, s
       </div>
 
       <div className="card mb" style={{ padding: "24px 28px" }}>
-        {capitulo("comeco")}{capitulo("motivo")}{capitulo("dificil")}{capitulo("conquista")}
+        {capitulo("comeco")}{capitulo("nome")}{capitulo("motivo")}{capitulo("dificil")}{capitulo("conquista")}
       </div>
 
       {fotos.length > 0 && (

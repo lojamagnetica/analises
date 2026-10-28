@@ -4,12 +4,12 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import {
-  EX_VALOR, PERGUNTAS, VALORES, abrirRascunho, chaveGuardada, guardarChave, salvarRascunho, subirFoto,
+  EX_VALOR, PERGUNTAS, TOTAL_PERGUNTAS, VALORES, abrirRascunho, chaveGuardada, guardarChave, salvarRascunho, subirFoto,
   type Rascunho, type Respostas, type Valor,
 } from "@/lib/historia";
 
 // A história da loja pelo link único do grupo, sem login. Uma pergunta por tela; salva a cada passo.
-const PASSOS = ["inicio", ...PERGUNTAS.slice(0, 7).map((p) => p.id), "valores", "futuro", "fotos", "fim"] as const;
+const PASSOS = ["inicio", ...PERGUNTAS.slice(0, -1).map((p) => p.id), "valores", "futuro", "fotos", "fim"] as const;
 type Passo = (typeof PASSOS)[number];
 const vazio: Rascunho = { loja: "", nome: "", whatsapp: "", respostas: {}, fotos: [], enviado: false };
 const EX = { color: "var(--muted)", fontSize: 13.5, fontStyle: "italic", margin: "6px 0 10px" } as const;
@@ -89,7 +89,7 @@ function Formulario() {
             <li>na equipe: é com ela que cada pessoa nova conhece a loja no primeiro dia;</li>
             <li>nos materiais que você vai receber nos próximos dias, que são montados a partir dela.</li>
           </ul>
-          <p className="mudo" style={{ marginTop: 0 }}>São 9 perguntas e um espaço para fotos. Leva uns 20 minutos. Escreva do seu jeito, como se estivesse contando para alguém de confiança. Tudo fica salvo: dá para parar e continuar depois neste mesmo celular.</p>
+          <p className="mudo" style={{ marginTop: 0 }}>São {TOTAL_PERGUNTAS} perguntas e um espaço para fotos. Leva uns 20 minutos. Escreva do seu jeito, como se estivesse contando para alguém de confiança. Tudo fica salvo: dá para parar e continuar depois neste mesmo celular.</p>
           <label className="ajuda" style={{ display: "block" }}>Nome da loja<input type="text" value={r.loja} onChange={(e) => setR({ ...r, loja: e.target.value })} autoComplete="organization" /></label>
           <label className="ajuda" style={{ display: "block" }}>Seu nome<input type="text" value={r.nome} onChange={(e) => setR({ ...r, nome: e.target.value })} autoComplete="name" /></label>
           <label className="ajuda" style={{ display: "block" }}>Seu WhatsApp<input type="text" inputMode="tel" value={r.whatsapp} onChange={(e) => setR({ ...r, whatsapp: e.target.value })} autoComplete="tel" placeholder="(00) 00000-0000" /></label>
@@ -108,7 +108,7 @@ function Formulario() {
       <>
         {barra}
         <div className="card">
-          <small className="mudo">Pergunta 8 de 9</small>
+          <small className="mudo">Pergunta {PASSOS.indexOf("valores")} de {TOTAL_PERGUNTAS}</small>
           <h2 style={{ margin: "4px 0" }}>Os valores da loja</h2>
           <p className="mudo" style={{ margin: 0 }}>Escolha de 3 a 5 e diga como cada um aparece no dia a dia.</p>
           <p style={EX}>Ex.: {EX_VALOR}</p>
@@ -192,8 +192,8 @@ function Formulario() {
         {barra}
         <div className="card">
           <h2 style={{ margin: "0 0 6px" }}>Tudo pronto?</h2>
-          <p style={{ marginTop: 0 }}>Você respondeu {respondidas} de 9 perguntas e subiu {r.fotos.length} foto{r.fotos.length === 1 ? "" : "s"}.</p>
-          {respondidas < 9 && <p className="mudo">Pode enviar assim mesmo. Se quiser completar, é só voltar.</p>}
+          <p style={{ marginTop: 0 }}>Você respondeu {respondidas} de {TOTAL_PERGUNTAS} perguntas e subiu {r.fotos.length} foto{r.fotos.length === 1 ? "" : "s"}.</p>
+          {respondidas < TOTAL_PERGUNTAS && <p className="mudo">Pode enviar assim mesmo. Se quiser completar, é só voltar.</p>}
           {botoes(true, <button type="button" className="btn p" disabled={salvando} onClick={async () => { if (await salvar(true)) setPronto(true); }}>{salvando ? "Enviando…" : "Enviar minha história"}</button>)}
         </div>
       </>
@@ -201,12 +201,12 @@ function Formulario() {
   }
 
   const p = PERGUNTAS.find((x) => x.id === passo)!;
-  const n = passo === "futuro" ? 9 : PERGUNTAS.indexOf(p) + 1;
+  const n = PASSOS.indexOf(passo);
   return (
     <>
       {barra}
       <div className="card">
-        <small className="mudo">Pergunta {n} de 9</small>
+        <small className="mudo">Pergunta {n} de {TOTAL_PERGUNTAS}</small>
         <h2 style={{ margin: "4px 0" }}>{p.pergunta}</h2>
         {p.sub && <p className="mudo" style={{ margin: 0 }}>{p.sub}</p>}
         <p style={EX}>Ex.: {p.ex}</p>

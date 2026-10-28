@@ -6,7 +6,9 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { MESES_ABREV, hoje, moeda } from "@/lib/formato";
 import { MetasCanaisResumo } from "@/components/MetasCanais";
 import { metasDoCanal } from "@/lib/plano-mes";
+import Link from "next/link";
 import { buscarMeses, excluirMes, salvarMes, type SiteMes } from "@/lib/site";
+import { FLUXOS, atrasadoFluxo, buscarFluxo } from "@/lib/site-fluxos";
 
 const vazio = (mes: string): Omit<SiteMes, "portal_id"> => ({ mes, faturamento: 0, pedidos: 0, visitas: 0, clientes_novos: 0, meta: 0, obs: "" });
 const nomeMes = (m: string) => `${MESES_ABREV[Number(m.slice(5, 7)) - 1]}/${m.slice(2, 4)}`;
@@ -14,7 +16,8 @@ const nomeMes = (m: string) => `${MESES_ABREV[Number(m.slice(5, 7)) - 1]}/${m.sl
 /** Painel do site: os números de cada mês (da plataforma), com ticket, conversão e meta. */
 export default function PainelSite() {
   const { portal } = usePortal();
-  const { dados: tudo, recarregar } = useDados(async () => ({ meses: await buscarMeses(portal.id), metas: await metasDoCanal(portal.id, "Site") }), [portal.id]);
+  const { dados: tudo, recarregar } = useDados(async () => ({ meses: await buscarMeses(portal.id), metas: await metasDoCanal(portal.id, "Site"),
+    fluxos: Object.fromEntries(await Promise.all(["lead", "pedido", "carrinho", "troca"].map(async (t) => [t, await buscarFluxo(portal.id, t)] as const))) }), [portal.id]);
   const [ed, setEd] = useState<Omit<SiteMes, "portal_id"> | null>(null);
   const [erro, setErro] = useState("");
   if (!tudo) return <Carregando />;
@@ -26,11 +29,23 @@ export default function PainelSite() {
   const ticket = (x?: SiteMes) => (x && x.pedidos ? Number(x.faturamento) / x.pedidos : 0);
   const conv = (x?: SiteMes) => (x && x.visitas ? (x.pedidos / x.visitas) * 100 : 0);
   const varia = (a: number, b: number) => (b ? `${a >= b ? "▲" : "▼"} ${Math.abs(Math.round(((a - b) / b) * 100))}% vs mês anterior` : "");
+  // O dia a dia do site, vindo das telas de pedidos, carrinhos, trocas e prospecção.
+  const fx = tudo.fluxos;
+  const aberto = (t: string) => fx[t].filter((i) => !FLUXOS[t].finais.includes(i.etapa));
+  const doMes = (t: string, etapa: string) => fx[t].filter((i) => i.etapa === etapa && i.updated_at.slice(0, 7) === atual);
+  const operacao = [
+    { href: "/site/separacao", rotulo: "Pedidos para separar", valor: String(fx.pedido.filter((i) => ["Pago", "Em separação"].includes(i.etapa)).length), alerta: fx.pedido.some((i) => ["Pago", "Em separação", "Separado"].includes(i.etapa) && atrasadoFluxo(FLUXOS.pedido, i)) },
+    { href: "/site/pedidos", rotulo: "Clientes sem aviso do status", valor: String(fx.pedido.filter((i) => FLUXOS.pedido.msgs[i.etapa] && i.avisado !== i.etapa && i.etapa !== "Cancelado").length), alerta: false },
+    { href: "/site/carrinhos", rotulo: "Carrinhos recuperados no mês", valor: `${doMes("carrinho", "Recuperado").length} · ${moeda(doMes("carrinho", "Recuperado").reduce((s, i) => s + Number(i.valor), 0))}`, alerta: false },
+    { href: "/site/trocas", rotulo: "Trocas em aberto", valor: String(aberto("troca").length), alerta: fx.troca.some((i) => atrasadoFluxo(FLUXOS.troca, i)) },
+    { href: "/site/prospeccao", rotulo: "Clientes novos no mês (prospecção)", valor: String(doMes("lead", "Comprou").length), alerta: false },
+    { href: "/site/prospeccao", rotulo: "Em conversa agora", valor: String(aberto("lead").length), alerta: false },
+  ];
   const maior = Math.max(1, ...dados.map((x) => Number(x.faturamento)), ...dados.map((x) => Number(x.meta)));
 
   return (
     <>
-      <Titulo titulo="Painel do site" sub="Os números do site mês a mês. Lance no começo de cada mês, olhando a plataforma (faturamento, pedidos e visitas)." />
+      <Titulo titulo="Acompanhamento do resultado" sub="O acompanhamento do resultado: as metas, o dia a dia (pedidos, carrinhos, trocas, clientes novos) e os números do mês, lançados da plataforma no começo de cada mês." />
       <div className="linha mb" style={{ gap: 8 }}>
         <button type="button" className="btn p peq" onClick={() => setEd(dados.find((x) => x.mes === atual) ?? vazio(atual))}>Lançar o mês</button>
       </div>
@@ -55,6 +70,16 @@ export default function PainelSite() {
           <MetasCanaisResumo canais={[metasMes.canal]} vendido={dados.some((x) => x.mes === metasMes.mes) ? { Site: Number(dados.find((x) => x.mes === metasMes.mes)!.faturamento) } : undefined} />
         </div>
       )}
+      <div className="card mb">
+        <h3 style={{ marginTop: 0 }}>O dia a dia do site</h3>
+        <div className="grade g3" style={{ gap: 10 }}>
+          {operacao.map((o) => (
+            <Link key={o.rotulo} href={o.href} className="kpi" style={{ textDecoration: "none", color: "inherit" }}>
+              <small>{o.rotulo}</small><b style={{ fontSize: 22, color: o.alerta ? "var(--red)" : undefined }}>{o.valor}</b>{o.alerta && <small style={{ color: "var(--red)" }}>tem atraso</small>}
+            </Link>
+          ))}
+        </div>
+      </div>
       {!m && !ed && <div className="card mudo">Nenhum mês lançado ainda. Comece pelo mês passado e pelo atual.</div>}
       {m && (
         <>

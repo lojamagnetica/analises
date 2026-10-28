@@ -188,9 +188,15 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   if (canais.includes("site")) g.push({
     id: "site", rotulo: "Site", icone: "link",
     itens: [
-      { href: "/site", rotulo: "Painel do site", icone: "chart" },
+      { href: "/site", rotulo: "Acompanhamento do resultado", icone: "chart" },
+      { href: "/site/prospeccao", rotulo: "Prospecção de clientes", icone: "funnel" },
+      { href: "/site/pop", rotulo: "POP de atendimento", icone: "book" },
+      { href: "/site/atendimento", rotulo: "Atendimento (casos)", icone: "inbox" },
+      { href: "/site/separacao", rotulo: "Separação de pedidos", icone: "box" },
+      { href: "/site/pedidos", rotulo: "Status dos pedidos", icone: "send" },
+      { href: "/site/carrinhos", rotulo: "Carrinhos abandonados", icone: "bag" },
+      { href: "/site/trocas", rotulo: "Trocas e devoluções", icone: "refresh" },
       { href: "/site/recompra", rotulo: "Recompra da base", icone: "chat" },
-      { href: "/site/atendimento", rotulo: "Atendimento", icone: "inbox" },
       { href: "/site/operacao", rotulo: "Operação do site", icone: "check" },
     ],
   });

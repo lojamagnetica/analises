@@ -14,7 +14,7 @@ import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/ent
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
-import { LeituraDaSemana } from "@/components/LeituraDaSemana";
+import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
 import { EncontroGrupo } from "@/components/EncontroGrupo";
 import { buscarEncontro, proximoEncontro } from "@/lib/encontro";
 
@@ -126,6 +126,7 @@ export default function Inicio() {
 
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
       <LeituraDaSemana />
+      <CaixaDaSemana />
 
       {portal.tipo === "Mentoria" && <EncontroGrupo />}
 

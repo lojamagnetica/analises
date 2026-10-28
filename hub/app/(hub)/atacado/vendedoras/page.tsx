@@ -22,7 +22,7 @@ export default function Vendedoras() {
 
   return (
     <>
-      <Titulo titulo="Carteira por vendedora" sub="Cada vendedora com a sua carteira, os parados que são dela e os contatos feitos. A meta é de contatos por dia." />
+      <Titulo titulo="Carteira por vendedor" sub="Cada vendedora com a sua carteira individual: quantos lojistas, quanto compram, os parados dela, a projeção e os contatos do dia contra a meta." />
       {!nomes.length && <div className="card mudo">Ainda não tem vendedora nos lojistas. Importe a carteira com a coluna de vendedora ou edite os lojistas.</div>}
       <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
         {nomes.map((v) => {
@@ -35,7 +35,7 @@ export default function Vendedoras() {
           return (
             <div key={v} className="card card-borda" style={{ ["--c" as string]: meta && hojeN < meta ? "var(--red)" : "var(--line)" }}>
               <div className="linha entre"><b style={{ fontSize: 16 }}>{v}</b><small className="mudo">{meus.length} lojistas</small></div>
-              <small className="mudo">{moeda(meus.reduce((s, c) => s + Number(c.total_ano), 0))} no ano · {meus.filter((c) => situacao(c) === "ativo").length} ativos · <span style={{ color: parados.length ? "var(--red)" : undefined }}>{parados.length} parados</span></small>
+              <small className="mudo">{moeda(meus.reduce((s, c) => s + Number(c.total_ano), 0))} no ano · projeção {moeda(meus.reduce((s, c) => s + Number(c.projecao ?? 0), 0))} · {meus.filter((c) => situacao(c) === "ativo").length} ativos · <span style={{ color: parados.length ? "var(--red)" : undefined }}>{parados.length} parados</span></small>
               <div className="grade g2 mt" style={{ gap: 8 }}>
                 <div className="kpi"><small>Contatos hoje</small><b style={{ fontSize: 22 }}>{hojeN}{meta ? ` / ${meta}` : ""}</b></div>
                 <div className="kpi"><small>Na semana</small><b style={{ fontSize: 22 }}>{semana}{meta ? ` / ${meta * 5}` : ""}</b></div>

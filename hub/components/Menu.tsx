@@ -27,6 +27,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "empresa", rotulo: "Minha empresa", icone: "home",
       itens: [
         ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
+        { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },

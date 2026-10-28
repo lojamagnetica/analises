@@ -84,6 +84,25 @@ export default function Guia() {
         ))}
       </div>
 
+      {(() => {
+        // O que chegou de novo: só as páginas que esta loja tem no menu.
+        const novos = lista.flatMap((g) => g.itens).filter((i) => GUIA[i.href]?.novo);
+        if (!novos.length) return null;
+        return (
+          <div className="card mb" style={{ background: "var(--grad)", color: "var(--side-text)" }}>
+            <h2 style={{ marginTop: 0, color: "inherit" }}>✨ O que chegou de novo no Hub</h2>
+            <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+              {novos.map((i) => (
+                <Link key={i.href} href={i.href} style={{ color: "inherit", textDecoration: "none", background: "rgba(255,255,255,.08)", borderRadius: 12, padding: 12, display: "block" }}>
+                  <b className="linha" style={{ gap: 8 }}><Icone nome={i.icone} tamanho={18} /> {i.rotulo}</b>
+                  <small style={{ opacity: 0.8 }}>{GUIA[i.href].oque.split(":")[0].split(".")[0]}</small>
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="chips mb">
         {lista.map((g) => <a key={g.id} className="chip" href={`#${g.id}`}>{g.rotulo}</a>)}
       </div>
@@ -98,7 +117,7 @@ export default function Guia() {
               return (
                 <div key={i.href} className="card" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   <div className="linha entre" style={{ gap: 6 }}>
-                    <b className="linha" style={{ gap: 8 }}><Icone nome={i.icone} tamanho={18} /> {i.rotulo}</b>
+                    <b className="linha" style={{ gap: 8 }}><Icone nome={i.icone} tamanho={18} /> {i.rotulo}{t?.novo && <span className="selo alerta" style={{ fontSize: 10.5 }}>Novo</span>}</b>
                     <span className={`selo ${q.aberta ? "feito" : "espera"}`} style={{ fontSize: 11 }}>{q.aberta ? q.texto : "🔒 fechada"}</span>
                   </div>
                   {t && <p style={{ margin: 0, fontSize: 14 }}>{t.oque}</p>}

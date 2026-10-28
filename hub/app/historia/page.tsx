@@ -55,7 +55,7 @@ function Formulario() {
     return (
       <div className="card" style={{ textAlign: "center", padding: 32 }}>
         <div style={{ fontSize: 40 }}>💛</div>
-        <h2 style={{ margin: "8px 0" }}>Obrigada, {r.nome.split(" ")[0] || "querida"}!</h2>
+        <h2 style={{ margin: "8px 0" }}>Obrigada{r.nome.trim() ? `, ${r.nome.trim().split(" ")[0]}` : ""}!</h2>
         <p className="mudo" style={{ margin: 0 }}>A história da {r.loja || "sua loja"} chegou para a Camilla. Se lembrar de mais alguma coisa ou quiser trocar uma foto, é só abrir este mesmo link de novo neste celular.</p>
       </div>
     );
@@ -83,8 +83,13 @@ function Formulario() {
         {barra}
         <div className="card">
           <h1 style={{ margin: "0 0 8px" }}>A história da sua loja</h1>
-          <p style={{ marginTop: 0 }}>Toda loja tem uma história que merece ser contada. Ela vai ajudar a sua equipe a entender quem vocês são, e as suas clientes a se conectarem com você.</p>
-          <p className="mudo" style={{ marginTop: 0 }}>São 9 perguntas e um espaço para fotos. Leva uns 20 minutos. Escreva do seu jeito, como se estivesse contando para uma amiga. Tudo fica salvo: dá para parar e continuar depois neste mesmo celular.</p>
+          <p style={{ marginTop: 0 }}>A sua loja tem uma história incrível, e ela vira ferramenta de trabalho:</p>
+          <ul style={{ marginTop: 0, paddingLeft: 20 }}>
+            <li>no Instagram: a bio, o destaque &quot;Nossa história&quot; e vídeos que criam conexão com a cliente;</li>
+            <li>na equipe: é com ela que cada pessoa nova conhece a loja no primeiro dia;</li>
+            <li>nos materiais que você vai receber nos próximos dias, que são montados a partir dela.</li>
+          </ul>
+          <p className="mudo" style={{ marginTop: 0 }}>São 9 perguntas e um espaço para fotos. Leva uns 20 minutos. Escreva do seu jeito, como se estivesse contando para alguém de confiança. Tudo fica salvo: dá para parar e continuar depois neste mesmo celular.</p>
           <label className="ajuda" style={{ display: "block" }}>Nome da loja<input type="text" value={r.loja} onChange={(e) => setR({ ...r, loja: e.target.value })} autoComplete="organization" /></label>
           <label className="ajuda" style={{ display: "block" }}>Seu nome<input type="text" value={r.nome} onChange={(e) => setR({ ...r, nome: e.target.value })} autoComplete="name" /></label>
           <label className="ajuda" style={{ display: "block" }}>Seu WhatsApp<input type="text" inputMode="tel" value={r.whatsapp} onChange={(e) => setR({ ...r, whatsapp: e.target.value })} autoComplete="tel" placeholder="(00) 00000-0000" /></label>

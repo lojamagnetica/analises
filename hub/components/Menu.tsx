@@ -168,7 +168,18 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       ],
     },
   );
-  // Canais extras só nas lojas que têm (Equipe › portal): atacado e site.
+  // Canais extras só nas lojas que têm (Equipe › portal): varejo, atacado e site.
+  if (canais.includes("varejo")) g.push({
+    id: "varejo", rotulo: "Varejo", icone: "bag",
+    itens: [
+      { href: "/varejo/rotina", rotulo: "Rotina da loja", icone: "check" },
+      { href: "/consultoria/planner", rotulo: "Rotina e cronograma da gestão", icone: "cal" },
+      { href: "/varejo/treinamentos", rotulo: "Treinamentos de produto e vendas", icone: "play" },
+      { href: "/acoes", rotulo: "Ações comerciais", icone: "bolt" },
+      { href: "/varejo/fidelizacao", rotulo: "Programa de fidelização", icone: "heart" },
+      { href: "/varejo/contatos", rotulo: "Contatos padronizados", icone: "chat" },
+    ],
+  });
   if (canais.includes("atacado")) g.push({
     id: "atacado", rotulo: "Atacado", icone: "box",
     itens: [
@@ -210,7 +221,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais)
     .filter((g) => !props.ocultos?.includes(g.id));
-  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
+  const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
   );

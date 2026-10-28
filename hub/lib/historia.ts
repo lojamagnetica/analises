@@ -70,7 +70,7 @@ export async function salvarRascunho(token: string | null, r: Rascunho, enviar =
 }
 
 /** Diminui a foto (lado maior 1600 px, JPEG) para subir rápido pelo celular. Se não der, sobe a original. */
-async function reduzir(f: File): Promise<Blob> {
+export async function reduzir(f: File): Promise<Blob> {
   try {
     const img = await createImageBitmap(f);
     const k = Math.min(1, 1600 / Math.max(img.width, img.height));

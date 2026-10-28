@@ -117,6 +117,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     {
       id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
       itens: [
+        { href: "/gestao/tempo", rotulo: "Onde está o meu tempo", icone: "cal" },
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
         { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },

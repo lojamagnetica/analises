@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados } from "@/lib/hub";
 import { dataHora, dia, diasDesde, haQuanto, hoje } from "@/lib/formato";
-import { montarRascunho, semanaDe } from "@/lib/leitura";
+import { montarRascunho, semanaDe, semanaPassada } from "@/lib/leitura";
 import { mesesDoInicio } from "@/lib/plano-mes";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -21,23 +21,25 @@ export default function Acompanhamento() {
     const semana = semanaDe();
     const prox = mesesDoInicio().proximo;
     const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: fichas }, { data: planosNome }, { data: contratos }] = await Promise.all([
-      sb.from("portais").select("id, loja, tipo").eq("ativo", true).order("loja"),
+      sb.from("portais").select("id, loja, tipo, menu_oculto").eq("ativo", true).order("loja"),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
       sb.from("loja_caixa").select("portal_id, dia").gte("dia", semana),
       sb.from("loja_leituras").select("portal_id, semana, publicada").eq("semana", semana),
       sb.from("reunioes").select("portal_id, data").gte("data", new Date().toISOString()).order("data"),
       sb.from("loja_plano_mes").select("portal_id, status").eq("mes", prox),
       sb.from("fichas").select("portal_id, plano_id"),
-      sb.from("planos").select("id, nome"),
+      sb.from("planos").select("id, nome, inclui"),
       sb.from("contratos").select("portal_id, plano_id, inicio").order("inicio", { ascending: false }),
     ]);
+    const { data: numeros } = await sb.from("loja_numeros_semana").select("portal_id").eq("semana", semanaPassada());
     // O plano de cada loja (da ficha ou do último contrato) e quando começou.
     const planoDe = (id: string) => {
       const c = (contratos ?? []).find((x) => x.portal_id === id);
       const pid = (fichas ?? []).find((x) => x.portal_id === id)?.plano_id ?? c?.plano_id;
-      return { nome: (planosNome ?? []).find((x) => x.id === pid)?.nome ?? "", inicio: (c?.inicio as string | null) ?? null };
+      const pl = (planosNome ?? []).find((x) => x.id === pid);
+      return { nome: pl?.nome ?? "", reunioes: ((pl?.inclui as { reunioes?: string } | null)?.reunioes ?? ""), inicio: (c?.inicio as string | null) ?? null };
     };
-    return { portais: portais ?? [], perfis: perfis ?? [], caixa: caixa ?? [], leituras: leituras ?? [], reunioes: reunioes ?? [], planos: planos ?? [], semana, prox, planoDe };
+    return { numeros: numeros ?? [], portais: portais ?? [], perfis: perfis ?? [], caixa: caixa ?? [], leituras: leituras ?? [], reunioes: reunioes ?? [], planos: planos ?? [], semana, prox, planoDe };
   }, []);
   if (!dados) return <Carregando />;
 
@@ -51,13 +53,17 @@ export default function Acompanhamento() {
     if (!acessos.length) al.push({ txt: "Acesso ao Hub ainda não criado", grave: false });
     else if (!ultimo) al.push({ txt: "Recebeu o acesso e nunca entrou", grave: true });
     else if (diasDesde(ultimo) >= 7) al.push({ txt: `Sem entrar no Hub há ${diasDesde(ultimo)} dias`, grave: true });
-    if (acessos.length && !dados.caixa.some((c) => c.portal_id === p.id)) al.push({ txt: "Sem números lançados nesta semana", grave: true });
+    // Loja sem a Gestão no menu manda os números da semana; as outras lançam o caixa.
+    if (acessos.length && (p.menu_oculto ?? []).includes("gestao")) {
+      if (!dados.numeros.some((x) => x.portal_id === p.id)) al.push({ txt: "Não mandou os números da semana passada", grave: true });
+    } else if (acessos.length && !dados.caixa.some((c) => c.portal_id === p.id)) al.push({ txt: "Sem caixa lançado nesta semana", grave: true });
     const leit = dados.leituras.find((x) => x.portal_id === p.id);
     if (!leit) al.push({ txt: "Sem a leitura desta semana", grave: true });
     else if (!leit.publicada) al.push({ txt: "Rascunho da leitura pronto: revisar e publicar", grave: true });
-    // Reunião individual todo mês: Consultoria, Gold e Premium. Nos outros planos, só no primeiro mês (depois, encontros em grupo).
+    // A reunião individual segue o que o plano inclui (Minha empresa › Planos). "Só no início": até 35 dias do começo.
     const pl = dados.planoDe(p.id);
-    const individual = p.tipo === "Consultoria" || /gold|premium/i.test(pl.nome) || (!!pl.inicio && diasDesde(pl.inicio) <= 35);
+    const individual = ["semanal", "quinzenal", "mensal"].includes(pl.reunioes) || (pl.reunioes !== "nenhuma" && !!pl.inicio && diasDesde(pl.inicio) <= 35)
+      || (!pl.reunioes && p.tipo === "Consultoria");
     if (!prox && individual) al.push({ txt: "Sem próxima reunião individual marcada", grave: true });
     if (p.tipo === "Mentoria" && diaDoMes >= 15 && !(plano && ["enviado", "ok"].includes(plano.status))) al.push({ txt: "Plano do próximo mês ainda não enviado", grave: diaDoMes >= 20 });
     return { p, ultimo, prox, al, graves: al.filter((a) => a.grave).length, plano: pl.nome, individual };

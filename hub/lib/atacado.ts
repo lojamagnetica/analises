@@ -8,7 +8,11 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 export type ClienteAtacado = {
   id: string; portal_id: string; nome: string; documento: string; cidade: string; uf: string; canal: string; vendedora: string;
   telefone: string; ultimo_pedido: string | null; total_ano: number; pedidos: number; motivo: string; decisao: string; obs: string;
+  tipo?: string; etapa?: string; aberto_em?: string | null; projecao?: number; exclusivo?: boolean;
 };
+export type Colecao = { id: string; portal_id: string; nome: string; inicio: string; fim: string; meta_aberturas: number; meta_valor: number; obs: string };
+export type Area = { id: string; portal_id: string; cidade: string; uf: string; potencial: string; status: string; responsavel: string; motivo: string };
+export type SecaoPolitica = { titulo: string; texto: string };
 export type Contato = { id: string; portal_id: string; cliente_id: string; vendedora: string; dia: string; resultado: string; obs: string; created_at: string };
 
 export type Situacao = "ativo" | "risco" | "parado" | "sem";
@@ -48,14 +52,20 @@ async function ok<T extends { error: { message: string } | null }>(p: PromiseLik
   return r;
 }
 
+/** Carteira (clientes), prospects, contatos dos últimos 35 dias, metas de contato e a política. */
 export async function buscarAtacado(portalId: string) {
   const desde = new Date(Date.parse(hoje()) - 35 * 86_400_000).toISOString().slice(0, 10);
   const [c, k, cfg] = await Promise.all([
     sb().from("atacado_clientes").select("*").eq("portal_id", portalId).order("total_ano", { ascending: false }).limit(5000),
     sb().from("atacado_contatos").select("*").eq("portal_id", portalId).gte("dia", desde).order("created_at", { ascending: false }),
-    sb().from("atacado_config").select("metas").eq("portal_id", portalId).maybeSingle(),
+    sb().from("atacado_config").select("metas, politica").eq("portal_id", portalId).maybeSingle(),
   ]);
-  return { clientes: (c.data ?? []) as ClienteAtacado[], contatos: (k.data ?? []) as Contato[], metas: ((cfg.data?.metas ?? {}) as Record<string, number>) };
+  const todos = (c.data ?? []) as ClienteAtacado[];
+  return {
+    clientes: todos.filter((x) => x.tipo !== "prospect"), prospects: todos.filter((x) => x.tipo === "prospect"), todos,
+    contatos: (k.data ?? []) as Contato[], metas: ((cfg.data?.metas ?? {}) as Record<string, number>),
+    politica: ((cfg.data?.politica ?? []) as SecaoPolitica[]),
+  };
 }
 
 export const salvarCliente = (portalId: string, id: string | null, d: Partial<ClienteAtacado>) => {
@@ -68,6 +78,46 @@ export const registrarContato = (portalId: string, clienteId: string, vendedora:
 export const excluirContato = (id: string) => ok(sb().from("atacado_contatos").delete().eq("id", id));
 export const salvarMetas = (portalId: string, metas: Record<string, number>) =>
   ok(sb().from("atacado_config").upsert({ portal_id: portalId, metas, updated_at: new Date().toISOString() }, { onConflict: "portal_id" }));
+export const salvarPolitica = (portalId: string, politica: SecaoPolitica[]) =>
+  ok(sb().from("atacado_config").upsert({ portal_id: portalId, politica, updated_at: new Date().toISOString() }, { onConflict: "portal_id" }));
+
+// ───── Prospecção ─────
+export const ETAPAS_PROSPECCAO = ["Mapeado", "Primeiro contato", "Apresentação feita", "Catálogo e política enviados", "Negociando o primeiro pedido", "Perdido"];
+/** Fechou o primeiro pedido: vira cliente da carteira e conta como abertura na coleção. */
+export const abrirCliente = (id: string, valor: number) =>
+  salvarCliente("", id, { tipo: "cliente", etapa: "", aberto_em: hoje(), ultimo_pedido: hoje(), total_ano: valor, pedidos: 1 });
+
+// ───── Coleções (meta de abertura) ─────
+export async function buscarColecoes(portalId: string) {
+  const { data } = await sb().from("atacado_colecoes").select("*").eq("portal_id", portalId).order("inicio", { ascending: false });
+  return (data ?? []) as Colecao[];
+}
+export const salvarColecao = (portalId: string, id: string | null, d: Partial<Colecao>) =>
+  ok(id ? sb().from("atacado_colecoes").update(d).eq("id", id) : sb().from("atacado_colecoes").insert({ ...d, portal_id: portalId }));
+export const excluirColecao = (id: string) => ok(sb().from("atacado_colecoes").delete().eq("id", id));
+/** Lojistas abertos (primeiro pedido) dentro da coleção. */
+export const abertosNa = (col: Colecao, lista: ClienteAtacado[]) => lista.filter((c) => c.aberto_em && c.aberto_em >= col.inicio && c.aberto_em <= col.fim);
+
+// ───── Áreas potenciais ─────
+export const POTENCIAIS: Record<string, { nome: string; classe: string }> = {
+  alto: { nome: "Alto", classe: "feito" }, medio: { nome: "Médio", classe: "andamento" }, baixo: { nome: "Baixo", classe: "espera" },
+};
+export const STATUS_AREA: Record<string, string> = { mapeada: "Mapeada", prospectando: "Prospectando", aberta: "Aberta (tem lojista)", descartada: "Descartada" };
+export async function buscarAreas(portalId: string) {
+  const { data } = await sb().from("atacado_areas").select("*").eq("portal_id", portalId).order("created_at", { ascending: false });
+  return (data ?? []) as Area[];
+}
+export const salvarArea = (portalId: string, id: string | null, d: Partial<Area>) =>
+  ok(id ? sb().from("atacado_areas").update(d).eq("id", id) : sb().from("atacado_areas").insert({ ...d, portal_id: portalId }));
+export const excluirArea = (id: string) => ok(sb().from("atacado_areas").delete().eq("id", id));
+
+// ───── Política unificada ─────
+/** O modelo para começar: a loja troca os textos pelos dela. */
+export const POLITICA_PADRAO: SecaoPolitica[] = [
+  { titulo: "Apresentação da marca (o passo a passo)", texto: "1. Quem somos: a história da marca em 3 frases.\n2. Para quem vendemos: a cliente final da lojista.\n3. As linhas e a coleção atual (catálogo).\n4. Por que a loja vende mais com a marca: giro, margem, reposição.\n5. Como funciona comprar: pedido mínimo, prazo e entrega.\n6. Próximo passo combinado com data." },
+  { titulo: "Política comercial", texto: "Pedido mínimo: \nPrazo de pagamento: \nDescontos (à vista, volume): \nFrete: \nPrazo de entrega: \nTrocas e defeitos: \nReposição: " },
+  { titulo: "Política de exclusividade", texto: "Quem tem direito: \nRaio ou cidade de exclusividade: \nCompra mínima por coleção para manter: \nQuando perde a exclusividade: \nComo é revisada (a cada coleção): " },
+];
 
 // ───── Importar a planilha do sistema (CSV) ─────
 

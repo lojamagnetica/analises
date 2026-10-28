@@ -26,7 +26,7 @@ export function LinhaLojista({ c, contatos, portalId, recarregar, reativacao, cu
     <div style={{ borderTop: "1px solid var(--line)", padding: "8px 0" }}>
       <div className="linha entre" style={{ gap: 8, alignItems: "flex-start", cursor: "pointer" }} onClick={() => setAberto(!aberto)}>
         <div style={{ minWidth: 0 }}>
-          <b>{c.nome}</b>{curva && <span className="selo espera" style={{ marginLeft: 6, fontSize: 11 }}>{curva}</span>}
+          <b>{c.nome}</b>{curva && <span className="selo espera" style={{ marginLeft: 6, fontSize: 11 }}>{curva}</span>}{c.exclusivo && <span className="selo andamento" style={{ marginLeft: 6, fontSize: 11 }}>exclusivo</span>}
           <div><small className="mudo">{[c.cidade, c.uf].filter(Boolean).join("/") || "sem praça"} · {c.canal || "sem canal"} · {c.vendedora || "sem vendedora"}{dias !== null ? ` · último pedido há ${dias} dias` : ""}{meus[0] ? ` · contato ${dia(meus[0].dia)}: ${meus[0].resultado}` : ""}</small></div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -69,6 +69,7 @@ export function LinhaLojista({ c, contatos, portalId, recarregar, reativacao, cu
                 <label className="ajuda" style={{ display: "block" }}>Último pedido<input type="date" value={r.ultimo_pedido ?? ""} onChange={(e) => setR({ ...r, ultimo_pedido: e.target.value || null })} /></label>
                 <label className="ajuda" style={{ display: "block" }}>Total no ano (R$)<input type="number" value={r.total_ano} onChange={(e) => setR({ ...r, total_ano: Number(e.target.value) })} /></label>
               </div>
+              <label className="linha" style={{ gap: 6, fontSize: 14, cursor: "pointer" }}><input type="checkbox" checked={!!r.exclusivo} onChange={(e) => setR({ ...r, exclusivo: e.target.checked })} style={{ width: "auto", margin: 0 }} /> Tem exclusividade na praça (pela política)</label>
               <label className="ajuda" style={{ display: "block" }}>Observação<textarea rows={2} value={r.obs} onChange={(e) => setR({ ...r, obs: e.target.value })} /></label>
               <div className="linha" style={{ gap: 8 }}>
                 <button type="button" className="btn p peq" onClick={async () => { const { id: _i, portal_id: _p, ...d } = r; await salvar({ ...d, uf: d.uf.toUpperCase().slice(0, 2) }); setEditando(false); }}>Salvar</button>

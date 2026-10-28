@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
+import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { dia, diasAte } from "@/lib/formato";
+import { dataHora, dia, diasAte } from "@/lib/formato";
 import { buscarPessoas } from "@/lib/pessoas";
 import {
   FASES_ONBOARDING, ROTEIRO_HISTORIA, buscarContratacao, dataDaFase, excluirOnboarding, salvarOnboarding, totalItensOnb,
@@ -37,6 +39,7 @@ function PaginaOnboarding() {
   const total = Object.values(feitos).filter(Boolean).length;
   const diaDo = -diasAte(o.inicio) + 1;
   // A fase de hoje: a primeira que ainda não passou.
+  const linkEstudo = typeof window !== "undefined" ? `${window.location.origin}${BASE}/estudo/?t=${o.estudo_token}` : "";
   const faseHoje = FASES_ONBOARDING.find((f) => diasAte(dataDaFase(o.inicio, f.ate)) >= 0)?.id;
 
   return (
@@ -68,6 +71,21 @@ function PaginaOnboarding() {
                 <input type="checkbox" checked={!!feitos[it.id]} onChange={(e) => marcar(it.id, e.target.checked)} />
                 <span><b style={{ textDecoration: feitos[it.id] ? "line-through" : undefined }}>{it.t}</b>{it.d && <><br /><small className="mudo">{it.d}</small></>}</span>
               </label>
+              {it.estudo && (
+                <div className="linha" style={{ marginLeft: 30, marginTop: 6, gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                  <a className="btn p peq" href={`https://wa.me/?text=${encodeURIComponent(`Oi, ${nome}! Este é o seu material de estudo da ${portal.loja}: ${linkEstudo}`)}`} target="_blank" rel="noopener">Mandar o link de estudo</a>
+                  <Copiar texto={linkEstudo} rotulo="Copiar link" />
+                  <Link href="/guia-marcas" className="link-loja">Completar o Guia das marcas</Link>
+                </div>
+              )}
+              {it.quiz && (
+                <div style={{ marginLeft: 30, marginTop: 6, fontSize: 14 }}>
+                  {o.quiz
+                    ? <><b>Acertou {o.quiz.acertos} de {o.quiz.total}</b> <small className="mudo">em {dataHora(o.quiz_em)}</small>
+                      {o.quiz.erros.length > 0 && <ul style={{ margin: "4px 0", paddingLeft: 18 }}>{o.quiz.erros.map((x, k) => <li key={k}>{x.pergunta} <b>→ {x.certa}</b></li>)}</ul>}</>
+                    : <span className="mudo">Ainda não fez o quiz.</span>}
+                </div>
+              )}
               {it.historia && (
                 <details style={{ marginLeft: 30, marginTop: 6 }}>
                   <summary className="link-loja" style={{ cursor: "pointer" }}>Roteiro de 30 minutos para apresentar a história</summary>

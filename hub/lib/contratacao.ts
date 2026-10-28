@@ -231,13 +231,13 @@ export const ROTEIRO_HISTORIA = [
   { t: "Fechamento", d: "Pergunte: \"o que mais te chamou atenção na nossa história?\" A resposta mostra se a pessoa se conectou." },
 ];
 
-export type ItemOnb = { id: string; t: string; d?: string; historia?: boolean };
+export type ItemOnb = { id: string; t: string; d?: string; historia?: boolean; estudo?: boolean; quiz?: boolean };
 export const FASES_ONBOARDING: { id: string; titulo: string; ate: number; itens: ItemOnb[] }[] = [
   { id: "d1", titulo: "Dia 1 · A visão da empresa", ate: 0, itens: [
     { id: "d1a", t: "Receber pessoalmente (dona ou gerente)", d: "Nunca \"se vira aí\". É o primeiro dia que define a visão que a pessoa vai ter da empresa." },
     { id: "d1b", t: "Apresentar a história, a cultura e os valores da loja", d: "Use o roteiro abaixo com a página Nossa história.", historia: true },
     { id: "d1c", t: "Explicar as regras do dia a dia", d: "Horários, uniforme e apresentação, uso do celular, a quem pedir ajuda." },
-    { id: "d1d", t: "Estudar as marcas, linhas e produtos", d: "Com o material da loja: catálogos, etiquetas, site das marcas. O que é cada marca, para quem é e o preço." },
+    { id: "d1d", t: "Estudar as marcas, linhas e produtos", d: "Mande o link de estudo: a história da loja e o Guia das marcas, para ler no celular.", estudo: true },
     { id: "d1e", t: "Fechar o dia: \"o que você entendeu da nossa loja?\"" },
   ] },
   { id: "d23", titulo: "Dias 2 e 3 · Conhecer na prática", ate: 2, itens: [
@@ -245,6 +245,7 @@ export const FASES_ONBOARDING: { id: string; titulo: string; ate: number; itens:
     { id: "d2b", t: "Ajudar a organizar uma seção", d: "O primeiro contato real com o produto." },
     { id: "d2c", t: "Acompanhar alguém experiente da equipe nos atendimentos, só observando" },
     { id: "d2d", t: "10 minutos de conversa no fim de cada dia", d: "O que viu e o que ficou de dúvida." },
+    { id: "d2e", t: "Quiz das marcas e produtos (dia 3)", d: "Depois de ver os produtos na loja, a pessoa faz o quiz pelo mesmo link de estudo. O resultado aparece aqui.", quiz: true },
   ] },
   { id: "d45", titulo: "Dias 4 e 5 · Começar a atuar com apoio", ate: 4, itens: [
     { id: "d4a", t: "Fazer atendimentos com alguém do lado" },
@@ -277,7 +278,10 @@ export type Candidato = {
   id: string; vaga_id: string; portal_id: string; nome: string; whatsapp: string; etapa: EtapaCandidato; obs: string;
   entrevista: Entrevista; teste_token: string; teste: Teste | null; teste_em: string | null; pessoa_id: string | null; created_at: string;
 };
-export type Onboarding = { id: string; portal_id: string; pessoa_id: string; inicio: string; feitos: Record<string, boolean>; notas: string; created_at: string };
+export type Onboarding = {
+  id: string; portal_id: string; pessoa_id: string; inicio: string; feitos: Record<string, boolean>; notas: string; created_at: string;
+  estudo_token: string; quiz: { acertos: number; total: number; erros: { pergunta: string; certa: string }[] } | null; quiz_em: string | null;
+};
 
 const sb = () => supabaseBrowser();
 async function ok<T extends { error: { message: string } | null }>(p: PromiseLike<T>) {

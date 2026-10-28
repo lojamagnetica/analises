@@ -33,14 +33,22 @@ type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; 
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(h), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
-  const [{ data: caixa }, { data: plano }, { data: anterior }] = await Promise.all([
+  const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }] = await Promise.all([
     admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
     admin.from("loja_plano_mes").select("dados, status").eq("portal_id", portalId).eq("mes", mes).maybeSingle(),
     admin.from("loja_leituras").select("semana, texto, acoes").eq("portal_id", portalId).eq("publicada", true).lt("semana", esta).order("semana", { ascending: false }).limit(1).maybeSingle(),
+    admin.from("loja_numeros_semana").select("semana, faturamento, vendas, pecas, obs").eq("portal_id", portalId).gte("semana", retrasada),
   ]);
   const cx = (caixa ?? []) as Caixa[];
   const resumo = (de: string, ate: string) => {
     const l = cx.filter((c) => c.dia >= de && c.dia <= ate);
+    // Loja que não lança o caixa no Hub: os números da semana que ela mandou.
+    const inf = !l.length ? (informados ?? []).find((x) => x.semana === de) : null;
+    if (inf) {
+      const fat = Number(inf.faturamento), vendas = Number(inf.vendas), pecas = Number(inf.pecas);
+      return { faturamento: Math.round(fat), vendas, pecas, ticket: vendas ? Math.round(fat / vendas) : null, pa: vendas ? +(pecas / vendas).toFixed(2) : null,
+        dias_lancados: diasDeLoja(de, ate), dias_de_loja: diasDeLoja(de, ate), por_dia: [] as { dia: string; faturamento: number }[], por_vendedora: {} as Record<string, number>, informado_pela_loja: true, como_foi: inf.obs };
+    }
     const fat = l.reduce((s, c) => s + Number(c.faturamento), 0), vendas = l.reduce((s, c) => s + Number(c.vendas), 0), pecas = l.reduce((s, c) => s + Number(c.pecas), 0);
     const porVendedora: Record<string, number> = {};
     l.forEach((c) => (c.vendedoras ?? []).forEach((v) => { porVendedora[v.nome] = (porVendedora[v.nome] ?? 0) + Number(v.faturamento); }));
@@ -73,12 +81,14 @@ type Nums = Awaited<ReturnType<typeof numeros>>;
 const reais = (v: number) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
 
 /** Sem o Claude ligado: um rascunho por regras, só com os números. A Camilla ajusta e publica. */
-function porRegras(nome: string, n: Nums): Saida {
+function porRegras(nome: string, n: Nums, semGestao: boolean): Saida {
   const s = n.semana_passada, r = n.semana_retrasada, m = n.mes_ate_ontem;
   const poucos = s.dias_lancados < Math.ceil(s.dias_de_loja / 2);
   const frases: string[] = [];
   if (poucos) {
-    frases.push(`${nome}, na semana passada só ${s.dias_lancados} de ${s.dias_de_loja} dias de caixa foram lançados no Hub, então ainda não dá para ler a semana com segurança.`);
+    frases.push(semGestao
+      ? `${nome}, os números da semana passada ainda não chegaram, então ainda não dá para ler a semana com segurança.`
+      : `${nome}, na semana passada só ${s.dias_lancados} de ${s.dias_de_loja} dias de caixa foram lançados no Hub, então ainda não dá para ler a semana com segurança.`);
     frases.push("Esta semana o foco é deixar os números em dia: é com eles que eu consigo te dizer exatamente onde agir.");
   } else {
     frases.push(`${nome}, na semana passada a loja vendeu ${reais(s.faturamento)} em ${s.vendas} vendas${s.ticket ? `, com ticket médio de ${reais(s.ticket)}` : ""}${s.pa ? ` e ${String(s.pa).replace(".", ",")} peças por venda` : ""}.`);
@@ -86,16 +96,18 @@ function porRegras(nome: string, n: Nums): Saida {
       const v = Math.round(((s.faturamento - r.faturamento) / r.faturamento) * 100);
       frases.push(v >= 0 ? `Foi ${v}% a mais que a semana anterior.` : `Foi ${-v}% a menos que a semana anterior.`);
     }
-    if (m.meta_do_mes && m.deveria_ter_vendido_ate_ontem) {
+    if (m.meta_do_mes && m.deveria_ter_vendido_ate_ontem && m.dias_lancados > 0) {
       const pct = Math.round((m.faturamento / m.deveria_ter_vendido_ate_ontem) * 100);
       frases.push(`No mês, você está em ${reais(m.faturamento)}: ${pct}% do que precisava ter vendido até ontem para bater a meta de ${reais(m.meta_do_mes)}.`);
     }
   }
   const acoes: string[] = [];
-  if (poucos) acoes.push("Lançar o caixa todo dia até sábado (ou pedir à Camilla um acesso só do caixa para alguém da equipe lançar)");
+  if (poucos) acoes.push(semGestao
+    ? "Mandar os números da semana no Início do Hub toda segunda até 12h (venda, número de vendas e peças)"
+    : "Lançar o caixa todo dia até sábado (ou pedir à Camilla um acesso só do caixa para alguém da equipe lançar)");
   const naoFeita = (n.leitura_anterior?.acoes as { t: string; feita: boolean }[] | undefined)?.find((a) => !a.feita);
   if (naoFeita) acoes.push(`Retomar a ação da semana passada: ${naoFeita.t}`);
-  const atras = m.meta_do_mes && m.deveria_ter_vendido_ate_ontem && m.faturamento < m.deveria_ter_vendido_ate_ontem * 0.95;
+  const atras = m.meta_do_mes && m.deveria_ter_vendido_ate_ontem && m.dias_lancados > 0 && m.faturamento < m.deveria_ter_vendido_ate_ontem * 0.95;
   acoes.push(atras ? "Chamar 20 clientes da carteira no WhatsApp até quarta, com a ação do mês" : "Combinar com a equipe a meta desta semana e acompanhar todo fim de dia");
   if (n.plano_do_mes?.foco_desta_semana) acoes.push(`Foco da semana do seu plano: ${n.plano_do_mes.foco_desta_semana}`);
   acoes.push("Fazer a reunião de 15 minutos com a equipe na terça para combinar a semana");
@@ -107,13 +119,13 @@ async function rascunho(admin: SupabaseClient, portalId: string) {
   const { data: atual } = await admin.from("loja_leituras").select("id, publicada").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
   if (atual?.publicada) return { portal_id: portalId, pulou: "já publicada" };
   const [{ data: portal }, { data: mem }, { data: exemplos }, nums] = await Promise.all([
-    admin.from("portais").select("loja, responsavel, tipo").eq("id", portalId).single(),
+    admin.from("portais").select("loja, responsavel, tipo, menu_oculto").eq("id", portalId).single(),
     admin.from("metodo").select("dados").eq("chave", "leitura_agente").single(),
     admin.from("leitura_exemplos").select("rascunho, final").order("created_at", { ascending: false }).limit(6),
     numeros(admin, portalId),
   ]);
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
-  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums);
+  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
   const acoes = out.acoes.slice(0, 3).map((t) => ({ t, feita: false }));
   const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);

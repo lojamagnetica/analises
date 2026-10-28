@@ -78,12 +78,30 @@ export async function numerosDaLoja(portalId: string) {
   ]);
   const linhas = (caixa ?? []) as { dia: string; faturamento: number }[];
   const soma = (f: (d: string) => boolean) => linhas.filter((c) => f(c.dia)).reduce((s, c) => s + Number(c.faturamento), 0);
+  // Sem caixa lançado: os números da semana que a loja mandou.
+  const informados = await buscarNumerosSemana(portalId, passada);
   return {
-    semanaPassada: soma((d) => d >= passada && d < semana),
+    informados,
+    semanaPassada: soma((d) => d >= passada && d < semana) || Number(informados?.faturamento ?? 0),
     noMes: soma((d) => d >= `${mes}-01`),
     diasLancados: new Set(linhas.filter((c) => c.dia >= passada && c.dia < semana).map((c) => c.dia)).size,
     meta: plano ? metaDoPlano(plano.dados) : null,
   };
+}
+
+// ───── Números da semana (loja que não lança o caixa no Hub) ─────
+
+export type NumerosSemana = { portal_id: string; semana: string; faturamento: number; vendas: number; pecas: number; obs: string };
+/** A semana que a loja informa: a passada (segunda). */
+export const semanaPassada = () => somaDias(semanaDe(), -7);
+
+export async function buscarNumerosSemana(portalId: string, semana = semanaPassada()) {
+  const { data } = await sb().from("loja_numeros_semana").select("*").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
+  return (data as NumerosSemana | null) ?? null;
+}
+export async function salvarNumerosSemana(n: NumerosSemana) {
+  const { error } = await sb().from("loja_numeros_semana").upsert({ ...n, updated_at: new Date().toISOString() }, { onConflict: "portal_id,semana" });
+  if (error) throw new Error(error.message);
 }
 
 /** Dias da semana atual (segunda a sábado) com e sem caixa lançado. */

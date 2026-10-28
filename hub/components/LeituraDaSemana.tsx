@@ -6,16 +6,58 @@ import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, moeda } from "@/lib/formato";
 import {
-  buscarLeitura, caixaDaSemana, despublicar, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
+  buscarLeitura, buscarNumerosSemana, caixaDaSemana, salvarNumerosSemana, semanaPassada, despublicar, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
 } from "@/lib/leitura";
 
 const DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb"];
 
-/** O caixa da semana no Início da loja: sem número lançado, não tem leitura na segunda. */
+/** Para a loja que não lança o caixa no Hub: os números da semana passada, num card só. */
+function NumerosDaSemana() {
+  const { portal } = usePortal();
+  const semana = semanaPassada();
+  const { dados: carregado, recarregar } = useDados(async () => ({ n: await buscarNumerosSemana(portal.id, semana) }), [portal.id, semana]);
+  const [r, setR] = useState<{ faturamento: string; vendas: string; pecas: string; obs: string } | null>(null);
+  const [erro, setErro] = useState("");
+  if (!carregado) return null;
+  const dados = carregado.n;
+  if (dados && !r) {
+    return (
+      <div className="card mt linha entre" style={{ gap: 10, flexWrap: "wrap" }}>
+        <span>📈 <b>Números da semana de {dia(semana)} enviados</b> <span className="mudo">· {moeda(Number(dados.faturamento))} em {dados.vendas} vendas</span></span>
+        <button type="button" className="link-loja" onClick={() => setR({ faturamento: String(dados.faturamento), vendas: String(dados.vendas), pecas: String(dados.pecas), obs: dados.obs })}>Editar</button>
+      </div>
+    );
+  }
+  const f = r ?? { faturamento: "", vendas: "", pecas: "", obs: "" };
+  const num = (t: string) => Number(t.replace(/\./g, "").replace(",", ".")) || 0;
+  return (
+    <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
+      <b>📈 Os números da semana de {dia(semana)}</b>
+      <p className="ajuda" style={{ margin: "2px 0 8px" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Pegue no seu sistema e mande aqui: leva 1 minuto.</p>
+      <div className="grade g3" style={{ gap: "0 10px" }}>
+        <label className="ajuda" style={{ display: "block" }}>Quanto vendeu (R$)<input type="text" inputMode="decimal" value={f.faturamento} onChange={(e) => setR({ ...f, faturamento: e.target.value })} /></label>
+        <label className="ajuda" style={{ display: "block" }}>Quantas vendas<input type="text" inputMode="numeric" value={f.vendas} onChange={(e) => setR({ ...f, vendas: e.target.value })} /></label>
+        <label className="ajuda" style={{ display: "block" }}>Quantas peças<input type="text" inputMode="numeric" value={f.pecas} onChange={(e) => setR({ ...f, pecas: e.target.value })} /></label>
+      </div>
+      <label className="ajuda" style={{ display: "block" }}>Como foi a semana? (opcional)<textarea rows={2} value={f.obs} onChange={(e) => setR({ ...f, obs: e.target.value })} /></label>
+      {erro && <div className="aviso mb">{erro}</div>}
+      <button type="button" className="btn p peq" disabled={!num(f.faturamento)} onClick={async () => {
+        setErro("");
+        try { await salvarNumerosSemana({ portal_id: portal.id, semana, faturamento: num(f.faturamento), vendas: Math.round(num(f.vendas)), pecas: Math.round(num(f.pecas)), obs: f.obs.trim() }); setR(null); recarregar(); }
+        catch (e) { setErro((e as Error).message); }
+      }}>Enviar os números</button>
+    </div>
+  );
+}
+
+/** O caixa da semana no Início da loja: sem número lançado, não tem leitura na segunda.
+ *  Loja sem a Gestão no menu (usa o próprio sistema): manda os números da semana num card só. */
 export function CaixaDaSemana() {
   const { portal } = usePortal();
-  const { dados } = useDados(() => caixaDaSemana(portal.id), [portal.id]);
-  if (!dados || (portal.menu_oculto ?? []).includes("gestao")) return null;
+  const semGestao = (portal.menu_oculto ?? []).includes("gestao");
+  const { dados } = useDados(() => (semGestao ? Promise.resolve([]) : caixaDaSemana(portal.id)), [portal.id, semGestao]);
+  if (semGestao) return <NumerosDaSemana />;
+  if (!dados) return null;
   const faltam = dados.filter((d) => d.passou && !d.lancado).length;
   return (
     <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam ? "var(--red)" : "var(--green)" }}>
@@ -108,12 +150,13 @@ export function LeituraDaSemana() {
         <p className="mudo" style={{ marginTop: 4 }}>Só a equipe vê esta caixa. Revise, ajuste e publique: aparece no topo do Início da loja, com o seu nome. As suas correções ensinam o agente.</p>
         {n && (
           <div className="grade g4 mb" style={{ gap: 8 }}>
-            <div className="kpi"><small>Semana passada</small><b>{moeda(n.semanaPassada)}</b></div>
+            <div className="kpi"><small>Semana passada{n.informados ? " (informada)" : ""}</small><b>{moeda(n.semanaPassada)}</b></div>
             <div className="kpi"><small>Dias lançados (de 6)</small><b>{n.diasLancados}</b></div>
             <div className="kpi"><small>Vendeu no mês</small><b>{moeda(n.noMes)}</b></div>
             <div className="kpi"><small>Meta do mês</small><b>{n.meta ? moeda(n.meta) : "—"}</b></div>
           </div>
         )}
+        {n?.informados?.obs && <div className="aviso mb">💬 <b>A loja contou:</b> {n.informados.obs}</div>}
         {r?.rascunho?.para_camilla && <div className="aviso mb">🔎 <b>Para você conferir:</b> {r.rascunho.para_camilla}</div>}
         <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>O que os números mostram</b>
           <textarea rows={4} value={tx} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: A semana fechou 18% abaixo do ritmo da meta. O ticket subiu, mas entraram menos clientes: o foco é trazer gente para a loja." />

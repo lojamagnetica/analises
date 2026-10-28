@@ -2,6 +2,7 @@
 
 import { MESES } from "@/lib/conteudo";
 import { dia, moeda } from "@/lib/formato";
+import { MetasCanaisResumo } from "@/components/MetasCanais";
 import { RESULTADOS, completar, metaDoPlano, semanasDoMes, type LinhaPlano } from "@/lib/plano-mes";
 
 /** O plano do mês só para ler: o que a Camilla vê para aprovar. */
@@ -15,7 +16,8 @@ export function PlanoResumo({ linha }: { linha: LinhaPlano }) {
   return (
     <div style={{ display: "grid", gap: 12 }}>
       <div>
-        <b>1 · Meta:</b> {meta ? <>{moeda(meta)} <span className="mudo">({moeda(d.base ?? 0)} em {MESES[nMes].toLowerCase()} do ano passado + {d.crescimento}%)</span></> : <span className="mudo">sem meta</span>}
+        <b>1 · Meta:</b> {meta ? <>{moeda(meta)} <span className="mudo">{d.canais?.length ? "(Meta 1 da loja)" : `(${moeda(d.base ?? 0)} em ${MESES[nMes].toLowerCase()} do ano passado + ${d.crescimento}%)`}</span></> : <span className="mudo">sem meta</span>}
+        {d.canais?.length ? <div className="mt"><MetasCanaisResumo canais={d.canais} bonus={d.bonus_geral} /></div> : null}
         {d.premiacao?.trim() && <div style={{ whiteSpace: "pre-wrap" }}><b>🏆 Premiação:</b> {d.premiacao.trim()}</div>}
       </div>
       <div>

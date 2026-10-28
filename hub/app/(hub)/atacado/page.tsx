@@ -4,12 +4,14 @@ import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { moeda } from "@/lib/formato";
+import { MetasCanaisResumo } from "@/components/MetasCanais";
+import { metasDoCanal } from "@/lib/plano-mes";
 import { SITUACOES, buscarAtacado, diasSemPedido, situacao, type Situacao } from "@/lib/atacado";
 
 /** O painel do atacado: quem está ativo, em risco e parado, por canal e por vendedora. */
 export default function PainelAtacado() {
   const { portal } = usePortal();
-  const { dados } = useDados(() => buscarAtacado(portal.id), [portal.id]);
+  const { dados } = useDados(async () => ({ ...(await buscarAtacado(portal.id)), metas: await metasDoCanal(portal.id, "Atacado") }), [portal.id]);
   if (!dados) return <Carregando />;
   const cs = dados.clientes;
   const conta = (s: Situacao) => cs.filter((c) => situacao(c) === s);
@@ -26,6 +28,7 @@ export default function PainelAtacado() {
     return (
       <>
         <Titulo titulo="Painel do atacado" />
+        {dados.metas && <div className="card mb"><h3 style={{ marginTop: 0 }}>Metas do atacado · {dados.metas.nome}</h3><MetasCanaisResumo canais={[dados.metas.canal]} /></div>}
         <div className="card">
           <p style={{ marginTop: 0 }}>Ainda não tem lojistas no Hub. Comece importando a planilha de clientes do sistema (com cidade, UF, vendedora, último pedido e total do ano).</p>
           <Link className="btn p" href="/atacado/carteira">Importar a carteira</Link>
@@ -37,6 +40,9 @@ export default function PainelAtacado() {
   return (
     <>
       <Titulo titulo="Painel do atacado" sub="A carteira de lojistas pelo último pedido: quem está comprando, quem está esfriando e quem parou." />
+      {dados.metas && (
+        <div className="card mb"><h3 style={{ marginTop: 0 }}>Metas do atacado · {dados.metas.nome}</h3><MetasCanaisResumo canais={[dados.metas.canal]} /></div>
+      )}
       <div className="grade g4 mb">
         {(["ativo", "risco", "parado", "sem"] as Situacao[]).map((s) => (
           <div key={s} className="kpi"><small>{SITUACOES[s].nome}{s === "ativo" ? " (até 30 dias)" : s === "risco" ? " (31 a 60 dias)" : s === "parado" ? " (mais de 60 dias)" : ""}</small>

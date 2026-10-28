@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { CampoReais } from "@/components/CampoReais";
+import { MetasCanaisEditar } from "@/components/MetasCanais";
 import { Excluir } from "@/components/Excluir";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -13,7 +14,7 @@ import { buscarAcoes } from "@/lib/acoes-mes";
 import { fimDoMes, mesValido } from "@/lib/caixa";
 import { quemVende } from "@/lib/pessoas";
 import {
-  CRESCIMENTO_PADRAO, RESULTADOS, STATUS_PLANO, buscarPlano, completar, faltaNoPlano, metaDoPlano, nomeMes, prazoDoPlano, salvarPlano,
+  CRESCIMENTO_PADRAO, RESULTADOS, canaisDoPlano, STATUS_PLANO, buscarPlano, completar, faltaNoPlano, metaDoPlano, nomeMes, prazoDoPlano, salvarPlano,
   diasDeLoja, metasDoTime, semanasDoMes, sugerirSemanas, vendaDoAnoPassado, type DadosPlano, type StatusPlano,
 } from "@/lib/plano-mes";
 
@@ -101,6 +102,8 @@ function Plano({ mes }: { mes: string }) {
   if (!base || !d) return <Carregando />;
   const muda = (x: Partial<DadosPlano>) => setD({ ...d, ...x });
   const meta = metaDoPlano(d);
+  // Loja com mais de um canal (atacado, site): metas por canal no lugar da conta do ano passado + %.
+  const canais = canaisDoPlano(d, portal.canais ?? []);
   const semanas = semanasDoMes(mes);
   // Domingo não conta: a meta do dia é sobre os dias de loja aberta.
   const diasNoMes = diasDeLoja(`${mes}-01`, fimDoMes(mes));
@@ -135,16 +138,20 @@ function Plano({ mes }: { mes: string }) {
       )}
 
       <Passo n={1} titulo="A meta do mês" sub={`Comece pelo que você vendeu em ${MESES[nMes].toLowerCase()} do ano passado. A sugestão da Camilla é crescer ${CRESCIMENTO_PADRAO}%.`}>
-        <div className="grade g2" style={{ gap: "0 12px" }}>
-          <CampoReais rotulo={`Quanto vendeu em ${MESES[nMes].toLowerCase()} de ${anoPassado}?`} valor={d.base ?? 0} vazio dica="Ex.: 50.000"
-            mudar={(v) => muda({ base: v || null, base_fonte: "" })} />
-          <CampoReais sem rotulo="Crescimento (%)" valor={d.crescimento} mudar={(v) => muda({ crescimento: v })} />
-        </div>
-        {d.base_fonte && <div className="ajuda">Puxado do {d.base_fonte}. Se não estiver certo, é só corrigir.</div>}
-        {!d.base && <div className="ajuda">Sem esse número no Hub ainda: pegue no seu sistema de vendas.</div>}
+        {canais.length ? <MetasCanaisEditar canais={canais} bonus={d.bonus_geral} mudar={muda} /> : (
+          <>
+            <div className="grade g2" style={{ gap: "0 12px" }}>
+              <CampoReais rotulo={`Quanto vendeu em ${MESES[nMes].toLowerCase()} de ${anoPassado}?`} valor={d.base ?? 0} vazio dica="Ex.: 50.000"
+                mudar={(v) => muda({ base: v || null, base_fonte: "" })} />
+              <CampoReais sem rotulo="Crescimento (%)" valor={d.crescimento} mudar={(v) => muda({ crescimento: v })} />
+            </div>
+            {d.base_fonte && <div className="ajuda">Puxado do {d.base_fonte}. Se não estiver certo, é só corrigir.</div>}
+            {!d.base && <div className="ajuda">Sem esse número no Hub ainda: pegue no seu sistema de vendas.</div>}
+          </>
+        )}
         {meta && (
           <div className="grade g3 mt" style={NUM}>
-            <div className="kpi"><small>Meta do mês</small><b style={{ fontSize: 24 }}>{moeda(meta)}</b></div>
+            <div className="kpi"><small>{canais.length ? "Meta do mês da loja (Meta 1)" : "Meta do mês"}</small><b style={{ fontSize: 24 }}>{moeda(meta)}</b></div>
             <div className="kpi"><small>Por semana</small><b style={{ fontSize: 24 }}>{moeda(meta / 4)}</b></div>
             <div className="kpi"><small>Por dia ({diasNoMes} dias, sem domingos)</small><b style={{ fontSize: 24 }}>{moeda(meta / diasNoMes)}</b></div>
           </div>

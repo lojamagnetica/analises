@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { MESES_ABREV, hoje, moeda } from "@/lib/formato";
+import { MetasCanaisResumo } from "@/components/MetasCanais";
+import { metasDoCanal } from "@/lib/plano-mes";
 import { buscarMeses, excluirMes, salvarMes, type SiteMes } from "@/lib/site";
 
 const vazio = (mes: string): Omit<SiteMes, "portal_id"> => ({ mes, faturamento: 0, pedidos: 0, visitas: 0, clientes_novos: 0, meta: 0, obs: "" });
@@ -12,10 +14,12 @@ const nomeMes = (m: string) => `${MESES_ABREV[Number(m.slice(5, 7)) - 1]}/${m.sl
 /** Painel do site: os números de cada mês (da plataforma), com ticket, conversão e meta. */
 export default function PainelSite() {
   const { portal } = usePortal();
-  const { dados, recarregar } = useDados(() => buscarMeses(portal.id), [portal.id]);
+  const { dados: tudo, recarregar } = useDados(async () => ({ meses: await buscarMeses(portal.id), metas: await metasDoCanal(portal.id, "Site") }), [portal.id]);
   const [ed, setEd] = useState<Omit<SiteMes, "portal_id"> | null>(null);
   const [erro, setErro] = useState("");
-  if (!dados) return <Carregando />;
+  if (!tudo) return <Carregando />;
+  const dados = tudo.meses;
+  const metasMes = tudo.metas;
   const atual = hoje().slice(0, 7);
   const m = dados[0];
   const ant = dados[1];
@@ -44,6 +48,11 @@ export default function PainelSite() {
             <button type="button" className="btn s peq" onClick={() => setEd(null)}>Cancelar</button>
           </div>
           {erro && <div className="aviso mt">{erro}</div>}
+        </div>
+      )}
+      {metasMes && (
+        <div className="card mb"><h3 style={{ marginTop: 0 }}>Metas do site · {metasMes.nome}</h3>
+          <MetasCanaisResumo canais={[metasMes.canal]} vendido={dados.some((x) => x.mes === metasMes.mes) ? { Site: Number(dados.find((x) => x.mes === metasMes.mes)!.faturamento) } : undefined} />
         </div>
       )}
       {!m && !ed && <div className="card mudo">Nenhum mês lançado ainda. Comece pelo mês passado e pelo atual.</div>}

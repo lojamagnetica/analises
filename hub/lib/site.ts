@@ -7,7 +7,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 export type SiteMes = { portal_id: string; mes: string; faturamento: number; pedidos: number; visitas: number; clientes_novos: number; meta: number; obs: string };
 export type ClienteSite = { id: string; portal_id: string; nome: string; telefone: string; ultima_compra: string | null; aniversario: string | null; etapa: string; ultimo_contato: string | null; obs: string };
 export type Atendimento = { id: string; portal_id: string; dia: string; canal: string; cliente: string; assunto: string; responsavel: string; prazo: string | null; status: string; resolvido_em: string | null; obs: string };
-export type ItemOperacao = { id: string; portal_id: string; item: string; frequencia: string; responsavel: string; feito_em: string | null; ordem: number };
+export type ItemOperacao = { id: string; portal_id: string; item: string; frequencia: string; responsavel: string; feito_em: string | null; ordem: number; area?: string };
 
 const sb = () => supabaseBrowser();
 async function ok<T extends { error: { message: string } | null }>(p: PromiseLike<T>) {
@@ -117,6 +117,7 @@ export const atrasado = (a: Atendimento) => a.status === "aberto" && !!a.prazo &
 
 // ───── Operação ─────
 export const FREQUENCIAS: Record<string, { nome: string; dias: number }> = {
+  abertura: { nome: "Na abertura da loja", dias: 1 }, durante: { nome: "Durante o dia", dias: 1 }, fechamento: { nome: "No fechamento", dias: 1 },
   diaria: { nome: "Todo dia", dias: 1 }, semanal: { nome: "Toda semana", dias: 7 }, mensal: { nome: "Todo mês", dias: 30 },
 };
 /** Checklist sugerido para começar (a loja edita, exclui e cria os seus). */
@@ -132,12 +133,30 @@ export const OPERACAO_PADRAO: [string, string][] = [
   ["Planejar as campanhas e o calendário do próximo mês", "mensal"],
 ];
 export const vencido = (i: ItemOperacao) => !i.feito_em || (dias(i.feito_em) ?? 0) >= (FREQUENCIAS[i.frequencia]?.dias ?? 7);
-export async function buscarOperacao(portalId: string) {
-  const { data } = await sb().from("site_operacao").select("*").eq("portal_id", portalId).order("ordem").order("created_at");
+export async function buscarOperacao(portalId: string, area = "site") {
+  const { data } = await sb().from("site_operacao").select("*").eq("portal_id", portalId).eq("area", area).order("ordem").order("created_at");
   return (data ?? []) as ItemOperacao[];
 }
 export const salvarItem = (portalId: string, id: string | null, d: Partial<ItemOperacao>) =>
   ok(id ? sb().from("site_operacao").update(d).eq("id", id) : sb().from("site_operacao").insert({ ...d, portal_id: portalId }));
 export const excluirItem = (id: string) => ok(sb().from("site_operacao").delete().eq("id", id));
-export const criarPadrao = (portalId: string) =>
-  ok(sb().from("site_operacao").insert(OPERACAO_PADRAO.map(([item, frequencia], ordem) => ({ portal_id: portalId, item, frequencia, ordem }))));
+export const criarPadrao = (portalId: string, area = "site", padrao = OPERACAO_PADRAO) =>
+  ok(sb().from("site_operacao").insert(padrao.map(([item, frequencia], ordem) => ({ portal_id: portalId, item, frequencia, ordem, area }))));
+/** Rotina da loja física sugerida para começar. */
+export const ROTINA_LOJA_PADRAO: [string, string][] = [
+  ["Loja limpa, provadores e vitrine em ordem", "abertura"],
+  ["Repor as araras e as peças que mais vendem", "abertura"],
+  ["Conferir preços e etiquetas", "abertura"],
+  ["Reunião rápida: meta do dia e foco de cada vendedor", "abertura"],
+  ["Abordar toda cliente que entrar em até 1 minuto", "durante"],
+  ["Cadastrar cada cliente que comprou (nome, WhatsApp, aniversário)", "durante"],
+  ["Contatos do dia com a carteira (mínimo por vendedor)", "durante"],
+  ["Repor o que saiu da arara e do provador", "durante"],
+  ["Lançar o fechamento do caixa no Hub", "fechamento"],
+  ["Comparar a venda do dia com a meta", "fechamento"],
+  ["Deixar a loja arrumada para o dia seguinte", "fechamento"],
+  ["Trocar a vitrine e a exposição da frente", "semanal"],
+  ["Treinamento da semana (produto ou vendas)", "semanal"],
+  ["Conferir o estoque das linhas que mais vendem", "semanal"],
+  ["Inventário ou contagem por amostragem", "mensal"],
+];

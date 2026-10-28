@@ -50,7 +50,7 @@ const NOME_CANAL: Record<string, string> = { loja: "Loja", site: "Site", atacado
 export function canaisDoPlano(d: Partial<DadosPlano>, canaisDaLoja: string[]): MetaCanal[] {
   const salvos = d.canais ?? [];
   if (!canaisDaLoja.length && !salvos.length) return [];
-  const nomes = ["Loja", ...canaisDaLoja.map((c) => NOME_CANAL[c] ?? c)];
+  const nomes = ["Loja", ...canaisDaLoja.filter((c) => c !== "varejo").map((c) => NOME_CANAL[c] ?? c)];
   const vazio = (canal: string): MetaCanal => ({ canal, base: null, faixas: NOMES_FAIXA.map(() => ({ valor: 0, comissao: 0, gerente: 0 })) });
   return [...salvos, ...nomes.filter((n) => !salvos.some((c) => c.canal === n)).map(vazio)];
 }

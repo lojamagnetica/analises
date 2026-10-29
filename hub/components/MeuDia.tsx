@@ -28,7 +28,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
   const padrao = padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
   const lista = tarefas(d, p, vs);
   const feitosHoje = r.feitos[d.agora] ?? [];
-  const at = atitudes(d, problemaDaLoja(vs, d.caixa));
+  const at = atitudes(d, problemaDaLoja(vs, d.caixa), vs.filter((v) => v.vendas > 0).length);
   const ac = acompanhamento({ ...d, rotina: r });
   const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d.agora}T12:00:00Z`));
 

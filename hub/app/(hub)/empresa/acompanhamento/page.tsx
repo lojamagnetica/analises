@@ -62,7 +62,7 @@ export default function Acompanhamento() {
     if (!leit) al.push({ txt: "Sem a leitura desta semana", grave: true });
     else if (!leit.publicada && leit.pronta) al.push({ txt: "Leitura encaminhada: falta a Camilla publicar", grave: true });
     else if (!leit.publicada) al.push({ txt: "Rascunho da leitura pronto: revisar e encaminhar para a Camilla", grave: true });
-    // A reunião individual segue o que o plano inclui (Minha empresa › Planos). "Só no início": até 35 dias do começo.
+    // A reunião individual segue o que o plano inclui (Nossa empresa › Planos). "Só no início": até 35 dias do começo.
     const pl = dados.planoDe(p.id);
     const individual = ["semanal", "quinzenal", "mensal"].includes(pl.reunioes) || (pl.reunioes !== "nenhuma" && !!pl.inicio && diasDesde(pl.inicio) <= 35)
       || (!pl.reunioes && p.tipo === "Consultoria");

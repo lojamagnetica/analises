@@ -73,7 +73,7 @@ const ESQUEMAS: Record<Parada, unknown> = {
 
 const TAREFA: Record<Parada, string> = {
   raiox: "Faça a PARADA 1 (Raio-X e proposta de gargalo e alavanca). Em \"faltando\", liste o que falta e para que serve.",
-  perguntas: "Faça a PARADA 2: as perguntas do gargalo que a Camilla escolheu (veja a escolha dela abaixo).",
+  perguntas: "Faça a PARADA 2: as perguntas do gargalo que a Camilla escolheu (veja a escolha dela abaixo). Antes de escrever cada pergunta, procure a resposta no formulário, nas transcrições de áudio e de reunião, nas anotações, no planner e nos arquivos. Se já está respondida, não pergunte. Se está em parte, a pergunta começa pelo que ela já contou e pede só o que falta (ex.: \"Você contou que fotografa as peças e manda o preço no grupo para a Su. Quanto tempo leva, em média, da sacola chegar até a peça estar na arara?\"). Poucas perguntas e certeiras valem mais que muitas.",
   solucao: "Faça a PARADA 3 (rascunho da solução, roteiro de 1h30, as 2 missões, o filtro anti-excesso, a frase do que ela faz amanhã, o estacionamento e o conteúdo do PDF), usando o gargalo e a alavanca escolhidos e as respostas da loja.",
   hub: "Monte o Diagnóstico da loja no Hub (o que a lojista vai ver), no formato e no padrão dos exemplos liberados, com o que foi preparado e decidido. Valores em reais como número (sem R$) nos campos numéricos; mês como AAAA-MM.",
 };

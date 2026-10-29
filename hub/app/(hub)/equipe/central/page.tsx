@@ -10,7 +10,7 @@ import { corTermometro } from "@/lib/carteira";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { prazoDiagnostico } from "@/lib/entrada";
 
-const NOME_PLANO: Record<string, string> = { premium: "Premium", gold: "Gold", start: "Start", "consultoria-3m": "Consultoria", "consultoria-6m": "Consultoria", "pro-12": "PRO 12", "grupo-6m": "Grupo 6M" };
+const NOME_PLANO: Record<string, string> = { premium: "Premium", gold: "Gold", start: "Start", "consultoria-3m": "Consultoria", "consultoria-6m": "Consultoria" };
 
 function Card({ c }: { c: ClienteJornada }) {
   const s = situacao(c);

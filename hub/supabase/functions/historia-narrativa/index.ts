@@ -1,6 +1,6 @@
 // O agente do storytelling: lê a história que a lojista contou (respostas e legendas das fotos) e monta a versão
 // para a equipe e a cultura da loja, sem alterar os fatos, na linguagem da cliente. Fica como rascunho (narrativa)
-// até a Camilla aprovar em Minha empresa › Histórias. Só a equipe chama. Precisa da chave do Claude.
+// até a Camilla aprovar em Central do Cliente › Histórias das lojas. Só a equipe chama. Precisa da chave do Claude.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient } from "npm:@supabase/supabase-js@2";
 

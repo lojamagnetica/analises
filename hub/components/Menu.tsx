@@ -36,26 +36,26 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     g.push({
       id: "empresa", rotulo: "Minha empresa", icone: "home",
       itens: [
-        { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de você", icone: "target" },
-        { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
+        // Só o que é da empresa; o trabalho com as lojas fica na Central do Cliente.
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
-        { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
-        { href: "/empresa/iscas", rotulo: "Radar das iscas", icone: "search" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
         { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
         { href: "/empresa/planos", rotulo: "Planos", icone: "tag" },
-        { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
       ],
     });
     g.push({
       id: "central", rotulo: "Central do Cliente", icone: "kanban",
       itens: [
+        { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
         { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check" },
+        { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
+        { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
         { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },
+        { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
         { href: "/equipe/duvidas", rotulo: "Caixa do Fale com a Camilla", icone: "inbox" },
       ],
     });
@@ -64,6 +64,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/equipe/comercial", rotulo: "Painel comercial", icone: "chart" },
         { href: "/equipe/comercial/leads", rotulo: "Leads e funil", icone: "funnel" },
+        { href: "/empresa/iscas", rotulo: "Radar das iscas", icone: "search" },
         { href: "/equipe/comercial/venda", rotulo: "Nova venda", icone: "plus" },
       ],
     });

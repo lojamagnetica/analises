@@ -29,7 +29,8 @@ export const excluirMes = (portalId: string, mes: string) => ok(sb().from("site_
 // ───── Régua de recompra ─────
 // Cada passo vale numa janela de dias depois da última compra. Aniversário: no mês do aniversário.
 export const REGUA = [
-  { id: "pos", nome: "Pós-venda", de: 3, ate: 10, msg: "Oi, {nome}! Sua compra chegou certinha? Quero saber se você gostou e se serviu bem." },
+  // Pós-venda = carimbo de conexão: até 24 horas depois da compra, sem oferecer nada.
+  { id: "pos", nome: "Pós-venda (24 horas)", de: 0, ate: 1, msg: "Oi, {nome}! Foi muito bom te atender! 💛 Este é o nosso WhatsApp: salva aí, que qualquer dúvida sobre o seu pedido, troca ou como usar a peça, é só chamar." },
   { id: "30", nome: "30 dias", de: 30, ate: 44, msg: "Oi, {nome}! Chegaram peças novas que combinam com o que você levou. Quer que eu te mande as fotos?" },
   { id: "60", nome: "60 dias", de: 60, ate: 74, msg: "Oi, {nome}! Separei umas novidades pensando em você. Posso te mostrar?" },
   { id: "90", nome: "90 dias", de: 90, ate: 120, msg: "Oi, {nome}! Faz um tempinho que você não passa por aqui. Tenho uma condição especial para você voltar." },
@@ -150,6 +151,7 @@ export const ROTINA_LOJA_PADRAO: [string, string][] = [
   ["Reunião rápida: meta do dia e foco de cada vendedor", "abertura"],
   ["Abordar toda cliente que entrar em até 1 minuto", "durante"],
   ["Cadastrar cada cliente que comprou (nome, WhatsApp, aniversário)", "durante"],
+  ["Pós-venda de toda cliente atendida ontem, em até 24 horas, sem oferecer nada (carimbo de conexão)", "abertura"],
   ["Contatos do dia com a carteira (mínimo por vendedor)", "durante"],
   ["Repor o que saiu da arara e do provador", "durante"],
   ["Lançar o fechamento do caixa no Hub", "fechamento"],

@@ -29,7 +29,8 @@ export const FIDELIZACAO_PADRAO: Secao[] = [
   { titulo: "Como acompanhar", texto: "Toda semana: quem subiu de nível e quem está sumida há mais de 60 dias (vai para o Resgate).\nTodo mês: quantas clientes ativas em cada nível e quanto elas compraram." },
 ];
 export const CONTATOS_PADRAO: Secao[] = [
-  { titulo: "Pós-venda (2 dias depois)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Passando para saber se você gostou das peças e se serviram bem. Qualquer coisa, estou aqui!" },
+  { titulo: "Pós-venda (até 24 horas depois, sem oferecer nada)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar." },
+  { titulo: "Segunda compra (até 30 dias depois)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Lembrei de você: chegaram peças que combinam com o que você levou. Quer que eu te mande as fotos?" },
   { titulo: "Novidade chegou", texto: "[nome], chegaram peças novas que têm tudo a ver com o que você gosta. Quer que eu te mande as fotos ou separe para você provar?" },
   { titulo: "Aniversário", texto: "Feliz aniversário, [nome]! 🎉 Separamos um presente para você usar neste mês na [loja]. Quer saber qual é?" },
   { titulo: "Cliente sumida (resgate)", texto: "Oi, [nome]! Faz um tempinho que você não passa por aqui e eu lembrei de você com as novidades. Posso te mostrar?" },

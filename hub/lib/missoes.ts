@@ -21,8 +21,10 @@ export const FOCOS: Foco[] = [
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Lembrei de você quando chegaram as novidades de {produto}. Separei algumas no seu estilo. Quer ver?" },
   { id: "vip", nome: "Melhores clientes", tipo: "Clientes", criterio: "Na sua carteira (no sistema), puxe as clientes que mais compraram nos últimos 12 meses.",
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Você é uma cliente muito especial para nós, por isso quero te mostrar as novidades antes de todo mundo. Posso reservar um horário só para você esta semana?" },
-  { id: "posvenda", nome: "Pós-venda", tipo: "Clientes", criterio: "Na sua carteira (no sistema), puxe as clientes que compraram nos últimos 7 a 15 dias.",
-    mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Passando para saber se você gostou das peças e se serviram bem. Separei umas que combinam com o que você levou: quer ver?" },
+  { id: "posvenda", nome: "Pós-venda em 24 horas", tipo: "Clientes", criterio: "Toda cliente que você atendeu: mande em até 24 horas depois do atendimento. Sem oferecer nada: é o carimbo de conexão.",
+    mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar." },
+  { id: "segunda", nome: "Segunda compra (até 30 dias)", tipo: "Venda", criterio: "Na sua carteira (no sistema), puxe as clientes que compraram há 15 a 30 dias e já receberam o pós-venda.",
+    mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Lembrei de você: chegaram peças que combinam com o que você levou. Quer que eu te mande as fotos?" },
   { id: "aniversario", nome: "Aniversariantes", tipo: "Clientes", criterio: "Na sua carteira (no sistema), puxe as clientes que fazem aniversário nesta semana ou na próxima.",
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Feliz aniversário! 🎉 Separamos um presente para você usar neste mês. Quer saber qual é?" },
 ];
@@ -33,7 +35,7 @@ export function focoSugerido(abaixo: number | null, dia = hoje()) {
   const semana = Math.min(3, Math.floor((Number(dia.slice(8)) - 1) / 7));
   return [
     { foco: "vip", porque: "Começo do mês: novidade para quem mais compra puxa as primeiras vendas." },
-    { foco: "posvenda", porque: "Garantir a segunda compra de quem comprou nas últimas semanas." },
+    { foco: "segunda", porque: "Garantir a segunda compra de quem comprou nos últimos 30 dias (o pós-venda de 24 horas já criou a conexão)." },
     { foco: "resgate", porque: "Meio do mês: chamar quem não compra há mais de 60 dias antes de virar cliente perdida." },
     { foco: "resgate", porque: "Fim do mês: resgatar quem sumiu ajuda a fechar a meta." },
   ][semana];

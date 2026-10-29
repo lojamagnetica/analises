@@ -206,7 +206,7 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
   // Só da Camilla: a Área da mentora e o que aprova, monta e libera para as lojas.
   if (hub.equipe && !hub.aprova && ["/equipe/aprovar", "/equipe/planos", "/equipe/analise", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas"].some((p) => caminho.startsWith(p))) return "/equipe/central";
-  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
+  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo") || caminho.startsWith("/empresa/minha-central")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.
   if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";

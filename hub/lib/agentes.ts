@@ -11,6 +11,12 @@ export type Agente = {
 
 export const AGENTES: Agente[] = [
   {
+    chave: "diagnostico_agente", nome: "Diagnóstico da loja",
+    faz: "Prepara a sua reunião de diagnóstico em paradas: Raio-X dos 4 pilares com nota, gargalo e alavanca sugeridos, perguntas do gargalo para a CS, rascunho da solução, roteiro de 1h30, as 2 missões, o filtro anti-excesso e o PDF. Depois da reunião, preenche o Diagnóstico da loja no Hub como rascunho.",
+    onde: "Área da mentora › Minha central › Preparar um diagnóstico", href: "/empresa/minha-central/diagnostico",
+    aprende: "Pelas instruções abaixo, pelo exemplo de referência guardado com elas e pelos Diagnósticos que você já liberou. Em cada parada, o campo \"O que ajustar ao refazer\" corrige só aquela versão: o que valer sempre, escreva aqui.",
+  },
+  {
     chave: "leitura_agente", nome: "Leitura da semana",
     faz: "Toda segunda às 12h lê os números de cada loja (caixa, meta do mês, plano do mês e a leitura anterior) e escreve o rascunho: o que os números mostram e as 3 ações da semana.",
     onde: "Início de cada loja e Lojas que precisam de atenção", href: "/empresa/acompanhamento",

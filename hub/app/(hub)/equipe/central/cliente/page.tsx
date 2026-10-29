@@ -13,6 +13,7 @@ import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/fo
 import { gerarLink } from "@/lib/acoes";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
 import { mensagemDiagnosticoPronto } from "@/lib/entrada";
+import { perguntasParaCS, responderPerguntas } from "@/lib/diagnostico-preparo";
 import {
   etapasDoPlano, buscarJornada, mensagensCS, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
   type Check, type ClienteJornada,
@@ -46,6 +47,26 @@ function Item({ c, k, nome, recarregar, extra }: { c: ClienteJornada; k: Check; 
       )}
       {extra && <div style={{ marginLeft: 28, marginTop: 8 }}>{extra}</div>}
       {erro && <div className="aviso mt">{erro}</div>}
+    </div>
+  );
+}
+
+/** As perguntas do gargalo que a Camilla liberou: a CS manda no grupo da loja e cola aqui as respostas. */
+function PerguntasGargalo({ portalId, loja, responsavel }: { portalId: string; loja: string; responsavel: string | null }) {
+  const { dados, recarregar } = useDados(() => perguntasParaCS(portalId), [portalId]);
+  const [resp, setResp] = useState<string | null>(null);
+  const [msg, setMsg] = useState("");
+  if (!dados?.perguntas?.length) return null;
+  const texto = `Oi, ${(responsavel ?? "").split(" ")[0] || loja}! Para a sua reunião de diagnóstico com a Camilla, responde estas perguntas sobre como é hoje na loja (pode ser por áudio):\n\n${dados.perguntas.map((q, i) => `${i + 1}. ${q}`).join("\n")}`;
+  return (
+    <div className="card card-borda mb" style={{ ["--c" as string]: dados.respostas ? "var(--green)" : "var(--orange)" }}>
+      <h3 style={{ marginTop: 0 }}>Perguntas do gargalo para mandar</h3>
+      <p className="ajuda" style={{ marginTop: 0 }}>A Camilla escolheu o gargalo{dados.gargalo ? ` (${dados.gargalo})` : ""} e liberou as perguntas. Mande no grupo da loja e cole aqui as respostas quando chegarem.</p>
+      <p style={{ whiteSpace: "pre-wrap", background: "var(--soft)", borderRadius: 10, padding: 10 }}>{texto}</p>
+      <Copiar texto={texto} rotulo="Copiar a mensagem" />
+      <label className="ajuda" style={{ display: "block", marginTop: 10 }}>Respostas da loja<textarea rows={5} value={resp ?? dados.respostas ?? ""} onChange={(e) => setResp(e.target.value)} placeholder="Cole aqui o que a loja respondeu (ou o resumo do áudio)" /></label>
+      {resp !== null && <button type="button" className="btn p peq" onClick={async () => { setMsg(""); try { await responderPerguntas(portalId, resp); setResp(null); setMsg("Salvo ✓ A Camilla já vê as respostas."); recarregar(); } catch (e) { setMsg((e as Error).message); } }}>Salvar as respostas</button>}
+      {msg && <small className="mudo"> {msg}</small>}
     </div>
   );
 }
@@ -130,6 +151,8 @@ function Cliente() {
           {!p.recebida_em && <button type="button" className="btn p peq mt" onClick={async () => { await receberPassagem(c.id, nome); recarregar(); }}>Receber a passagem</button>}
         </details>
       )}
+
+      <PerguntasGargalo portalId={c.id} loja={c.loja} responsavel={c.responsavel} />
 
       {s.etapa && (
         <div className="card mb">

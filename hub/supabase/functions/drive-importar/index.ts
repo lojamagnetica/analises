@@ -1,6 +1,6 @@
 // Traz para o Hub os documentos da pasta da mentorada no Drive (fichas.pasta_interna), para os agentes lerem.
 // Usa a conta de serviço do Google do Hub (a mesma da Agenda), só leitura: a pasta precisa estar compartilhada com ela.
-// Planilha do Google vira Excel, documento e apresentação viram PDF; vídeo e áudio ficam de fora (o agente não lê).
+// Planilha do Google vira Excel, documento e apresentação viram PDF; vídeo, áudio e a pasta de fotos ficam de fora.
 // Os arquivos entram em relatorios/<portal>/drive-<id>-<nome> e não se repetem numa nova importação. Só quem aprova chama.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -52,7 +52,8 @@ async function listar(token: string, pasta: string, caminho = "", nivel = 0): Pr
     const j = await r.json();
     if (!r.ok) throw new Error(j.error?.message ?? "Não deu para ler a pasta do Drive.");
     for (const f of j.files ?? []) {
-      if (f.mimeType === "application/vnd.google-apps.folder") { if (nivel < 3) saida.push(...await listar(token, f.id, `${caminho}${f.name}/`, nivel + 1)); }
+      // A pasta de fotos e vídeos da loja fica de fora: pesa e não ajuda o diagnóstico.
+      if (f.mimeType === "application/vnd.google-apps.folder") { if (nivel < 3 && !/fotos|v[ií]deos/i.test(f.name)) saida.push(...await listar(token, f.id, `${caminho}${f.name}/`, nivel + 1)); }
       else saida.push({ ...f, caminho });
     }
     pagina = j.nextPageToken ?? "";

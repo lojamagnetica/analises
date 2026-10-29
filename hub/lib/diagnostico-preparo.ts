@@ -74,7 +74,16 @@ export async function subirArquivo(portalId: string, f: File) {
   const limpo = f.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9._-]+/g, "-");
   await ok(sb().storage.from("relatorios").upload(`${portalId}/${Date.now()}-${limpo}`, f, { upsert: false, contentType: f.type || undefined }));
 }
-export const apagarArquivo = (portalId: string, nome: string) => ok(sb().storage.from("relatorios").remove([`${portalId}/${nome}`]));
+/** Copia para cá os documentos da pasta interna da loja no Drive (a pasta precisa estar compartilhada com o Hub). */
+export async function importarDrive(portalId: string) {
+  const { data, error } = await sb().functions.invoke("drive-importar", { body: { portal_id: portalId } });
+  if (error) {
+    const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error((corpo as { erro?: string } | null)?.erro ?? "Não deu para ler o Drive agora. Tente de novo.");
+  }
+  return data as { importados: string[]; pulados: string[] };
+}
+export const apagarArquivo =(portalId: string, nome: string) => ok(sb().storage.from("relatorios").remove([`${portalId}/${nome}`]));
 export async function linkArquivo(portalId: string, nome: string) {
   const { data } = await sb().storage.from("relatorios").createSignedUrl(`${portalId}/${nome}`, 600);
   return data?.signedUrl ?? "";

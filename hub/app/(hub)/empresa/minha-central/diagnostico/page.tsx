@@ -9,18 +9,18 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  aplicarHub, apagarArquivo, buscarPreparo, conferirParada, excluirPreparo, importarDrive, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
+  aplicarHub, apagarArquivo, buscarPreparo, conferirParada, excluirPreparo, importarDrive, levarMercado, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
   type Escolha, type Parada, type Preparo,
 } from "@/lib/diagnostico-preparo";
 
-const NOMES: Record<Parada, string> = { raiox: "Raio-X e proposta", perguntas: "Perguntas do gargalo", solucao: "Solução, roteiro e PDF", hub: "Diagnóstico da loja no Hub" };
+const NOMES: Record<Parada, string> = { raiox: "Raio-X e proposta", mercado: "Concorrentes e mercado", perguntas: "Perguntas do gargalo", solucao: "Solução, roteiro e PDF", hub: "Diagnóstico da loja no Hub" };
 const semPrefixo = (n: string) => n.replace(/^\d{13}-/, "").replace(/^drive-[A-Za-z0-9_-]{20,}?-/, "");
 const kb = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 /** O botão que chama o agente numa parada, com o pedido de ajuste para refazer. */
 function Rodar({ p, parada, rotulo, ocupado, pode, aoPedir }: { p: Preparo | null; parada: Parada; rotulo: string; ocupado: boolean; pode: boolean; aoPedir: (ajuste: string) => Promise<void> }) {
   const [ajuste, setAjuste] = useState(p?.ajustes?.[parada] ?? "");
-  const feito = parada === "raiox" ? !!p?.raiox : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : !!p?.hub;
+  const feito = parada === "raiox" ? !!p?.raiox : parada === "mercado" ? !!p?.mercado : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : !!p?.hub;
   return (
     <div className="mt">
       {feito && (
@@ -48,6 +48,7 @@ function Preparar({ portalId }: { portalId: string }) {
   const [esc, setEsc] = useState<Escolha | null>(null);
   const [perg, setPerg] = useState<string[] | null>(null);
   const [resp, setResp] = useState<string | null>(null);
+  const [conc, setConc] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [subindo, setSubindo] = useState(0);
   const [drive, setDrive] = useState(false);
@@ -168,6 +169,28 @@ function Preparar({ portalId }: { portalId: string }) {
           {p?.escolha && !esc && <small className="mudo"> · Escolhido: {p.escolha.gargalo} + {p.escolha.alavanca}</small>}
         </>}
         <Rodar p={p} parada="raiox" rotulo="Montar o Raio-X" ocupado={ocupado} pode aoPedir={pedir("raiox")} />
+      </div>
+
+      <div className="card card-borda mb" style={{ ["--c" as string]: p?.mercado ? "var(--green)" : "var(--line)" }}>
+        <h2 style={{ marginTop: 0 }}>Pesquisa: concorrentes e mercado</h2>
+        <p className="ajuda" style={{ marginTop: 0 }}>Primeiro os concorrentes que a loja citou (onde ela tem vantagem e onde está o desafio de diferenciação). Depois as referências grandes e validadas do segmento, nunca uma inspiração pequena demais. O agente pesquisa na internet; você revisa antes de ir para a loja.</p>
+        <label className="ajuda" style={{ display: "block" }}>Concorrentes e referências que a loja citou, e a cidade (o agente também procura no formulário)
+          <textarea rows={3} value={conc ?? p?.concorrentes ?? ""} placeholder="Ex.: Cidade: Maringá (PR). Concorrentes: @loja1, @loja2. Se inspira em: @perfil1" onChange={(x) => setConc(x.target.value)} />
+        </label>
+        {conc !== null && <button type="button" className="btn p peq" onClick={async () => { await salvar({ concorrentes: conc }); setConc(null); }}>Salvar</button>}
+        {p?.mercado && (
+          <>
+            <p style={{ whiteSpace: "pre-wrap" }}><b>{p.mercado.resumo}</b></p>
+            <details className="mb"><summary className="ajuda" style={{ cursor: "pointer" }}>Ler a pesquisa completa</summary><div className="mt" style={{ whiteSpace: "pre-wrap" }}>{p.mercado.texto}</div></details>
+            {p.mercado.fontes && <details className="mb"><summary className="ajuda" style={{ cursor: "pointer" }}>Fontes</summary><div className="ajuda" style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{p.mercado.fontes}</div></details>}
+            <button type="button" className="btn s peq" onClick={async () => {
+              if (!confirm("Levar a pesquisa para o Diagnóstico da loja? Ela entra escondida da loja; você revisa e marca \"Mostrar esta pesquisa para a loja\" quando quiser.")) return;
+              try { await levarMercado(portalId, p.mercado!); setMsg("Pesquisa levada ao Diagnóstico da loja ✓ Ela está escondida da loja até você liberar."); } catch (x) { setMsg((x as Error).message); }
+            }}>Levar para o Diagnóstico da loja (escondida da loja)</button>{" "}
+            <button type="button" className="link-loja" onClick={() => abrirPortal(portalId, "/painel")}>Ver no Diagnóstico da loja</button>
+          </>
+        )}
+        <Rodar p={p} parada="mercado" rotulo="Pesquisar concorrentes e mercado" ocupado={ocupado || conc !== null} pode aoPedir={pedir("mercado")} />
       </div>
 
       <div className="card card-borda mb" style={{ ["--c" as string]: p?.perguntas_liberadas ? "var(--green)" : pergs.length ? "var(--orange)" : "var(--line)", opacity: p?.escolha ? 1 : 0.6 }}>

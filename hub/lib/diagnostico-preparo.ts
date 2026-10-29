@@ -4,7 +4,8 @@
 // solução e roteiro, e por fim o Diagnóstico da loja no Hub. A CS vê só as perguntas liberadas e cola as respostas.
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Parada = "raiox" | "perguntas" | "solucao" | "hub";
+export type Parada = "raiox" | "mercado" | "perguntas" | "solucao" | "hub";
+export type Mercado = { resumo: string; texto: string; fontes: string; em?: string };
 export type Raiox = {
   resumo: string;
   pilares: { pilar: string; nota: number; justificativa: string; bem: string; fraco: string }[];
@@ -31,7 +32,7 @@ export type Agente = { parada?: Parada; estado?: "trabalhando" | "pronto" | "err
 export type Preparo = {
   portal_id: string; transcricoes: { comercial?: string; onboarding?: string; outras?: string };
   raiox: Raiox | null; escolha: Escolha | null; perguntas: string[]; perguntas_liberadas: boolean; respostas: string;
-  solucao: Solucao | null; hub: Record<string, unknown> | null; ajustes: Partial<Record<Parada, string>>; agente: Agente; updated_at: string;
+  solucao: Solucao | null; hub: Record<string, unknown> | null; concorrentes: string; mercado: Mercado | null; ajustes: Partial<Record<Parada, string>>; agente: Agente; updated_at: string;
 };
 export type Arquivo = { nome: string; tamanho: number; em: string };
 
@@ -52,6 +53,13 @@ export async function aplicarHub(portalId: string, dados: Record<string, unknown
   // A pesquisa do segmento não vem do agente: fica a que já estava.
   const mercado = (atual?.dados as { mercado?: unknown } | null)?.mercado;
   await ok(sb().from("loja_diagnostico").upsert({ portal_id: portalId, loja: "", dados: mercado ? { ...dados, mercado } : dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" }));
+}
+/** Leva a pesquisa de concorrentes e mercado para o Diagnóstico da loja, sempre escondida da loja até a Camilla liberar. */
+export async function levarMercado(portalId: string, m: Mercado) {
+  const { data: atual } = await sb().from("loja_diagnostico").select("dados").eq("portal_id", portalId).eq("loja", "").maybeSingle();
+  if (!atual) throw new Error("Esta loja ainda não tem o Diagnóstico da loja. Crie o Diagnóstico antes de levar a pesquisa.");
+  const dados = { ...((atual.dados ?? {}) as Record<string, unknown>), mercado: { liberada: false, titulo: "Concorrentes e mercado", resumo: m.resumo, texto: m.texto, fontes: m.fontes } };
+  await ok(sb().from("loja_diagnostico").update({ dados, updated_at: new Date().toISOString() }).eq("portal_id", portalId).eq("loja", ""));
 }
 export async function excluirPreparo(portalId: string) {
   await ok(sb().from("diagnostico_preparo").delete().eq("portal_id", portalId));

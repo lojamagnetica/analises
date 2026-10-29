@@ -7,7 +7,7 @@ import { Carregando, useDados } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PERGUNTAS, TOTAL_PERGUNTAS, buscarHistorias, excluirHistoria, salvarHistoria, tirarFoto, urlsDasFotos, type Historia, type Respostas,
+  PERGUNTAS, TOTAL_PERGUNTAS, buscarHistorias, montarNarrativa, type Narrativa, excluirHistoria, salvarHistoria, tirarFoto, urlsDasFotos, type Historia, type Respostas,
 } from "@/lib/historia";
 
 const LINK = "https://lojamagnetica.github.io/analises/portal/historia/";
@@ -95,6 +95,61 @@ function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string
         }}>Excluir</button>
       </div>
       {editando && urls && <Editor h={h} urls={urls} aoSalvar={() => { setEditando(false); recarregar(); }} aoCancelar={() => setEditando(false)} />}
+      {h.enviado && <Storytelling h={h} recarregar={recarregar} />}
+    </div>
+  );
+}
+
+/** O storytelling para a equipe e a cultura: o agente monta, a Camilla edita e aprova. Sem aprovar, a loja vê as respostas. */
+function Storytelling({ h, recarregar }: { h: Historia; recarregar: () => void }) {
+  const vazia: Narrativa = { titulo: h.loja, assinatura: "", capitulos: [], esperamos: "", pendencias: [] };
+  const [n, setN] = useState<Narrativa | null>(null);
+  const [montando, setMontando] = useState(false);
+  const [erro, setErro] = useState("");
+  const atual = n ?? h.narrativa ?? null;
+  const salvar = async (x: Partial<Historia>) => { setErro(""); try { await salvarHistoria(h.id, x); setN(null); recarregar(); } catch (e) { setErro((e as Error).message); } };
+  const muda = (x: Partial<Narrativa>) => setN({ ...(atual ?? vazia), ...x });
+  const cap = (i: number, x: Partial<Narrativa["capitulos"][number]>) => muda({ capitulos: (atual?.capitulos ?? []).map((c, j) => (j === i ? { ...c, ...x } : c)) });
+
+  return (
+    <div style={{ borderTop: "1px solid var(--line)", marginTop: 12, paddingTop: 12 }}>
+      <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+        <span><b>Storytelling para a equipe</b> {h.narrativa ? <span className={`selo ${h.narrativa_aprovada ? "feito" : "andamento"}`}>{h.narrativa_aprovada ? "aprovado · a loja vê esta versão" : "rascunho"}</span> : <small className="mudo">· ainda não montado</small>}
+          <br /><small className="mudo">A história contada pela dona vira uma narrativa para quem chega na loja, sem mudar os fatos e na linguagem da cliente. O que não é para a equipe fica de fora.</small></span>
+        <button type="button" className="btn s peq" disabled={montando} onClick={async () => {
+          if (h.narrativa && !confirm("Montar de novo? O texto atual do storytelling é trocado pelo novo rascunho.")) return;
+          setMontando(true); setErro("");
+          try { await montarNarrativa(h.id); recarregar(); } catch (e) { setErro((e as Error).message); }
+          setMontando(false);
+        }}>{montando ? "Montando…" : "✨ Montar o storytelling"}</button>
+      </div>
+      {erro && <div className="aviso mt">{erro}</div>}
+      {!atual && <button type="button" className="link-loja mt" onClick={() => setN(vazia)}>Ou escrever à mão</button>}
+      {atual && (
+        <div className="mt">
+          {atual.pendencias?.length > 0 && <div className="aviso mb"><b>O que falta ou ficou de fora:</b><ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>{atual.pendencias.map((p) => <li key={p}>{p}</li>)}</ul></div>}
+          <label className="ajuda" style={{ display: "block" }}>Título<input type="text" value={atual.titulo} onChange={(e) => muda({ titulo: e.target.value })} /></label>
+          <label className="ajuda" style={{ display: "block" }}>Frase de abertura<input type="text" value={atual.assinatura} onChange={(e) => muda({ assinatura: e.target.value })} /></label>
+          {atual.capitulos.map((c, i) => (
+            <div key={i} style={{ background: "var(--soft)", borderRadius: 12, padding: 10, marginBottom: 8 }}>
+              <div className="linha" style={{ gap: 8 }}>
+                <input type="text" value={c.titulo} style={{ fontWeight: 700 }} onChange={(e) => cap(i, { titulo: e.target.value })} />
+                <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={() => { if (confirm(`Tirar o capítulo "${c.titulo}"?`)) muda({ capitulos: atual.capitulos.filter((_, j) => j !== i) }); }}>Tirar</button>
+              </div>
+              <textarea rows={4} value={c.texto} onChange={(e) => cap(i, { texto: e.target.value })} />
+            </div>
+          ))}
+          <button type="button" className="btn s peq mb" onClick={() => muda({ capitulos: [...atual.capitulos, { titulo: "", texto: "" }] })}>+ Capítulo</button>
+          <label className="ajuda" style={{ display: "block" }}>O que esperamos de quem chega<textarea rows={2} value={atual.esperamos} onChange={(e) => muda({ esperamos: e.target.value })} /></label>
+          <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+            {n && <button type="button" className="btn p peq" onClick={() => salvar({ narrativa: n })}>Salvar o texto</button>}
+            {n && <button type="button" className="btn s peq" onClick={() => setN(null)}>Descartar</button>}
+            {!n && h.narrativa && (h.narrativa_aprovada
+              ? <button type="button" className="link-loja" onClick={() => salvar({ narrativa_aprovada: false })}>Voltar para rascunho</button>
+              : <button type="button" className="btn p peq" onClick={() => { if (confirm("Aprovar o storytelling? A loja e o onboarding passam a ver esta versão.")) salvar({ narrativa_aprovada: true }); }}>Aprovar o storytelling</button>)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

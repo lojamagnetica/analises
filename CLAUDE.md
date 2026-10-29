@@ -56,6 +56,9 @@ Detalhes em `.claude/skills/metodo-loja-magnetica/SKILL.md`. Valem para toda res
 - CTA no CRM conduz, não pergunta: nada de "posso?", "quer ver?", "se quiser". Duas opções que levam ao próximo passo: "te mando as fotos ou você já consegue vir na loja ver tudo e provar?".
 - CRM direcionado pela gestora e executado pela equipe, cada pessoa com a sua carteira; missão da semana igual para o time todo.
 
+- Linguagem da cliente em tudo o que o Hub cria: palavras do dia a dia, nada rebuscado ("refino", "composição").
+- Nossa história: o agente monta o storytelling sem mudar fatos e sem expor o que não é para a equipe (dificuldade financeira atual, desabafos); rascunho até a Camilla aprovar.
+
 ## Padrões do código
 - Páginas client (`"use client"`), dados com `useDados` de `lib/hub.tsx`, `usePortal()` no portal e `useEquipe()` na equipe.
 - Classes prontas em `globals.css`: `card`, `card-borda` (com `--c`), `selo feito|andamento|espera|alerta|erro`,

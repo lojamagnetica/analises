@@ -159,6 +159,13 @@ p { margin: 0 0 .8em; }
 .redondo:hover { color: var(--ink); border-color: var(--muted); }
 .redondo svg { width: 18px; height: 18px; }
 .redondo.ia { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+/* Caixa do Fale com a Camilla no topo (equipe): fica vermelha quando tem loja esperando resposta. */
+.caixa-topo { height: 40px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--card); color: var(--muted); display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; text-decoration: none; }
+.caixa-topo svg { width: 18px; height: 18px; }
+.caixa-topo b { background: #fff; color: var(--red); border-radius: 99px; min-width: 22px; height: 22px; display: grid; place-items: center; font-size: 12px; padding: 0 6px; }
+.caixa-topo.pendente { background: var(--red); border-color: var(--red); color: #fff; animation: caixa-pulso 2s ease-in-out infinite; }
+@keyframes caixa-pulso { 50% { box-shadow: 0 0 0 6px rgba(183, 64, 14, .22); } }
+@media (max-width: 700px) { .caixa-topo span { display: none; } }
 
 /* ───── Títulos e seções ───── */
 .titulo-pagina { margin: 14px 0 20px; }

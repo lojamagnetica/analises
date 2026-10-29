@@ -100,7 +100,7 @@ function Casca({ children }: { children: React.ReactNode }) {
               : <>Próximo passo: cadastrar a sua equipe<Link href="/personalizacao/etapa?n=5">Cadastrar →</Link></>}
           </div>
         ) : null}
-        <Ferramentas temPortal={!!hub.portal} />
+        <Ferramentas temPortal={!!hub.portal} equipe={equipe} />
         <main className="conteudo">
           {destino || semVideo ? <Carregando /> : travado && ent && req ? <Bloqueado req={req} entrada={ent} faltamEtapas={hub.persFaltam} /> : areaTrancada ? (
             <div className="card" style={{ textAlign: "center", padding: 40, marginTop: 24 }}>

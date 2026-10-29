@@ -7,11 +7,40 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
-import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, reuniaoSalvar, type NumerosPessoa, reuniaoTimeExcluir } from "@/lib/pessoas";
+import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, quemVende, reuniaoSalvar, type NumerosPessoa, reuniaoTimeExcluir } from "@/lib/pessoas";
+import { buscarCaixa, fimDoMes, type Caixa } from "@/lib/caixa";
+import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
+import { semanaDe } from "@/lib/leitura";
+import { somarDias } from "@/lib/acoes-mes";
 import { Excluir } from "@/components/Excluir";
 import { INDICADOR_DA_CHAVE } from "@/lib/gincanas";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; conversao: string };
+const fmt = (n: number, casas = 0) => (n ? n.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas }) : "");
+
+/** Os números da semana de cada vendedora, somados do Fechamento de caixa, e a meta da semana pelo plano do mês. */
+function doCaixa(caixa: Caixa[], ini: string, fim: string, metaMes: Record<string, number>, mes: string): Record<string, Linha> {
+  const out: Record<string, Linha> = {};
+  const t: Record<string, { f: number; v: number; p: number }> = {};
+  for (const c of caixa.filter((x) => x.dia >= ini && x.dia <= fim)) for (const v of c.vendedoras ?? []) {
+    if (!v.pessoa_id) continue;
+    const a = (t[v.pessoa_id] ??= { f: 0, v: 0, p: 0 });
+    a.f += Number(v.faturamento) || 0; a.v += Number(v.vendas) || 0; a.p += Number(v.pecas) || 0;
+  }
+  // Meta da semana: a meta do mês da pessoa proporcional aos dias de loja da semana.
+  const fimMes = fimDoMes(mes);
+  const diasSemana = diasDeLoja(ini < `${mes}-01` ? `${mes}-01` : ini, fim > fimMes ? fimMes : fim);
+  const diasMes = diasDeLoja(`${mes}-01`, fimMes) || 1;
+  for (const id of new Set([...Object.keys(t), ...Object.keys(metaMes)])) {
+    const a = t[id] ?? { f: 0, v: 0, p: 0 };
+    out[id] = {
+      venda: fmt(Math.round(a.f)), meta: fmt(Math.round(((metaMes[id] ?? 0) * diasSemana) / diasMes / 100) * 100),
+      ticket: a.v ? fmt(Math.round(a.f / a.v)) : "", pa: a.v ? fmt(a.p / a.v, 1) : "", conversao: "",
+    };
+  }
+  return out;
+}
+
 const COLUNAS: [keyof Linha, string, string][] = [["venda", "Venda", "R$"], ["meta", "Meta da semana", "R$"], ["ticket", "Ticket", "R$"], ["pa", "PA", "1,6"], ["conversao", "Conversão %", "opcional"]];
 
 export default function ReuniaoSemanal() {
@@ -20,13 +49,29 @@ export default function ReuniaoSemanal() {
   const [linhas, setLinhas] = useState<Record<string, Linha>>({});
   const [t, setT] = useState({ funcionou: "", travou: "", foco: "", destaqueId: "", fez: "", importou: "", oque: "", quanto: "", ate: "", como: "" });
   const [salvo, setSalvo] = useState(false);
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  // A reunião é sobre a semana anterior à data: de segunda a sábado.
+  const ini = somarDias(semanaDe(data), -7);
+  const fim = somarDias(ini, 5);
+  const { dados, recarregar } = useDados(async () => {
+    const mes = ini.slice(0, 7);
+    const [pessoas, m, c1, c2, plano] = await Promise.all([
+      buscarPessoas(portal.id), buscarMetodo(), buscarCaixa(portal.id, mes),
+      fim.slice(0, 7) !== mes ? buscarCaixa(portal.id, fim.slice(0, 7)) : Promise.resolve([] as Caixa[]),
+      buscarPlano(portal.id, mes).catch(() => null),
+    ]);
+    const time = quemVende(pessoas.pessoas.filter((p) => p.ativo).map((p) => ({ ...p, funcao: p.funcao ?? null })), Object.keys(plano?.dados.metas ?? {}));
+    const metaMes = metasDoTime(plano ? metaDoPlano(plano.dados) : null, time.map((p) => p.id), plano?.dados.metas);
+    return { ...pessoas, m, auto: doCaixa([...c1, ...c2], ini, fim, metaMes, mes) };
+  }, [portal.id, ini]);
   if (!dados) return <Carregando />;
   const { m } = dados;
   const ativos = dados.pessoas.filter((p) => p.ativo);
   const vazia: Linha = { venda: "", meta: "", ticket: "", pa: "", conversao: "" };
+  const puxou = Object.values(dados.auto).some((l) => l.venda);
+  // O que foi digitado vale mais que o que veio do caixa.
+  const linhaDe = (id: string): Linha => ({ ...vazia, ...(dados.auto[id] ?? {}), ...(linhas[id] ?? {}) });
   const numeros: NumerosPessoa[] = ativos.map((p) => {
-    const l = linhas[p.id] ?? vazia;
+    const l = linhaDe(p.id);
     return { pessoa_id: p.id, nome: p.nome, venda: lerNumero(l.venda), meta: lerNumero(l.meta), ticket: lerNumero(l.ticket), pa: lerNumero(l.pa), conversao: l.conversao ? lerNumero(l.conversao) : null };
   });
   const chaves = [...new Set(leitura(m, numeros).flatMap((x) => x.chaves))];
@@ -47,7 +92,9 @@ export default function ReuniaoSemanal() {
       {!ativos.length && <div className="card mb">Cadastre a sua equipe primeiro. <Link href="/pessoas">Ir para Minha equipe →</Link></div>}
       <div className="card mb">
         <div className="linha entre"><h2 style={{ margin: 0 }}>Os números da semana, por pessoa</h2><input type="date" value={data} onChange={(e) => setData(e.target.value)} style={{ maxWidth: 170 }} /></div>
-        <p className="mudo">{m.textos.semanal_nota_numeros}</p>
+        <p className="mudo">{puxou
+          ? <>Números da semana de {dia(ini)} a {dia(fim)}, puxados do Fechamento de caixa. Pode corrigir qualquer um; a conversão é opcional.</>
+          : <>Sem caixa por vendedora lançado de {dia(ini)} a {dia(fim)}. {m.textos.semanal_nota_numeros}</>}</p>
         <div className="tabela-wrap">
           <table className="tabela">
             <thead><tr><th>Pessoa</th>{COLUNAS.map(([, r]) => <th key={r}>{r}</th>)}</tr></thead>
@@ -56,7 +103,7 @@ export default function ReuniaoSemanal() {
                 <tr key={p.id}>
                   <td><b>{p.nome}</b></td>
                   {COLUNAS.map(([k, r, d]) => (
-                    <td key={k}><CampoNumero rotulo={`${r} de ${p.nome}`} dica={d} valor={(linhas[p.id] ?? vazia)[k]} aoMudar={(v) => { setLinhas({ ...linhas, [p.id]: { ...(linhas[p.id] ?? vazia), [k]: v } }); setSalvo(false); }} /></td>
+                    <td key={k}><CampoNumero rotulo={`${r} de ${p.nome}`} dica={d} valor={linhaDe(p.id)[k]} aoMudar={(v) => { setLinhas({ ...linhas, [p.id]: { ...linhaDe(p.id), [k]: v } }); setSalvo(false); }} /></td>
                   ))}
                 </tr>
               ))}

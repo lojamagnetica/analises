@@ -8,7 +8,7 @@ import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
 import {
-  DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
+  DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
 } from "@/lib/meu-dia";
 
@@ -25,6 +25,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
   const r = rotina ?? d.rotina;
   const p = placar(d);
   const vs = vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
+  const padrao = padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
   const lista = tarefas(d, p, vs);
   const feitosHoje = r.feitos[d.agora] ?? [];
   const at = atitudes(d, problemaDaLoja(vs, d.caixa));
@@ -95,6 +96,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
             <div className="secao">Seu time no mês</div>
             <Link className="link-loja" style={{ fontSize: 13.5 }} href={`/planeje/mes?m=${d.agora.slice(0, 7)}`}>Ajustar a meta de cada vendedora →</Link>
           </div>
+          {padrao && <div className="aviso mb"><b>Padrão da loja:</b> {padrao.texto}</div>}
           <div className="grade g2 mb">
             {vs.map((v) => {
               const fb = feedback(v);

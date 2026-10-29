@@ -187,6 +187,11 @@ export default function Historias() {
   }, []);
   const [copiado, setCopiado] = useState(false);
   if (!dados) return <Carregando />;
+  // Fila: primeiro o que espera a sua análise, depois quem ainda está preenchendo, por último as já concluídas.
+  const concluida = (h: Historia) => h.liberado && !!h.narrativa_aprovada;
+  const grupo = (h: Historia) => (concluida(h) ? 2 : h.enviado || h.liberado ? 0 : 1);
+  const fila = [...dados.historias].sort((a, b) => grupo(a) - grupo(b) || b.updated_at.localeCompare(a.updated_at));
+  const prontas = fila.filter(concluida).length;
   return (
     <>
       <Titulo titulo="Histórias das lojas" sub="As lojas contam a própria história pelo link do grupo. Ligue cada uma ao portal, revise e libere: a loja vê em Nossa história." />
@@ -195,7 +200,12 @@ export default function Historias() {
         <button type="button" className="btn s peq" onClick={() => navigator.clipboard.writeText(LINK).then(() => setCopiado(true))}>{copiado ? "Copiado ✓" : "Copiar link"}</button>
       </div>
       {!dados.historias.length && <div className="card mudo">Nenhuma história chegou ainda.</div>}
-      {dados.historias.map((h) => <Cartao key={h.id} h={h} portais={dados.portais} recarregar={recarregar} />)}
+      {fila.map((h, i) => (
+        <div key={h.id}>
+          {concluida(h) && (i === 0 || !concluida(fila[i - 1])) && <h3 className="mudo" style={{ margin: "20px 0 8px" }}>Concluídas ({prontas}) · liberadas com o storytelling aprovado</h3>}
+          <Cartao h={h} portais={dados.portais} recarregar={recarregar} />
+        </div>
+      ))}
     </>
   );
 }

@@ -285,10 +285,27 @@ export function carteira(d: DadosMeuDia) {
 }
 
 /** As 3 atitudes de atração do dia: uma de CRM, uma de conteúdo e uma de ação. */
-export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema): Atitude[] {
+export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras = 0): Atitude[] {
   const c = carteira(d);
   const out: Atitude[] = [];
-  out.push(c.total === 0
+  const pl = placar(d);
+  const produtosPlano = (d.plano?.dados.produtos ?? []).filter(Boolean);
+  const peca = produtosPlano.length ? produtosPlano[semanaDoDia(Number(d.agora.slice(8))) % produtosPlano.length] : "as peças novas";
+  // Loja abaixo do ritmo da meta: a atitude de CRM vira a chamada das melhores clientes, com número por vendedora.
+  const atras = pl.meta && pl.abaixo != null && pl.abaixo > 0.1 && c.total > 0;
+  const tot = somar(d.caixa.filter((x) => x.dia < d.agora));
+  const ticket = tot.vendas ? tot.faturamento / tot.vendas : 0;
+  const vendasDia = atras && ticket ? Math.ceil(Math.max(0, pl.meta! - pl.vendido) / pl.restantes / ticket) : 0;
+  // Uma venda a cada 3 contatos, dividido entre quem vende: de 5 a 20 contatos por pessoa (mais que isso perde qualidade).
+  const precisa = Math.ceil((vendasDia * 3) / Math.max(1, nVendedoras));
+  const contatos = Math.min(20, Math.max(5, precisa));
+  out.push(atras
+    ? {
+        tipo: "CRM", titulo: `Abaixo do ritmo: ${contatos} clientes por vendedora hoje`,
+        texto: `A loja está ${Math.round(pl.abaixo! * 100)}% abaixo do ritmo e precisa de ${vendasDia} ${vendasDia === 1 ? "venda" : "vendas"} por dia para bater a meta. Cada vendedora chama hoje ${contatos} clientes da carteira, começando pelas que mais compram, com ${peca}.${precisa > 20 ? " Só a carteira não fecha a conta: combine também uma ação para trazer gente para a loja nesta semana." : ""}${c.sumidas ? ` Tem também ${c.sumidas} ${c.sumidas === 1 ? "cliente sumida" : "clientes sumidas"} para resgatar.` : ""}`,
+        href: "/clientes", botao: "Abrir a carteira",
+      }
+    : c.total === 0
     ? { tipo: "CRM", titulo: "Suba a sua base de clientes", texto: "Com a base no Hub, todo dia aparece aqui quem chamar: aniversariantes e quem sumiu.", href: "/clientes", botao: "Subir a base" }
     : c.sumidas || c.aniversarioSemana
       ? {

@@ -64,7 +64,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
         { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
-        { href: "/equipe/duvidas", rotulo: "Caixa do Fale com a Camilla", icone: "inbox" },
       ],
     });
     g.push({

@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 function ler(chave: string) {
   try { return localStorage.getItem(chave); } catch { return null; }
@@ -12,9 +13,25 @@ function gravar(chave: string, valor: string) {
   try { localStorage.setItem(chave, valor); } catch { /* sem armazenamento */ }
 }
 
-/** Botões redondos do topo: atualizar, largura, letra, modo escuro, notas e assistente. */
-export function Ferramentas({ temPortal }: { temPortal: boolean }) {
+/** Quantas mensagens do Fale com a Camilla esperam resposta (a cada troca de página e a cada minuto). */
+function useCaixa(ligado: boolean) {
+  const caminho = usePathname();
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!ligado) return;
+    const contar = () => supabaseBrowser().from("solicitacoes").select("id", { count: "exact", head: true }).in("status", ["Recebida", "Em andamento"])
+      .then(({ count }) => setN(count ?? 0));
+    contar();
+    const t = setInterval(contar, 60_000);
+    return () => clearInterval(t);
+  }, [ligado, caminho]);
+  return n;
+}
+
+/** Botões redondos do topo: atualizar, largura, letra, modo escuro, notas e assistente. Para a equipe, a Caixa do Fale com a Camilla. */
+export function Ferramentas({ temPortal, equipe = false }: { temPortal: boolean; equipe?: boolean }) {
   const router = useRouter();
+  const esperando = useCaixa(equipe);
 
   useEffect(() => {
     const r = document.documentElement;
@@ -48,6 +65,11 @@ export function Ferramentas({ temPortal }: { temPortal: boolean }) {
         <Icone nome="menu" />
       </button>
       <div className="ferramentas">
+        {equipe && (
+          <Link className={`caixa-topo${esperando ? " pendente" : ""}`} href="/equipe/duvidas" title="Caixa do Fale com a Camilla">
+            <Icone nome="inbox" /><span>Fale com a Camilla</span>{esperando > 0 && <b>{esperando}</b>}
+          </Link>
+        )}
         <button className="redondo" title="Atualizar" onClick={() => router.refresh()}><Icone nome="refresh" /></button>
         <button className="redondo esconde-mobile" title="Largura da tela" onClick={alternarLargura}><Icone nome="width" /></button>
         <button className="redondo" title="Aumentar letra" onClick={aumentarLetra}><Icone nome="font" /></button>

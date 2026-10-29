@@ -52,6 +52,8 @@ export function modeloPlanner(): Planner {
       b("semanal", null, "Gestão", "Financeiro da semana", "Contas a pagar e a receber", ["Contas da próxima semana", "Recebimentos em atraso", "Saldo previsto do caixa"]),
       b("semanal", null, "Equipe", "Acompanhamento individual", "2 a 3 pessoas por semana, 15 min cada", ["O que foi bem na semana", "O que precisa melhorar", "Um combinado até a próxima conversa"]),
       b("mensal", 1, "Gestão", "Relatórios do sistema do mês anterior", "", ["Venda por caixa: varejo e atacado", "Mandar para a Camilla"]),
+      b("mensal", 1, "Varejo", "Aniversariantes do mês: o convite", "Primeira semana do mês, para todas as aniversariantes", ["Lançar a missão Aniversariantes do mês para o time", "Cada vendedora manda o convite para as clientes da carteira dela (o presente vale o mês inteiro)", "No dia de cada uma: só o parabéns, sem falar do presente"]),
+      b("mensal", 25, "Varejo", "Aniversariantes: lembrete e a lista do mês seguinte", "", ["Lembrete para quem ainda não usou o presente (faltam 5 dias para expirar)", "Puxar no sistema as aniversariantes do mês seguinte e dividir pela carteira de cada vendedora"]),
       b("mensal", 5, "Gestão", "Leitura dos indicadores por linha", "Venda, giro e margem: onde investir", ["Ver as linhas que mais vendem e as que pararam", "Decidir onde investir e o que liquidar"]),
       b("mensal", 15, "Varejo", "Plano do mês seguinte", "Pelo calendário de oportunidades", ["Escolher a ação do mês", "Montar o plano no PLANEJE AQUI até o dia 20"]),
       b("mensal", 0, "Gestão", "Fechamento do mês: varejo × atacado", "", ["Meta × realizado", "Margem e despesas do mês", "O que muda no mês seguinte"]),

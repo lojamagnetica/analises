@@ -366,11 +366,14 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   }
   const c = carteira(d);
   // Aniversariantes do mês: convite no dia 1 e lembrete 5 dias antes do fim (a lista sai do sistema da loja).
-  if (diaDoMes === 1) t.push({ chave: "aniv_convite", texto: "Até 12h: o time manda o convite para todos os aniversariantes do mês (o presente vale o mês inteiro)", href: "/clientes/missoes" });
+  // Convite na primeira semana: aparece do dia 1 ao 7 até ser marcado em algum dia do mês.
+  const mesAtual = d.agora.slice(0, 7);
+  const conviteFeito = Object.entries(d.rotina.feitos).some(([dia, l]) => dia.startsWith(mesAtual) && dia !== d.agora && l.includes("aniv_convite"));
+  if (diaDoMes <= 7 && !conviteFeito) t.push({ chave: "aniv_convite", texto: "Primeira semana: o time manda o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)", href: "/clientes/missoes" });
   const fimMes = Number(fimDoMes(d.agora.slice(0, 7)).slice(8));
-  if (diaDoMes === fimMes - 5) t.push({ chave: "aniv_lembrete", texto: "Lembrete para os aniversariantes do mês que ainda não usaram o presente (faltam 5 dias)", href: "/clientes/missoes" });
+  if (diaDoMes === fimMes - 5) t.push({ chave: "aniv_lembrete", texto: "Lembrete para as aniversariantes do mês que ainda não usaram o presente (faltam 5 dias para expirar)", href: "/clientes/missoes" });
   if (diaDoMes === 25) t.push({ chave: "aniv_lista", texto: "Puxar no sistema os aniversariantes do mês seguinte e dividir pela carteira de cada vendedora" });
-  if (c.aniversarioHoje) t.push({ chave: "aniversario", texto: `Mandar parabéns para ${c.aniversarioHoje} ${c.aniversarioHoje === 1 ? "cliente" : "clientes"}`, href: "/clientes" });
+  if (c.aniversarioHoje) t.push({ chave: "aniversario", texto: `Mandar só o parabéns (sem falar do presente) para ${c.aniversarioHoje} ${c.aniversarioHoje === 1 ? "aniversariante" : "aniversariantes"} de hoje`, href: "/clientes" });
   return t;
 }
 

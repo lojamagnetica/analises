@@ -114,7 +114,7 @@ export function resumoResgate(cs: Cliente[], ref: string) {
 // ───── Mensagens ─────
 
 // Quem manda é a consultora (o CRM é executado pela equipe): toda mensagem diz quem está falando e de qual loja.
-export const MENSAGEM_SIMPLES = "Oi, {nome}! Aqui é {consultora}, da {loja}. Passando para dizer que chegaram novidades e lembrei de você. Quer que eu te mande algumas fotos?";
+export const MENSAGEM_SIMPLES = "Oi, {nome}! Aqui é {consultora}, da {loja}. Chegaram novidades e lembrei de você: te mando as fotos agora ou você já consegue vir na loja ver de pertinho?";
 /** Sem consultora definida, fica o lembrete para quem manda colocar o próprio nome. */
 export const SEM_CONSULTORA = "[seu nome]";
 

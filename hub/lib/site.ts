@@ -31,12 +31,12 @@ export const excluirMes = (portalId: string, mes: string) => ok(sb().from("site_
 export const REGUA = [
   // Pós-venda = carimbo de conexão: até 24 horas depois da compra, sem oferecer nada.
   { id: "pos", nome: "Pós-venda (24 horas)", de: 0, ate: 1, msg: "Oi, {nome}! Foi muito bom te atender! 💛 Este é o nosso WhatsApp: salva aí, que qualquer dúvida sobre o seu pedido, troca ou como usar a peça, é só chamar." },
-  { id: "30", nome: "30 dias", de: 30, ate: 44, msg: "Oi, {nome}! Chegaram peças novas que combinam com o que você levou. Quer que eu te mande as fotos?" },
-  { id: "60", nome: "60 dias", de: 60, ate: 74, msg: "Oi, {nome}! Separei umas novidades pensando em você. Posso te mostrar?" },
+  { id: "30", nome: "30 dias", de: 30, ate: 44, msg: "Oi, {nome}! Chegaram peças novas que combinam com o que você levou: te mando as fotos agora ou já deixo o link com as novidades?" },
+  { id: "60", nome: "60 dias", de: 60, ate: 74, msg: "Oi, {nome}! Separei umas novidades pensando em você: te mando por aqui as fotos ou o link com tudo?" },
   { id: "90", nome: "90 dias", de: 90, ate: 120, msg: "Oi, {nome}! Faz um tempinho que você não passa por aqui. Tenho uma condição especial para você voltar." },
 ] as const;
 // Aniversário: convite na primeira semana do mês (o presente vale o mês todo), só o parabéns no dia e lembrete 5 dias antes de expirar.
-export const MSG_ANIVERSARIO = "Oi, {nome}! Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente especial aqui. Quer saber qual é?";
+export const MSG_ANIVERSARIO = "Oi, {nome}! Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente especial aqui. Já te mando o seu cupom e as novidades para você escolher o look do seu dia.";
 
 // etapa guarda os passos já feitos desde a última compra, separados por vírgula (ex.: "pos,30,aniv-2026").
 const feitos = (c: ClienteSite) => c.etapa.split(",").filter(Boolean);

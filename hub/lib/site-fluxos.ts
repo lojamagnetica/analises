@@ -28,10 +28,10 @@ export const FLUXOS: Record<string, Fluxo> = {
       { k: "valor", rotulo: "Valor da compra", tipo: "valor" },
     ],
     msgs: {
-      "Novo contato": "Oi, {nome}! Aqui é {consultora}, da {loja}. Vi que você se interessou por {interesse}. Posso te mandar as opções que temos agora?",
-      "Em conversa": "{nome}, separei umas opções de {interesse} pensando em você. Quer ver?",
-      "Mandou fotos ou link": "{nome}, conseguiu ver as fotos? Se quiser, te ajudo com o tamanho e já deixo reservado.",
-      "Sem resposta": "Oi, {nome}! Passando para lembrar que as peças que te mostrei ainda estão disponíveis. Qualquer coisa, estou aqui.",
+      "Novo contato": "Oi, {nome}! Aqui é {consultora}, da {loja}. Vi que você se interessou por {interesse}. Já separei as opções que temos agora: te mando por foto ou por vídeo?",
+      "Em conversa": "{nome}, separei umas opções de {interesse} pensando em você: te mando agora as fotos ou o link para você ver tudo?",
+      "Mandou fotos ou link": "{nome}, qual delas você mais gostou? Me diz o seu tamanho que eu já deixo reservado para você.",
+      "Sem resposta": "Oi, {nome}! As peças que te mostrei ainda estão separadas para você até amanhã: fecho o pedido por aqui com você ou te mando o link para você finalizar?",
     },
   },
   pedido: {
@@ -69,8 +69,8 @@ export const FLUXOS: Record<string, Fluxo> = {
       { k: "itens", rotulo: "O que deixou no carrinho", tipo: "longo" }, { k: "link", rotulo: "Link do carrinho" }, { k: "responsavel", rotulo: "Quem cuida" },
     ],
     msgs: {
-      "1ª mensagem (até 1h)": "Oi, {nome}! Vi que você deixou {itens} no carrinho. Ficou alguma dúvida de tamanho ou de entrega? {link}",
-      "2ª mensagem (24h)": "{nome}, as peças que você escolheu ainda estão separadas para você, mas o estoque é pequeno. Quer que eu te ajude a finalizar? {link}",
+      "1ª mensagem (até 1h)": "Oi, {nome}! Vi que você deixou {itens} no carrinho. Me diz o seu tamanho e o seu CEP que eu já confirmo o prazo de entrega para você finalizar: {link}",
+      "2ª mensagem (24h)": "{nome}, as peças que você escolheu ainda estão separadas para você, mas o estoque é pequeno. Finaliza por aqui que eu acompanho o seu pedido até chegar: {link}",
       "3ª mensagem (72h)": "{nome}, liberei uma condição especial para você finalizar hoje o seu carrinho: {link}",
       Recuperado: "Obrigada, {nome}! Pedido confirmado. Já vamos separar tudo com carinho.",
     },

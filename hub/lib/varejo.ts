@@ -30,14 +30,14 @@ export const FIDELIZACAO_PADRAO: Secao[] = [
 ];
 export const CONTATOS_PADRAO: Secao[] = [
   { titulo: "Pós-venda (até 24 horas depois, sem oferecer nada)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar." },
-  { titulo: "Segunda compra (até 30 dias depois)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Lembrei de você: chegaram peças que combinam com o que você levou. Quer que eu te mande as fotos?" },
-  { titulo: "Novidade chegou", texto: "[nome], chegaram peças novas que têm tudo a ver com o que você gosta. Quer que eu te mande as fotos ou separe para você provar?" },
+  { titulo: "Segunda compra (até 30 dias depois)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Lembrei de você: chegaram peças que combinam com o que você levou. Te mando as fotos agora ou você já consegue vir na loja provar?" },
+  { titulo: "Novidade chegou", texto: "[nome], chegaram peças novas que têm tudo a ver com o que você gosta. Te mando as fotos agora ou já separo para você vir provar?" },
   { titulo: "Aniversário · convite na primeira semana do mês", texto: "Oi, [nome]! Aqui é [vendedor]. Este é o mês do seu aniversário, e nós da [loja] preparamos um presente especial para você: durante todo o mês do seu aniversário, você recebe [x% de desconto] nas suas compras aqui na loja. Já vamos escolher o look do seu dia? Será um privilégio te ajudar nessa escolha." },
   { titulo: "Aniversário · no dia, só o parabéns (não é hora de vender)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Feliz aniversário! 🎉 Que o seu novo ano venha leve e cheio de bons dias." },
-  { titulo: "Aniversário · lembrete faltando 5 dias para o presente expirar", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Passando para lembrar: faltam 5 dias para o seu presente de aniversário expirar ([x% de desconto] nas suas compras até o fim do mês). Vamos escolher o seu look?" },
-  { titulo: "Cliente sumida (resgate)", texto: "Oi, [nome]! Faz um tempinho que você não passa por aqui e eu lembrei de você com as novidades. Posso te mostrar?" },
-  { titulo: "Convite para ação ou evento", texto: "[nome], vamos fazer [ação] no dia [data] e você é uma das clientes que eu quero convidar. Posso confirmar a sua presença?" },
-  { titulo: "Reserva de peça", texto: "[nome], separei [peça] no seu tamanho. Fica reservada até [dia]. Quer passar para provar?" },
+  { titulo: "Aniversário · lembrete faltando 5 dias para o presente expirar", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Passando para lembrar: faltam 5 dias para o seu presente de aniversário expirar ([x% de desconto] nas suas compras até o fim do mês). Já separo umas peças para você: você consegue vir amanhã ou fica melhor no fim de semana?" },
+  { titulo: "Cliente sumida (resgate)", texto: "Oi, [nome]! Faz um tempinho que você não passa por aqui e eu lembrei de você com as novidades: te mando as fotos agora ou você já consegue vir na loja esta semana?" },
+  { titulo: "Convite para ação ou evento", texto: "[nome], vamos fazer [ação] no dia [data] e você é uma das clientes que eu quero convidar. Já deixo o seu nome na lista: você chega no começo ou mais para o fim?" },
+  { titulo: "Reserva de peça", texto: "[nome], separei [peça] no seu tamanho. Fica reservada até [dia]: você consegue passar hoje ou fica melhor amanhã?" },
   { titulo: "Depois de uma troca", texto: "[nome], a sua troca está resolvida. Obrigada pela paciência! Qualquer coisa, pode me chamar." },
 ];
 

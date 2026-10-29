@@ -10,9 +10,12 @@ export type Respostas = {
   cliente?: string; sentir?: string; jeito?: string; valores?: Valor[]; futuro?: string;
 };
 export type Foto = { caminho: string; ano: string; legenda: string };
+/** O storytelling: a versão da história para a equipe e a cultura (rascunho até a Camilla aprovar). */
+export type Narrativa = { titulo: string; assinatura: string; capitulos: { titulo: string; texto: string }[]; esperamos: string; pendencias: string[] };
 export type Historia = {
   id: string; token: string; portal_id: string | null; loja: string; nome: string; whatsapp: string;
   respostas: Respostas; fotos: Foto[]; enviado: boolean; liberado: boolean; created_at: string; updated_at: string;
+  narrativa?: Narrativa | null; narrativa_aprovada?: boolean;
 };
 export type Rascunho = Pick<Historia, "loja" | "nome" | "whatsapp" | "respostas" | "fotos" | "enviado">;
 
@@ -129,3 +132,13 @@ export async function tirarFoto(h: Historia, caminho: string) {
 /** As fotos na ordem da linha do tempo (pelo ano; sem ano vai para o fim). */
 export const emOrdem = (fotos: Foto[]) =>
   [...fotos].sort((a, b) => (parseInt(a.ano) || 9999) - (parseInt(b.ano) || 9999));
+
+/** Pede ao agente o storytelling da história (fica como rascunho). */
+export async function montarNarrativa(id: string): Promise<Narrativa> {
+  const { data, error } = await sb().functions.invoke("historia-narrativa", { body: { id } });
+  if (error) {
+    const corpo = await (error as { context?: Response }).context?.json?.().catch(() => null);
+    throw new Error(corpo?.erro ?? error.message);
+  }
+  return (data as { narrativa: Narrativa }).narrativa;
+}

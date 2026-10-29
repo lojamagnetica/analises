@@ -5,11 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { NossaHistoria } from "@/components/NossaHistoria";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import type { Historia, Respostas } from "@/lib/historia";
+import type { Historia, Narrativa, Respostas } from "@/lib/historia";
 import { CAMPOS_MARCA, montarQuiz, urlFotoMarca, type Marca, type ResultadoQuiz } from "@/lib/marcas";
 
 // O material de estudo da pessoa nova (link do onboarding, sem login): a história, o guia das marcas e o quiz.
-type Estudo = { pessoa: string; loja: string; historia: { loja: string; respostas: Respostas } | null; marcas: Marca[] };
+type Estudo = { pessoa: string; loja: string; historia: { loja: string; respostas: Respostas; narrativa?: Narrativa | null; narrativa_aprovada?: boolean } | null; marcas: Marca[] };
 
 function Quiz({ e, token }: { e: Estudo; token: string }) {
   const qs = montarQuiz(e.marcas, token);
@@ -67,7 +67,7 @@ function Material() {
   }, [token]);
   if (e === undefined) return <div className="carregando">Carregando…</div>;
   if (!e) return <div className="card"><h2>Este link não abre</h2><p className="mudo">Confira o link com quem te enviou.</p></div>;
-  const h = e.historia ? ({ loja: e.historia.loja || e.loja, respostas: e.historia.respostas, fotos: [] } as unknown as Historia) : null;
+  const h = e.historia ? ({ loja: e.historia.loja || e.loja, respostas: e.historia.respostas, fotos: [], narrativa: e.historia.narrativa, narrativa_aprovada: e.historia.narrativa_aprovada } as unknown as Historia) : null;
   return (
     <>
       <div className="card mb">

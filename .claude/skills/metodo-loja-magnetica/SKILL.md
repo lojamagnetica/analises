@@ -31,6 +31,17 @@ Estas regras valem para toda resposta, criação e texto do Hub. A linha de gest
 - Outros jeitos: "te mando as fotos agora ou você já consegue vir na loja provar?", "vou reservar um horário só para você: fica melhor no começo ou no fim da semana?", "me diz o seu tamanho que eu já deixo reservado".
 - Exceção: o pós-venda de 24 horas não vende nada; ele conduz para salvar o número ("salva aí").
 
+## Linguagem da cliente
+- Tudo o que o Hub cria usa as palavras do dia a dia da cliente. Nada de termos rebuscados (ex.: "refino", "composição").
+  Se a dona usou uma expressão própria como lema, ela pode aparecer entre aspas, como lema dela.
+
+## Nossa história: o storytelling
+- A lojista conta do jeito dela (link da história + fotos). O agente `historia-narrativa` monta a versão para a equipe e a cultura:
+  não inventa nem muda fatos; organiza em capítulos; corrige o português; fala na linguagem da cliente; respeita a fé e a identidade da dona.
+- Fica de fora o que não é para a equipe: dificuldades financeiras atuais, desabafos, notas internas. Dificuldade superada entra como lição.
+- Termina com "o que esperamos de quem chega". Aponta as pendências (fotos sem legenda, conquista sem fato).
+- Rascunho até a Camilla aprovar; aprovado, aparece em Nossa história e no estudo do onboarding.
+
 ## Toda mensagem para a cliente
 - A consultora se apresenta: "Aqui é {consultora}, da {loja}". Nunca só o nome da loja.
 - O CRM é **acompanhado e direcionado pela gestora** e **executado 100% pela equipe**. Cada pessoa cuida e mantém ativa a própria carteira.

@@ -35,7 +35,8 @@ export const REGUA = [
   { id: "60", nome: "60 dias", de: 60, ate: 74, msg: "Oi, {nome}! Separei umas novidades pensando em você. Posso te mostrar?" },
   { id: "90", nome: "90 dias", de: 90, ate: 120, msg: "Oi, {nome}! Faz um tempinho que você não passa por aqui. Tenho uma condição especial para você voltar." },
 ] as const;
-export const MSG_ANIVERSARIO = "Feliz aniversário, {nome}! Preparamos um presente para você usar no seu mês. Quer saber qual é?";
+// Aniversário: convite no começo do mês (o presente vale o mês todo), parabéns no dia e lembrete 5 dias antes do fim.
+export const MSG_ANIVERSARIO = "Oi, {nome}! Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente especial aqui. Quer saber qual é?";
 
 // etapa guarda os passos já feitos desde a última compra, separados por vírgula (ex.: "pos,30,aniv-2026").
 const feitos = (c: ClienteSite) => c.etapa.split(",").filter(Boolean);
@@ -151,6 +152,10 @@ export const ROTINA_LOJA_PADRAO: [string, string][] = [
   ["Reunião rápida: meta do dia e foco de cada vendedor", "abertura"],
   ["Abordar toda cliente que entrar em até 1 minuto", "durante"],
   ["Cadastrar cada cliente que comprou (nome, WhatsApp, aniversário)", "durante"],
+  ["Parabéns para os aniversariantes do dia, pela manhã (o presente do mês continua valendo)", "abertura"],
+  ["Dia 25: puxar no sistema os aniversariantes do mês seguinte e dividir pela carteira de cada vendedora", "mensal"],
+  ["Dia 1, até 12h: convite para todos os aniversariantes do mês (o presente vale o mês inteiro)", "mensal"],
+  ["5 dias antes do fim do mês: lembrete para os aniversariantes que ainda não usaram o presente", "mensal"],
   ["Pós-venda de toda cliente atendida ontem, em até 24 horas, sem oferecer nada (carimbo de conexão)", "abertura"],
   ["Contatos do dia com a carteira (mínimo por vendedor)", "durante"],
   ["Repor o que saiu da arara e do provador", "durante"],

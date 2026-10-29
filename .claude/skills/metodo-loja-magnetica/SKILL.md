@@ -14,6 +14,17 @@ Estas regras valem para toda resposta, criação e texto do Hub. A linha de gest
 - **Ser interessante antes de ser interesseiro.**
 - Modelo: "Oi, {nome}! Aqui é {consultora}, da {loja}. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar."
 
+## Aniversariantes do mês
+- O presente (ex.: % de desconto em uma compra ou um brinde) **vale o mês inteiro** do aniversário.
+- **Dia 25 do mês anterior:** a gestora puxa no sistema os aniversariantes do mês seguinte e divide pela carteira de cada vendedora (cliente sem consultora: rodízio, e passa a ser da carteira de quem recebeu).
+- **3 mensagens, da consultora para a própria carteira:**
+  1. **Convite no dia 1 do mês, até 12h**, para todas as aniversariantes do mês.
+  2. **Parabéns no dia do aniversário, pela manhã.** Quem já usou o presente recebe só o parabéns.
+  3. **Lembrete 5 dias antes do fim do mês**, só para quem ainda não usou.
+- Na loja: conferir a data no sistema, entregar na embalagem de presente e atualizar o cadastro.
+- Regras de envio: só para cliente cadastrada; se pedir para não receber, sai da lista na hora; texto curto da própria consultora, sem corrente; responder toda mensagem no mesmo dia.
+- A gestora acompanha: convites enviados no dia 1, parabéns de cada dia, lembretes, taxa de resgate (compraram ÷ aniversariantes) e o resultado por consultora.
+
 ## Toda mensagem para a cliente
 - A consultora se apresenta: "Aqui é {consultora}, da {loja}". Nunca só o nome da loja.
 - O CRM é **acompanhado e direcionado pela gestora** e **executado 100% pela equipe**. Cada pessoa cuida e mantém ativa a própria carteira.

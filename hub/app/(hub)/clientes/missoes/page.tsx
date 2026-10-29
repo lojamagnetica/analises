@@ -22,7 +22,7 @@ export default function Missoes() {
     const [p, ms, d] = await Promise.all([buscarPessoas(portal.id), buscarMissoes(portal.id), buscarMeuDia(portal.id).catch(() => null)]);
     return { time: quemVende(p.pessoas.filter((x) => x.ativo)), ...ms, abaixo: d ? placar(d).abaixo : null };
   }, [portal.id]);
-  const [ed, setEd] = useState<{ foco: string; criterio: string; mensagem: string; meta: number; obs: string; produto: string } | null>(null);
+  const [ed, setEd] = useState<{ foco: string; criterio: string; mensagem: string; meta: number; obs: string; produto: string; presente?: string } | null>(null);
   const [erro, setErro] = useState("");
   const daSemana = dados?.missoes.find((m) => m.semana === semana) ?? null;
   // Sem missão nesta semana: já abre o formulário com o foco sugerido pelo momento da loja.
@@ -46,19 +46,22 @@ export default function Missoes() {
           <div className="chips mb">
             {FOCOS.map((f) => <button key={f.id} type="button" className={`chip${ed.foco === f.id ? " escolhido" : ""}`} onClick={() => setEd({ ...ed, foco: f.id, criterio: f.criterio, mensagem: f.mensagem })}>{f.nome}{f.id === sugestao.foco ? " ★" : ""}</button>)}
           </div>
+          {ed.mensagem.includes("{presente}") && <label className="ajuda" style={{ display: "block" }}>Qual é o presente do aniversário (vale o mês inteiro)<input type="text" value={ed.presente ?? ""} placeholder="Ex.: 15% de desconto em uma compra / um brinde" onChange={(e) => setEd({ ...ed, presente: e.target.value })} /></label>}
           {ed.mensagem.includes("{produto}") && <label className="ajuda" style={{ display: "block" }}>Qual coleção, linha ou produto<input type="text" value={ed.produto} placeholder="Ex.: a coleção de verão / os vestidos de festa" onChange={(e) => setEd({ ...ed, produto: e.target.value })} /></label>}
           <label className="ajuda" style={{ display: "block" }}>Quem chamar (o time puxa no sistema)<input type="text" value={ed.criterio} onChange={(e) => setEd({ ...ed, criterio: e.target.value })} /></label>
-          <label className="ajuda" style={{ display: "block" }}>O modelo da mensagem, igual para todos ({"{nome}"} = cliente, {"{consultora}"} = quem manda)<textarea rows={3} value={ed.mensagem} onChange={(e) => setEd({ ...ed, mensagem: e.target.value })} /></label>
+          <label className="ajuda" style={{ display: "block" }}>O modelo da mensagem, igual para todos ({"{nome}"} = cliente, {"{consultora}"} = quem manda; "---" separa mensagens de momentos diferentes)<textarea rows={ed.mensagem.includes("---") ? 9 : 3} value={ed.mensagem} onChange={(e) => setEd({ ...ed, mensagem: e.target.value })} /></label>
           <div className="grade g2" style={{ gap: "0 10px" }}>
             <label className="ajuda" style={{ display: "block" }}>Meta de mensagens por pessoa na semana<input type="number" min={1} max={200} value={ed.meta} onChange={(e) => setEd({ ...ed, meta: Math.max(1, Number(e.target.value) || 1) })} /></label>
             <label className="ajuda" style={{ display: "block" }}>Recado para o time (opcional)<input type="text" value={ed.obs} placeholder="Ex.: quem fechar mais vendas ganha folga no sábado" onChange={(e) => setEd({ ...ed, obs: e.target.value })} /></label>
           </div>
-          <p className="ajuda">Como fica: “{preencher(ed.mensagem.replace(/\{produto\}/g, ed.produto || "[coleção ou linha]"), { nome: "Helena", loja: portal.loja, consultora: dados.time[0]?.nome ?? "Larissa" })}”</p>
+          {ed.mensagem.split("\n---\n").map((bloco, i) => (
+            <p key={i} className="ajuda" style={{ whiteSpace: "pre-wrap" }}>{i === 0 ? "Como fica: " : ""}“{preencher(bloco.replace(/\{produto\}/g, ed.produto || "[coleção ou linha]").replace(/\{presente\}/g, ed.presente || "[o presente]"), { nome: "Helena", loja: portal.loja, consultora: dados.time[0]?.nome ?? "Larissa" })}”</p>
+          ))}
           <div className="linha" style={{ gap: 8 }}>
             <button type="button" className="btn p" disabled={!dados.time.length} onClick={async () => {
               setErro("");
               try {
-                await salvarMissao(portal.id, { semana, foco: ed.foco, criterio: ed.criterio, mensagem: ed.mensagem.replace(/\{produto\}/g, ed.produto || "as novidades"), meta: ed.meta, obs: ed.obs }, dados.time.map((p) => ({ id: p.id, nome: p.nome })));
+                await salvarMissao(portal.id, { semana, foco: ed.foco, criterio: ed.criterio, mensagem: ed.mensagem.replace(/\{produto\}/g, ed.produto || "as novidades").replace(/\{presente\}/g, ed.presente || "um presente especial"), meta: ed.meta, obs: ed.obs }, dados.time.map((p) => ({ id: p.id, nome: p.nome })));
                 setEd(null); recarregar();
               } catch (e) { setErro((e as Error).message); }
             }}>{daSemana ? "Salvar" : `Lançar para o time (${dados.time.length})`}</button>

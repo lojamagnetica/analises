@@ -25,8 +25,8 @@ export const FOCOS: Foco[] = [
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar." },
   { id: "segunda", nome: "Segunda compra (até 30 dias)", tipo: "Venda", criterio: "Na sua carteira (no sistema), puxe as clientes que compraram há 15 a 30 dias e já receberam o pós-venda.",
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Lembrei de você: chegaram peças que combinam com o que você levou. Quer que eu te mande as fotos?" },
-  { id: "aniversario", nome: "Aniversariantes", tipo: "Clientes", criterio: "Na sua carteira (no sistema), puxe as clientes que fazem aniversário nesta semana ou na próxima.",
-    mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Feliz aniversário! 🎉 Separamos um presente para você usar neste mês. Quer saber qual é?" },
+  { id: "aniversario", nome: "Aniversariantes do mês", tipo: "Clientes", criterio: "Na sua carteira (no sistema), puxe todas as clientes que fazem aniversário neste mês. São 3 mensagens: o convite no dia 1 (até 12h), o parabéns no dia e o lembrete 5 dias antes do fim do mês, só para quem ainda não usou o presente.",
+    mensagem: "Convite · dia 1 do mês, até 12h\nOi, {nome}! Aqui é {consultora}, da {loja}. Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente aqui na loja ({presente}). É só passar e falar comigo. Vai ser um prazer te receber!\n---\nParabéns · no dia do aniversário, pela manhã\n{nome}, feliz aniversário! Que o seu novo ano venha leve e cheio de bons dias. O seu presente da {loja} continua valendo até o fim do mês. Te espero na loja! ({consultora})\n---\nLembrete · 5 dias antes do fim do mês, só para quem não usou o presente\nOi, {nome}! Aqui é {consultora}, da {loja}. Passando para lembrar: faltam 5 dias para usar o seu presente de aniversário. Quer que eu separe alguma peça para você?" },
 ];
 
 /** O foco que o Hub sugere pelo momento da loja: abaixo do ritmo, as melhores clientes; senão, um por semana do mês. */
@@ -34,7 +34,7 @@ export function focoSugerido(abaixo: number | null, dia = hoje()) {
   if (abaixo != null && abaixo > 0.1) return { foco: "vip", porque: `A loja está ${Math.round(abaixo * 100)}% abaixo do ritmo da meta: quem mais compra é quem responde mais rápido.` };
   const semana = Math.min(3, Math.floor((Number(dia.slice(8)) - 1) / 7));
   return [
-    { foco: "vip", porque: "Começo do mês: novidade para quem mais compra puxa as primeiras vendas." },
+    { foco: "aniversario", porque: "Começo do mês: o convite para os aniversariantes do mês sai no dia 1, até 12h, e o presente vale o mês inteiro." },
     { foco: "segunda", porque: "Garantir a segunda compra de quem comprou nos últimos 30 dias (o pós-venda de 24 horas já criou a conexão)." },
     { foco: "resgate", porque: "Meio do mês: chamar quem não compra há mais de 60 dias antes de virar cliente perdida." },
     { foco: "resgate", porque: "Fim do mês: resgatar quem sumiu ajuda a fechar a meta." },

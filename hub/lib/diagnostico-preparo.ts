@@ -27,7 +27,7 @@ export type Solucao = {
   faltando: string[];
 };
 export type Escolha = { gargalo: string; alavanca: string; obs: string };
-export type Agente = { parada?: Parada; estado?: "trabalhando" | "pronto" | "erro"; inicio?: string; fim?: string; msg?: string; avisos?: string[] };
+export type Agente = { parada?: Parada; estado?: "trabalhando" | "pronto" | "erro"; inicio?: string; fim?: string; msg?: string; avisos?: string[]; lote?: string };
 export type Preparo = {
   portal_id: string; transcricoes: { comercial?: string; onboarding?: string; outras?: string };
   raiox: Raiox | null; escolha: Escolha | null; perguntas: string[]; perguntas_liberadas: boolean; respostas: string;
@@ -63,6 +63,10 @@ export async function rodarParada(portalId: string, parada: Parada) {
     throw new Error((corpo as { erro?: string } | null)?.erro ?? "Não deu para chamar o agente agora. Tente de novo.");
   }
   return data;
+}
+/** Pergunta ao agente se o lote da parada já terminou (e guarda a resposta quando terminou). */
+export async function conferirParada(portalId: string) {
+  await sb().functions.invoke("diagnostico-agente", { body: { portal_id: portalId, conferir: true } });
 }
 
 // Os relatórios da loja ficam no mesmo lugar que a loja usa para subir (relatorios/<portal>/).

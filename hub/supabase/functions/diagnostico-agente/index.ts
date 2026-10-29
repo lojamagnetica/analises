@@ -2,7 +2,10 @@
 // (instruções na tabela metodo, chave 'diagnostico_agente'). Lê a passagem do Comercial, os Dados da loja, o caixa,
 // a equipe, a Análise do Instagram, os relatórios que a loja (ou a Camilla) subiu e as transcrições coladas.
 // Paradas: raiox → perguntas → solucao → hub (a versão do Diagnóstico da loja, que a Camilla compara e aplica). Cada parada espera a decisão
-// da Camilla. Só quem aprova chama. Roda em segundo plano; a tela acompanha pelo campo agente. Precisa da chave do Claude.
+// da Camilla. Só quem aprova chama. Precisa da chave do Claude.
+// Com muito material o Claude passa do tempo máximo de uma função do Supabase (150 s). Por isso o pedido vai como lote
+// (Message Batches): a função entrega o pedido e guarda o número do lote em agente.lote; a tela chama de novo com
+// { conferir: true } a cada pouco, e quando o lote termina a resposta é guardada.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
@@ -159,10 +162,13 @@ async function juntar(admin: SupabaseClient, portalId: string) {
 }
 
 // ───── O trabalho de cada parada ─────
+const marcarEm = (admin: SupabaseClient, portalId: string, agente: Record<string, unknown>) =>
+  admin.from("diagnostico_preparo").update({ agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
+
+/** Monta o pedido da parada e entrega ao Claude como lote. */
 async function rodar(admin: SupabaseClient, portalId: string, parada: Parada) {
   const inicio = new Date().toISOString();
-  const marcar = (agente: Record<string, unknown>) =>
-    admin.from("diagnostico_preparo").update({ agente: { parada, inicio, ...agente }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
+  const marcar = (agente: Record<string, unknown>) => marcarEm(admin, portalId, { parada, inicio, ...agente });
   try {
     const [{ data: prep }, { data: mem }, base, docs] = await Promise.all([
       admin.from("diagnostico_preparo").select("*").eq("portal_id", portalId).single(),
@@ -196,28 +202,53 @@ async function rodar(admin: SupabaseClient, portalId: string, parada: Parada) {
     conteudo.push({ type: "text", text: partes.filter(Boolean).join("\n\n") });
 
     const client = new Anthropic({ apiKey: CHAVE });
-    const r = await client.beta.messages.stream({
-      model: MODELO, max_tokens: 32000,
-      betas: ["server-side-fallback-2026-07-01"],
-      // @ts-ignore: fallbacks "default" ainda pode não estar no tipo do SDK
-      fallbacks: "default",
-      output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMAS[parada] } },
-      system: memoria.instrucoes ?? "",
-      messages: [{ role: "user", content: conteudo }],
-    }).finalMessage();
-    if (r.stop_reason === "refusal") throw new Error("O Claude recusou esta parada. Tente de novo.");
-    if (r.stop_reason === "max_tokens") throw new Error("A resposta ficou longa demais e foi cortada. Tente de novo pedindo mais objetividade nos ajustes.");
-    const bloco = r.content.find((b) => b.type === "text");
-    if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
-    const saida = JSON.parse(bloco.text);
-    const fim = { estado: "pronto", fim: new Date().toISOString(), avisos: docs.avisos, uso: r.usage };
-
-    if (parada === "raiox") await admin.from("diagnostico_preparo").update({ raiox: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
-    else if (parada === "perguntas") await admin.from("diagnostico_preparo").update({ perguntas: saida.perguntas, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
-    else if (parada === "solucao") await admin.from("diagnostico_preparo").update({ solucao: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
-    else await admin.from("diagnostico_preparo").update({ hub: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
+    const lote = await client.messages.batches.create({
+      requests: [{
+        custom_id: parada,
+        params: {
+          model: MODELO, max_tokens: 32000,
+          // @ts-ignore: output_config pode não estar no tipo desta versão do SDK
+          output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMAS[parada] } },
+          system: memoria.instrucoes ?? "",
+          messages: [{ role: "user", content: conteudo as Anthropic.ContentBlockParam[] }],
+        },
+      }],
+    });
+    await marcar({ estado: "trabalhando", lote: lote.id, avisos: docs.avisos });
   } catch (e) {
     await marcar({ estado: "erro", fim: new Date().toISOString(), msg: (e as Error).message.slice(0, 500) });
+  }
+}
+
+/** Confere o lote da parada; quando terminou, guarda a resposta. Devolve o estado do agente. */
+async function conferir(admin: SupabaseClient, portalId: string, ag: Record<string, unknown>) {
+  const parada = ag.parada as Parada;
+  const marcar = (x: Record<string, unknown>) => marcarEm(admin, portalId, { ...ag, ...x });
+  const client = new Anthropic({ apiKey: CHAVE });
+  try {
+    const lote = await client.messages.batches.retrieve(String(ag.lote));
+    if (lote.processing_status !== "ended") return "trabalhando";
+    let saida: Record<string, unknown> | null = null;
+    let uso: unknown = null;
+    for await (const r of await client.messages.batches.results(lote.id)) {
+      if (r.result.type === "errored") throw new Error(`O Claude deu erro (${(r.result.error as { error?: { type?: string } }).error?.type ?? "erro"}). Tente de novo.`);
+      if (r.result.type !== "succeeded") throw new Error("O pedido expirou sem resposta. Tente de novo.");
+      const m = r.result.message;
+      if (m.stop_reason === "refusal") throw new Error("O Claude recusou esta parada. Tente de novo.");
+      if (m.stop_reason === "max_tokens") throw new Error("A resposta ficou longa demais e foi cortada. Tente de novo pedindo mais objetividade nos ajustes.");
+      const bloco = m.content.find((b) => b.type === "text");
+      if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
+      saida = JSON.parse(bloco.text);
+      uso = m.usage;
+    }
+    if (!saida) throw new Error("O Claude não devolveu a resposta.");
+    const agente = { ...ag, estado: "pronto", fim: new Date().toISOString(), uso };
+    const campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : { hub: saida };
+    await admin.from("diagnostico_preparo").update({ ...campo, agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
+    return "pronto";
+  } catch (e) {
+    await marcar({ estado: "erro", fim: new Date().toISOString(), msg: (e as Error).message.slice(0, 500) });
+    return "erro";
   }
 }
 
@@ -229,12 +260,21 @@ Deno.serve(async (req) => {
   if (aprova !== true) return json({ erro: "Só a Camilla usa o agente do Diagnóstico." }, 403);
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
-  const { portal_id, parada } = await req.json().catch(() => ({}));
-  if (!portal_id || !["raiox", "perguntas", "solucao", "hub"].includes(parada)) return json({ erro: "Informe a loja e a parada." }, 400);
+  const { portal_id, parada, conferir: so_conferir } = await req.json().catch(() => ({}));
   const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
+  if (so_conferir) {
+    if (!portal_id) return json({ erro: "Informe a loja." }, 400);
+    const { data } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();
+    const a = (data?.agente ?? {}) as Record<string, unknown>;
+    if (a.estado !== "trabalhando" || !a.lote) return json({ estado: a.estado ?? null });
+    return json({ estado: await conferir(admin, portal_id, a) });
+  }
+  if (!portal_id || !["raiox", "perguntas", "solucao", "hub"].includes(parada)) return json({ erro: "Informe a loja e a parada." }, 400);
   const { data: prep } = await admin.from("diagnostico_preparo").select("agente, raiox, escolha").eq("portal_id", portal_id).maybeSingle();
-  const ag = (prep?.agente ?? {}) as { estado?: string; inicio?: string };
-  if (ag.estado === "trabalhando" && Date.now() - Date.parse(ag.inicio ?? "0") < 12 * 60_000) return json({ erro: "O agente já está trabalhando nesta loja. Aguarde terminar." }, 409);
+  const ag = (prep?.agente ?? {}) as { estado?: string; inicio?: string; lote?: string };
+  // Com lote entregue, espera até 3 horas; sem lote (a entrega caiu no meio), libera depois de 5 minutos.
+  const espera = ag.lote ? 180 * 60_000 : 5 * 60_000;
+  if (ag.estado === "trabalhando" && Date.now() - Date.parse(ag.inicio ?? "0") < espera) return json({ erro: "O agente já está trabalhando nesta loja. Aguarde terminar." }, 409);
   if (parada !== "raiox" && !prep?.escolha) return json({ erro: "Escolha o gargalo e a alavanca antes de seguir." }, 400);
 
   const agente = { parada, estado: "trabalhando", inicio: new Date().toISOString() };

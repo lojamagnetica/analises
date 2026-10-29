@@ -9,7 +9,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  aplicarHub, apagarArquivo, buscarPreparo, excluirPreparo, importarDrive, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
+  aplicarHub, apagarArquivo, buscarPreparo, conferirParada, excluirPreparo, importarDrive, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
   type Escolha, type Parada, type Preparo,
 } from "@/lib/diagnostico-preparo";
 
@@ -53,9 +53,15 @@ function Preparar({ portalId }: { portalId: string }) {
   const [drive, setDrive] = useState(false);
   const [pulados, setPulados] = useState<string[]>([]);
   const p = dados?.p ?? null;
-  const ocupado = p?.agente?.estado === "trabalhando";
-  // Enquanto o agente trabalha, a tela confere a cada 6 segundos.
-  useEffect(() => { if (!ocupado) return; const t = setInterval(recarregar, 6000); return () => clearInterval(t); }, [ocupado, recarregar]);
+  // Sem lote entregue há mais de 5 minutos, a entrega caiu no meio: libera para pedir de novo.
+  const caiu = p?.agente?.estado === "trabalhando" && !p.agente.lote && Date.now() - Date.parse(p.agente.inicio ?? "0") > 5 * 60_000;
+  const ocupado = p?.agente?.estado === "trabalhando" && !caiu;
+  // Enquanto o agente trabalha, a tela confere o lote a cada 20 segundos.
+  useEffect(() => {
+    if (!ocupado) return;
+    const t = setInterval(async () => { await conferirParada(portalId).catch(() => null); recarregar(); }, 20000);
+    return () => clearInterval(t);
+  }, [ocupado, recarregar, portalId]);
   if (!dados) return <Carregando />;
 
   const salvar = async (x: Partial<Preparo>, aviso = "Salvo ✓") => { setMsg(""); try { await salvarPreparo(portalId, x); setMsg(aviso); recarregar(); } catch (e) { setMsg((e as Error).message); } };
@@ -77,7 +83,8 @@ function Preparar({ portalId }: { portalId: string }) {
       <Titulo titulo={`Preparar o diagnóstico · ${dados.loja}`} sub={`O agente prepara, você estuda, revisa e decide em cada parada. Nada daqui vai para ${dados.responsavel || "a loja"} sem você liberar.`} />
       {ag?.estado && (
         <div className={`aviso mb${ag.estado === "pronto" ? " ok" : ""}`}>
-          {ag.estado === "trabalhando" && <>⏳ O agente está fazendo <b>{NOMES[ag.parada ?? "raiox"]}</b> (começou {dataHora(ag.inicio)}). Pode levar de 1 a 4 minutos; a tela atualiza sozinha.</>}
+          {ag.estado === "trabalhando" && !caiu && <>⏳ O agente está fazendo <b>{NOMES[ag.parada ?? "raiox"]}</b> (começou {dataHora(ag.inicio)}). Costuma levar de 5 a 20 minutos (com muito material, pode passar disso). Pode fechar a tela: ele continua, e a resposta fica guardada aqui.</>}
+          {caiu && <>⚠️ {NOMES[ag.parada ?? "raiox"]} parou no meio. Peça de novo no botão da parada.</>}
           {ag.estado === "pronto" && <>✓ <b>{NOMES[ag.parada ?? "raiox"]}</b> pronto em {dataHora(ag.fim)}.</>}
           {ag.estado === "erro" && <>⚠️ {NOMES[ag.parada ?? "raiox"]}: {ag.msg}</>}
           {(ag.avisos ?? []).length > 0 && <div style={{ marginTop: 4 }}><small>Arquivos: {ag.avisos!.join(" · ")}</small></div>}

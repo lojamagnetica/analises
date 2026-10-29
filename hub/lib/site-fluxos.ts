@@ -28,7 +28,7 @@ export const FLUXOS: Record<string, Fluxo> = {
       { k: "valor", rotulo: "Valor da compra", tipo: "valor" },
     ],
     msgs: {
-      "Novo contato": "Oi, {nome}! Aqui é da {loja}. Vi que você se interessou por {interesse}. Posso te mandar as opções que temos agora?",
+      "Novo contato": "Oi, {nome}! Aqui é {consultora}, da {loja}. Vi que você se interessou por {interesse}. Posso te mandar as opções que temos agora?",
       "Em conversa": "{nome}, separei umas opções de {interesse} pensando em você. Quer ver?",
       "Mandou fotos ou link": "{nome}, conseguiu ver as fotos? Se quiser, te ajudo com o tamanho e já deixo reservado.",
       "Sem resposta": "Oi, {nome}! Passando para lembrar que as peças que te mostrei ainda estão disponíveis. Qualquer coisa, estou aqui.",
@@ -116,7 +116,7 @@ export const atrasadoFluxo = (f: Fluxo, i: ItemFluxo) => !f.finais.includes(i.et
 export function mensagem(f: Fluxo, i: ItemFluxo, loja: string) {
   const t = f.msgs[i.etapa];
   if (!t) return "";
-  const v: Record<string, string> = { nome: i.nome.trim().split(/\s+/)[0] || "", numero: i.numero ? `nº ${i.numero}` : "", loja };
+  const v: Record<string, string> = { nome: i.nome.trim().split(/\s+/)[0] || "", numero: i.numero ? `nº ${i.numero}` : "", loja, consultora: i.responsavel.trim().split(/\s+/)[0] || "[seu nome]" };
   for (const [k, x] of Object.entries(i.info ?? {})) if (typeof x === "string") v[k] = x;
   return t.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? "").replace(/\s+([.,!?])/g, "$1").replace(/\s{2,}/g, " ").trim();
 }

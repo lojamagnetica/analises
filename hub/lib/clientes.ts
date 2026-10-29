@@ -113,7 +113,10 @@ export function resumoResgate(cs: Cliente[], ref: string) {
 
 // ───── Mensagens ─────
 
-export const MENSAGEM_SIMPLES = "Oi, {nome}! Aqui é da {loja}. Passando para dizer que chegaram novidades e lembrei de você. Quer que eu te mande algumas fotos?";
+// Quem manda é a consultora (o CRM é executado pela equipe): toda mensagem diz quem está falando e de qual loja.
+export const MENSAGEM_SIMPLES = "Oi, {nome}! Aqui é {consultora}, da {loja}. Passando para dizer que chegaram novidades e lembrei de você. Quer que eu te mande algumas fotos?";
+/** Sem consultora definida, fica o lembrete para quem manda colocar o próprio nome. */
+export const SEM_CONSULTORA = "[seu nome]";
 
 /** "pronto" = a loja vê; "rascunho" = só a equipe vê (com aviso); "preparo" = a loja ainda não vê. */
 export function estadoConteudo(m: MetodoClientes | null, equipe: boolean): "pronto" | "rascunho" | "preparo" {
@@ -131,13 +134,21 @@ export function arrumarNome(nome: string) {
 
 export const primeiro = (nome: string) => arrumarNome(nome).split(" ")[0] ?? "";
 
-export function preencher(modelo: string, v: { nome: string; loja: string }) {
-  return modelo.replace(/\{nome\}/g, primeiro(v.nome)).replace(/\{loja\}/g, v.loja);
+export function preencher(modelo: string, v: { nome: string; loja: string; consultora?: string | null }) {
+  // Modelos antigos sem {consultora}: a apresentação entra do mesmo jeito.
+  const m = modelo.includes("{consultora}") ? modelo : modelo.replace("Aqui é da {loja}.", "Aqui é {consultora}, da {loja}.");
+  return m.replace(/\{nome\}/g, primeiro(v.nome)).replace(/\{loja\}/g, v.loja)
+    .replace(/\{consultora\}/g, v.consultora ? primeiro(v.consultora) : SEM_CONSULTORA);
 }
 
-export function mensagemDoTipo(m: MetodoClientes | null, equipe: boolean, tipo: TipoOuSem, v: { nome: string; loja: string }) {
+/** O modelo da mensagem de cada tipo de cliente (ainda com {nome}, {consultora} e {loja}). */
+export function modeloDoTipo(m: MetodoClientes | null, equipe: boolean, tipo: TipoOuSem) {
   const modelo = estadoConteudo(m, equipe) !== "preparo" && tipo !== "Sem data" ? m?.tipos?.[tipo]?.mensagem : null;
-  return preencher(modelo || MENSAGEM_SIMPLES, v);
+  return modelo || MENSAGEM_SIMPLES;
+}
+
+export function mensagemDoTipo(m: MetodoClientes | null, equipe: boolean, tipo: TipoOuSem, v: { nome: string; loja: string; consultora?: string | null }) {
+  return preencher(modeloDoTipo(m, equipe, tipo), v);
 }
 
 /** Número para o wa.me: só dígitos, com 55 na frente quando é um número do Brasil sem o código do país. */

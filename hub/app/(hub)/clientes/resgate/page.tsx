@@ -89,7 +89,7 @@ export default function Resgate() {
         <div className="card" style={{ padding: "6px 20px" }}>
           {lista.slice(0, mostrar).map((c) => {
             const l = leituras.get(c.id)!;
-            const texto = mensagemDoTipo(m, equipe, l.tipo, { nome: c.nome, loja: c.loja ?? portal.loja });
+            const texto = mensagemDoTipo(m, equipe, l.tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora });
             const link = linkWhats(c.whatsapp, texto);
             const mandei = contatada(c);
             return (

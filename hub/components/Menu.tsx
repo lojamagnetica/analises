@@ -152,6 +152,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/clientes", rotulo: "Minhas clientes", icone: "users" },
         { href: "/clientes/tipos", rotulo: "Ações por tipo de cliente", icone: "target" },
+        { href: "/clientes/missoes", rotulo: "Missão da semana", icone: "target" },
         { href: "/clientes/resgate", rotulo: "Resgate", icone: "chat" },
         { href: "/clientes/campanhas", rotulo: "Top 10 campanhas", icone: "bolt" },
         { href: "/clientes/experiencia", rotulo: "Experiência do cliente", icone: "spark" },

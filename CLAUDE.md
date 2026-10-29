@@ -42,6 +42,12 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
   Os pontos de desenvolvimento falam do jeito do perfil, nunca da pessoa, para ela refletir sem se sentir apontada. Textos em `hub/lib/perfil-pessoa.ts`.
 - Fuso: America/Recife.
 
+## Linha de gestão (feedback, cobrança, reuniões, roteiros para o time)
+Diretriz da Camilla: auto-responsabilidade e maturidade do time. Detalhes em `.claude/skills/linha-de-gestao/SKILL.md`.
+- Fala sempre na segunda pessoa, com a responsabilidade com a pessoa: "você está vendendo as peças mais baratas", nunca "as clientes estão levando".
+- Ordem do feedback: 1) o problema, com número; 2) o que ela já faz bem e a força do perfil; 3) a solução demonstrada na prática (ex.: uma peça que ela vende muito e a opção de valor maior que poderia ter oferecido, e como argumentar); 4) a dificuldade de execução; 5) o combinado sai dela (o quê, quanto, até quando).
+- Vale para tudo o que for construído no Hub que fala com o time ou ensina a dona a falar com ele.
+
 ## Padrões do código
 - Páginas client (`"use client"`), dados com `useDados` de `lib/hub.tsx`, `usePortal()` no portal e `useEquipe()` na equipe.
 - Classes prontas em `globals.css`: `card`, `card-borda` (com `--c`), `selo feito|andamento|espera|alerta|erro`,

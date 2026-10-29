@@ -75,9 +75,11 @@ export function montarModelos(d: DadosMeuDia, vs: Vendedora[]): Modelo[] {
     objetivo: "Cada pessoa sai sabendo como está, o que melhorar e um combinado até a próxima conversa.",
     blocos: [
       { tempo: "0 a 2 min", titulo: "Abrir a conversa", itens: ["Pergunte como foi a semana dela antes de falar de número.", "Use o jeito do perfil dela (abaixo, em cada pessoa)."] },
-      { tempo: "2 a 6 min", titulo: "Os números dela", itens: ["Venda × meta, PA e ticket. Comece pelo que melhorou.", `PA ideal: ${fmtPa(PA_IDEAL)} peças por venda.`] },
-      { tempo: "6 a 11 min", titulo: "O ponto a melhorar (um só)", itens: ["Mostre o que os números dizem e pergunte: \"o que você acha que está acontecendo?\"", "Ensine na prática: um exemplo de atendimento."] },
-      { tempo: "11 a 15 min", titulo: "O combinado", itens: ["O quê (comportamento), quanto (número), até quando (dia).", "Feche com um reconhecimento sincero."] },
+      { tempo: "2 a 5 min", titulo: "O problema, com número", itens: ["Fale na segunda pessoa: \"você está vendendo...\", nunca \"as clientes estão levando...\". É ela quem muda o número.", `Venda × meta, PA e ticket (PA ideal: ${fmtPa(PA_IDEAL)}).`] },
+      { tempo: "5 a 7 min", titulo: "O que ela já faz bem", itens: ["Pontue o que ela faz bem e a força do perfil dela, para ela usar na solução."] },
+      { tempo: "7 a 11 min", titulo: "A solução, mostrada na prática", itens: ["Demonstre com um exemplo real: uma peça que ela vende muito e como poderia ter feito melhor (o que oferecer, como argumentar)."] },
+      { tempo: "11 a 13 min", titulo: "A dificuldade", itens: ["Pergunte o que pode atrapalhar a execução e do que ela precisa."] },
+      { tempo: "13 a 15 min", titulo: "O combinado (sai dela)", itens: ["Ela diz o que vai fazer, quanto e até quando. Você combina como vai acompanhar."] },
     ],
   };
   return [abertura, retaFinal, individual];
@@ -91,8 +93,7 @@ export function roteiroIndividual(v: Vendedora) {
     abrir: j?.abre ?? "Comece perguntando como foi a semana dela.",
     numeros: v.vendas ? `${moeda(v.faturamento)}${v.meta ? ` de ${moeda(v.meta)}` : ""} · ${v.vendas} vendas · PA ${v.pa != null ? fmtPa(v.pa) : "—"} · ticket ${v.tkm != null ? moeda(v.tkm) : "—"}` : "Sem vendas lançadas no mês ainda.",
     situacao: v.diagnostico,
-    fala: fb?.fala ?? null,
-    fechar: j?.fecha ?? "Qual é o seu combinado até a próxima conversa?",
+    passos: fb?.passos ?? [],
   };
 }
 

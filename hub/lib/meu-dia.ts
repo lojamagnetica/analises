@@ -9,7 +9,8 @@ import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { PA_IDEAL, buscarCaixa, fimDoMes, fmtPa, indicadores, somar, somarMes, type Caixa } from "@/lib/caixa";
 import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
-import { principal, type Letra } from "@/lib/pessoas";
+import { VANTAGEM, principal, type Letra } from "@/lib/pessoas";
+export { VANTAGEM };
 import { moeda } from "@/lib/formato";
 
 // ───── Regras (para revisar) ─────
@@ -31,7 +32,7 @@ export type Problema = "pa" | "pm" | "volume" | "ok" | "sem";
 export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: string[] }> = {
   pa: {
     titulo: "PA baixo",
-    fala: "a gente está vendendo, mas quase sempre uma peça só. Em todo atendimento, mostra o look completo: a peça e o que combina com ela.",
+    fala: "você está vendendo, mas a cliente sai quase sempre com uma peça só.",
     acoes: [
       "Oferecer o look completo em todo atendimento: a peça e o que combina",
       "Meta de PA 2 até o fim da semana, conferida no fim de cada dia",
@@ -40,7 +41,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
   },
   pm: {
     titulo: "Vendendo as peças mais baratas",
-    fala: "as clientes estão levando as peças mais baratas. Começa o atendimento pelas peças de maior valor e fala do benefício antes do preço.",
+    fala: "você está vendendo as peças mais baratas.",
     acoes: [
       "Começar o atendimento pelas peças campeãs de maior valor",
       "Falar do benefício (caimento, tecido, ocasião) antes do preço",
@@ -49,7 +50,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
   },
   volume: {
     titulo: "Poucas vendas para a meta",
-    fala: "a sua meta está pedindo mais vendas. Vamos chamar 5 clientes da sua carteira por dia e abordar toda cliente que entrar em até 1 minuto.",
+    fala: "você está abaixo do ritmo da sua meta: o que falta são mais vendas.",
     acoes: [
       "Chamar 5 clientes da carteira dela por dia no WhatsApp",
       "Abordar toda cliente que entra em até 1 minuto",
@@ -58,7 +59,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
   },
   ok: {
     titulo: "No ritmo da meta",
-    fala: "você está no ritmo da meta! Quero que você ensine para o time o que está fazendo.",
+    fala: "você está no ritmo da sua meta.",
     acoes: [
       "Reconhecer na frente do time",
       "Desafio da semana: superar o próprio PA",
@@ -74,7 +75,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
 
 /** Como abrir e fechar a conversa conforme o perfil (o como falar vem do método, em Gestão de Pessoas). */
 export const JEITO: Record<Letra, { abre: string; fecha: string }> = {
-  D: { abre: "Direto ao ponto, com o número:", fecha: "Qual é a sua meta até sexta?" },
+  D: { abre: "Direto ao ponto, com o número:", fecha: "Quero ver esse número na sexta." },
   I: { abre: "Comece pelo que ela faz bem:", fecha: "Me conta no fim do dia como foi?" },
   S: { abre: "No particular, com calma:", fecha: "Eu estou junto com você nisso." },
   C: { abre: "Com o número na mão:", fecha: "Vamos acompanhar esse número todo dia." },
@@ -88,6 +89,8 @@ export type Vendedora = {
   id: string; nome: string; letra: Letra | null;
   faturamento: number; vendas: number; pecas: number; meta: number | null;
   pa: number | null; tkm: number | null; pm: number | null; problema: Problema; diagnostico: string;
+  /** Referências do feedback: o preço médio do estoque e quanto ela está abaixo do ritmo da meta. */
+  pmEstoque?: number | null; faltaRitmo?: number | null;
 };
 export type Tarefa = { chave: string; texto: string; href?: string };
 export type Atitude = { tipo: "CRM" | "Conteúdo" | "Ação"; titulo: string; texto: string; href: string; botao: string };
@@ -188,19 +191,71 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
     } else {
       diagnostico = `${nome} está no ritmo${metaV ? ` da meta (${moeda(t.faturamento)} de ${moeda(metaV)})` : ""}${i.pa != null ? `, com PA ${fmtPa(i.pa)}` : ""}.`;
     }
-    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico };
+    const faltaRitmo = metaV ? Math.max(0, metaV * passou - t.faturamento) : null;
+    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico, pmEstoque, faltaRitmo };
   });
 }
 
-/** O feedback pronto, no jeito do perfil. */
+// ───── Feedback na linha de gestão da Camilla ─────
+// Auto-responsabilidade e maturidade do time: a fala é sempre na segunda pessoa ("você está vendendo...",
+// nunca "as clientes estão levando..."). A ordem: 1) mostrar o problema, com número; 2) pontuar o que ela já faz
+// bem e a vantagem do perfil dela; 3) demonstrar a solução na prática; 4) entender a dificuldade de execução;
+// 5) o combinado sai dela (o quê, quanto e até quando).
+
+const USO: Record<string, string> = {
+  pm: "Use essa força para apresentar primeiro as peças de valor mais alto em todo atendimento.",
+  pa: "Use essa força para conduzir a cliente para o look completo.",
+  volume: "Use essa força para chamar a sua carteira e trazer a cliente para a loja.",
+  ok: "Use essa força para ensinar o time o que está dando certo.",
+};
+
+export type PassoFeedback = { titulo: string; fala?: string; dica?: string };
+
+/** O feedback pronto em 5 passos, com os números dela e no jeito do perfil. */
 export function feedback(v: Vendedora) {
   const s = SITUACOES[v.problema];
   if (!s.fala) return null;
   const j = v.letra ? JEITO[v.letra] : null;
-  return { comoAbrir: j?.abre ?? null, fala: `"${v.nome}, ${s.fala}${j ? ` ${j.fecha}` : ""}"` };
+  const pa = v.pa != null ? fmtPa(v.pa) : "—";
+  const tkm = v.tkm != null ? moeda(v.tkm) : "—";
+  const vantagemPerfil = v.letra ? `${VANTAGEM[v.letra]} ${USO[v.problema] ?? ""}`.trim() : "";
+  const p = v.problema;
+  const problema = p === "pm"
+    ? `"${v.nome}, você está vendendo as peças mais baratas: o seu preço médio é ${v.pm != null ? moeda(v.pm) : "—"}${v.pmEstoque ? `, e o do estoque é ${moeda(v.pmEstoque)}` : ""}."`
+    : p === "pa"
+      ? `"${v.nome}, você está vendendo, mas a cliente sai quase sempre com uma peça só: o seu PA está em ${pa}, e o ideal é ${fmtPa(PA_IDEAL)}."`
+      : p === "volume"
+        ? `"${v.nome}, você está ${moeda(v.faturamento)}${v.meta ? ` de ${moeda(v.meta)}` : ""}: ${v.faltaRitmo ? `${moeda(v.faltaRitmo)} abaixo do ritmo da sua meta` : "abaixo do ritmo da sua meta"}. O que está faltando são mais vendas."`
+        : `"${v.nome}, você está no ritmo da sua meta: ${moeda(v.faturamento)}${v.meta ? ` de ${moeda(v.meta)}` : ""}, com PA ${pa}."`;
+  const fazBem = p === "pm"
+    ? (v.pa != null && v.pa >= PA_ALERTA ? `"O seu PA é ${pa}: a cliente já leva mais de uma peça com você."` : `"Você atende bastante: são ${v.vendas} vendas no mês."`)
+    : p === "pa"
+      ? `"Você atende bastante e fecha venda: são ${v.vendas} vendas no mês, com ticket de ${tkm}."`
+      : p === "volume"
+        ? `"Quando você atende, a cliente compra bem: PA ${pa} e ticket ${tkm}."`
+        : `"O seu atendimento está funcionando: ${v.vendas} vendas, PA ${pa} e ticket ${tkm}."`;
+  const solucao: Record<string, PassoFeedback> = {
+    pm: { titulo: "3. A solução, mostrada na prática", dica: "Pegue uma peça que ela vende muito e mostre qual seria a opção com um valor um pouco maior que ela poderia ter oferecido, e como argumentaria (tecido, caimento, ocasião).", fala: `"Em todo atendimento, você começa pelas peças de maior valor e fala do benefício antes do preço."` },
+    pa: { titulo: "3. A solução, mostrada na prática", dica: "Pegue a peça que ela mais vende e monte com ela o look completo na frente dela: o que ofereceria junto e como falaria antes de ir para o caixa.", fala: `"Depois que a cliente escolhe, você mostra a peça que completa o look antes de ir para o caixa."` },
+    volume: { titulo: "3. A solução, mostrada na prática", dica: "Escolham juntas, agora, 5 clientes da carteira dela, e ela escreve a primeira mensagem na sua frente.", fala: `"Você chama 5 clientes da sua carteira por dia e aborda toda cliente que entra em até 1 minuto."` },
+    ok: { titulo: "3. O próximo desafio", dica: "Peça para ela contar o que está fazendo de diferente: é isso que vai para o time.", fala: `"O que você está fazendo de diferente? Quero que você ensine isso para o time."` },
+  };
+  const exemplo: Record<string, string> = {
+    pm: "Ex.: começar por 3 peças de valor em todo atendimento até sexta.",
+    pa: `Ex.: PA ${fmtPa(PA_ALERTA)} até sexta, conferido no fechamento do caixa.`,
+    volume: "Ex.: 5 contatos da carteira por dia até sexta, registrados no Hub.",
+    ok: "Ex.: superar o próprio PA e ensinar uma pessoa do time nesta semana.",
+  };
+  const passos: PassoFeedback[] = [
+    { titulo: "1. O problema, com número", fala: problema },
+    { titulo: "2. O que você já faz bem", fala: fazBem, dica: vantagemPerfil || undefined },
+    solucao[p],
+    { titulo: "4. A dificuldade", fala: p === "ok" ? `"O que você precisa para ir além?"` : `"O que pode te atrapalhar de fazer isso no atendimento? Do que você precisa?"` },
+    { titulo: "5. O combinado (sai dela)", fala: `"Então me diz: o que você vai fazer, quanto e até quando?"`, dica: `${exemplo[p]}${j ? ` Para fechar: "${j.fecha}"` : ""}` },
+  ];
+  return { comoAbrir: j?.abre ?? null, passos, texto: passos.map((x) => `${x.titulo}\n${x.fala ?? ""}${x.dica ? `\n(${x.dica})` : ""}`).join("\n\n") };
 }
 
-/** Clientes para chamar hoje: aniversariantes (hoje e próximos 7 dias) e quem sumiu há 30 a 90 dias. */
 export function carteira(d: DadosMeuDia) {
   const mmdd = (iso: string) => iso.slice(5, 10);
   const prox = Array.from({ length: 8 }, (_, i) => mmdd(somarDias(d.agora, i)));

@@ -9,6 +9,7 @@
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
+import { strFromU8, unzipSync } from "npm:fflate@0.8.2";
 
 const URL = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -87,6 +88,17 @@ function base64(buf: Uint8Array) {
   return btoa(s);
 }
 
+/** O texto de um Word (.docx é um zip; o texto fica em word/document.xml), com parágrafos e células de tabela. */
+function textoWord(buf: Uint8Array) {
+  const xml = strFromU8(unzipSync(buf, { filter: (f) => f.name === "word/document.xml" })["word/document.xml"]);
+  return xml
+    .replace(/<w:tab\/>/g, "\t").replace(/<w:br[^>]*\/>/g, "\n")
+    .replace(/<\/w:tc>/g, " | ").replace(/<\/w:p>/g, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&apos;/g, "'")
+    .replace(/\n{3,}/g, "\n\n").trim();
+}
+
 async function arquivos(admin: SupabaseClient, portalId: string) {
   const blocos: Bloco[] = [];
   const avisos: string[] = [];
@@ -110,7 +122,7 @@ async function arquivos(admin: SupabaseClient, portalId: string) {
       let conteudo = "";
       if (ext === "csv" || ext === "txt") conteudo = new TextDecoder().decode(buf);
       else if (ext === "docx") {
-        try { const mammoth = (await import("npm:mammoth@1.8.0")).default; conteudo = (await mammoth.extractRawText({ arrayBuffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) })).value; } catch { avisos.push(`${nome}: não deu para ler o Word (salve como PDF e suba de novo)`); continue; }
+        try { conteudo = textoWord(buf); } catch { avisos.push(`${nome}: não deu para ler o Word (salve como PDF e suba de novo)`); continue; }
       }
       else {
         const wb = XLSX.read(buf, { type: "array" });

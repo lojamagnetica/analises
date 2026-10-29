@@ -9,11 +9,12 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  aplicarHub, apagarArquivo, buscarPreparo, excluirPreparo, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
+  aplicarHub, apagarArquivo, buscarPreparo, excluirPreparo, importarDrive, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
   type Escolha, type Parada, type Preparo,
 } from "@/lib/diagnostico-preparo";
 
 const NOMES: Record<Parada, string> = { raiox: "Raio-X e proposta", perguntas: "Perguntas do gargalo", solucao: "Solução, roteiro e PDF", hub: "Diagnóstico da loja no Hub" };
+const semPrefixo = (n: string) => n.replace(/^\d{13}-/, "").replace(/^drive-[A-Za-z0-9_-]{20,}?-/, "");
 const kb = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 /** O botão que chama o agente numa parada, com o pedido de ajuste para refazer. */
@@ -49,6 +50,8 @@ function Preparar({ portalId }: { portalId: string }) {
   const [resp, setResp] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [subindo, setSubindo] = useState(0);
+  const [drive, setDrive] = useState(false);
+  const [pulados, setPulados] = useState<string[]>([]);
   const p = dados?.p ?? null;
   const ocupado = p?.agente?.estado === "trabalhando";
   // Enquanto o agente trabalha, a tela confere a cada 6 segundos.
@@ -89,10 +92,10 @@ function Preparar({ portalId }: { portalId: string }) {
         <p className="ajuda" style={{ margin: "2px 0 6px" }}>PDF, Word, planilha (Excel ou CSV) ou imagem. Planilha do Google: baixe como Excel antes de subir. Os que a loja subiu em Estoque e relatórios também aparecem aqui.</p>
         {dados.arquivos.map((a) => (
           <div key={a.nome} className="linha entre marcar" style={{ cursor: "default" }}>
-            <span style={{ wordBreak: "break-all" }}>{a.nome.replace(/^\d{13}-/, "")} <small className="mudo">· {kb(a.tamanho)}</small></span>
+            <span style={{ wordBreak: "break-all" }}>{semPrefixo(a.nome)} <small className="mudo">· {kb(a.tamanho)}</small></span>
             <span className="linha" style={{ gap: 8 }}>
               <button type="button" className="link-loja" onClick={async () => { const u = await linkArquivo(portalId, a.nome); if (u) window.open(u, "_blank"); }}>Abrir</button>
-              <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm(`Excluir "${a.nome.replace(/^\d{13}-/, "")}"? A loja também deixa de ver.`)) { await apagarArquivo(portalId, a.nome); recarregar(); } }}>Excluir</button>
+              <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm(`Excluir "${semPrefixo(a.nome)}"? A loja também deixa de ver.`)) { await apagarArquivo(portalId, a.nome); recarregar(); } }}>Excluir</button>
             </span>
           </div>
         ))}
@@ -103,7 +106,22 @@ function Preparar({ portalId }: { portalId: string }) {
             for (const f of fs) { try { await subirArquivo(portalId, f); } catch (x) { setMsg((x as Error).message); } setSubindo((n) => n - 1); }
             recarregar();
           }} />
-        </label>
+        </label>{" "}
+        <button type="button" className="btn s peq mt" disabled={drive} onClick={async () => {
+          setDrive(true); setMsg(""); setPulados([]);
+          try {
+            const x = await importarDrive(portalId);
+            setMsg(x.importados.length ? `Vieram ${x.importados.length} arquivos do Drive ✓` : "Nada novo na pasta do Drive.");
+            setPulados(x.pulados.filter((y) => !y.endsWith("(já estava no Hub)")));
+            recarregar();
+          } catch (x) { setMsg((x as Error).message); }
+          setDrive(false);
+        }}>{drive ? "Lendo a pasta do Drive… (pode levar 1 ou 2 minutos)" : "Trazer da pasta do Drive"}</button>
+        {pulados.length > 0 && (
+          <details className="mt"><summary className="ajuda" style={{ cursor: "pointer" }}>Ficaram de fora ({pulados.length})</summary>
+            <ul className="ajuda">{pulados.map((y) => <li key={y}>{y}</li>)}</ul>
+          </details>
+        )}
         <div className="grade g2 mt" style={{ gap: "0 12px" }}>
           <label className="ajuda">Transcrição da reunião do Comercial<textarea rows={5} value={t.comercial ?? ""} onChange={(x) => setTr({ ...t, comercial: x.target.value })} /></label>
           <label className="ajuda">Transcrição do onboarding com a CS<textarea rows={5} value={t.onboarding ?? ""} onChange={(x) => setTr({ ...t, onboarding: x.target.value })} /></label>

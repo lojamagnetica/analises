@@ -1,7 +1,7 @@
 "use client";
 
 // A leitura da semana: toda segunda às 12h o Hub monta o rascunho de cada loja com os números (o agente);
-// a Camilla revisa à tarde e publica. Cada publicação guarda o par rascunho → versão final para o agente aprender.
+// a equipe revisa e encaminha, a Camilla publica (o banco garante). Cada publicação guarda o par rascunho → versão final para o agente aprender.
 import { fimDoMes } from "@/lib/caixa";
 import { hoje } from "@/lib/formato";
 import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
@@ -12,6 +12,8 @@ export type Rascunho = { texto: string; acoes: string[]; para_camilla?: string; 
 export type Leitura = {
   id: string; portal_id: string; semana: string; texto: string; acoes: Acao[]; autor_nome: string; updated_at: string;
   rascunho: Rascunho | null; publicada: boolean; publicada_em: string | null;
+  /** A equipe revisou e encaminhou para a Camilla publicar. */
+  pronta?: boolean;
 };
 
 /** A segunda-feira da semana de uma data (fuso de Recife). */
@@ -39,12 +41,19 @@ export async function buscarLeitura(portalId: string, equipe: boolean) {
 export async function publicarLeitura(portalId: string, texto: string, acoes: Acao[], autor: string, rascunho: Rascunho | null) {
   const semana = semanaDe();
   const { error } = await sb().from("loja_leituras").upsert(
-    { portal_id: portalId, semana, texto: texto.trim(), acoes, autor_nome: autor, publicada: true, publicada_em: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { portal_id: portalId, semana, texto: texto.trim(), acoes, autor_nome: autor, publicada: true, pronta: false, publicada_em: new Date().toISOString(), updated_at: new Date().toISOString() },
     { onConflict: "portal_id,semana" });
   if (error) throw new Error(error.message);
   if (rascunho) {
     await sb().from("leitura_exemplos").insert({ portal_id: portalId, semana, rascunho, final: { texto: texto.trim(), acoes: acoes.map((a) => a.t) } });
   }
+}
+/** A equipe revisou: encaminha para a Camilla publicar (fica em rascunho para a loja). */
+export async function encaminharLeitura(portalId: string, texto: string, acoes: Acao[], autor: string, pronta = true) {
+  const { error } = await sb().from("loja_leituras").upsert(
+    { portal_id: portalId, semana: semanaDe(), texto: texto.trim(), acoes, autor_nome: autor, pronta, publicada: false, updated_at: new Date().toISOString() },
+    { onConflict: "portal_id,semana" });
+  if (error) throw new Error(error.message);
 }
 export async function despublicar(id: string) {
   const { error } = await sb().from("loja_leituras").update({ publicada: false }).eq("id", id);

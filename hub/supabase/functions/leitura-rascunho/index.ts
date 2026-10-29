@@ -1,5 +1,5 @@
 // O agente da leitura da semana: lê os números da loja (caixa, meta, plano do mês, a leitura anterior) e monta o
-// rascunho (o que os números mostram + 3 ações). A Camilla revisa e publica no Hub; cada publicação vira exemplo.
+// rascunho (o que os números mostram + 3 ações). A equipe revisa e encaminha, a Camilla publica; cada publicação vira exemplo.
 // Chamado pela equipe (um portal) ou pelo agendamento de segunda às 12h (todas, com a chave x-aviso).
 // Sem a chave do Claude, monta o rascunho por regras (só com os números).
 import Anthropic from "npm:@anthropic-ai/sdk";
@@ -114,10 +114,12 @@ function porRegras(nome: string, n: Nums, semGestao: boolean): Saida {
   return { texto: frases.join(" "), acoes: acoes.slice(0, 3), para_camilla: "Rascunho automático por regras (o agente com IA ainda não está ligado): confira os números, ajuste o tom e as ações." };
 }
 
-async function rascunho(admin: SupabaseClient, portalId: string) {
+async function rascunho(admin: SupabaseClient, portalId: string, todas = false) {
   const semana = segunda(hoje());
-  const { data: atual } = await admin.from("loja_leituras").select("id, publicada").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
+  const { data: atual } = await admin.from("loja_leituras").select("id, publicada, pronta").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
   if (atual?.publicada) return { portal_id: portalId, pulou: "já publicada" };
+  // Montando todas de uma vez, não passa por cima da leitura que a equipe já revisou e encaminhou.
+  if (todas && atual?.pronta) return { portal_id: portalId, pulou: "já encaminhada" };
   const [{ data: portal }, { data: mem }, { data: exemplos }, nums] = await Promise.all([
     admin.from("portais").select("loja, responsavel, tipo, menu_oculto").eq("id", portalId).single(),
     admin.from("metodo").select("dados").eq("chave", "leitura_agente").single(),
@@ -127,7 +129,7 @@ async function rascunho(admin: SupabaseClient, portalId: string) {
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
   const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
   const acoes = out.acoes.slice(0, 3).map((t) => ({ t, feita: false }));
-  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, updated_at: new Date().toISOString() };
+  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: false, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);
   else await admin.from("loja_leituras").insert({ ...linha, portal_id: portalId, semana, autor_nome: "", publicada: false });
   return { portal_id: portalId, ok: true, agente: !!CHAVE };
@@ -182,7 +184,7 @@ Deno.serve(async (req) => {
     const com = new Set([...(perfis ?? []), ...(caixa ?? [])].map((x) => x.portal_id));
     const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && com.has(p.id)).map((p) => p.id as string);
     // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
-    EdgeRuntime.waitUntil((async () => { for (const id of lista) { try { await rascunho(admin, id); } catch (e) { console.error(id, (e as Error).message); } } })());
+    EdgeRuntime.waitUntil((async () => { for (const id of lista) { try { await rascunho(admin, id, true); } catch (e) { console.error(id, (e as Error).message); } } })());
     return json({ ok: true, lojas: lista.length }, 202);
   }
   return json({ erro: "Informe portal_id ou todas." }, 400);

@@ -6,7 +6,7 @@ import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, moeda } from "@/lib/formato";
 import {
-  buscarLeitura, buscarNumerosSemana, caixaDaSemana, salvarNumerosSemana, semanaPassada, despublicar, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
+  buscarLeitura, buscarNumerosSemana, caixaDaSemana, salvarNumerosSemana, semanaPassada, despublicar, encaminharLeitura, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
 } from "@/lib/leitura";
 
 const DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -115,7 +115,7 @@ function Publicada({ l, recarregar, extra }: { l: Leitura; recarregar: () => voi
 
 /** No Início: a leitura da semana. A equipe revisa o rascunho do Hub e publica aqui mesmo. */
 export function LeituraDaSemana() {
-  const { portal, equipe, nome } = usePortal();
+  const { portal, equipe, nome, aprova } = usePortal();
   const { dados, recarregar } = useDados(async () => ({
     ...(await buscarLeitura(portal.id, equipe)),
     numeros: equipe ? await numerosDaLoja(portal.id).catch(() => null) : null,
@@ -145,9 +145,9 @@ export function LeituraDaSemana() {
       <div className="card card-borda mt" style={{ ["--c" as string]: "var(--purple)" }}>
         <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
           <h3 style={{ margin: 0 }}>✍️ A leitura da semana de {dia(semanaDe())} · {portal.loja}</h3>
-          <span className="selo espera">{r ? "rascunho do Hub" : "ainda sem rascunho"}</span>
+          <span className={`selo ${r?.pronta ? "alerta" : "espera"}`}>{r?.pronta ? "encaminhada · esperando a Camilla publicar" : r ? "rascunho do Hub" : "ainda sem rascunho"}</span>
         </div>
-        <p className="mudo" style={{ marginTop: 4 }}>Só a equipe vê esta caixa. Revise, ajuste e publique: aparece no topo do Início da loja, com o seu nome. As suas correções ensinam o agente.</p>
+        <p className="mudo" style={{ marginTop: 4 }}>{aprova ? "Só a equipe vê esta caixa. Revise, ajuste e publique: aparece no topo do Início da loja, com o seu nome. As suas correções ensinam o agente." : "Só a equipe vê esta caixa. Revise os números, ajuste o texto e as ações e encaminhe: a Camilla confere e publica para a loja."}</p>
         {n && (
           <div className="grade g4 mb" style={{ gap: 8 }}>
             <div className="kpi"><small>Semana passada{n.informados ? " (informada)" : ""}</small><b>{moeda(n.semanaPassada)}</b></div>
@@ -171,10 +171,12 @@ export function LeituraDaSemana() {
             setErro("");
             const lista = ac.filter((a) => a.trim()).map((t) => ({ t: t.trim(), feita: l?.acoes.find((x) => x.t === t.trim())?.feita ?? false }));
             try {
-              await publicarLeitura(portal.id, tx, lista, nome.split(" ")[0] || "Camilla", r?.rascunho ?? null);
+              if (aprova) await publicarLeitura(portal.id, tx, lista, nome.split(" ")[0] || "Camilla", r?.rascunho ?? null);
+              else await encaminharLeitura(portal.id, tx, lista, nome.split(" ")[0] || "Equipe");
               setEditando(false); setTexto(null); setAcoes(null); recarregar();
             } catch (e) { setErro((e as Error).message); }
-          }}>Publicar para a loja</button>
+          }}>{aprova ? "Publicar para a loja" : r?.pronta ? "Salvar e manter encaminhada" : "Encaminhar para a Camilla publicar"}</button>
+          {!aprova && r?.pronta && <button type="button" className="link-loja" onClick={async () => { try { await encaminharLeitura(portal.id, tx, r.acoes, r.autor_nome || nome.split(" ")[0] || "Equipe", false); recarregar(); } catch (e) { setErro((e as Error).message); } }}>Tirar do encaminhamento</button>}
           <button type="button" className="btn s peq" disabled={montando} onClick={async () => {
             setErro(""); setMontando(true);
             try { await montarRascunho({ portal_id: portal.id }); setTexto(null); setAcoes(null); recarregar(); } catch (e) { setErro((e as Error).message); }
@@ -198,9 +200,11 @@ export function LeituraDaSemana() {
   return (
     <Publicada l={l} recarregar={recarregar} extra={equipe && dados.publicadaNestaSemana ? <>
       {avisar}
-      <button type="button" className="link-loja" onClick={() => setEditando(true)}>Editar</button>
-      <button type="button" className="link-loja" onClick={async () => { if (confirm("Tirar a leitura do Início da loja (volta para rascunho)?")) { try { await despublicar(l.id); recarregar(); } catch (x) { setErro((x as Error).message); } } }}>Voltar para rascunho</button>
-      <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm("Excluir a leitura desta semana?")) { try { await excluirLeitura(l.id); recarregar(); } catch (x) { setErro((x as Error).message); } } }}>Excluir</button>
+      {aprova && <>
+        <button type="button" className="link-loja" onClick={() => setEditando(true)}>Editar</button>
+        <button type="button" className="link-loja" onClick={async () => { if (confirm("Tirar a leitura do Início da loja (volta para rascunho)?")) { try { await despublicar(l.id); recarregar(); } catch (x) { setErro((x as Error).message); } } }}>Voltar para rascunho</button>
+        <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm("Excluir a leitura desta semana?")) { try { await excluirLeitura(l.id); recarregar(); } catch (x) { setErro((x as Error).message); } } }}>Excluir</button>
+      </>}
       {erro && <span className="aviso">{erro}</span>}
     </> : undefined} />
   );

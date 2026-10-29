@@ -15,7 +15,7 @@ export type Narrativa = { titulo: string; assinatura: string; capitulos: { titul
 export type Historia = {
   id: string; token: string; portal_id: string | null; loja: string; nome: string; whatsapp: string;
   respostas: Respostas; fotos: Foto[]; enviado: boolean; liberado: boolean; created_at: string; updated_at: string;
-  narrativa?: Narrativa | null; narrativa_aprovada?: boolean;
+  narrativa?: Narrativa | null; narrativa_aprovada?: boolean; narrativa_pronta?: boolean;
 };
 export type Rascunho = Pick<Historia, "loja" | "nome" | "whatsapp" | "respostas" | "fotos" | "enviado">;
 

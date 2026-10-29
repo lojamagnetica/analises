@@ -81,7 +81,7 @@ function Editor({ h, urls: urls0, aoSalvar, aoCancelar }: { h: Historia; urls: R
 }
 
 function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string; loja: string }[]; recarregar: () => void }) {
-  const { abrirPortal } = useEquipe();
+  const { abrirPortal, aprova } = useEquipe();
   const [editando, setEditando] = useState(false);
   const [urls, setUrls] = useState<Record<string, string> | null>(null);
   const [erro, setErro] = useState("");
@@ -108,22 +108,22 @@ function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string
       <div className="linha" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         {!editando && <button type="button" className="btn s peq" onClick={async () => { setUrls(await urlsDasFotos(h.fotos ?? [])); setEditando(true); }}>Ver e editar</button>}
         {h.portal_id && <button type="button" className="link-loja" onClick={() => abrirPortal(h.portal_id, "/nossa-historia", true)}>Ver como fica no portal</button>}
-        {h.liberado
+        {aprova && (h.liberado
           ? <button type="button" className="link-loja" onClick={() => mudar({ liberado: false })}>Voltar para rascunho</button>
-          : <button type="button" className="btn p peq" disabled={!h.portal_id} title={h.portal_id ? "" : "Escolha o portal primeiro"} onClick={() => { if (confirm(`Liberar a história para ${h.loja}?`)) mudar({ liberado: true }); }}>Liberar para a loja</button>}
+          : <button type="button" className="btn p peq" disabled={!h.portal_id} title={h.portal_id ? "" : "Escolha o portal primeiro"} onClick={() => { if (confirm(`Liberar a história para ${h.loja}?`)) mudar({ liberado: true }); }}>Liberar para a loja</button>)}
         <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => {
           if (!confirm(`Excluir a história de ${h.loja || "esta loja"}, com as fotos? Não dá para desfazer.`)) return;
           try { await excluirHistoria(h); recarregar(); } catch (e) { setErro((e as Error).message); }
         }}>Excluir</button>
       </div>
       {editando && urls && <Editor h={h} urls={urls} aoSalvar={() => { setEditando(false); recarregar(); }} aoCancelar={() => setEditando(false)} />}
-      {h.enviado && <Storytelling h={h} recarregar={recarregar} />}
+      {h.enviado && <Storytelling h={h} aprova={aprova} recarregar={recarregar} />}
     </div>
   );
 }
 
-/** O storytelling para a equipe e a cultura: o agente monta, a Camilla edita e aprova. Sem aprovar, a loja vê as respostas. */
-function Storytelling({ h, recarregar }: { h: Historia; recarregar: () => void }) {
+/** O storytelling para a equipe e a cultura: o agente monta, a equipe revisa e encaminha, a Camilla aprova. Sem aprovar, a loja vê as respostas. */
+function Storytelling({ h, aprova, recarregar }: { h: Historia; aprova: boolean; recarregar: () => void }) {
   const vazia: Narrativa = { titulo: h.loja, assinatura: "", capitulos: [], esperamos: "", pendencias: [] };
   const [n, setN] = useState<Narrativa | null>(null);
   const [montando, setMontando] = useState(false);
@@ -131,14 +131,17 @@ function Storytelling({ h, recarregar }: { h: Historia; recarregar: () => void }
   const atual = n ?? h.narrativa ?? null;
   const salvar = async (x: Partial<Historia>) => { setErro(""); try { await salvarHistoria(h.id, x); setN(null); recarregar(); } catch (e) { setErro((e as Error).message); } };
   const muda = (x: Partial<Narrativa>) => setN({ ...(atual ?? vazia), ...x });
+  // Já aprovado, só quem aprova mexe no texto (o banco também garante).
+  const trava = !!h.narrativa_aprovada && !aprova;
+  const selo = h.narrativa_aprovada ? ["feito", "aprovado · a loja vê esta versão"] : h.narrativa_pronta ? ["alerta", "pronto · esperando a Camilla aprovar"] : ["andamento", "rascunho"];
   const cap = (i: number, x: Partial<Narrativa["capitulos"][number]>) => muda({ capitulos: (atual?.capitulos ?? []).map((c, j) => (j === i ? { ...c, ...x } : c)) });
 
   return (
     <div style={{ borderTop: "1px solid var(--line)", marginTop: 12, paddingTop: 12 }}>
       <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-        <span><b>Storytelling para a equipe</b> {h.narrativa ? <span className={`selo ${h.narrativa_aprovada ? "feito" : "andamento"}`}>{h.narrativa_aprovada ? "aprovado · a loja vê esta versão" : "rascunho"}</span> : <small className="mudo">· ainda não montado</small>}
+        <span><b>Storytelling para a equipe</b> {h.narrativa ? <span className={`selo ${selo[0]}`}>{selo[1]}</span> : <small className="mudo">· ainda não montado</small>}
           <br /><small className="mudo">A história contada pela dona vira uma narrativa para quem chega na loja, sem mudar os fatos e na linguagem da cliente. O que não é para a equipe fica de fora.</small></span>
-        <button type="button" className="btn s peq" disabled={montando} onClick={async () => {
+        <button type="button" className="btn s peq" disabled={montando || trava} onClick={async () => {
           if (h.narrativa && !confirm("Montar de novo? O texto atual do storytelling é trocado pelo novo rascunho.")) return;
           setMontando(true); setErro("");
           try { await montarNarrativa(h.id); recarregar(); } catch (e) { setErro((e as Error).message); }
@@ -148,7 +151,8 @@ function Storytelling({ h, recarregar }: { h: Historia; recarregar: () => void }
       {erro && <div className="aviso mt">{erro}</div>}
       {!atual && <button type="button" className="link-loja mt" onClick={() => setN(vazia)}>Ou escrever à mão</button>}
       {atual && (
-        <div className="mt">
+        <fieldset className="mt" disabled={trava} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+          {trava && <p className="ajuda" style={{ marginTop: 0 }}>Aprovado pela Camilla. Para mudar alguma coisa, peça para ela voltar para rascunho.</p>}
           {atual.pendencias?.length > 0 && <div className="aviso mb"><b>O que falta ou ficou de fora:</b><ul style={{ margin: "4px 0 0", paddingLeft: 18 }}>{atual.pendencias.map((p) => <li key={p}>{p}</li>)}</ul></div>}
           <label className="ajuda" style={{ display: "block" }}>Título<input type="text" value={atual.titulo} onChange={(e) => muda({ titulo: e.target.value })} /></label>
           <label className="ajuda" style={{ display: "block" }}>Frase de abertura<input type="text" value={atual.assinatura} onChange={(e) => muda({ assinatura: e.target.value })} /></label>
@@ -166,11 +170,16 @@ function Storytelling({ h, recarregar }: { h: Historia; recarregar: () => void }
           <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
             {n && <button type="button" className="btn p peq" onClick={() => salvar({ narrativa: n })}>Salvar o texto</button>}
             {n && <button type="button" className="btn s peq" onClick={() => setN(null)}>Descartar</button>}
-            {!n && h.narrativa && (h.narrativa_aprovada
-              ? <button type="button" className="link-loja" onClick={() => salvar({ narrativa_aprovada: false })}>Voltar para rascunho</button>
-              : <button type="button" className="btn p peq" onClick={() => { if (confirm("Aprovar o storytelling? A loja e o onboarding passam a ver esta versão.")) salvar({ narrativa_aprovada: true }); }}>Aprovar o storytelling</button>)}
+            {!n && h.narrativa && aprova && (h.narrativa_aprovada
+              ? <button type="button" className="link-loja" onClick={() => salvar({ narrativa_aprovada: false, narrativa_pronta: false })}>Voltar para rascunho</button>
+              : <button type="button" className="btn p peq" disabled={!h.portal_id} title={h.portal_id ? "" : "Escolha o portal primeiro"} onClick={() => {
+                  if (confirm(`Aprovar o storytelling${h.liberado ? "" : " e liberar a história"} para ${h.loja}? A loja e o onboarding passam a ver esta versão.`)) salvar({ narrativa_aprovada: true, narrativa_pronta: false, liberado: true });
+                }}>{h.liberado ? "Aprovar o storytelling" : "Aprovar e liberar para a loja"}</button>)}
+            {!n && h.narrativa && !aprova && !h.narrativa_aprovada && (h.narrativa_pronta
+              ? <button type="button" className="link-loja" onClick={() => salvar({ narrativa_pronta: false })}>Tirar do encaminhamento</button>
+              : <button type="button" className="btn p peq" disabled={!h.portal_id} title={h.portal_id ? "" : "Escolha o portal primeiro"} onClick={() => { if (confirm("Encaminhar para a Camilla aprovar? Confira antes fatos, fotos com legenda e a linguagem.")) salvar({ narrativa_pronta: true }); }}>Encaminhar para a Camilla aprovar</button>)}
           </div>
-        </div>
+        </fieldset>
       )}
     </div>
   );
@@ -187,9 +196,9 @@ export default function Historias() {
   }, []);
   const [copiado, setCopiado] = useState(false);
   if (!dados) return <Carregando />;
-  // Fila: primeiro o que espera a sua análise, depois quem ainda está preenchendo, por último as já concluídas.
+  // Fila: primeiro o encaminhado para a Camilla aprovar, depois o que espera análise, depois quem ainda está preenchendo, por último as já concluídas.
   const concluida = (h: Historia) => h.liberado && !!h.narrativa_aprovada;
-  const grupo = (h: Historia) => (concluida(h) ? 2 : h.enviado || h.liberado ? 0 : 1);
+  const grupo = (h: Historia) => (concluida(h) ? 3 : h.narrativa_pronta ? 0 : h.enviado || h.liberado ? 1 : 2);
   const fila = [...dados.historias].sort((a, b) => grupo(a) - grupo(b) || b.updated_at.localeCompare(a.updated_at));
   const prontas = fila.filter(concluida).length;
   return (

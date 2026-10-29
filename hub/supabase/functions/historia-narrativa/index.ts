@@ -47,8 +47,13 @@ Deno.serve(async (req) => {
 
   const { id } = await req.json().catch(() => ({}));
   const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: h } = await admin.from("loja_historia").select("loja, nome, respostas, fotos").eq("id", String(id ?? "")).maybeSingle();
+  const { data: h } = await admin.from("loja_historia").select("loja, nome, respostas, fotos, narrativa_aprovada").eq("id", String(id ?? "")).maybeSingle();
   if (!h) return json({ erro: "História não encontrada." }, 404);
+  // Montar de novo tira o aprovado do ar: só quem aprova pode.
+  if (h.narrativa_aprovada) {
+    const { data: aprova } = await usuario.rpc("pode_aprovar");
+    if (aprova !== true) return json({ erro: "O storytelling já está aprovado. Para montar de novo, peça à Camilla para voltar para rascunho." }, 403);
+  }
 
   try {
     const client = new Anthropic({ apiKey: CHAVE });
@@ -69,7 +74,7 @@ Deno.serve(async (req) => {
     const bloco = r.content.find((b) => b.type === "text");
     if (!bloco || bloco.type !== "text") throw new Error("O agente não devolveu o texto.");
     const narrativa = JSON.parse(bloco.text);
-    await admin.from("loja_historia").update({ narrativa, narrativa_aprovada: false, updated_at: new Date().toISOString() }).eq("id", id);
+    await admin.from("loja_historia").update({ narrativa, narrativa_aprovada: false, narrativa_pronta: false, updated_at: new Date().toISOString() }).eq("id", id);
     return json({ ok: true, narrativa });
   } catch (e) {
     return json({ erro: (e as Error).message }, 500);

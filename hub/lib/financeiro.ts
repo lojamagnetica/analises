@@ -1,6 +1,6 @@
 "use client";
 
-// O financeiro da empresa (só a Camilla): o que entrou, as despesas fixas e variáveis de cada mês, o lucro e a divisão
+// O financeiro da empresa (Nossa empresa, toda a equipe): o que entrou, as despesas fixas e variáveis de cada mês, o lucro e a divisão
 // entre os sócios, como na planilha "Controle - Financeiro". As despesas fixas ficam cadastradas e viram lançamento todo mês.
 import { supabaseBrowser } from "@/lib/supabase/client";
 

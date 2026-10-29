@@ -135,7 +135,7 @@ function Socios({ config, recarregar }: { config: Config; recarregar: () => void
   );
 }
 
-/** Financeiro da empresa: só a Camilla vê (Área da mentora). */
+/** Financeiro da empresa (Nossa empresa): toda a equipe vê e lança. */
 export default function Financeiro() {
   const [mes, setMes] = useState(hoje().slice(0, 7));
   const [aba, setAba] = useState<Aba>("mes");
@@ -155,7 +155,7 @@ export default function Financeiro() {
 
   return (
     <>
-      <Titulo titulo="Financeiro" sub="O que entrou, as despesas fixas e variáveis, o lucro do mês e a parte de cada sócio. Só você vê." />
+      <Titulo titulo="Financeiro" sub="O que entrou, as despesas fixas e variáveis, o lucro do mês e a parte de cada sócio." />
       <div className="chips mb">{ABAS.map((a) => <button key={a.id} type="button" className={`chip${aba === a.id ? " escolhido" : ""}`} onClick={() => setAba(a.id)}>{a.rotulo}</button>)}</div>
 
       {aba === "mes" && <>

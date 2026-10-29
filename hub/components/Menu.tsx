@@ -29,7 +29,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
         { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
-        { href: "/empresa/financeiro", rotulo: "Financeiro", icone: "calc" },
       ],
     });
   }
@@ -44,6 +43,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
         { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
         { href: "/empresa/planos", rotulo: "Planos", icone: "tag" },
+        { href: "/empresa/financeiro", rotulo: "Financeiro", icone: "calc" },
         { href: "/empresa/produtos", rotulo: "Produtos", icone: "box" },
         { href: "/empresa/acessos", rotulo: "Acessos", icone: "gear" },
       ],

@@ -41,6 +41,8 @@ export type Hub = {
   estudio: boolean;
   /** Acesso só do caixa: vê só o Fechamento de caixa da loja. */
   soCaixa: boolean;
+  /** Pode aprovar e liberar o que vai para a loja (a Camilla). */
+  aprova: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -98,7 +100,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -130,6 +132,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       foto: perfil?.foto ?? null,
       estudio: !!perfil?.estudio,
       soCaixa: !equipe && !!perfil?.so_caixa,
+      aprova: equipe && !!perfil?.aprova,
       equipe,
       portal,
       pers,

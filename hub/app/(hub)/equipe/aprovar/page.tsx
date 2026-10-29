@@ -27,7 +27,7 @@ export default function Aprovar() {
   const [filtro, setFiltro] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [portais, diag, gestao, analise, extra, planos, acoes, pautas] = await Promise.all([
+    const [portais, diag, gestao, analise, extra, planos, acoes, pautas, historias] = await Promise.all([
       sb.from("portais").select("id, loja").eq("ativo", true),
       sb.from("loja_diagnostico").select("portal_id, loja, updated_at").eq("status", "rascunho"),
       sb.from("loja_gestao").select("portal_id, area, loja, updated_at").eq("status", "rascunho"),
@@ -36,6 +36,7 @@ export default function Aprovar() {
       sb.from("loja_plano_mes").select("portal_id, mes, enviado_em").eq("status", "enviado"),
       sb.from("acoes").select("id, titulo, created_at").eq("publicada", false),
       sb.from("pautas").select("id, titulo, semana").eq("liberada", false),
+      sb.from("loja_historia").select("id, portal_id, loja, updated_at").eq("narrativa_pronta", true).eq("narrativa_aprovada", false),
     ]);
     const ativos = new Map((portais.data ?? []).map((p) => [p.id as string, p.loja as string]));
     const daLoja = (id: string) => ativos.has(id);
@@ -59,6 +60,10 @@ export default function Aprovar() {
       ...(planos.data ?? []).filter((p) => daLoja(p.portal_id)).map((p) => ({
         chave: `p${p.portal_id}${p.mes}`, portal: p.portal_id, tipo: "Plano do mês", titulo: `Plano de ${nomeMes(p.mes)}`,
         quando: p.enviado_em, href: "/equipe/planos",
+      })),
+      ...(historias.data ?? []).filter((h) => h.portal_id && daLoja(h.portal_id)).map((h) => ({
+        chave: `h${h.id}`, portal: h.portal_id as string, tipo: "Nossa história", titulo: `Storytelling · ${h.loja}`,
+        quando: h.updated_at as string, href: "/empresa/historias",
       })),
       ...(acoes.data ?? []).map((a) => ({
         chave: `c${a.id}`, portal: null, tipo: "Ação do Mês", titulo: a.titulo as string, quando: a.created_at as string, href: `/equipe/acao?id=${a.id}`,

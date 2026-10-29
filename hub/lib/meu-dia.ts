@@ -259,10 +259,11 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   const hojeDow = dow(d.agora);
   const diaDoMes = Number(d.agora.slice(8));
   if (!d.caixaOntem.length) t.push({ chave: "caixa_ontem", texto: "Lançar o caixa de ontem", href: "/gestao/caixa" });
+  if (hojeDow !== 0) t.push({ chave: "abertura", texto: "Reunião de abertura com o time (10 min, antes de abrir)", href: "/pessoas/reunioes?m=abertura" });
   if (p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
-    t.push({ chave: "reta_final", texto: `Reunião de reta final (15 min): faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo`, href: "/pessoas/reuniao-semanal" });
+    t.push({ chave: "reta_final", texto: `Reunião de reta final (15 min): faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo`, href: "/pessoas/reunioes?m=reta_final" });
   }
-  if (cfg.reuniao === hojeDow) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora", href: "/pessoas/reuniao-semanal" });
+  if (cfg.reuniao === hojeDow) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora (15 min cada)", href: "/pessoas/reunioes?m=individual" });
   if (cfg.conteudo === hojeDow) t.push({ chave: "conteudo", texto: "Montar o calendário de conteúdo da semana", href: "/conteudo/semana" });
   const planoEnviado = d.planoProx && d.planoProx.status !== "rascunho";
   const proximo = MESES[Number(somarMes(d.agora.slice(0, 7), 1).slice(5, 7)) - 1].toLowerCase();

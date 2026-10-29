@@ -118,8 +118,14 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
                   {fb && (
                     <details open={ruim}>
                       <summary style={{ cursor: "pointer" }}><b>Feedback pronto</b>{v.letra && m ? <> · perfil {m.perfis[v.letra].nome}</> : ""}</summary>
-                      {fb.comoAbrir && <p className="mudo" style={{ margin: "6px 0 2px" }}>{fb.comoAbrir}</p>}
-                      <p style={{ margin: "4px 0" }}>{fb.fala}</p>
+                      {fb.comoAbrir && <p className="mudo" style={{ margin: "6px 0 2px" }}>Para abrir: {fb.comoAbrir.replace(/:$/, "")}.</p>}
+                      {fb.passos.map((x) => (
+                        <div key={x.titulo} style={{ margin: "6px 0" }}>
+                          <small><b>{x.titulo}</b></small>
+                          {x.fala && <div>{x.fala}</div>}
+                          {x.dica && <div className="ajuda" style={{ margin: 0 }}>{x.dica}</div>}
+                        </div>
+                      ))}
                       {v.letra && m
                         ? <p className="ajuda" style={{ margin: 0 }}>Como dar retorno para ela: {m.perfis[v.letra].retorno}</p>
                         : <p className="ajuda" style={{ margin: 0 }}>Sem teste de perfil: <Link className="link-loja" href="/pessoas">faça o teste</Link> para o feedback sair no jeito dela.</p>}

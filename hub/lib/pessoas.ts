@@ -136,6 +136,14 @@ export function alertasTexto(m: Metodo, ...textos: string[]) {
   return a;
 }
 
+/** A força de cada perfil, para a pessoa usar na solução (linha de gestão: mostrar o que ela já faz bem). */
+export const VANTAGEM: Record<Letra, string> = {
+  D: "Você é Protagonista: tem poder de influência e conduz a cliente com segurança.",
+  I: "Você é Influente: cria conexão rápido e a cliente gosta de comprar com você.",
+  S: "Você é Constante: passa confiança e a cliente segue a sua indicação.",
+  C: "Você é Analista: conhece o produto em detalhe e argumenta com segurança.",
+};
+
 export function roteiroCobranca(m: Metodo, p: { nome: string; perfil: Letra | null; falta: Falta; combinado: string; aconteceu: string; impacto: string; novo: string; retorno: string }) {
   const t = m.textos;
   const nome = p.nome.split(" ")[0];
@@ -143,6 +151,7 @@ export function roteiroCobranca(m: Metodo, p: { nome: string; perfil: Letra | nu
   const tom = perfil ? ["", `Tom com o perfil ${perfil.nome}: ${p.falta === "Saber" ? perfil.ensinar : perfil.retorno}`] : [];
   const v = {
     nome, combinado: p.combinado, aconteceu: p.aconteceu, tom,
+    forca: p.perfil ? VANTAGEM[p.perfil] : "Diga uma coisa que ela já faz bem e que ajuda a resolver.",
     impacto: p.impacto || t.padrao_impacto, novo: p.novo || t.padrao_novo, retorno: p.retorno || t.padrao_retorno,
     novo_saber: p.novo ? `combine "${p.novo}"` : "combine o próximo passo",
     retorno_saber: p.retorno ? p.retorno.charAt(0).toLowerCase() + p.retorno.slice(1) : "no fim da semana",

@@ -84,8 +84,9 @@ function Reunioes() {
                   <p style={{ margin: "6px 0" }}><small className="mudo">Para abrir</small><br />{r.abrir}</p>
                   <p style={{ margin: "6px 0" }}><small className="mudo">Os números</small><br />{r.numeros}</p>
                   <p style={{ margin: "6px 0" }}><small className="mudo">O que está acontecendo</small><br />{r.situacao}</p>
-                  {r.fala && <p style={{ margin: "6px 0" }}><small className="mudo">O que dizer</small><br />{r.fala}</p>}
-                  <p style={{ margin: "6px 0 0" }}><small className="mudo">Para fechar</small><br />{r.fechar}</p>
+                  {r.passos.map((x) => (
+                    <p key={x.titulo} style={{ margin: "6px 0" }}><small className="mudo">{x.titulo}</small><br />{x.fala}{x.dica && <><br /><span className="ajuda" style={{ margin: 0 }}>{x.dica}</span></>}</p>
+                  ))}
                 </div>
               );
             })}

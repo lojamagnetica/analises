@@ -16,6 +16,7 @@ const cors = {
 };
 const json = (corpo: unknown, status = 200) => new Response(JSON.stringify(corpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+// As instruções vivem na tabela metodo (chave historia_agente), editáveis em Área da mentora › Agentes; esta é a reserva.
 const INSTRUCOES = `Você escreve a "Nossa história" de uma loja de moda para a equipe (pessoas novas) e para a cultura da loja.
 Regras:
 - NUNCA invente nem mude fatos (datas, lugares, motivos, nomes). Só organize, corrija o português e dê ritmo.
@@ -57,6 +58,9 @@ Deno.serve(async (req) => {
     if (aprova !== true) return json({ erro: "O storytelling já está aprovado. Para montar de novo, peça à Camilla para voltar para rascunho." }, 403);
   }
 
+  const { data: mem } = await admin.from("metodo").select("dados").eq("chave", "historia_agente").maybeSingle();
+  const instrucoes = String((mem?.dados as { instrucoes?: string } | null)?.instrucoes ?? "").trim() || INSTRUCOES;
+
   try {
     const client = new Anthropic({ apiKey: CHAVE });
     const r = await client.beta.messages.stream({
@@ -65,7 +69,7 @@ Deno.serve(async (req) => {
       // @ts-ignore: fallbacks "default" ainda pode não estar no tipo do SDK
       fallbacks: "default",
       output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMA } },
-      system: INSTRUCOES,
+      system: instrucoes,
       messages: [{ role: "user", content: [
         `Loja: ${h.loja}. Dona: ${h.nome}.`,
         `Respostas da dona (do jeito que ela escreveu): ${JSON.stringify(h.respostas)}`,

@@ -35,6 +35,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift", soMentora: true },
         ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
         { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
+        { href: "/empresa/agentes", rotulo: "Agentes", icone: "robot" },
       ],
     });
   }

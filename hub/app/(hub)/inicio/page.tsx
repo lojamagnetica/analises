@@ -15,8 +15,7 @@ import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
-import { EncontroGrupo } from "@/components/EncontroGrupo";
-import { buscarEncontro, proximoEncontro } from "@/lib/encontro";
+import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 
 const ATALHOS = [
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
@@ -119,6 +118,7 @@ export default function Inicio() {
           {salaMeet && (
             <div className="mt">
               <a className="btn b peq" href={salaMeet} target="_blank" rel="noopener">Entrar na sala</a>
+              {usaGrupo && <a className="link-loja" style={{ marginLeft: 10, color: "inherit" }} href={linkAgenda(grupo!)} target="_blank" rel="noopener">📅 Colocar na agenda</a>}
             </div>
           )}
         </div>
@@ -127,8 +127,6 @@ export default function Inicio() {
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
       <LeituraDaSemana />
       <CaixaDaSemana />
-
-      {portal.tipo === "Mentoria" && <EncontroGrupo />}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>

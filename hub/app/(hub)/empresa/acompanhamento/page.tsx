@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados } from "@/lib/hub";
+import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora, dia, diasDesde, haQuanto, hoje } from "@/lib/formato";
 import { montarRascunho, semanaDe, semanaPassada } from "@/lib/leitura";
 import { mesesDoInicio } from "@/lib/plano-mes";
@@ -13,6 +13,7 @@ type Alerta = { txt: string; grave: boolean };
 
 /** Lojas que precisam de você: quem está ficando para trás, antes de virar um áudio de desistência. */
 export default function Acompanhamento() {
+  const { abrirPortal } = useEquipe();
   const [filtro, setFiltro] = useState<"atencao" | "todas">("atencao");
   const [montando, setMontando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -103,7 +104,7 @@ export default function Acompanhamento() {
               {!al.length && <li className="mudo">Tudo em dia ✓</li>}
             </ul>
             <div className="linha" style={{ gap: 10, flexWrap: "wrap" }}>
-              <Link className="btn p peq" href={`/inicio?portal=${p.id}`}>Revisar a leitura</Link>
+              <button type="button" className="btn p peq" onClick={() => abrirPortal(p.id, "/inicio")}>Revisar a leitura</button>
               {!prox && individual && <Link className="link-loja" href="/equipe/reunioes">Marcar reunião</Link>}
             </div>
           </div>

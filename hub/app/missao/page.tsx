@@ -22,7 +22,9 @@ function Missao() {
   }, [token]);
   if (m === undefined) return <div className="carregando">Carregando…</div>;
   if (!m) return <div className="card">Este link de missão não vale mais. Peça o da semana para a sua gestora.</div>;
-  const texto = m.mensagem.replace(/\{consultora\}/g, m.pessoa).replace(/\{loja\}/g, m.loja).replace(/\{nome\}/g, "[nome da cliente]");
+  // Uma ou mais mensagens (separadas por "---"); com mais de uma, a primeira linha de cada é o momento de mandar.
+  const blocos = m.mensagem.split("\n---\n").map((b) => b.replace(/\{consultora\}/g, m.pessoa).replace(/\{loja\}/g, m.loja).replace(/\{nome\}/g, "[nome da cliente]"));
+  const varias = blocos.length > 1;
   const contar = async (campo: Campo, delta: number) => {
     setM({ ...m, [campo]: Math.max(0, m[campo] + delta) });
     const { data } = await supabaseBrowser().rpc("missao_contar", { p_token: token, p_campo: campo, p_delta: delta });
@@ -48,9 +50,18 @@ function Missao() {
       </div>
       <div className="card mb"><b>1. Puxe as clientes</b><p style={{ margin: "4px 0 0" }}>{m.criterio}</p></div>
       <div className="card mb">
-        <b>2. Mande a mensagem do modelo</b>
-        <p style={{ margin: "4px 0 8px", whiteSpace: "pre-wrap" }}>{texto}</p>
-        <Copiar texto={texto} rotulo="Copiar a mensagem" />
+        <b>2. Mande {varias ? "as mensagens do modelo" : "a mensagem do modelo"}</b>
+        {blocos.map((b, i) => {
+          const [titulo, ...resto] = varias ? b.split("\n") : ["", b];
+          const corpo = varias ? resto.join("\n") : b;
+          return (
+            <div key={i} style={{ marginTop: 8, paddingTop: i ? 8 : 0, borderTop: i ? "1px solid var(--line)" : undefined }}>
+              {varias && <small><b>{titulo}</b></small>}
+              <p style={{ margin: "4px 0 8px", whiteSpace: "pre-wrap" }}>{corpo}</p>
+              <Copiar texto={corpo} rotulo="Copiar" />
+            </div>
+          );
+        })}
         <p className="ajuda" style={{ marginBottom: 0 }}>Troque o [nome da cliente] em cada envio. O time todo usa o mesmo modelo.</p>
       </div>
       <div className="card mb">

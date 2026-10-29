@@ -25,14 +25,16 @@ export const FIDELIZACAO_PADRAO: Secao[] = [
   { titulo: "Nível 1 · Cliente", texto: "Quem é: fez a primeira compra.\nBenefícios: mensagem de boas-vindas, novidades no WhatsApp e presente no mês do aniversário." },
   { titulo: "Nível 2 · Cliente fiel", texto: "Quem é: comprou 3 vezes ou mais no ano (ou passou de R$ ___).\nBenefícios: acesso às novidades antes de todo mundo, reserva de peças por 24h e um mimo a cada coleção." },
   { titulo: "Nível 3 · Cliente VIP", texto: "Quem é: as clientes que mais compram no ano (top 10%).\nBenefícios: atendimento com hora marcada, convite para eventos e lançamentos, condição especial na coleção nova." },
-  { titulo: "Aniversário", texto: "Mensagem no dia e um presente para usar no mês (ex.: % de desconto ou brinde). Lembrete 5 dias antes de acabar o mês." },
+  { titulo: "Aniversário", texto: "O presente vale o mês inteiro do aniversário (ex.: % de desconto em uma compra ou um brinde).\nDia 25 do mês anterior: a gestora puxa a lista e divide pela carteira de cada vendedora.\nDia 1, até 12h: convite para todos os aniversariantes do mês.\nNo dia: parabéns, pela manhã (quem já usou o presente recebe só o parabéns).\n5 dias antes do fim do mês: lembrete só para quem ainda não usou." },
   { titulo: "Como acompanhar", texto: "Toda semana: quem subiu de nível e quem está sumida há mais de 60 dias (vai para o Resgate).\nTodo mês: quantas clientes ativas em cada nível e quanto elas compraram." },
 ];
 export const CONTATOS_PADRAO: Secao[] = [
   { titulo: "Pós-venda (até 24 horas depois, sem oferecer nada)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Foi muito bom te atender! 💛 Este é o meu WhatsApp: salva aí, que qualquer coisa que você precisar, um ajuste, uma troca ou uma dica de como usar a peça, é só me chamar." },
   { titulo: "Segunda compra (até 30 dias depois)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Lembrei de você: chegaram peças que combinam com o que você levou. Quer que eu te mande as fotos?" },
   { titulo: "Novidade chegou", texto: "[nome], chegaram peças novas que têm tudo a ver com o que você gosta. Quer que eu te mande as fotos ou separe para você provar?" },
-  { titulo: "Aniversário", texto: "Feliz aniversário, [nome]! 🎉 Separamos um presente para você usar neste mês na [loja]. Quer saber qual é?" },
+  { titulo: "Aniversário · convite no dia 1 do mês, até 12h", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem [o presente] aqui na loja. É só passar e falar comigo. Vai ser um prazer te receber!" },
+  { titulo: "Aniversário · parabéns no dia, pela manhã", texto: "[nome], feliz aniversário! Que o seu novo ano venha leve e cheio de bons dias. O seu presente da [loja] continua valendo até o fim do mês. Te espero na loja! ([vendedor])" },
+  { titulo: "Aniversário · lembrete 5 dias antes do fim do mês (só para quem não usou)", texto: "Oi, [nome]! Aqui é [vendedor], da [loja]. Passando para lembrar: faltam 5 dias para usar o seu presente de aniversário. Quer que eu separe alguma peça para você?" },
   { titulo: "Cliente sumida (resgate)", texto: "Oi, [nome]! Faz um tempinho que você não passa por aqui e eu lembrei de você com as novidades. Posso te mostrar?" },
   { titulo: "Convite para ação ou evento", texto: "[nome], vamos fazer [ação] no dia [data] e você é uma das clientes que eu quero convidar. Posso confirmar a sua presença?" },
   { titulo: "Reserva de peça", texto: "[nome], separei [peça] no seu tamanho. Fica reservada até [dia]. Quer passar para provar?" },

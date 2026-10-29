@@ -51,6 +51,7 @@ Diretriz da Camilla: auto-responsabilidade e maturidade do time. Detalhes em `.c
 ## Regras do método (cliente e CRM)
 Detalhes em `.claude/skills/metodo-loja-magnetica/SKILL.md`. Valem para toda resposta e criação do Hub.
 - Pós-venda é o carimbo de conexão: em até 24 horas depois do atendimento, sem oferecer nada. O objetivo é a cliente responder e salvar o número da consultora. A próxima tentativa de venda vem dentro de 30 dias. Ser interessante antes de ser interesseiro.
+- Aniversariantes do mês: o presente vale o mês inteiro; 3 mensagens da consultora para a própria carteira: convite no dia 1 até 12h, parabéns no dia e lembrete 5 dias antes do fim do mês só para quem não usou. Lista puxada pela gestora no dia 25 do mês anterior.
 - Toda mensagem para a cliente diz quem fala: "Aqui é {consultora}, da {loja}".
 - CRM direcionado pela gestora e executado pela equipe, cada pessoa com a sua carteira; missão da semana igual para o time todo.
 

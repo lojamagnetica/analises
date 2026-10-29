@@ -194,10 +194,12 @@ export function useEquipe() {
 }
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean }) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
+  // Área da mentora: só a Camilla.
+  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.
   if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";

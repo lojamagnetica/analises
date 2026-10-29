@@ -1,7 +1,7 @@
 // O agente do Diagnóstico: prepara a reunião de diagnóstico da Camilla em paradas, seguindo o Método Loja Magnética
 // (instruções na tabela metodo, chave 'diagnostico_agente'). Lê a passagem do Comercial, os Dados da loja, o caixa,
 // a equipe, a Análise do Instagram, os relatórios que a loja (ou a Camilla) subiu e as transcrições coladas.
-// Paradas: raiox → perguntas → solucao → hub (o Diagnóstico da loja no Hub, como rascunho). Cada parada espera a decisão
+// Paradas: raiox → perguntas → solucao → hub (a versão do Diagnóstico da loja, que a Camilla compara e aplica). Cada parada espera a decisão
 // da Camilla. Só quem aprova chama. Roda em segundo plano; a tela acompanha pelo campo agente. Precisa da chave do Claude.
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -103,9 +103,12 @@ async function arquivos(admin: SupabaseClient, portalId: string) {
     } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) {
       blocos.push({ type: "text", text: `Imagem: ${nome}` });
       blocos.push({ type: "image", source: { type: "base64", media_type: (ext === "jpg" ? "image/jpeg" : `image/${ext}`) as "image/png", data: base64(buf) } });
-    } else if (["xlsx", "xls", "csv", "txt", "ods"].includes(ext)) {
+    } else if (["xlsx", "xls", "csv", "txt", "ods", "docx"].includes(ext)) {
       let conteudo = "";
       if (ext === "csv" || ext === "txt") conteudo = new TextDecoder().decode(buf);
+      else if (ext === "docx") {
+        try { const mammoth = (await import("npm:mammoth@1.8.0")).default; conteudo = (await mammoth.extractRawText({ arrayBuffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) })).value; } catch { avisos.push(`${nome}: não deu para ler o Word (salve como PDF e suba de novo)`); continue; }
+      }
       else {
         const wb = XLSX.read(buf, { type: "array" });
         conteudo = wb.SheetNames.map((s) => `--- aba ${s} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[s], { blankrows: false })}`).join("\n");
@@ -117,7 +120,7 @@ async function arquivos(admin: SupabaseClient, portalId: string) {
       }
       texto += conteudo.length;
       if (conteudo) blocos.push({ type: "text", text: `Arquivo: ${nome}\n${conteudo}` });
-    } else avisos.push(`${nome}: formato .${ext} não é lido (use PDF, planilha, CSV ou imagem)`);
+    } else avisos.push(`${nome}: formato .${ext} não é lido (use PDF, Word, planilha, CSV ou imagem)`);
   }
   return { blocos, avisos, nomes: (lista ?? []).filter((x) => x.id).map((x) => x.name) };
 }
@@ -212,14 +215,7 @@ async function rodar(admin: SupabaseClient, portalId: string, parada: Parada) {
     if (parada === "raiox") await admin.from("diagnostico_preparo").update({ raiox: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
     else if (parada === "perguntas") await admin.from("diagnostico_preparo").update({ perguntas: saida.perguntas, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
     else if (parada === "solucao") await admin.from("diagnostico_preparo").update({ solucao: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
-    else {
-      // O Diagnóstico do Hub entra como rascunho; o que já foi liberado nunca é trocado por aqui.
-      const { data: atual } = await admin.from("loja_diagnostico").select("status").eq("portal_id", portalId).eq("loja", "").maybeSingle();
-      if (atual?.status === "liberada") throw new Error("O Diagnóstico desta loja já está liberado. Volte ele para rascunho antes de preencher de novo.");
-      if (atual) await admin.from("loja_diagnostico").update({ dados: saida, updated_at: new Date().toISOString() }).eq("portal_id", portalId).eq("loja", "");
-      else await admin.from("loja_diagnostico").insert({ portal_id: portalId, loja: "", ordem: 0, dados: saida, status: "rascunho" });
-      await marcar(fim);
-    }
+    else await admin.from("diagnostico_preparo").update({ hub: saida, agente: { parada, inicio, ...fim }, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
   } catch (e) {
     await marcar({ estado: "erro", fim: new Date().toISOString(), msg: (e as Error).message.slice(0, 500) });
   }

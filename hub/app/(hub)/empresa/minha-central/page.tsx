@@ -70,6 +70,10 @@ export default function MinhaCentral() {
         ))}
       </div>
       {erro && <div className="aviso mb">{erro}</div>}
+      <div className="card mb linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+        <span><b>✨ Diagnóstico com o agente</b> <span className="mudo">· Raio-X, gargalo, perguntas, roteiro da reunião e o Diagnóstico da loja, no seu método.</span></span>
+        <Link className="btn p peq" href="/empresa/minha-central/diagnostico">Preparar um diagnóstico</Link>
+      </div>
 
       <div className="card mb" id="aprovar">
         <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}><h2 style={{ margin: 0 }}>Esperando a sua aprovação</h2><Link className="btn s peq" href="/equipe/aprovar">Abrir Para aprovar</Link></div>
@@ -103,6 +107,7 @@ export default function MinhaCentral() {
             <span><b>{c.loja}</b> <small className="mudo">· {etapa}{c.dia != null ? ` · dia ${c.dia}` : ""}</small><br />{k.texto}</span>
             <span className="linha" style={{ gap: 8 }}>
               {prazo && <span className={`selo ${atraso ? "erro" : "espera"}`}>{atraso ? "atrasado · " : "até "}{dia(prazo)}</span>}
+              {c.etapa === 2 && <Link className="btn s peq" href={`/empresa/minha-central/diagnostico?p=${c.id}`}>✨ Preparar com o agente</Link>}
               <Link className="btn s peq" href={`/equipe/central/cliente?id=${c.id}`}>Abrir</Link>
               <button type="button" className="btn p peq" onClick={async () => { setErro(""); try { await marcarCheck(c.id, k.chave, { feito: true }, nome); recarregar(); } catch (x) { setErro((x as Error).message); } }}>Feito</button>
             </span>

@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados } from "@/lib/hub";
+import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
@@ -82,6 +81,7 @@ function Editor({ h, urls: urls0, aoSalvar, aoCancelar }: { h: Historia; urls: R
 }
 
 function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string; loja: string }[]; recarregar: () => void }) {
+  const { abrirPortal } = useEquipe();
   const [editando, setEditando] = useState(false);
   const [urls, setUrls] = useState<Record<string, string> | null>(null);
   const [erro, setErro] = useState("");
@@ -107,7 +107,7 @@ function Cartao({ h, portais, recarregar }: { h: Historia; portais: { id: string
       {erro && <div className="aviso mb">{erro}</div>}
       <div className="linha" style={{ gap: 12, flexWrap: "wrap", alignItems: "center" }}>
         {!editando && <button type="button" className="btn s peq" onClick={async () => { setUrls(await urlsDasFotos(h.fotos ?? [])); setEditando(true); }}>Ver e editar</button>}
-        {h.portal_id && <Link className="link-loja" href={`/nossa-historia?portal=${h.portal_id}`}>Ver como fica no portal</Link>}
+        {h.portal_id && <button type="button" className="link-loja" onClick={() => abrirPortal(h.portal_id, "/nossa-historia", true)}>Ver como fica no portal</button>}
         {h.liberado
           ? <button type="button" className="link-loja" onClick={() => mudar({ liberado: false })}>Voltar para rascunho</button>
           : <button type="button" className="btn p peq" disabled={!h.portal_id} title={h.portal_id ? "" : "Escolha o portal primeiro"} onClick={() => { if (confirm(`Liberar a história para ${h.loja}?`)) mudar({ liberado: true }); }}>Liberar para a loja</button>}

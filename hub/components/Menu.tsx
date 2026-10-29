@@ -20,13 +20,22 @@ export function grupoDaPagina(lista: Grupo[], caminho: string) {
   return melhor?.g;
 }
 
-export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = []): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = [], aprova = false): Grupo[] {
   const g: Grupo[] = [];
+  // Área da mentora: só da Camilla (quem aprova).
+  if (equipe && aprova) {
+    g.push({
+      id: "mentora", rotulo: "Área da mentora", icone: "spark",
+      itens: [
+        ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
+        { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
+      ],
+    });
+  }
   if (equipe) {
     g.push({
       id: "empresa", rotulo: "Minha empresa", icone: "home",
       itens: [
-        ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de você", icone: "target" },
         { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
@@ -34,7 +43,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
         { href: "/empresa/iscas", rotulo: "Radar das iscas", icone: "search" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
-        { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
         { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
         { href: "/empresa/planos", rotulo: "Planos", icone: "tag" },
@@ -217,11 +225,11 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[] }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais)
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova)
     .filter((g) => !props.ocultos?.includes(g.id));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>

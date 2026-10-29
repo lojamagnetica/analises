@@ -31,7 +31,7 @@ export type Agente = { parada?: Parada; estado?: "trabalhando" | "pronto" | "err
 export type Preparo = {
   portal_id: string; transcricoes: { comercial?: string; onboarding?: string; outras?: string };
   raiox: Raiox | null; escolha: Escolha | null; perguntas: string[]; perguntas_liberadas: boolean; respostas: string;
-  solucao: Solucao | null; ajustes: Partial<Record<Parada, string>>; agente: Agente; updated_at: string;
+  solucao: Solucao | null; hub: Record<string, unknown> | null; ajustes: Partial<Record<Parada, string>>; agente: Agente; updated_at: string;
 };
 export type Arquivo = { nome: string; tamanho: number; em: string };
 
@@ -44,6 +44,12 @@ export async function buscarPreparo(portalId: string): Promise<Preparo | null> {
 }
 export async function salvarPreparo(portalId: string, x: Partial<Preparo>) {
   await ok(sb().from("diagnostico_preparo").upsert({ portal_id: portalId, ...x, updated_at: new Date().toISOString() }, { onConflict: "portal_id" }));
+}
+/** Aplica a versão do agente no Diagnóstico da loja (só enquanto ele não está liberado). */
+export async function aplicarHub(portalId: string, dados: Record<string, unknown>) {
+  const { data: atual } = await sb().from("loja_diagnostico").select("status").eq("portal_id", portalId).eq("loja", "").maybeSingle();
+  if (atual?.status === "liberada") throw new Error("O Diagnóstico desta loja está liberado. Volte ele para rascunho na página do Diagnóstico antes de aplicar.");
+  await ok(sb().from("loja_diagnostico").upsert({ portal_id: portalId, loja: "", dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" }));
 }
 export async function excluirPreparo(portalId: string) {
   await ok(sb().from("diagnostico_preparo").delete().eq("portal_id", portalId));

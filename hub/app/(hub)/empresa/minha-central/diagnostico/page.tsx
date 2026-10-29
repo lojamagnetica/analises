@@ -9,7 +9,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  apagarArquivo, buscarPreparo, excluirPreparo, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
+  aplicarHub, apagarArquivo, buscarPreparo, excluirPreparo, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
   type Escolha, type Parada, type Preparo,
 } from "@/lib/diagnostico-preparo";
 
@@ -19,7 +19,7 @@ const kb = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${M
 /** O botão que chama o agente numa parada, com o pedido de ajuste para refazer. */
 function Rodar({ p, parada, rotulo, ocupado, pode, aoPedir }: { p: Preparo | null; parada: Parada; rotulo: string; ocupado: boolean; pode: boolean; aoPedir: (ajuste: string) => Promise<void> }) {
   const [ajuste, setAjuste] = useState(p?.ajustes?.[parada] ?? "");
-  const feito = parada === "raiox" ? !!p?.raiox : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : p?.agente?.parada === "hub" && p.agente.estado === "pronto";
+  const feito = parada === "raiox" ? !!p?.raiox : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : !!p?.hub;
   return (
     <div className="mt">
       {feito && (
@@ -86,7 +86,7 @@ function Preparar({ portalId }: { portalId: string }) {
         <h2 style={{ marginTop: 0 }}>Material para o agente ler</h2>
         <p className="ajuda" style={{ marginTop: 0 }}>Ele já lê do Hub: a passagem do Comercial (com o Resultado Nº 1 da venda), os Dados da loja, o caixa, a equipe e a Análise do Instagram. Aqui você completa com os relatórios e as conversas.</p>
         <b style={{ fontSize: 14 }}>Relatórios e prints ({dados.arquivos.length})</b>
-        <p className="ajuda" style={{ margin: "2px 0 6px" }}>PDF, planilha (Excel ou CSV) ou imagem. Os que a loja subiu em Estoque e relatórios também aparecem aqui.</p>
+        <p className="ajuda" style={{ margin: "2px 0 6px" }}>PDF, Word, planilha (Excel ou CSV) ou imagem. Planilha do Google: baixe como Excel antes de subir. Os que a loja subiu em Estoque e relatórios também aparecem aqui.</p>
         {dados.arquivos.map((a) => (
           <div key={a.nome} className="linha entre marcar" style={{ cursor: "default" }}>
             <span style={{ wordBreak: "break-all" }}>{a.nome.replace(/^\d{13}-/, "")} <small className="mudo">· {kb(a.tamanho)}</small></span>
@@ -98,7 +98,7 @@ function Preparar({ portalId }: { portalId: string }) {
         ))}
         <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>
           {subindo ? `Subindo… faltam ${subindo}` : "+ Subir arquivos"}
-          <input type="file" multiple hidden accept=".pdf,.xlsx,.xls,.csv,.txt,.ods,image/*" disabled={subindo > 0} onChange={async (ev) => {
+          <input type="file" multiple hidden accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.ods,image/*" disabled={subindo > 0} onChange={async (ev) => {
             const fs = Array.from(ev.target.files ?? []); ev.target.value = ""; setSubindo(fs.length); setMsg("");
             for (const f of fs) { try { await subirArquivo(portalId, f); } catch (x) { setMsg((x as Error).message); } setSubindo((n) => n - 1); }
             recarregar();
@@ -196,9 +196,27 @@ function Preparar({ portalId }: { portalId: string }) {
 
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)", opacity: s ? 1 : 0.6 }}>
         <h2 style={{ marginTop: 0 }}>4 · Depois da reunião: o Diagnóstico da loja</h2>
-        <p className="ajuda" style={{ marginTop: 0 }}>Escreva nos ajustes o que mudou na reunião (o que foi decidido, as metas calibradas). O agente monta o Diagnóstico que {dados.responsavel || "a loja"} vai ver, como rascunho. Você revisa e libera na página do Diagnóstico da loja.</p>
-        <Rodar p={p} parada="hub" rotulo="Preencher o Diagnóstico da loja" ocupado={ocupado} pode={!!s} aoPedir={pedir("hub")} />
-        {ag?.parada === "hub" && ag.estado === "pronto" && <button type="button" className="btn s peq mt" onClick={() => abrirPortal(portalId, "/painel")}>Abrir o Diagnóstico para revisar</button>}
+        <p className="ajuda" style={{ marginTop: 0 }}>Escreva nos ajustes o que mudou na reunião (o que foi decidido, as metas calibradas). O agente monta a versão do Diagnóstico que {dados.responsavel || "a loja"} vai ver. Ela fica guardada aqui: você compara com o que já existe e só aplica se quiser.</p>
+        {p?.hub && (() => {
+          const h = p.hub as { cenario?: { resumo?: string; foco?: string[] }; alertas?: { nivel: string; alerta: string; acao: string }[]; performance?: { leitura?: string }; estoque?: { leitura?: string } };
+          return (
+            <div className="mb">
+              <p style={{ whiteSpace: "pre-wrap" }}><b>Cenário:</b> {h.cenario?.resumo}</p>
+              {(h.cenario?.foco ?? []).length > 0 && <p><b>Foco:</b> {h.cenario!.foco!.join(" · ")}</p>}
+              {h.performance?.leitura && <p><b>Performance:</b> {h.performance.leitura}</p>}
+              {h.estoque?.leitura && <p><b>Estoque:</b> {h.estoque.leitura}</p>}
+              {(h.alertas ?? []).length > 0 && <><b>Alertas ({h.alertas!.length})</b><ul>{h.alertas!.map((a, i) => <li key={i}><b>{a.alerta}</b> → {a.acao}</li>)}</ul></>}
+              <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+                <button type="button" className="btn p peq" onClick={async () => {
+                  if (!confirm("Aplicar esta versão no Diagnóstico da loja? O rascunho que está lá hoje é trocado por esta. A loja só vê depois que você liberar.")) return;
+                  try { await aplicarHub(portalId, p.hub!); setMsg("Aplicado ✓ Abra o Diagnóstico para revisar e liberar."); } catch (x) { setMsg((x as Error).message); }
+                }}>Aplicar no Diagnóstico da loja</button>
+                <button type="button" className="btn s peq" onClick={() => abrirPortal(portalId, "/painel")}>Abrir o Diagnóstico atual</button>
+              </div>
+            </div>
+          );
+        })()}
+        <Rodar p={p} parada="hub" rotulo="Montar a versão do Diagnóstico da loja" ocupado={ocupado} pode={!!s} aoPedir={pedir("hub")} />
       </div>
 
       <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm("Apagar toda a preparação desta loja (Raio-X, escolha, perguntas e solução)? Os arquivos e o Diagnóstico do Hub ficam.")) { await excluirPreparo(portalId); recarregar(); } }}>Apagar a preparação</button>

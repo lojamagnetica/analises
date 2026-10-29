@@ -36,3 +36,6 @@ revoke execute on function public.diagnostico_perguntas(uuid) from public, anon;
 revoke execute on function public.diagnostico_responder(uuid, text) from public, anon;
 grant execute on function public.diagnostico_perguntas(uuid) to authenticated;
 grant execute on function public.diagnostico_responder(uuid, text) to authenticated;
+
+-- A versão do Diagnóstico da loja que o agente monta fica aqui; a Camilla compara e aplica (nunca por cima sozinho).
+alter table public.diagnostico_preparo add column if not exists hub jsonb;

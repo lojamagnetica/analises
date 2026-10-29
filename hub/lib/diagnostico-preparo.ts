@@ -47,9 +47,11 @@ export async function salvarPreparo(portalId: string, x: Partial<Preparo>) {
 }
 /** Aplica a versão do agente no Diagnóstico da loja (só enquanto ele não está liberado). */
 export async function aplicarHub(portalId: string, dados: Record<string, unknown>) {
-  const { data: atual } = await sb().from("loja_diagnostico").select("status").eq("portal_id", portalId).eq("loja", "").maybeSingle();
+  const { data: atual } = await sb().from("loja_diagnostico").select("status, dados").eq("portal_id", portalId).eq("loja", "").maybeSingle();
   if (atual?.status === "liberada") throw new Error("O Diagnóstico desta loja está liberado. Volte ele para rascunho na página do Diagnóstico antes de aplicar.");
-  await ok(sb().from("loja_diagnostico").upsert({ portal_id: portalId, loja: "", dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" }));
+  // A pesquisa do segmento não vem do agente: fica a que já estava.
+  const mercado = (atual?.dados as { mercado?: unknown } | null)?.mercado;
+  await ok(sb().from("loja_diagnostico").upsert({ portal_id: portalId, loja: "", dados: mercado ? { ...dados, mercado } : dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" }));
 }
 export async function excluirPreparo(portalId: string) {
   await ok(sb().from("diagnostico_preparo").delete().eq("portal_id", portalId));

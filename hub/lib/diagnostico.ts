@@ -31,6 +31,8 @@ export type Diagnostico = {
   marcas: Marca[];
   linhas: LinhaAtencao[];
   equipe: { leitura: string; pessoas: Pessoa[] };
+  /** Pesquisa do segmento (práticas do mercado). Só aparece para a loja quando liberada pela Camilla. */
+  mercado: { liberada: boolean; titulo: string; resumo: string; texto: string; fontes: string };
 };
 
 export type LinhaDiagnostico = { portal_id: string; loja: string; ordem: number; status: "rascunho" | "liberada"; dados: Partial<Diagnostico>; liberada_em: string | null; updated_at: string };
@@ -45,6 +47,7 @@ export const vazio = (): Diagnostico => ({
   marcas: [],
   linhas: [],
   equipe: { leitura: "", pessoas: [] },
+  mercado: { liberada: false, titulo: "O que o mercado faz", resumo: "", texto: "", fontes: "" },
 });
 
 /** Completa o que faltar com o vazio, para a tela nunca quebrar com um diagnóstico parcial. */
@@ -58,6 +61,7 @@ export function completo(d: Partial<Diagnostico> | undefined): Diagnostico {
     estoque: { ...v.estoque, ...x.estoque },
     abc: { ...v.abc, ...x.abc },
     equipe: { ...v.equipe, ...x.equipe },
+    mercado: { ...v.mercado, ...x.mercado },
     alertas: x.alertas ?? [], marcas: x.marcas ?? [], linhas: x.linhas ?? [],
   };
 }

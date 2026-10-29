@@ -297,6 +297,39 @@ function Corpo({ d, ed, muda, caixa, equipeHub }: { d: Diagnostico; ed: boolean;
         </>
       )}
 
+      {/* A pesquisa do segmento: a equipe vê sempre; a loja só quando a Camilla libera. */}
+      {(ed || (d.mercado.resumo || d.mercado.texto) && (equipeHub || d.mercado.liberada)) && (
+        <>
+          <div className="secao">{ed ? "Pesquisa do segmento" : d.mercado.titulo || "O que o mercado faz"}</div>
+          <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+            {equipeHub && !ed && !d.mercado.liberada && <p className="selo espera" style={{ marginTop: 0 }}>Rascunho: a loja ainda não vê esta pesquisa</p>}
+            {ed && (
+              <>
+                <label className="ajuda" style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <input type="checkbox" checked={d.mercado.liberada} onChange={(e) => muda((x) => { x.mercado.liberada = e.target.checked; })} />
+                  Mostrar esta pesquisa para a loja
+                </label>
+                <Campo v={d.mercado.titulo} ed set={(s) => muda((x) => { x.mercado.titulo = s; })} ph="Título (ex.: O que os brechós que mais crescem fazem)" />
+              </>
+            )}
+            <Texto v={d.mercado.resumo} ed={ed} set={(s) => muda((x) => { x.mercado.resumo = s; })} linhas={4} ph="Resumo da pesquisa em poucas linhas" forte />
+            {ed
+              ? <Texto v={d.mercado.texto} ed set={(s) => muda((x) => { x.mercado.texto = s; })} linhas={14} ph="A pesquisa completa" />
+              : d.mercado.texto && (
+                <details className="mt"><summary style={{ cursor: "pointer" }}><b>Ler a pesquisa completa</b></summary>
+                  <div className="mt" style={{ whiteSpace: "pre-wrap" }}>{d.mercado.texto}</div>
+                </details>
+              )}
+            {(ed || d.mercado.fontes) && (
+              <div className="ajuda mt">{ed
+                ? <Texto v={d.mercado.fontes} ed set={(s) => muda((x) => { x.mercado.fontes = s; })} linhas={3} ph="Fontes (links)" />
+                : <details><summary style={{ cursor: "pointer" }}>Fontes da pesquisa</summary><div style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{d.mercado.fontes}</div></details>}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       {(d.data_base || d.fontes || ed) && (
         <div className="ajuda mt" style={{ marginTop: 28 }}>
           {ed ? (

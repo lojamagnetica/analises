@@ -168,7 +168,8 @@ export default function PainelEmpresa() {
           <div className="linha entre"><Link href="/equipe/duvidas">Mensagens esperando resposta</Link><b>{dados.duvidas.length}</b></div>
         </div>
       </div>
-      <AtividadeRecente />
+      {/* O movimento da equipe no Hub: só a Camilla vê. */}
+      {hub.aprova && <AtividadeRecente />}
     </>
   );
 }

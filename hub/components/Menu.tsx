@@ -7,7 +7,7 @@ import { Icone } from "@/components/Icone";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean };
+type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };
 export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
 
 /** O grupo do menu a que a página pertence: o item de endereço mais longo que contém a página. */
@@ -52,12 +52,12 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "central", rotulo: "Central do Cliente", icone: "kanban",
       itens: [
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
-        { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check" },
+        { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check", soMentora: true },
         { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
-        { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },
+        { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban", soMentora: true },
         { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
         { href: "/equipe/duvidas", rotulo: "Caixa do Fale com a Camilla", icone: "inbox" },
       ],
@@ -78,13 +78,15 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
-        { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta" },
-        { href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt" },
-        { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift" },
+        { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta", soMentora: true },
+        { href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt", soMentora: true },
+        { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift", soMentora: true },
         { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
       ],
     });
   }
+  // O que é só da Camilla (aprovar, montar e liberar para as lojas) some do menu do resto da equipe.
+  if (equipe && !aprova) g.forEach((x) => { x.itens = x.itens.filter((i) => !i.soMentora); });
   if (!temPortal || soCurso) return g;
   const consultoriaOuMentoria: Grupo = consultoria
     ? {

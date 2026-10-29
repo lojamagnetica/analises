@@ -81,7 +81,7 @@ function Missao() {
 export default function PaginaMissao() {
   return (
     <main style={{ maxWidth: 560, margin: "0 auto", padding: "24px 16px" }}>
-      <div className="linha" style={{ gap: 10, marginBottom: 16 }}><Simbolo /><b>magnética.hub</b></div>
+      <div className="linha" style={{ gap: 10, marginBottom: 16 }}><Simbolo tamanho={28} /><b>magnética.hub</b></div>
       <Suspense fallback={<div className="carregando">Carregando…</div>}><Missao /></Suspense>
     </main>
   );

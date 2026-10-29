@@ -90,7 +90,7 @@ export type Vendedora = {
   faturamento: number; vendas: number; pecas: number; meta: number | null;
   pa: number | null; tkm: number | null; pm: number | null; problema: Problema; diagnostico: string;
   /** Referências do feedback: o preço médio do estoque e quanto ela está abaixo do ritmo da meta. */
-  pmEstoque?: number | null; faltaRitmo?: number | null;
+  pmEstoque?: number | null; fontePm?: "estoque" | "loja"; faltaRitmo?: number | null;
 };
 export type Tarefa = { chave: string; texto: string; href?: string };
 export type Atitude = { tipo: "CRM" | "Conteúdo" | "Ação"; titulo: string; texto: string; href: string; botao: string };
@@ -168,6 +168,11 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
   const mes = d.agora.slice(0, 7);
   const ontemIso = somarDias(d.agora, -1);
   const passou = Math.max(1, ontemIso.startsWith(mes) ? diasDeLoja(`${mes}-01`, ontemIso) : 0) / Math.max(1, diasDeLoja(`${mes}-01`, fimDoMes(mes)));
+  // Cada vendedora é comparada com o preço médio de venda da própria loja no mês (quem está bem abaixo do geral).
+  // O estoque serve para ver o padrão da loja toda (padraoPm). Sem caixa, cai no estoque.
+  const pmLoja = precoMedioLoja(d);
+  const pmRef = pmLoja || pmEstoque;
+  const fontePm = pmLoja ? "loja" : "estoque";
   return d.equipe.map((p) => {
     const linhas = d.caixa.filter((c) => c.dia < d.agora).flatMap((c) => (c.vendedoras ?? []).filter((v) => v.pessoa_id === p.id));
     const t = linhas.reduce((a, v) => ({ faturamento: a.faturamento + v.faturamento, vendas: a.vendas + v.vendas, pecas: a.pecas + v.pecas }), { faturamento: 0, vendas: 0, pecas: 0 });
@@ -182,9 +187,9 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
     } else if (i.pa != null && i.pa < PA_ALERTA) {
       problema = "pa";
       diagnostico = `${nome} está com PA ${fmtPa(i.pa)} no mês (o ideal é ${fmtPa(PA_IDEAL)}): vende, mas quase sempre uma peça só.`;
-    } else if (pmEstoque && i.pm != null && i.pm < pmEstoque * PM_ALERTA) {
+    } else if (pmRef && i.pm != null && i.pm < pmRef * PM_ALERTA) {
       problema = "pm";
-      diagnostico = `O preço médio que a ${nome} vende é ${moeda(i.pm)}, e o do estoque é ${moeda(pmEstoque)}: ela está vendendo as peças mais baratas.`;
+      diagnostico = `O preço médio que a ${nome} vende é ${moeda(i.pm)}, e o ${fontePm === "estoque" ? "do estoque" : "da loja no mês"} é ${moeda(pmRef)}: ela está vendendo as peças mais baratas.`;
     } else if (metaV && t.faturamento < metaV * passou * RITMO_ALERTA) {
       problema = "volume";
       diagnostico = `${nome} está ${moeda(metaV * passou - t.faturamento)} abaixo do ritmo da meta dela: o PA está bom, faltam vendas.`;
@@ -192,7 +197,7 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
       diagnostico = `${nome} está no ritmo${metaV ? ` da meta (${moeda(t.faturamento)} de ${moeda(metaV)})` : ""}${i.pa != null ? `, com PA ${fmtPa(i.pa)}` : ""}.`;
     }
     const faltaRitmo = metaV ? Math.max(0, metaV * passou - t.faturamento) : null;
-    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico, pmEstoque, faltaRitmo };
+    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico, pmEstoque: pmRef, fontePm, faltaRitmo };
   });
 }
 
@@ -211,6 +216,19 @@ const USO: Record<string, string> = {
 
 export type PassoFeedback = { titulo: string; fala?: string; dica?: string };
 
+/** Preço médio de venda da loja no mês (faturamento ÷ peças), até ontem. */
+export function precoMedioLoja(d: DadosMeuDia) {
+  const loja = somar(d.caixa.filter((c) => c.dia < d.agora));
+  return loja.pecas ? loja.faturamento / loja.pecas : null;
+}
+
+/** Padrão da loja: o time todo vendendo bem abaixo do preço médio do estoque. */
+export function padraoPm(d: DadosMeuDia, pmEstoque: number | null) {
+  const pmLoja = precoMedioLoja(d);
+  if (!pmLoja || !pmEstoque || pmLoja >= pmEstoque * PM_ALERTA) return null;
+  return { pmLoja, pmEstoque, texto: `O time todo está vendendo abaixo do preço médio do estoque: a loja vende a ${moeda(pmLoja)} a peça, e o estoque está em ${moeda(pmEstoque)}. É um padrão da loja, não de uma pessoa: vale treinar o time todo a começar o atendimento pelas peças de maior valor e olhar se a compra está trazendo peças que o time consegue vender.` };
+}
+
 /** O feedback pronto em 5 passos, com os números dela e no jeito do perfil. */
 export function feedback(v: Vendedora) {
   const s = SITUACOES[v.problema];
@@ -221,7 +239,7 @@ export function feedback(v: Vendedora) {
   const vantagemPerfil = v.letra ? `${VANTAGEM[v.letra]} ${USO[v.problema] ?? ""}`.trim() : "";
   const p = v.problema;
   const problema = p === "pm"
-    ? `"${v.nome}, você está vendendo as peças mais baratas: o seu preço médio é ${v.pm != null ? moeda(v.pm) : "—"}${v.pmEstoque ? `, e o do estoque é ${moeda(v.pmEstoque)}` : ""}."`
+    ? `"${v.nome}, você está vendendo as peças mais baratas: o seu preço médio é ${v.pm != null ? moeda(v.pm) : "—"}${v.pmEstoque ? `, e o ${v.fontePm === "loja" ? "da loja no mês" : "do estoque"} é ${moeda(v.pmEstoque)}` : ""}."`
     : p === "pa"
       ? `"${v.nome}, você está vendendo, mas a cliente sai quase sempre com uma peça só: o seu PA está em ${pa}, e o ideal é ${fmtPa(PA_IDEAL)}."`
       : p === "volume"

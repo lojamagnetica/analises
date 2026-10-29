@@ -19,6 +19,11 @@ Tudo o que o Hub coloca na boca da gestora (feedback, cobrança, reunião, pauta
 4. **A dificuldade de execução.** "O que pode te atrapalhar de fazer isso? Do que você precisa?" Se a resposta for "não sei fazer", vira treino (eu faço, fazemos juntos, você faz e eu vejo, você faz sozinha).
 5. **O combinado sai dela.** "O que você vai fazer, quanto e até quando?" A gestora combina como vai acompanhar.
 
+## Preço médio: com quem comparar
+- Cada vendedora é comparada com o **preço médio de venda da própria loja no mês** (faturamento ÷ peças): aparece só quem está bem abaixo do geral (10% ou mais).
+- O **preço médio do estoque** mostra se existe um **padrão da loja** (o time todo vendendo abaixo do estoque). Aí o aviso é para a loja, não para uma pessoa.
+- Sem estoque preenchido, vale só a comparação com a loja.
+
 ## Onde isso está no código
 - `hub/lib/meu-dia.ts` → `feedback()` (Feedback pronto do Início, 5 passos) e `SITUACOES`.
 - `hub/lib/pessoas.ts` → `VANTAGEM` (força de cada perfil) e `roteiroCobranca()` (Dar retorno).

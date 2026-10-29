@@ -5,6 +5,8 @@ description: Linha de gestão da Camilla (Loja Magnética) para todo texto do Hu
 
 # Linha de gestão: auto-responsabilidade e maturidade do time
 
+(As regras de cliente e CRM, como o pós-venda em 24 horas, estão na skill `metodo-loja-magnetica`.)
+
 Tudo o que o Hub coloca na boca da gestora (feedback, cobrança, reunião, pauta, leitura, treino) segue esta linha.
 
 ## A regra da fala

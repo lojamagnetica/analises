@@ -48,6 +48,12 @@ Diretriz da Camilla: auto-responsabilidade e maturidade do time. Detalhes em `.c
 - Ordem do feedback: 1) o problema, com número; 2) o que ela já faz bem e a força do perfil; 3) a solução demonstrada na prática (ex.: uma peça que ela vende muito e a opção de valor maior que poderia ter oferecido, e como argumentar); 4) a dificuldade de execução; 5) o combinado sai dela (o quê, quanto, até quando).
 - Vale para tudo o que for construído no Hub que fala com o time ou ensina a dona a falar com ele.
 
+## Regras do método (cliente e CRM)
+Detalhes em `.claude/skills/metodo-loja-magnetica/SKILL.md`. Valem para toda resposta e criação do Hub.
+- Pós-venda é o carimbo de conexão: em até 24 horas depois do atendimento, sem oferecer nada. O objetivo é a cliente responder e salvar o número da consultora. A próxima tentativa de venda vem dentro de 30 dias. Ser interessante antes de ser interesseiro.
+- Toda mensagem para a cliente diz quem fala: "Aqui é {consultora}, da {loja}".
+- CRM direcionado pela gestora e executado pela equipe, cada pessoa com a sua carteira; missão da semana igual para o time todo.
+
 ## Padrões do código
 - Páginas client (`"use client"`), dados com `useDados` de `lib/hub.tsx`, `usePortal()` no portal e `useEquipe()` na equipe.
 - Classes prontas em `globals.css`: `card`, `card-borda` (com `--c`), `selo feito|andamento|espera|alerta|erro`,

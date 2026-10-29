@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { ETAPAS, type Respostas } from "@/lib/conteudo";
@@ -183,9 +183,15 @@ export function useHub() {
 }
 
 /** Para páginas do portal. A casca do Hub (layout) só mostra essas páginas quando há portal aberto. */
+/** Páginas do portal em que montar e liberar é só da Camilla: o resto da equipe vê como a loja vê. */
+const SO_MENTORA_NO_PORTAL = ["/painel", "/estoque", "/consultoria/planner", "/consultoria/materiais", "/pessoas/organograma", "/planeje/mes",
+  "/clientes/campanhas", "/clientes/experiencia", "/clientes/tipos", "/acoes", "/conteudo/pautas"];
+
 export function usePortal() {
   const hub = useHub() as Hub & { portal: Portal };
-  return hub.comoLoja ? { ...hub, equipe: false } : hub;
+  const caminho = (usePathname() ?? "").replace(/\/$/, "");
+  const soMentora = hub.equipe && !hub.aprova && (caminho === "/conteudo" || SO_MENTORA_NO_PORTAL.some((p) => caminho === p || caminho.startsWith(p + "/")));
+  return hub.comoLoja || soMentora ? { ...hub, equipe: false } : hub;
 }
 
 /** Para páginas da equipe. A casca do Hub só mostra essas páginas para a equipe. */
@@ -198,7 +204,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
-  // Área da mentora: só a Camilla.
+  // Só da Camilla: a Área da mentora e o que aprova, monta e libera para as lojas.
+  if (hub.equipe && !hub.aprova && ["/equipe/aprovar", "/equipe/planos", "/equipe/analise", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas"].some((p) => caminho.startsWith(p))) return "/equipe/central";
   if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.

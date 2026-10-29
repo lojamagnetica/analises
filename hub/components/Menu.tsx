@@ -29,12 +29,13 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         ...(estudio ? [{ href: "/empresa/estudio", rotulo: "Meu estúdio", icone: "pencil" }] : []),
         { href: "/empresa/conteudo", rotulo: "Conteúdo da casa", icone: "insta" },
+        { href: "/empresa/financeiro", rotulo: "Financeiro", icone: "calc" },
       ],
     });
   }
   if (equipe) {
     g.push({
-      id: "empresa", rotulo: "Minha empresa", icone: "home",
+      id: "empresa", rotulo: "Nossa empresa", icone: "home",
       itens: [
         // Só o que é da empresa; o trabalho com as lojas fica na Central do Cliente.
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
@@ -43,6 +44,8 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
         { href: "/empresa/contratos", rotulo: "Modelos de contrato", icone: "note" },
         { href: "/empresa/planos", rotulo: "Planos", icone: "tag" },
+        { href: "/empresa/produtos", rotulo: "Produtos", icone: "box" },
+        { href: "/empresa/acessos", rotulo: "Acessos", icone: "gear" },
       ],
     });
     g.push({

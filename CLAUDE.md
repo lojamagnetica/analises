@@ -53,6 +53,7 @@ Detalhes em `.claude/skills/metodo-loja-magnetica/SKILL.md`. Valem para toda res
 - Pós-venda é o carimbo de conexão: em até 24 horas depois do atendimento, sem oferecer nada. O objetivo é a cliente responder e salvar o número da consultora. A próxima tentativa de venda vem dentro de 30 dias. Ser interessante antes de ser interesseiro.
 - Aniversariantes do mês: o presente vale o mês inteiro; convite na primeira semana do mês para todas; no dia, só o parabéns (não é hora de vender); lembrete faltando 5 dias para expirar. Lista puxada pela gestora no dia 25 do mês anterior. Está no cronograma de todas as lojas.
 - Toda mensagem para a cliente diz quem fala: "Aqui é {consultora}, da {loja}".
+- CTA no CRM conduz, não pergunta: nada de "posso?", "quer ver?", "se quiser". Duas opções que levam ao próximo passo: "te mando as fotos ou você já consegue vir na loja ver tudo e provar?".
 - CRM direcionado pela gestora e executado pela equipe, cada pessoa com a sua carteira; missão da semana igual para o time todo.
 
 ## Padrões do código

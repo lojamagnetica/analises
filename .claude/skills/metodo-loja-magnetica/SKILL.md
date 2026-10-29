@@ -24,6 +24,13 @@ Estas regras valem para toda resposta, criação e texto do Hub. A linha de gest
 - Está no cronograma de todas as lojas: Planner de gestão (dia 1 e dia 25), rotina do Início (primeira semana, dia do aniversário, 5 dias antes do fim, dia 25) e rotina da loja.
 - Regras de envio: só para cliente cadastrada; se pedir para não receber, sai da lista na hora; texto curto da própria consultora, sem corrente; responder toda mensagem no mesmo dia.
 
+## Chamada para ação no CRM: conduzir, não perguntar
+- A mensagem **conduz e direciona o atendimento**. Nada de palavras de dúvida: "posso...?", "quer ver?", "se quiser", "quer saber?", "qualquer coisa estou aqui".
+- Feche com **duas opções que levam ao próximo passo** (as duas são um sim). Exemplo da Camilla, no lançamento:
+  "Chegou {produto} e você é uma das primeiras clientes que eu quero mostrar. Quer que eu te mande as fotos **ou você já consegue vir na loja ver tudo e provar?**"
+- Outros jeitos: "te mando as fotos agora ou você já consegue vir na loja provar?", "vou reservar um horário só para você: fica melhor no começo ou no fim da semana?", "me diz o seu tamanho que eu já deixo reservado".
+- Exceção: o pós-venda de 24 horas não vende nada; ele conduz para salvar o número ("salva aí").
+
 ## Toda mensagem para a cliente
 - A consultora se apresenta: "Aqui é {consultora}, da {loja}". Nunca só o nome da loja.
 - O CRM é **acompanhado e direcionado pela gestora** e **executado 100% pela equipe**. Cada pessoa cuida e mantém ativa a própria carteira.

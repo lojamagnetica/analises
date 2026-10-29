@@ -138,10 +138,21 @@ async function analisar(admin: SupabaseClient, portalId: string, usuario: string
     if (!coleta.posts.length && !prints.length) throw new Error("O Instagram não liberou os dados deste perfil agora. Anexe os prints (topo do perfil, aba Reels e link da bio) e rode de novo.");
     await marcar({ estado: "analisando", inicio, fonte: coleta.fonte });
 
-    const [{ data: mem }, { data: portal }] = await Promise.all([
+    const [{ data: mem }, { data: portal }, { data: prep }, { data: diag }] = await Promise.all([
       admin.from("metodo").select("dados").eq("chave", "analise_agente").single(),
       admin.from("portais").select("loja, responsavel").eq("id", portalId).single(),
+      admin.from("diagnostico_preparo").select("raiox, escolha, concorrentes, mercado").eq("portal_id", portalId).maybeSingle(),
+      admin.from("loja_diagnostico").select("dados").eq("portal_id", portalId).eq("loja", "").maybeSingle(),
     ]);
+    // O que o Diagnóstico já sabe da loja (modelo, números, gargalo, alavanca, concorrentes e mercado).
+    const r = (prep?.raiox ?? null) as { resumo?: string; numeros?: unknown; gargalo?: unknown; alavanca?: unknown } | null;
+    const d = (diag?.dados ?? null) as { cenario?: unknown; alertas?: unknown } | null;
+    const contexto = prep || d ? JSON.stringify({
+      raio_x: r ? { resumo: r.resumo, numeros: r.numeros, gargalo: r.gargalo, alavanca: r.alavanca } : null,
+      escolha_da_camilla: prep?.escolha ?? null, concorrentes_e_cidade: prep?.concorrentes || null,
+      pesquisa_de_mercado: (prep?.mercado as { resumo?: string } | null)?.resumo ?? null,
+      diagnostico_da_loja: d ? { cenario: d.cenario, alertas: d.alertas } : null,
+    }) : "";
     const memoria = mem?.dados as { instrucoes: string; exemplo: unknown };
     const conteudo: Anthropic.Beta.BetaContentBlockParam[] = [];
     coleta.posts.forEach((p, i) => {
@@ -161,6 +172,7 @@ async function analisar(admin: SupabaseClient, portalId: string, usuario: string
         `Loja: ${portal?.loja ?? ""} (responsável: ${portal?.responsavel ?? "—"}). Instagram: @${usuario}.`,
         `Dados do perfil coletados (fonte: ${coleta.fonte}): ${JSON.stringify(perfil)}`,
         observacoes ? `Observações da equipe: ${observacoes}` : "",
+        contexto ? `Contexto do Diagnóstico desta loja (use para identificar o modelo da loja e servir ao gargalo e à alavanca): ${contexto}` : "Esta loja ainda não tem Diagnóstico no Hub: identifique o modelo da loja pelo perfil e diga nas pendências o que conferir.",
         `Exemplo validado pela Mila (Versatilità), para o padrão de tom, profundidade e formato: ${JSON.stringify(memoria.exemplo)}`,
         "Faça a Análise do Perfil desta loja seguindo as instruções. Responda só com o JSON pedido.",
       ].filter(Boolean).join("\n\n"),
@@ -181,7 +193,9 @@ async function analisar(admin: SupabaseClient, portalId: string, usuario: string
     if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a análise.");
     const { pendencias, roteiro_video, ...analise } = JSON.parse(bloco.text);
 
+    // Toda análise nova volta para rascunho: só a Camilla libera para a loja.
     await admin.from("loja_analise_perfil").update({
+      status: "rascunho",
       dados: { ...analise, instagram: `@${usuario}`, data: inicio.slice(0, 10), video_url: "" },
       agente: { instagram: `@${usuario}`, estado: "pronta", inicio, fim: new Date().toISOString(), fonte: coleta.fonte, pendencias, roteiro_video },
       updated_at: new Date().toISOString(),

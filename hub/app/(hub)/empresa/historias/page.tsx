@@ -7,7 +7,7 @@ import { Carregando, useDados } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  PERGUNTAS, TOTAL_PERGUNTAS, buscarHistorias, montarNarrativa, type Narrativa, excluirHistoria, salvarHistoria, tirarFoto, urlsDasFotos, type Historia, type Respostas,
+  PERGUNTAS, TOTAL_PERGUNTAS, buscarHistorias, montarNarrativa, type Narrativa, excluirHistoria, salvarHistoria, subirFoto, tirarFoto, urlsDasFotos, type Historia, type Respostas,
 } from "@/lib/historia";
 
 const LINK = "https://lojamagnetica.github.io/analises/portal/historia/";
@@ -16,12 +16,29 @@ const textoEmValores = (t: string) => t.split("\n").map((l) => l.trim()).filter(
   .map((l) => { const [nome, ...resto] = l.split(":"); return { nome: nome.trim(), como: resto.join(":").trim() }; });
 
 /** Editar as respostas e as fotos de uma história (a Camilla revisa antes de liberar). */
-function Editor({ h, urls, aoSalvar, aoCancelar }: { h: Historia; urls: Record<string, string>; aoSalvar: () => void; aoCancelar: () => void }) {
+function Editor({ h, urls: urls0, aoSalvar, aoCancelar }: { h: Historia; urls: Record<string, string>; aoSalvar: () => void; aoCancelar: () => void }) {
   const [r, setR] = useState<Respostas>(h.respostas ?? {});
   const [valores, setValores] = useState(valoresEmTexto(h.respostas ?? {}));
   const [fotos, setFotos] = useState(h.fotos ?? []);
+  const [urls, setUrls] = useState(urls0);
+  const [subindo, setSubindo] = useState(0);
   const [loja, setLoja] = useState(h.loja);
   const [erro, setErro] = useState("");
+  // Fotos que a lojista mandou por fora (WhatsApp): a equipe sobe aqui. Já grava na história para não ficar foto solta.
+  const adicionar = async (arquivos: File[]) => {
+    setErro(""); setSubindo(arquivos.length);
+    let lista = fotos;
+    for (const f of arquivos) {
+      try {
+        const caminho = await subirFoto(h.token, f);
+        lista = [...lista, { caminho, ano: "", legenda: "" }];
+        await salvarHistoria(h.id, { fotos: lista });
+        setFotos(lista);
+      } catch (x) { setErro((x as Error).message); }
+      setSubindo((n) => n - 1);
+    }
+    setUrls({ ...urls, ...(await urlsDasFotos(lista.filter((f) => !urls[f.caminho]))) });
+  };
   return (
     <div className="mt">
       <label className="ajuda" style={{ display: "block" }}>Nome da loja (como aparece no título)<input type="text" value={loja} onChange={(e) => setLoja(e.target.value)} /></label>
@@ -47,6 +64,11 @@ function Editor({ h, urls, aoSalvar, aoCancelar }: { h: Historia; urls: Record<s
           </div>
         </div>
       ))}
+      <label className="btn s peq mb" style={{ display: "inline-block", cursor: "pointer" }}>
+        {subindo ? `Subindo… faltam ${subindo}` : "+ Adicionar fotos"}
+        <input type="file" accept="image/*" multiple hidden disabled={subindo > 0} onChange={(e) => { const a = Array.from(e.target.files ?? []); e.target.value = ""; if (a.length) adicionar(a); }} />
+      </label>
+      <p className="ajuda" style={{ marginTop: 0 }}>Para as fotos que a loja mandou pelo WhatsApp: salve no aparelho e suba aqui. Depois coloque o ano e a legenda de cada uma e clique em Salvar.</p>
       {erro && <div className="aviso mb">{erro}</div>}
       <div className="linha" style={{ gap: 8 }}>
         <button type="button" className="btn p peq" onClick={async () => {

@@ -104,11 +104,26 @@ export async function salvarFoto(arquivo: File | null) {
  * para quem já tem. Quem gera é a função "acesso" do Supabase, que confere se quem pediu é da equipe
  * e, com portalId, já liga a pessoa ao portal.
  */
-export async function gerarLink(email: string, nome: string, portalId?: string) {
-  const { data, error } = await sb().functions.invoke("acesso", { body: { email, nome, portal_id: portalId ?? null } });
-  if (error) throw new Error(await erroDaFuncao(error));
-  const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
-  return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
+export function gerarLink(email: string, nome: string, portalId?: string) {
+  return umLinkPorVez(email, async () => {
+    const { data, error } = await sb().functions.invoke("acesso", { body: { email, nome, portal_id: portalId ?? null } });
+    if (error) throw new Error(await erroDaFuncao(error));
+    const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
+    return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
+  });
+}
+
+// Cada link novo anula o anterior da mesma pessoa. Clique repetido no botão (ou dois botões ao mesmo tempo)
+// gerava vários links no mesmo segundo e o que ia para a cliente já nascia morto. Aqui, enquanto um link
+// está sendo gerado para um e-mail, qualquer outro pedido para o mesmo e-mail recebe esse mesmo link.
+const gerandoLink = new Map<string, Promise<string>>();
+function umLinkPorVez(email: string, gerar: () => Promise<string>) {
+  const chave = email.trim().toLowerCase();
+  const emAndamento = gerandoLink.get(chave);
+  if (emAndamento) return emAndamento;
+  const pedido = gerar().finally(() => gerandoLink.delete(chave));
+  gerandoLink.set(chave, pedido);
+  return pedido;
 }
 
 async function linkOuAviso(email: string, nome: string, portalId: string) {
@@ -305,12 +320,14 @@ export async function contratoApagar(id: string) {
 export async function convidarEquipe(form: FormData) {
   const email = txt(form, "email", 200).toLowerCase();
   if (!email) throw new Error("Preencha o e-mail.");
-  const { data, error } = await sb().functions.invoke("acesso", {
-    body: { email, nome: txt(form, "nome", 200), funcao: txt(form, "funcao", 80), equipe: true },
+  const nome = txt(form, "nome", 200);
+  const funcao = txt(form, "funcao", 80);
+  return umLinkPorVez(email, async () => {
+    const { data, error } = await sb().functions.invoke("acesso", { body: { email, nome, funcao, equipe: true } });
+    if (error) throw new Error(await erroDaFuncao(error));
+    const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
+    return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
   });
-  if (error) throw new Error(await erroDaFuncao(error));
-  const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
-  return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
 }
 
 export async function equipeFuncao(userId: string, funcao: string) {

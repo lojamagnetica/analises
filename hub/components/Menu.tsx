@@ -354,6 +354,12 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </Link>
           )}
 
+          {props.equipe && (
+            <Link href="/empresa/webinar" className={`nav-item ${ativo("/empresa/webinar") ? "ativo" : ""}`}>
+              <Icone nome="chart" /> WEBINAR
+            </Link>
+          )}
+
           {props.temPortal && !props.soCurso && (
             <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
               <Icone nome="gift" /> Indique uma loja 🎁

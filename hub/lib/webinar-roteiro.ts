@@ -185,7 +185,8 @@ export function progresso(s: Secao, r: Respostas) {
 export function roteiroFinal(r: Respostas) {
   const v = (id: string, ph = "____") => (r[id] ?? "").trim() || ph;
   const tem = (id: string) => !!(r[id] ?? "").trim();
-  const falas = (...xs: string[]) => xs.filter(Boolean).map((x) => `> ${x}`).join("\n");
+  // Cada linha do campo vira uma fala (um bloco por respiração)
+  const falas = (...xs: string[]) => xs.flatMap((x) => x.split("\n")).map((x) => x.trim()).filter(Boolean).map((x) => `> ${x}`).join("\n");
   const partes: { titulo: string; texto: string }[] = [];
   partes.push({ titulo: "Slide 1 · Promessa", texto: falas(`Como ${v("a.1.1")} ${v("a.1.3")} sem ${v("a.1.2")}.`, `Vou te ajudar mostrando ${v("a.2.1")}.`, v("a.2.2")) });
   partes.push({ titulo: "Slide 2 · Apresentação", texto: falas(`Meu nome é ${v("a.3.1")}, ${v("a.3.3")}.`, v("a.3.4")) });

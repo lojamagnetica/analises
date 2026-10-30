@@ -200,13 +200,13 @@ export function roteiroFinal(r: Respostas) {
     `[Ponto ${n}: ${v(`c.t${n}.titulo`)}]\n${falas(...["oque", "como", "porque", "transf", "loop"].filter((k) => tem(`c.t${n}.${k}`)).map((k) => v(`c.t${n}.${k}`)))}`), falas(v("c.necessidade", ""), v("c.transicao", ""))].filter(Boolean).join("\n\n") });
   partes.push({ titulo: "Oferta", texto: [
     falas(v("o.1")),
-    falas(`Vou abrir vagas para ${v("o.2.1")} de ${v("o.2.2")} minutos, onde eu vou:`, `→ ${v("o.2.a1")}`, `→ ${v("o.2.a2")}`, `→ ${v("o.2.a3")}`, "Você sai com um plano claro do que fazer."),
+    falas(`Vou abrir vagas para ${v("o.2.1")}, de ${v("o.2.2")} minutos, para:`, `→ ${v("o.2.a1")}`, `→ ${v("o.2.a2")}`, `→ ${v("o.2.a3")}`, "Você sai com um plano claro do que fazer."),
     falas(v("o.3"), `${v("o.4.onde")} está o link. Clica AGORA para garantir a sua vaga.`),
     falas(`${v("o.5.limite")}: quem agendar agora recebe ${v("o.5.incentivo")}.`),
-    falas("Recapitulando:", `✓ ${v("o.2.1")} de ${v("o.2.2")} minutos, individual comigo`, `✓ ${v("o.2.a1")}, ${v("o.2.a2")} e ${v("o.2.a3")}`, `✓ ${v("o.5.incentivo")} se agendar agora`, "✓ Sem custo e sem compromisso", "Clica no link e agenda."),
+    falas("Recapitulando:", `✓ ${v("o.2.1")}, de ${v("o.2.2")} minutos, individual para a sua loja`, `✓ ${v("o.2.a1")}, ${v("o.2.a2")} e ${v("o.2.a3")}`, `✓ ${v("o.5.incentivo")} se agendar agora`, "✓ Sem custo e sem compromisso", "Clica no link e agenda."),
     falas(v("o.7"), v("o.7.consequencia", "")),
     falas("Sei que você pode ter dúvidas. Vou responder as principais. E enquanto respondo, quem quiser já pode agendar pelo link.", ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter((i) => tem(`o.9.${i}`)).map((i) => v(`o.9.${i}`))),
-    falas(v("o.10"), "Quem já agendou, parabéns. Vou me preparar para te ajudar ao máximo.", "Se não agendou, sem problema. Mas essa chance não volta tão cedo.", "Nos vemos em breve!"),
+    falas(v("o.10"), "Quem já agendou, parabéns. O meu time vai se preparar para te ajudar ao máximo.", "Se não agendou, sem problema. Mas essa chance não volta tão cedo.", "Nos vemos em breve!"),
   ].filter(Boolean).join("\n\n") });
   return partes;
 }

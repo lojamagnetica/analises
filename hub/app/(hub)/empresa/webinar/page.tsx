@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados } from "@/lib/hub";
+import { Roteiro } from "./Roteiro";
 import { dataHora } from "@/lib/formato";
 import {
   apelidoDe, buscarConfig, buscarCriativos, buscarLeads, buscarParceiros, contarCliques, excluirCriativo, excluirLead, excluirParceiro,
@@ -11,7 +12,7 @@ import {
   subirCriativo, type Config, type Lead, type Parceiro,
 } from "@/lib/webinar";
 
-type Aba = "funis" | "leads" | "criativos";
+type Aba = "funis" | "leads" | "criativos" | "roteiro";
 
 function Funis({ cfg, parceiros, cliques, leads, recarregar, setMsg }: { cfg: Config; parceiros: Parceiro[]; cliques: Map<string, number>; leads: Lead[]; recarregar: () => void; setMsg: (s: string) => void }) {
   const [form, setForm] = useState<string | null>(null);
@@ -198,7 +199,7 @@ function Criativos({ setMsg }: { setMsg: (s: string) => void }) {
 }
 
 export default function Webinar() {
-  const [aba, setAba] = useState<Aba>("funis");
+  const [aba, setAba] = useState<Aba>("roteiro");
   const [msg, setMsg] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const [cfg, parceiros, cliques, leads] = await Promise.all([buscarConfig(), buscarParceiros(), contarCliques(), buscarLeads()]);
@@ -209,7 +210,7 @@ export default function Webinar() {
     <>
       <Titulo titulo="Webinar" sub="Os criativos, os links de cada parceiro e os leads com a origem, para saber quem de fato traz resultado." />
       <div className="chips mb" role="tablist">
-        {([["funis", "Funis e parceiros"], ["leads", `Leads (${dados.leads.length})`], ["criativos", "Criativos"]] as [Aba, string][]).map(([id, r]) => (
+        {([["roteiro", "Roteiro do evento"], ["funis", "Funis e parceiros"], ["leads", `Leads (${dados.leads.length})`], ["criativos", "Criativos"]] as [Aba, string][]).map(([id, r]) => (
           <button key={id} type="button" role="tab" aria-selected={aba === id} className={`chip ${aba === id ? "escolhido" : ""}`} onClick={() => { setAba(id); setMsg(""); }}>{r}</button>
         ))}
       </div>
@@ -217,6 +218,7 @@ export default function Webinar() {
       {aba === "funis" && <Funis cfg={dados.cfg} parceiros={dados.parceiros} cliques={dados.cliques} leads={dados.leads} recarregar={recarregar} setMsg={setMsg} />}
       {aba === "leads" && <Leads parceiros={dados.parceiros} leads={dados.leads} recarregar={recarregar} setMsg={setMsg} />}
       {aba === "criativos" && <Criativos setMsg={setMsg} />}
+      {aba === "roteiro" && <Roteiro />}
     </>
   );
 }

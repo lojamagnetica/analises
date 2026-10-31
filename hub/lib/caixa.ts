@@ -21,7 +21,7 @@ export type Pagamentos = Partial<Record<Forma, number>>;
 export type LinhaVendedora = { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number };
 
 /** A parte do dia vendida por malinha (a cliente leva as peças para provar em casa, enviadas ou retiradas na loja). O resto é loja física. */
-export type Malinha = { faturamento: number; vendas: number; pecas: number };
+export type Malinha = { faturamento: number; vendas: number; pecas: number; /** Malinhas que saíram da loja no dia (vem do sistema), vendidas ou não. */ saidas?: number };
 
 export type Caixa = {
   id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null;
@@ -72,7 +72,7 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, obs: c.obs?.trim().slice(0, 500) || null,
     pagamentos: c.pagamentos && Object.keys(c.pagamentos).length ? c.pagamentos : null,
     vendedoras: c.vendedoras?.length ? c.vendedoras : null,
-    malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas) ? c.malinha : null,
+    malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas || c.malinha.saidas) ? c.malinha : null,
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -112,13 +112,15 @@ export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos 
 
 /** Total da malinha no período e quanto ela pesa no faturamento (a loja física é o resto). */
 export function somarMalinha(lista: Pick<Caixa, "faturamento" | "malinha">[]) {
-  const m = { faturamento: 0, vendas: 0, pecas: 0 };
+  const m = { faturamento: 0, vendas: 0, pecas: 0, saidas: 0 };
   let total = 0;
   for (const c of lista) {
     total += c.faturamento;
-    if (c.malinha) { m.faturamento += c.malinha.faturamento; m.vendas += c.malinha.vendas; m.pecas += c.malinha.pecas; }
+    if (c.malinha) { m.faturamento += c.malinha.faturamento; m.vendas += c.malinha.vendas; m.pecas += c.malinha.pecas; m.saidas += c.malinha.saidas ?? 0; }
   }
-  return { ...m, total, fisica: total - m.faturamento, pct: total > 0 ? Math.round((m.faturamento / total) * 100) : null };
+  // Conversão: das malinhas que saíram, quantas viraram venda.
+  const conversao = m.saidas > 0 ? Math.round((m.vendas / m.saidas) * 100) : null;
+  return { ...m, total, fisica: total - m.faturamento, pct: total > 0 ? Math.round((m.faturamento / total) * 100) : null, conversao };
 }
 
 /** Total de cada vendedora no período (pela pessoa; "outras vendas" juntas). */
@@ -154,9 +156,9 @@ export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturam
     linhas.push("", "👥 *Por vendedora*");
     for (const v of vs) linhas.push(`• ${v.nome}: ${moeda(v.faturamento)} · ${v.vendas} ${v.vendas === 1 ? "venda" : "vendas"}${ind(v) ? ` · ${ind(v)}` : ""}`);
   }
-  if (c.malinha && (c.malinha.faturamento || c.malinha.vendas)) {
+  if (c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.saidas)) {
     const pct = c.faturamento > 0 ? ` (${Math.round((c.malinha.faturamento / c.faturamento) * 100)}% do dia)` : "";
-    linhas.push("", `📦 *Malinha (levada para provar em casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}`,
+    linhas.push("", `📦 *Malinha (levada para provar em casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}${c.malinha.saidas ? ` · saíram ${c.malinha.saidas} ${c.malinha.saidas === 1 ? "malinha" : "malinhas"}` : ""}`,
       `🏬 Loja física: ${moeda(c.faturamento - c.malinha.faturamento)}`);
   }
   if (c.pagamentos && Object.keys(c.pagamentos).length) {

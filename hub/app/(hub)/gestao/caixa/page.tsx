@@ -24,9 +24,9 @@ type Form = {
   /** Lançar só o total da loja, sem dividir. */
   soTotal: boolean;
   /** A parte do dia que foi malinha (a cliente leva as peças para provar em casa). */
-  mal: Numeros;
+  mal: Numeros & { saidas: string };
 };
-const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "" } });
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" } });
 const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
@@ -98,8 +98,8 @@ function FechamentoCaixa() {
   const valor = porPessoa ? somaVend : { faturamento: numeroDe(f.faturamento) ?? 0, vendas: numeroDe(f.vendas) ?? 0, pecas: numeroDe(f.pecas) ?? 0 };
   const pag: Pagamentos = {};
   for (const x of FORMAS) { const v = numeroDe(f.pag[x.chave]); if (v) pag[x.chave] = v; }
-  const malinha = { faturamento: numeroDe(f.mal.faturamento) ?? 0, vendas: numeroDe(f.mal.vendas) ?? 0, pecas: numeroDe(f.mal.pecas) ?? 0 };
-  const temMalinha = malinha.faturamento > 0 || malinha.vendas > 0 || malinha.pecas > 0;
+  const malinha = { faturamento: numeroDe(f.mal.faturamento) ?? 0, vendas: numeroDe(f.mal.vendas) ?? 0, pecas: numeroDe(f.mal.pecas) ?? 0, saidas: numeroDe(f.mal.saidas) ?? 0 };
+  const temMalinha = malinha.faturamento > 0 || malinha.vendas > 0 || malinha.pecas > 0 || malinha.saidas > 0;
   const somaPag = somaPagamentos(pag);
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const malMes = somarMalinha(lista);
@@ -128,8 +128,8 @@ function FechamentoCaixa() {
       }
     }
     if (temMalinha) {
-      if (malinha.faturamento < 0 || malinha.vendas < 0 || malinha.pecas < 0) return setErro("Malinha: os números não podem ser negativos.");
-      if (!Number.isInteger(malinha.vendas) || !Number.isInteger(malinha.pecas)) return setErro("Malinha: vendas e peças são números inteiros.");
+      if (malinha.faturamento < 0 || malinha.vendas < 0 || malinha.pecas < 0 || malinha.saidas < 0) return setErro("Malinha: os números não podem ser negativos.");
+      if (!Number.isInteger(malinha.vendas) || !Number.isInteger(malinha.pecas) || !Number.isInteger(malinha.saidas)) return setErro("Malinha: vendas, peças e malinhas que saíram são números inteiros.");
       if (malinha.faturamento > 0 && malinha.vendas === 0) return setErro("Malinha: teve faturamento, informe quantas vendas foram.");
       if (malinha.vendas > 0 && malinha.pecas === 0) return setErro("Malinha: informe quantas peças saíram.");
       if (malinha.faturamento > faturamento || malinha.vendas > vendas || malinha.pecas > pecas) return setErro("A malinha faz parte do total do dia: ela não pode ser maior que o faturamento, as vendas ou as peças do dia.");
@@ -173,7 +173,7 @@ function FechamentoCaixa() {
       vend: Object.fromEntries((c.vendedoras ?? []).map((v) => [v.pessoa_id ?? OUTRAS, { faturamento: texto(v.faturamento), vendas: String(v.vendas), pecas: String(v.pecas) }])),
       // Dia antigo lançado só no total continua só no total.
       soTotal: !c.vendedoras?.length && c.faturamento > 0,
-      mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas) } : { faturamento: "", vendas: "", pecas: "" } });
+      mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas), saidas: c.malinha.saidas ? String(c.malinha.saidas) : "" } : { faturamento: "", vendas: "", pecas: "", saidas: "" } });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -271,7 +271,7 @@ function FechamentoCaixa() {
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Malinha (a cliente leva as peças para provar em casa)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0 12px" }}>
-          {([["faturamento", "Faturamento da malinha (R$)", "0,00", "decimal"], ["vendas", "Vendas por malinha", "0", "numeric"], ["pecas", "Peças por malinha", "0", "numeric"]] as const).map(([campo, rot, ph, modo]) => (
+          {([["faturamento", "Faturamento da malinha (R$)", "0,00", "decimal"], ["vendas", "Vendas por malinha", "0", "numeric"], ["pecas", "Peças por malinha", "0", "numeric"], ["saidas", "Malinhas que saíram (quantidade, do sistema)", "0", "numeric"]] as const).map(([campo, rot, ph, modo]) => (
             <div key={campo}>
               <label className="rotulo" htmlFor={`cx-mal-${campo}`} style={{ fontWeight: 400 }}>{rot}</label>
               <input id={`cx-mal-${campo}`} type="text" inputMode={modo} placeholder={ph} value={f.mal[campo]} style={NUM}
@@ -349,9 +349,10 @@ function FechamentoCaixa() {
           <div className="kpi"><small>Ticket médio</small><b style={{ fontSize: 24 }}>{t.tkm != null ? moeda(t.tkm) : "—"}</b></div>
           <div className="kpi"><small>Preço médio</small><b style={{ fontSize: 24 }}>{t.pm != null ? moeda(t.pm) : "—"}</b></div>
         </div>
-        {malMes.faturamento > 0 && (
+        {(malMes.faturamento > 0 || malMes.saidas > 0) && (
           <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
             <div className="kpi"><small>Malinha (levada para provar em casa)</small><b style={{ fontSize: 20 }}>{moeda(malMes.faturamento)}</b><small className="mudo">{malMes.pct}% do faturamento · {malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} · {malMes.pecas} {malMes.pecas === 1 ? "peça" : "peças"}</small></div>
+            {malMes.saidas > 0 && <div className="kpi"><small>Conversão da malinha</small><b style={{ fontSize: 20 }}>{malMes.conversao}%</b><small className="mudo">{malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} de {malMes.saidas} {malMes.saidas === 1 ? "malinha que saiu" : "malinhas que saíram"}</small></div>}
             <div className="kpi"><small>Loja física</small><b style={{ fontSize: 20 }}>{moeda(malMes.fisica)}</b><small className="mudo">{malMes.pct != null ? 100 - malMes.pct : 0}% do faturamento</small></div>
           </div>
         )}
@@ -418,7 +419,7 @@ function FechamentoCaixa() {
               </div>
               {c.vendas > 0 && <div className="mudo" style={{ fontSize: 13 }}><Indicadores {...c} /></div>}
               {c.vendedoras && <div className="mudo" style={{ fontSize: 13, ...NUM }}>{c.vendedoras.map((v) => `${v.nome} ${moeda(v.faturamento)}`).join(" · ")}</div>}
-              {c.malinha && <div className="mudo" style={{ fontSize: 13, ...NUM }}>📦 Malinha {moeda(c.malinha.faturamento)} · {c.malinha.vendas} {c.malinha.vendas === 1 ? "venda" : "vendas"} · {c.malinha.pecas} {c.malinha.pecas === 1 ? "peça" : "peças"}</div>}
+              {c.malinha && <div className="mudo" style={{ fontSize: 13, ...NUM }}>📦 Malinha {moeda(c.malinha.faturamento)} · {c.malinha.vendas} {c.malinha.vendas === 1 ? "venda" : "vendas"} · {c.malinha.pecas} {c.malinha.pecas === 1 ? "peça" : "peças"}{c.malinha.saidas ? ` · saíram ${c.malinha.saidas}` : ""}</div>}
               {c.pagamentos && <div className="mudo" style={{ fontSize: 13, ...NUM }}><ListaFormas p={c.pagamentos} /></div>}
               {c.obs && <div className="ajuda" style={{ margin: 0 }}>{c.obs}</div>}
             </div>

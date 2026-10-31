@@ -20,9 +20,12 @@ export type Pagamentos = Partial<Record<Forma, number>>;
 /** Um dia de uma vendedora (pessoa_id null = outras vendas: a dona, o online). */
 export type LinhaVendedora = { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number };
 
+/** A parte do dia vendida por malinha (enviada para a casa da cliente). O resto é loja física. */
+export type Malinha = { faturamento: number; vendas: number; pecas: number };
+
 export type Caixa = {
   id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null;
-  pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null;
+  pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null; malinha: Malinha | null;
 };
 export type NovoCaixa = Omit<Caixa, "id"> & { id?: string };
 
@@ -56,7 +59,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -69,6 +72,7 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, obs: c.obs?.trim().slice(0, 500) || null,
     pagamentos: c.pagamentos && Object.keys(c.pagamentos).length ? c.pagamentos : null,
     vendedoras: c.vendedoras?.length ? c.vendedoras : null,
+    malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas) ? c.malinha : null,
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -106,6 +110,17 @@ export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos 
   return t;
 }
 
+/** Total da malinha no período e quanto ela pesa no faturamento (a loja física é o resto). */
+export function somarMalinha(lista: Pick<Caixa, "faturamento" | "malinha">[]) {
+  const m = { faturamento: 0, vendas: 0, pecas: 0 };
+  let total = 0;
+  for (const c of lista) {
+    total += c.faturamento;
+    if (c.malinha) { m.faturamento += c.malinha.faturamento; m.vendas += c.malinha.vendas; m.pecas += c.malinha.pecas; }
+  }
+  return { ...m, total, fisica: total - m.faturamento, pct: total > 0 ? Math.round((m.faturamento / total) * 100) : null };
+}
+
 /** Total de cada vendedora no período (pela pessoa; "outras vendas" juntas). */
 export function somarVendedoras(lista: Pick<Caixa, "vendedoras">[]) {
   const t = new Map<string, LinhaVendedora & { dias: number }>();
@@ -138,6 +153,11 @@ export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturam
   if (vs.length) {
     linhas.push("", "👥 *Por vendedora*");
     for (const v of vs) linhas.push(`• ${v.nome}: ${moeda(v.faturamento)} · ${v.vendas} ${v.vendas === 1 ? "venda" : "vendas"}${ind(v) ? ` · ${ind(v)}` : ""}`);
+  }
+  if (c.malinha && (c.malinha.faturamento || c.malinha.vendas)) {
+    const pct = c.faturamento > 0 ? ` (${Math.round((c.malinha.faturamento / c.faturamento) * 100)}% do dia)` : "";
+    linhas.push("", `📦 *Malinha (enviada para casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}`,
+      `🏬 Loja física: ${moeda(c.faturamento - c.malinha.faturamento)}`);
   }
   if (c.pagamentos && Object.keys(c.pagamentos).length) {
     linhas.push("", "💳 *Formas de pagamento*", FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => `${x.nome} ${moeda(c.pagamentos![x.chave]!)}`).join(" · "));

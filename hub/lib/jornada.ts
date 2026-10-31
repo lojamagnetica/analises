@@ -29,6 +29,7 @@ export const ETAPAS: Etapa[] = [
   { n: 2, nome: "Diagnóstico", quem: "Camilla", janela: [8, 14], checks: [
     { chave: "gargalo", texto: "Segunda: Camilla escolheu o gargalo e a CS mandou as perguntas do gargalo" },
     { chave: "respostas", texto: "Terça: respostas da cliente recebidas" },
+    { chave: "teste_lojista", texto: "Teste do lojista respondido pelos sócios e gerente (link na ficha da loja)" },
     { chave: "raiox", texto: "Diagnóstico da loja revisado pela Camilla", acao: "diagnostico" },
     { chave: "reuniao_diag", texto: "Reunião de diagnóstico feita (1h30)", acao: "reunioes" },
     { chave: "resumo_diag", texto: "Resumo e gravação publicados em até 24h", acao: "reunioes" },

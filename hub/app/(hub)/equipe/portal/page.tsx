@@ -8,6 +8,7 @@ import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
+import { PerfilDoLojista } from "@/components/PerfilDoLojista";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -322,6 +323,8 @@ function EditarPortal() {
           </details>
         ))}
       </div>
+
+      <PerfilDoLojista portalId={id} nome={hub.nome} />
 
       <AnotacoesDaCliente portalId={id} nome={hub.nome} />
 

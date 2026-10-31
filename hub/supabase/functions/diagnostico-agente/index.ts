@@ -291,7 +291,10 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
     if (lote.processing_status !== "ended") return "trabalhando";
     let msg: Anthropic.Message | null = null;
     for await (const r of await client.messages.batches.results(lote.id)) {
-      if (r.result.type === "errored") throw new Error(`O Claude deu erro (${(r.result.error as { error?: { type?: string } }).error?.type ?? "erro"}). Tente de novo.`);
+      if (r.result.type === "errored") {
+        const e = (r.result.error as { error?: { type?: string; message?: string } }).error;
+        throw new Error(`O Claude deu erro (${e?.type ?? "erro"}${e?.message ? `: ${e.message}` : ""}). Tente de novo.`);
+      }
       if (r.result.type !== "succeeded") throw new Error("O pedido expirou sem resposta. Tente de novo.");
       msg = r.result.message;
     }

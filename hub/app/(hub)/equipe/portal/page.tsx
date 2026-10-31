@@ -340,6 +340,8 @@ function EditarPortal() {
 const AREAS_MENU: [string, string][] = [
   ["loja", "Minha loja"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
   ["vendas", "Vendas"], ["clientes", "De cliente a fã"], ["conteudo", "Conteúdo"],
+  // Páginas soltas que dá para esconder sem tirar a área inteira.
+  ["/gestao/canais", "Vendas por canal"],
 ];
 
 export default function Pagina() {

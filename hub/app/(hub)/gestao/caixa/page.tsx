@@ -23,7 +23,7 @@ type Form = {
   vend: Record<string, Numeros>;
   /** Lançar só o total da loja, sem dividir. */
   soTotal: boolean;
-  /** A parte do dia que foi malinha (enviada para a casa da cliente). */
+  /** A parte do dia que foi malinha (a cliente leva as peças para provar em casa). */
   mal: Numeros;
 };
 const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "" } });
@@ -269,7 +269,7 @@ function FechamentoCaixa() {
           )}
           {!equipe.length && !soCaixa && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
         </div>
-        <label className="rotulo" style={{ marginTop: 10 }}>Malinha (enviada para a casa da cliente)</label>
+        <label className="rotulo" style={{ marginTop: 10 }}>Malinha (a cliente leva as peças para provar em casa)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0 12px" }}>
           {([["faturamento", "Faturamento da malinha (R$)", "0,00", "decimal"], ["vendas", "Vendas por malinha", "0", "numeric"], ["pecas", "Peças por malinha", "0", "numeric"]] as const).map(([campo, rot, ph, modo]) => (
             <div key={campo}>
@@ -282,7 +282,7 @@ function FechamentoCaixa() {
         <div className="ajuda">
           {temMalinha && valor.faturamento > 0
             ? `Malinha: ${Math.round((malinha.faturamento / (valor.faturamento || somaPag || 1)) * 100)}% do dia. Loja física: ${moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}.`
-            : "Das vendas do dia acima, quanto saiu em malinha. O resto conta como venda na loja física. Se o dia não teve malinha, deixe em branco."}
+            : "Das vendas do dia acima, quanto saiu em malinha: a cliente leva as peças para provar em casa, seja enviada ou retirada na loja. O resto conta como venda na loja física. Se o dia não teve malinha, deixe em branco."}
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
@@ -351,7 +351,7 @@ function FechamentoCaixa() {
         </div>
         {malMes.faturamento > 0 && (
           <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
-            <div className="kpi"><small>Malinha (enviada para casa)</small><b style={{ fontSize: 20 }}>{moeda(malMes.faturamento)}</b><small className="mudo">{malMes.pct}% do faturamento · {malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} · {malMes.pecas} {malMes.pecas === 1 ? "peça" : "peças"}</small></div>
+            <div className="kpi"><small>Malinha (levada para provar em casa)</small><b style={{ fontSize: 20 }}>{moeda(malMes.faturamento)}</b><small className="mudo">{malMes.pct}% do faturamento · {malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} · {malMes.pecas} {malMes.pecas === 1 ? "peça" : "peças"}</small></div>
             <div className="kpi"><small>Loja física</small><b style={{ fontSize: 20 }}>{moeda(malMes.fisica)}</b><small className="mudo">{malMes.pct != null ? 100 - malMes.pct : 0}% do faturamento</small></div>
           </div>
         )}

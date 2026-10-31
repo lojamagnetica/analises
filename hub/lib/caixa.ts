@@ -20,7 +20,7 @@ export type Pagamentos = Partial<Record<Forma, number>>;
 /** Um dia de uma vendedora (pessoa_id null = outras vendas: a dona, o online). */
 export type LinhaVendedora = { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number };
 
-/** A parte do dia vendida por malinha (enviada para a casa da cliente). O resto é loja física. */
+/** A parte do dia vendida por malinha (a cliente leva as peças para provar em casa, enviadas ou retiradas na loja). O resto é loja física. */
 export type Malinha = { faturamento: number; vendas: number; pecas: number };
 
 export type Caixa = {
@@ -156,7 +156,7 @@ export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturam
   }
   if (c.malinha && (c.malinha.faturamento || c.malinha.vendas)) {
     const pct = c.faturamento > 0 ? ` (${Math.round((c.malinha.faturamento / c.faturamento) * 100)}% do dia)` : "";
-    linhas.push("", `📦 *Malinha (enviada para casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}`,
+    linhas.push("", `📦 *Malinha (levada para provar em casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}`,
       `🏬 Loja física: ${moeda(c.faturamento - c.malinha.faturamento)}`);
   }
   if (c.pagamentos && Object.keys(c.pagamentos).length) {

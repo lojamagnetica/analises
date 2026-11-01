@@ -202,6 +202,8 @@ export function useEquipe() {
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
 export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
+  // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
+  if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
   // Só da Camilla: a Área da mentora e o que aprova, monta e libera para as lojas.

@@ -8,6 +8,7 @@ import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
+import { PerfilDoLojista } from "@/components/PerfilDoLojista";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -323,6 +324,8 @@ function EditarPortal() {
         ))}
       </div>
 
+      <PerfilDoLojista portalId={id} nome={hub.nome} />
+
       <AnotacoesDaCliente portalId={id} nome={hub.nome} />
 
       <LinhaDoTempo portalId={id} />
@@ -337,6 +340,8 @@ function EditarPortal() {
 const AREAS_MENU: [string, string][] = [
   ["loja", "Minha loja"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
   ["vendas", "Vendas"], ["clientes", "De cliente a fã"], ["conteudo", "Conteúdo"],
+  // Páginas soltas que dá para esconder sem tirar a área inteira.
+  ["/gestao/canais", "Vendas por canal"],
 ];
 
 export default function Pagina() {

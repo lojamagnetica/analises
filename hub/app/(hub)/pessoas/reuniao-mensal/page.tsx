@@ -7,7 +7,7 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { MESES_ABREV, hoje, dia } from "@/lib/formato";
-import { buscarMetodo, buscarPessoas, metasSugeridas, pautaMensal, reuniaoSalvar, type LinhaMes, reuniaoTimeExcluir } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, metasSugeridas, pautaMensal, quemVende, reuniaoSalvar, type LinhaMes, reuniaoTimeExcluir } from "@/lib/pessoas";
 import { Excluir } from "@/components/Excluir";
 
 type Linha = { venda: string; meta: string; ticket: string; pa: string; proxima: string };
@@ -22,7 +22,8 @@ export default function ReuniaoMensal() {
   const [salvo, setSalvo] = useState(false);
   const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
   if (!dados) return <Carregando />;
-  const ativos = dados.pessoas.filter((p) => p.ativo);
+  // Só quem vende entra nos números do mês (administrativo e financeiro ficam de fora).
+  const ativos = quemVende(dados.pessoas.filter((p) => p.ativo));
   const vazia: Linha = { venda: "", meta: "", ticket: "", pa: "", proxima: "" };
   const lm: LinhaMes[] = ativos.map((p) => {
     const l = linhas[p.id] ?? vazia;

@@ -238,7 +238,9 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova)
-    .filter((g) => !props.ocultos?.includes(g.id));
+    .filter((g) => !props.ocultos?.includes(g.id))
+    // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
+    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),

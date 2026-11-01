@@ -18,7 +18,7 @@ export const BLOCOS_PLANEJE = [
 
 export const COLUNAS_KANBAN = ["Ideias", "Roteiro", "Gravar", "Editar", "Publicado"];
 
-export const MESES_PLANO = ["", "Mês 1 · Arrumar a casa", "Mês 2 · Vender mais para quem já compra", "Mês 3 · Escalar e medir"];
+export const MESES_PLANO = ["", "Mês 1 · Arrumar a casa", "Mês 2 · Vender mais para quem já compra", "Mês 3 · Escalar e medir", "Bônus · Revisão de 90 dias"];
 
 export type Campo = {
   id: string;

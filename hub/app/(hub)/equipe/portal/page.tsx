@@ -286,14 +286,14 @@ function EditarPortal() {
       <div className="card mt">
         <h2>Plano de Ação</h2>
         <div className="grade g3">
-          {[1, 2, 3].map((m) => (
+          {[1, 2, 3, 4].map((m) => (
             <div key={m}>
               <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
               {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span style={{ textDecoration: i.feito ? "line-through" : undefined }}>{i.feito ? "✓ " : ""}{i.texto}</span>
-                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { await planoApagar(i.id); recarregar(); }}>✕</button>
+                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; await planoApagar(i.id); recarregar(); }}>✕</button>
                 </div>
               ))}
               <form action={async (f) => { await planoAdicionar(p.id, f); recarregar(); }} className="linha mt" style={{ flexWrap: "nowrap" }}>

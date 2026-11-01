@@ -37,6 +37,13 @@ export default function Plano() {
               </div>
             ))}
           </div>
+          {itens.some((i) => i.mes === 4) && (
+            <div className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
+              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[4]}</h3>
+              {periodoDoMes(4, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(4, portal.plano_inicio, portal.inicio)}</div>}
+              <Checklist itens={itens.filter((i) => i.mes === 4)} aoMudar={recarregar} />
+            </div>
+          )}
         </>
       )}
     </>

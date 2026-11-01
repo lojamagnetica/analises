@@ -233,7 +233,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; semComece?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -309,7 +309,8 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {props.temPortal && !props.soCurso && (
+          {/* Depois que a loja termina a entrada (vídeo, dados da loja e da equipe), o Comece aqui sai da barra para ficar mais objetiva. */}
+          {props.temPortal && !props.soCurso && !props.semComece && (
             <div className="nav-linha">
               <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
                 <Icone nome="play" /> COMECE AQUI

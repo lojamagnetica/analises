@@ -6,7 +6,7 @@ import { Excluir } from "@/components/Excluir";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
-import { DIAS_PARADO, buscarItens, removerItem, salvarItem, type ItemEstoque } from "@/lib/bussola";
+import { DIAS_PARADO, buscarItens, importarItens, lerPlanilha, removerItem, salvarItem, type ItemEstoque } from "@/lib/bussola";
 
 type Form = { id?: string; produto: string; qtd: string; dias: string; giro: string; postado: string; objetivo: boolean; obs: string };
 const vazio: Form = { produto: "", qtd: "1", dias: "", giro: "", postado: "", objetivo: false, obs: "" };
@@ -16,8 +16,19 @@ export default function EstoqueParado() {
   const { dados, recarregar } = useDados(() => buscarItens(portal.id), [portal.id]);
   const [f, setF] = useState<Form>(vazio);
   const [erro, setErro] = useState("");
+  const [planilha, setPlanilha] = useState("");
+  const [msg, setMsg] = useState("");
   if (!dados) return <Carregando />;
 
+  async function importar() {
+    setErro(""); setMsg("");
+    const { itens, erro: e } = lerPlanilha(planilha);
+    if (e) return setErro(e);
+    try {
+      const r = await importarItens(portal.id, itens);
+      setMsg(`${r.novos} item(ns) novo(s) e ${r.atualizados} atualizado(s).`); setPlanilha(""); recarregar();
+    } catch (x) { setErro((x as Error).message); }
+  }
   async function salvar(e: React.FormEvent) {
     e.preventDefault(); setErro("");
     if (!f.produto.trim()) return setErro("Escreva o nome do produto ou da linha.");
@@ -34,6 +45,15 @@ export default function EstoqueParado() {
       <Titulo titulo="Estoque parado" sub={`Peças que precisam de atenção e estratégia. A partir de ${DIAS_PARADO} dias paradas, a Bússola avisa se ainda não foram para o conteúdo.`} aba="Estoque parado" />
       <AbasBussola />
       {erro && <div className="aviso erro mb">{erro}</div>}
+
+      <div className="card mb">
+        <h2 style={{ marginTop: 0 }}>Trazer do seu sistema</h2>
+        <p className="mudo" style={{ marginTop: 0 }}>Em vez de digitar peça por peça: copie a planilha de estoque do seu sistema (ou escolha o arquivo .csv) com os títulos na primeira linha, como Produto, Estoque e Dias parado (ou Última venda). O que já está na lista é atualizado, e o “já postado” é mantido.</p>
+        <input type="file" accept=".csv,.txt,.tsv" aria-label="Arquivo da planilha" onChange={async (e) => { const a = e.target.files?.[0]; if (a) setPlanilha(await a.text()); }} />
+        <textarea rows={4} value={planilha} onChange={(e) => setPlanilha(e.target.value)} placeholder="Cole aqui a planilha" style={{ width: "100%", marginTop: 8 }} aria-label="Planilha colada" />
+        <button type="button" className="btn s mt" onClick={importar}>Trazer para a lista</button>
+        {msg && <p className="aviso ok" style={{ marginTop: 8 }}>{msg}</p>}
+      </div>
 
       <form className="card mb" onSubmit={salvar}>
         <h2 style={{ marginTop: 0 }}>{f.id ? "Editar item" : "Adicionar item parado"}</h2>

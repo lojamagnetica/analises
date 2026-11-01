@@ -134,7 +134,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     {
       id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
       itens: [
-        { href: "/gestao/tempo", rotulo: "Onde está o meu tempo", icone: "cal" },
+        { href: "/bussola", rotulo: "Onde está o meu tempo", icone: "compass" },
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
         { href: "/gestao/canais", rotulo: "Vendas por canal", icone: "chart" },
@@ -306,6 +306,14 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
                   <Icone nome={i.icone} /> {i.rotulo}
                 </Link>
               ))}
+            </div>
+          )}
+
+          {props.temPortal && !props.soCurso && (
+            <div className="nav-linha">
+              <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
+                <Icone nome="compass" /> BÚSSOLA DO GESTOR
+              </Link>
             </div>
           )}
 

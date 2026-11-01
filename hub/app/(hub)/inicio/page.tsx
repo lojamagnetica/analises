@@ -18,6 +18,7 @@ import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 
 const ATALHOS = [
+  { href: "/bussola", rotulo: "Bússola do gestor", icone: "compass", cor: "var(--red)" },
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },

@@ -19,13 +19,14 @@ const novaPagina = async (tabelas) => {
 
 {
   // Rotina: monta a semana a partir da disponibilidade
-  const { page, banco } = await novaPagina({});
+  const { page, banco } = await novaPagina({ loja_equipe: [{ id: "p1", portal_id: l.portal.id, nome: "Ana Souza", funcao: "Vendedora", ativo: true }] });
   await page.goto(`${BASE}/bussola/rotina/`);
   await page.getByRole("button", { name: "Montar a minha semana" }).click();
   await page.getByText("Salvo.").waitFor();
   const b = banco.tabelas.loja_bussola[0];
   ok(b && b.blocos.length > 5, "monta a semana e grava");
   ok(b.blocos.some((x) => x.funcao === "feedback" && x.dia === 2), "feedback cai na terça pelo método");
+  ok(b.blocos.some((x) => x.freq === "mensal"), "a rotina tem tarefas do mês");
   await page.getByRole("button", { name: "Remover" }).first().click();
   await page.waitForTimeout(300);
   ok(banco.tabelas.loja_bussola[0].blocos.length === b.blocos.length - 1, "remove um bloco com confirmação");

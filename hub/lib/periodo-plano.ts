@@ -21,8 +21,17 @@ export function intervaloDoMes(m: number, planoInicio: string | null | undefined
   return { de: ymd(de), ate: ymd(de + 29 * DIA_MS) };
 }
 
-/** "01/11 a 30/11" para escrever ao lado do nome do mês. */
+/** A revisão de 90 dias: do dia 90 ao dia 99 depois do início do plano (ex.: plano que começa em 01/11, revisão de 30/01 a 08/02). */
+export function periodoRevisao(planoInicio: string | null | undefined, inicioLoja?: string | null) {
+  const base = planoInicio || inicioLoja;
+  if (!base) return null;
+  const de = doTempo(base) + 90 * DIA_MS;
+  return `${curto(ymd(de))} a ${curto(ymd(de + 9 * DIA_MS))}`;
+}
+
+/** "01/11 a 30/11" para escrever ao lado do nome do mês. O bônus (m = 4) é a revisão de 90 dias. */
 export function periodoDoMes(m: number, planoInicio: string | null | undefined, inicioLoja?: string | null) {
+  if (m === 4) return periodoRevisao(planoInicio, inicioLoja);
   const i = intervaloDoMes(m, planoInicio, inicioLoja);
   return i ? `${curto(i.de)} a ${curto(i.ate)}` : null;
 }

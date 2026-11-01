@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,36842,e=>{"use strict";var t=e.i(43476),r=e.i(18566),u=e.i(71645),i=e.i(61175);e.s(["default",0,function(){let e=(0,r.useRouter)();return(0,u.useEffect)(()=>{e.replace("/estoque?parte=linhas")},[e]),(0,t.jsx)(i.Carregando,{})}])}]);

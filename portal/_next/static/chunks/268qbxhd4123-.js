@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,39255,e=>{"use strict";var t=e.i(43476),r=e.i(18566),o=e.i(71645),u=e.i(61175);e.s(["default",0,function(){let e=(0,r.useRouter)();return(0,o.useEffect)(()=>{e.replace("/estoque?parte=compras")},[e]),(0,t.jsx)(u.Carregando,{})}])}]);

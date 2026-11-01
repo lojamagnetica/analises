@@ -173,7 +173,6 @@ export default function Bussola() {
       </div>
 
       <div className="grade g3">
-        <Link href="/gestao/tempo" className="card"><b>Tirar tudo da cabeça</b><p className="mudo" style={{ margin: "4px 0 0" }}>Separe o que só você faz do que pode passar para alguém.</p></Link>
         <Link href="/gestao/caixa" className="card"><b>Fechar o caixa</b><p className="mudo" style={{ margin: "4px 0 0" }}>Por vendedora, para a Bússola enxergar quedas.</p></Link>
         <Link href="/inicio" className="card"><b>Meu dia</b><p className="mudo" style={{ margin: "4px 0 0" }}>Placar, time e atitudes de atração no Início.</p></Link>
       </div>

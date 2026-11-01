@@ -6,7 +6,7 @@ import { Icone } from "@/components/Icone";
 import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta, dataHora, dia, hoje, mesAtual, MESES_ABREV } from "@/lib/formato";
-import { buscarPlanos, mesDoPlano, mesesDoInicio, prazoDoPlano, semanaDoDia } from "@/lib/plano-mes";
+import { buscarPlanos, mesDoPlano, mesesDoInicio, semanaDoDia } from "@/lib/plano-mes";
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
@@ -22,7 +22,8 @@ const ATALHOS = [
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta", cor: "var(--orange)" },
-  { href: "/clientes", rotulo: "Clientes", icone: "users", cor: "var(--purple)" },
+  // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
+  { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
   { href: "/assistente", rotulo: "Fale com a Camilla", icone: "chat", cor: "var(--purple)" },
   { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
 ];
@@ -76,9 +77,12 @@ export default function Inicio() {
   // Áreas que a equipe tirou do menu desta loja (consultorias personalizadas) somem também dos atalhos.
   const ocultos = portal.menu_oculto ?? [];
   const escondido = (href: string) => (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
+  const mesProx = mesesDoInicio().proximo;
   const atalhos = (consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
-    : ATALHOS).filter((a) => !escondido(a.href));
+    : ATALHOS)
+    .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
+    .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
   const trancado = (href: string) => { const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
@@ -91,8 +95,6 @@ export default function Inicio() {
   const planoAtual = planosMes.find((p) => p.mes === meses.atual);
   const planoProx = planosMes.find((p) => p.mes === meses.proximo);
   const focoSemana = planoAtual?.dados?.semanas?.[semanaDoDia(Number(hoje().slice(8)))]?.foco?.trim();
-  const prazoProx = prazoDoPlano(meses.proximo);
-  const lembrarPlano = !consultoria && !trancado("/planeje") && (!planoProx || planoProx.status === "rascunho");
   const ajustar = [planoAtual, planoProx].find((p) => p?.status === "ajustar");
   const diagnosticoNovo = !!ent?.diagnosticoEm && Date.now() - new Date(ent.diagnosticoEm).getTime() < 15 * 86_400_000;
 
@@ -174,13 +176,6 @@ export default function Inicio() {
         <Link href={`/planeje/mes?m=${ajustar.mes}`} className="card card-borda mt linha entre" style={{ ["--c" as string]: "var(--orange)", textDecoration: "none", color: "inherit" }}>
           <span><b>A Camilla pediu ajustes</b> no seu plano de {mesDoPlano(ajustar.mes).toLowerCase()}.</span>
           <span className="btn s peq">Ver</span>
-        </Link>
-      )}
-
-      {lembrarPlano && (
-        <Link href={`/planeje/mes?m=${meses.proximo}`} className="card card-borda mt linha entre" style={{ ["--c" as string]: hoje() > prazoProx ? "var(--red)" : "var(--green)", textDecoration: "none", color: "inherit" }}>
-          <span>🗓️ <b>Planeje {mesDoPlano(meses.proximo).toLowerCase()}</b> {hoje() > prazoProx ? `· o prazo era ${dia(prazoProx)}` : `até ${dia(prazoProx)}`} e mande para a Camilla.</span>
-          <span className="btn s peq">{planoProx ? "Continuar" : "Começar"}</span>
         </Link>
       )}
 

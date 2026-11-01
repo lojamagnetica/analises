@@ -60,7 +60,7 @@ export function blocoDoTeste(funcao: string | null | undefined): "venda" | "apoi
  *  Se ninguém tem função de venda cadastrada, vale o time todo. `manter` = ids que já têm número lançado. */
 export function quemVende<T extends { id: string; funcao: string | null }>(time: T[], manter: string[] = []): T[] {
   // Administrativo e financeiro nunca entram nos números de venda, nem com meta ajustada.
-  time = time.filter((p) => !/adm|administrativ|financ/i.test(p.funcao ?? ""));
+  time = time.filter((p) => !/\badm|administrativ|financ/i.test(p.funcao ?? ""));
   const vende = (p: T) => /vend|consult|atend/i.test(p.funcao ?? "");
   if (!time.some(vende)) return time;
   return time.filter((p) => vende(p) || manter.includes(p.id));

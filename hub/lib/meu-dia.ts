@@ -9,7 +9,7 @@ import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { PA_IDEAL, buscarCaixa, fimDoMes, fmtPa, indicadores, somar, somarMes, type Caixa } from "@/lib/caixa";
 import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
-import { VANTAGEM, principal, type Letra } from "@/lib/pessoas";
+import { VANTAGEM, principal, quemVende, type Letra } from "@/lib/pessoas";
 import { FOCOS, focoSugerido } from "@/lib/missoes";
 export { VANTAGEM };
 import { moeda } from "@/lib/formato";
@@ -110,7 +110,7 @@ export async function buscarMeuDia(portalId: string) {
     buscarCaixa(portalId, mes),
     buscarPlano(portalId, mes).catch(() => null),
     buscarPlano(portalId, somarMes(mes, 1)).catch(() => null),
-    sb().from("loja_equipe").select("id, nome, perfil").eq("portal_id", portalId).eq("ativo", true).order("nome"),
+    sb().from("loja_equipe").select("id, nome, perfil, funcao").eq("portal_id", portalId).eq("ativo", true).order("nome"),
     sb().from("loja_rotina").select("config, feitos").eq("portal_id", portalId).maybeSingle(),
     sb().from("loja_clientes").select("aniversario, ultima_compra").eq("portal_id", portalId).limit(5000),
     sb().from("datas_comerciais").select("mes, dia, titulo"),
@@ -120,7 +120,8 @@ export async function buscarMeuDia(portalId: string) {
   const caixaOntem = ontem.slice(0, 7) === mes ? caixa.filter((c) => c.dia === ontem) : await buscarCaixa(portalId, ontem.slice(0, 7)).then((l) => l.filter((c) => c.dia === ontem));
   return {
     agora, caixa, caixaOntem, plano, planoProx,
-    equipe: (equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null }[],
+    // Só quem vende entra na meta e no placar da semana (administrativo e financeiro ficam de fora).
+    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null }[]),
     rotina: { config: (rot?.config ?? {}) as Config, feitos: (rot?.feitos ?? {}) as Record<string, string[]> },
     clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null }[],
     datas: (datas ?? []) as { mes: number; dia: number | null; titulo: string }[],

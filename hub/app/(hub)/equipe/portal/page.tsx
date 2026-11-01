@@ -9,6 +9,8 @@ import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
 import { PerfilDoLojista } from "@/components/PerfilDoLojista";
+import { RascunhoReuniao } from "@/components/RascunhoReuniao";
+import { periodoDoMes } from "@/lib/periodo-plano";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -286,7 +288,8 @@ function EditarPortal() {
         <div className="grade g3">
           {[1, 2, 3].map((m) => (
             <div key={m}>
-              <h3>{MESES_PLANO[m]}</h3>
+              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+              {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span style={{ textDecoration: i.feito ? "line-through" : undefined }}>{i.feito ? "✓ " : ""}{i.texto}</span>
@@ -319,7 +322,8 @@ function EditarPortal() {
               <CamposReuniao r={r} />
               <div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div>
             </form>
-            <button className="btn s peq mt" type="button" onClick={async () => { await reuniaoApagar(r.id); recarregar(); }}>Apagar reunião</button>
+            <RascunhoReuniao reuniaoId={r.id} portalId={p.id} ataLiberada={r.ata} aoMudar={recarregar} />
+            <button className="btn s peq mt" type="button" onClick={async () => { if (!confirm("Apagar esta reunião?")) return; await reuniaoApagar(r.id); recarregar(); }}>Apagar reunião</button>
           </details>
         ))}
       </div>

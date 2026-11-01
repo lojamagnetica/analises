@@ -20,6 +20,8 @@ export type Portal = {
   aniversario?: string | null;
   tipo: string;
   inicio: string | null;
+  /** Quando começa o plano de ação de 90 dias (vazio = o início da loja). */
+  plano_inicio?: string | null;
   passo_atual: number;
   /** Grupos do menu que esta loja não vê (consultorias personalizadas). */
   menu_oculto?: string[] | null;

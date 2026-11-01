@@ -18,7 +18,7 @@ export default function Reunioes() {
 
   return (
     <>
-      <Titulo titulo="Reuniões individuais" sub="As reuniões aparecem aqui sozinhas assim que são marcadas na agenda. Depois do encontro, a gravação fica disponível." />
+      <Titulo titulo="Reuniões individuais" sub="Aqui ficam todas as suas reuniões. Depois de cada encontro, a equipe publica o resumo (o que trouxemos da análise, as correções pendentes e os direcionamentos) e o link da gravação." />
       {portal.tipo === "Mentoria" && <EncontroGrupo />}
       {portal.meet_url && (
         <div className="card mb linha entre">
@@ -33,7 +33,10 @@ export default function Reunioes() {
             {(data ?? []).length === 0 && <tr><td colSpan={4} className="mudo">Nenhuma reunião ainda.</td></tr>}
             {(data ?? []).map((r) => (
               <tr key={r.id}>
-                <td><b>{r.titulo}</b>{r.ata && <div className="mudo" style={{ whiteSpace: "pre-wrap", fontSize: 13 }}>{r.ata}</div>}</td>
+                <td>
+                  <b>{r.titulo}</b>
+                  {r.ata && <details className="mt"><summary style={{ cursor: "pointer" }}>Ver o resumo</summary><div style={{ whiteSpace: "pre-wrap", fontSize: 14, marginTop: 6 }}>{r.ata}</div></details>}
+                </td>
                 <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{dataHora(r.data)}</td>
                 <td><span className={`selo ${SELO[r.selecionar] ?? "espera"}`}>{r.selecionar}</span></td>
                 <td>{r.gravacao_url ? <a href={r.gravacao_url} target="_blank" rel="noopener">▶ Assistir</a> : <span className="mudo">—</span>}</td>

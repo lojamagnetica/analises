@@ -17,6 +17,11 @@ export function CamposPortal({ p }: { p?: Partial<Portal> }) {
           </select>
         </div>
         <div><label className="rotulo">Início</label><input type="date" name="inicio" defaultValue={p?.inicio ?? ""} /></div>
+        <div>
+          <label className="rotulo">Início do plano de ação</label>
+          <input type="date" name="plano_inicio" defaultValue={p?.plano_inicio ?? ""} />
+          <div className="ajuda">As datas dos meses 1, 2 e 3 do plano saem daqui. Dia 1 vira meses do calendário (01/11 a 30/11). Vazio usa o início da loja.</div>
+        </div>
         <div><label className="rotulo">Link fixo do Meet</label><input type="url" name="meet_url" defaultValue={p?.meet_url ?? ""} placeholder="https://meet.google.com/…" /></div>
       </div>
       <label className="rotulo">Apelidos na agenda</label>

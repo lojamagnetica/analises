@@ -279,6 +279,11 @@ function FechamentoCaixa() {
             </div>
           ))}
         </div>
+        <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", ...NUM }}>
+          <div className="kpi"><small>Venda loja física (total do dia)</small><b style={{ fontSize: 20 }}>{moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}</b></div>
+          <div className="kpi"><small>Venda malinha</small><b style={{ fontSize: 20 }}>{moeda(malinha.faturamento)}</b></div>
+          <div className="kpi"><small>Total do dia</small><b style={{ fontSize: 20 }}>{moeda(valor.faturamento || somaPag)}</b></div>
+        </div>
         <div className="ajuda">
           {temMalinha && valor.faturamento > 0
             ? `Malinha: ${Math.round((malinha.faturamento / (valor.faturamento || somaPag || 1)) * 100)}% do dia. Loja física: ${moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}.`

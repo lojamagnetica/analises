@@ -197,6 +197,9 @@ export default function Inicio() {
           </Link>
         ))}
       </div>
+      {ent && (ent.livre || (ent.video && ent.loja && ent.equipe)) && (
+        <p className="ajuda"><Link className="link-loja" href="/comece">▶ Rever o vídeo de boas-vindas e o passo a passo</Link></p>
+      )}
 
       <div className="grade g3 mt">
         {consultoria ? (

@@ -23,6 +23,8 @@ export type PostCasa = {
   alcance: number | null;
   envios: number | null;
   notion_url: string | null;
+  /** URLs públicas dos PNGs prontos para postar, na ordem dos slides. */
+  midias?: string[] | null;
 };
 
 export const PERFIS: Record<Perfil, { nome: string; arroba: string; titulo: string; avatar: string; editorias: string[] }> = {

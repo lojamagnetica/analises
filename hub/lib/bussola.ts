@@ -1,12 +1,16 @@
 "use client";
 
-// Bússola do gestor (Onde está o meu tempo): a lojista diz quando está disponível e prefere cada tarefa,
+// Bússola do gestor: a lojista diz quando está disponível e prefere cada tarefa,
 // o Hub monta a rotina (todo dia, toda semana, todo mês) e, em cima dos números, avisa o que precisa de atenção hoje.
 // As regras dos alertas ficam aqui em cima, num lugar só, para a Camilla revisar.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { FUSO, diasAte, hoje, mesAtual, moeda } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { buscarCaixa, fimDoMes, mesDeHoje, numeroDe, somarMes, type Caixa } from "@/lib/caixa";
+
+/** Bússola fechada para todas as lojas (cadeado) enquanto a Camilla termina de ajustar. A equipe continua vendo. */
+export const BUSSOLA_FECHADA = true;
+export const bussolaFechada = (href: string) => BUSSOLA_FECHADA && href.startsWith("/bussola");
 
 // ───── Regras (para revisar) ─────
 

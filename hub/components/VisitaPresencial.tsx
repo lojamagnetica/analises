@@ -1,10 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { salvarEstrutura, type DadosConsultoria, type DiaVisita } from "@/lib/consultoria";
+import { salvarEstrutura, type DadosConsultoria, type DiaVisita, type ItemVisita } from "@/lib/consultoria";
 
 // Visita presencial da consultoria: um card por dia. A equipe escreve, edita, exclui e libera cada dia.
 const novoId = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+
+/** Lista do dia: marcar, acrescentar e tirar (com confirmação). Sem `editavel`, só leitura. */
+function Lista({ titulo, itens, editavel, marcar, aoMudar }: { titulo: string; itens: ItemVisita[]; editavel: boolean; marcar: boolean; aoMudar: (l: ItemVisita[]) => void }) {
+  const [novo, setNovo] = useState("");
+  if (!editavel && !itens.length) return null;
+  return (
+    <div className="mt">
+      <b style={{ fontSize: 14 }}>{titulo}</b>
+      {itens.map((it) => (
+        <div key={it.id} className="linha" style={{ gap: 8, alignItems: "flex-start", marginTop: 4 }}>
+          {marcar
+            ? <input type="checkbox" checked={!!it.feito} disabled={!editavel} aria-label={it.texto} style={{ width: 18, height: 18, marginTop: 2, flex: "none" }}
+                onChange={() => aoMudar(itens.map((x) => (x.id === it.id ? { ...x, feito: !x.feito } : x)))} />
+            : <span aria-hidden="true">•</span>}
+          <span style={{ flex: 1, textDecoration: it.feito ? "line-through" : undefined, opacity: it.feito ? 0.6 : 1 }}>{it.texto}</span>
+          {editavel && <button type="button" className="link-loja" style={{ color: "var(--red)", fontSize: 13 }} onClick={() => { if (confirm(`Tirar "${it.texto}"?`)) aoMudar(itens.filter((x) => x.id !== it.id)); }}>Tirar</button>}
+        </div>
+      ))}
+      {editavel && (
+        <form className="linha" style={{ gap: 6, marginTop: 6 }} onSubmit={(e) => { e.preventDefault(); const t = novo.trim(); if (!t) return; aoMudar([...itens, { id: novoId(), texto: t }]); setNovo(""); }}>
+          <input type="text" value={novo} onChange={(e) => setNovo(e.target.value)} placeholder="Acrescentar…" aria-label={`Acrescentar em ${titulo}`} />
+          <button className="btn s peq" type="submit">+</button>
+        </form>
+      )}
+    </div>
+  );
+}
 
 function FormDia({ d, aoSalvar, aoCancelar }: { d: DiaVisita; aoSalvar: (d: DiaVisita) => void; aoCancelar: () => void }) {
   const [v, setV] = useState(d);
@@ -51,7 +78,7 @@ export function VisitaPresencial({ portalId, c, equipe, aoSalvar }: { portalId: 
         </div>
       )}
       {erro && <div className="aviso mb">{erro}</div>}
-      <div className="grade g3">
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {visiveis.map((d) => editando === d.id
           ? <FormDia key={d.id} d={d} aoSalvar={gravar} aoCancelar={() => setEditando(null)} />
           : (
@@ -62,6 +89,12 @@ export function VisitaPresencial({ portalId, c, equipe, aoSalvar }: { portalId: 
               </div>
               {d.titulo ? <h3 style={{ margin: "4px 0 6px" }}>{d.titulo}</h3> : <p className="mudo" style={{ margin: "4px 0 6px" }}>Ainda não montado.</p>}
               {d.objetivo && <p style={{ margin: 0, whiteSpace: "pre-line" }}>{d.objetivo}</p>}
+              <Lista titulo="O que acontece no dia" itens={d.checks ?? []} editavel={equipe} marcar aoMudar={(l) => gravar({ ...d, checks: l })} />
+              {equipe && (
+                <div className="card mt" style={{ padding: "4px 12px 12px", boxShadow: "none" }}>
+                  <Lista titulo="Para construir no Hub (só a equipe vê)" itens={d.hub ?? []} editavel marcar={false} aoMudar={(l) => gravar({ ...d, hub: l })} />
+                </div>
+              )}
               {d.material_url && <a className="btn s peq mt" href={d.material_url} target="_blank" rel="noopener noreferrer">Abrir o material →</a>}
               {equipe && (
                 <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>

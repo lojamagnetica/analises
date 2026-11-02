@@ -20,8 +20,10 @@ export type DadosConsultoria = {
   visita_dias?: DiaVisita[];
 };
 
-/** Um dia da visita presencial: a equipe monta e libera; a loja só vê depois de liberado. */
-export type DiaVisita = { id: string; data: string; titulo: string; objetivo: string; material_url: string; liberado: boolean };
+export type ItemVisita = { id: string; texto: string; feito?: boolean };
+/** Um dia da visita presencial: a equipe monta e libera; a loja só vê depois de liberado.
+ *  checks: o que acontece no dia (a loja vê); hub: o que construir no Hub para a rotina funcionar (só a equipe vê). */
+export type DiaVisita = { id: string; data: string; titulo: string; objetivo: string; material_url: string; liberado: boolean; checks?: ItemVisita[]; hub?: ItemVisita[] };
 
 /** "Do diagnóstico até aqui": cada ponto com o antes, o que já mudou e o próximo passo. */
 export const STATUS_EVOLUCAO = ["Feito", "Em andamento", "A construir", "Próximo ano"] as const;

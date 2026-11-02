@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ConsultoriaEvolucao } from "@/components/ConsultoriaEvolucao";
 import { EditarAcao, EditarEntrega, EstruturaEditor, NovaAcao, NovaEntrega } from "@/components/ConsultoriaEquipe";
 import { Titulo } from "@/components/Titulo";
+import { VisitaPresencial } from "@/components/VisitaPresencial";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, diasAte, hoje } from "@/lib/formato";
 import {
@@ -219,6 +220,8 @@ export default function Consultoria() {
           </div>
         ))}
       </div>
+
+      <VisitaPresencial portalId={portal.id} c={c} equipe={equipe} aoSalvar={recarregar} />
     </>
   );
 }

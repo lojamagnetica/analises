@@ -71,7 +71,7 @@ export default function Bussola() {
 
   return (
     <>
-      <Titulo titulo="Onde está o meu tempo" sub={`${DIAS_NOME[diaDaSemana(h)]}: o que fazer agora, o que importa mais e o que os números estão pedindo.`} aba="Bússola do gestor" />
+      <Titulo titulo="Bússola do gestor" sub={`${DIAS_NOME[diaDaSemana(h)]}: o que fazer agora, o que importa mais e o que os números estão pedindo.`} />
       <AbasBussola />
       {erro && <div className="aviso erro mb">{erro}</div>}
 

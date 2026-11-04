@@ -7,30 +7,67 @@ import { Excluir } from "@/components/Excluir";
 import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje, moeda } from "@/lib/formato";
+import { segundaDa } from "@/lib/rotina";
 import {
-  CAMPOS_ANALISE, CAMPOS_PLANO, TIPOS_COMBINADO, buscarReunioesGestao, nomeMes, reuniaoGestaoExcluir, reuniaoGestaoSalvar, somarMes, textoDaReuniao,
+  CAMPOS_ANALISE, CAMPOS_PLANO, CAMPOS_SEMANA, TIPOS_COMBINADO, buscarReunioesGestao, nomeMes, numerosDaSemana, reuniaoGestaoExcluir, reuniaoGestaoSalvar, somarMes, textoDaReuniao,
   type Combinado, type DadosGestao, type ReuniaoGestao, type TipoGestao,
 } from "@/lib/reunioes-gestao";
 
-const NOME: Record<TipoGestao, string> = { analise: "Análise do mês", planejamento: "Planejamento do mês" };
+const NOME: Record<TipoGestao, string> = { analise: "Análise do mês", planejamento: "Planejamento do mês", analise_semana: "Análise da semana" };
+const CAMPOS_DO: Record<TipoGestao, typeof CAMPOS_ANALISE> = { analise: CAMPOS_ANALISE, planejamento: CAMPOS_PLANO, analise_semana: CAMPOS_SEMANA };
+const COR: Record<TipoGestao, string> = { analise: "var(--blue)", planejamento: "var(--green)", analise_semana: "var(--red)" };
+const ddmm = (iso: string) => `${iso.slice(8)}/${iso.slice(5, 7)}`;
+/** O nome da reunião no registro: o mês, ou a loja e a semana. */
+const rotuloDe = (t: TipoGestao, d: DadosGestao) => (t === "analise_semana" ? `${NOME[t]}${d.loja ? ` · ${d.loja}` : ""} · semana de ${ddmm(d.semana ?? "")}` : `${NOME[t]} · ${nomeMes(d.mes)}`);
+
+/** Os números da semana da loja, do Fechamento de caixa. */
+function NumerosDaSemana({ portalId, loja, semana }: { portalId: string; loja: string; semana: string }) {
+  const { dados } = useDados(() => numerosDaSemana(portalId, loja, semana), [portalId, loja, semana]);
+  if (!dados) return <p className="ajuda">Buscando os números do caixa…</p>;
+  if (!dados.dias) return <div className="aviso mt">Ainda não há fechamento de caixa lançado nesta semana{loja ? ` para ${loja}` : ""}. Com o caixa em dia, os números aparecem aqui.</div>;
+  const pa = (p: number, v: number) => (v ? (p / v).toFixed(2).replace(".", ",") : "—");
+  const tk = (f: number, v: number) => (v ? moeda(f / v) : "—");
+  return (
+    <div className="mt" style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", minWidth: 420 }}>
+        <thead><tr><th style={{ textAlign: "left" }}>Semana de {ddmm(semana)}</th><th>Venda</th><th>Atendimentos</th><th>PA</th><th>Ticket</th></tr></thead>
+        <tbody>
+          {dados.vendedoras.map((v) => <tr key={v.nome}><td>{v.nome}</td><td>{moeda(v.fat)}</td><td>{v.vendas}</td><td>{pa(v.pecas, v.vendas)}</td><td>{tk(v.fat, v.vendas)}</td></tr>)}
+          <tr style={{ fontWeight: 700 }}><td>Loja · {dados.dias} {dados.dias === 1 ? "dia" : "dias"}</td><td>{moeda(dados.fat)}</td><td>{dados.vendas}</td><td>{pa(dados.pecas, dados.vendas)}</td><td>{tk(dados.fat, dados.vendas)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 /** Preencher (ou editar) uma reunião de gestão. */
-function Editor({ portalId, tipo, r, aoFim }: { portalId: string; tipo: TipoGestao; r: ReuniaoGestao | null; aoFim: (salvou: boolean) => void }) {
+function Editor({ portalId, lojas, tipo, r, aoFim }: { portalId: string; lojas: string[]; tipo: TipoGestao; r: ReuniaoGestao | null; aoFim: (salvou: boolean) => void }) {
   const mesHoje = hoje().slice(0, 7);
   const [data, setData] = useState(r?.data ?? hoje());
-  const [d, setD] = useState<DadosGestao>(r?.dados ?? { mes: tipo === "analise" ? somarMes(mesHoje, -1) : mesHoje, campos: {}, combinados: [], conferencia: "" });
+  const [d, setD] = useState<DadosGestao>(r?.dados ?? (tipo === "analise_semana"
+    ? { mes: segundaDa(hoje()).slice(0, 7), loja: lojas[0] ?? "", semana: segundaDa(hoje()), campos: {}, combinados: [] }
+    : { mes: tipo === "analise" ? somarMes(mesHoje, -1) : mesHoje, campos: {}, combinados: [], conferencia: "" }));
   const [erro, setErro] = useState("");
-  const campos = tipo === "analise" ? CAMPOS_ANALISE : CAMPOS_PLANO;
+  const campos = CAMPOS_DO[tipo];
   const mudarComb = (i: number, c: Partial<Combinado>) => setD({ ...d, combinados: d.combinados.map((x, j) => (j === i ? { ...x, ...c } : x)) });
 
   return (
-    <form className="card card-borda mb" style={{ ["--c" as string]: tipo === "analise" ? "var(--blue)" : "var(--green)" }} onSubmit={async (e) => {
+    <form className="card card-borda mb" style={{ ["--c" as string]: COR[tipo] }} onSubmit={async (e) => {
       e.preventDefault(); setErro("");
       try { await reuniaoGestaoSalvar(portalId, r?.id ?? null, tipo, data, { ...d, combinados: d.combinados.filter((c) => c.oque.trim()) }); aoFim(true); } catch (x) { setErro((x as Error).message); }
     }}>
       <h2 style={{ marginTop: 0 }}>{NOME[tipo]}</h2>
       <div className="grade g3">
-        <div><label className="rotulo">{tipo === "analise" ? "Mês analisado" : "Mês planejado"}</label><input type="month" value={d.mes} onChange={(e) => setD({ ...d, mes: e.target.value })} required /></div>
+        {tipo === "analise_semana" ? (
+          <>
+            {lojas.length > 1 && <div><label className="rotulo" htmlFor="as-loja">Loja</label>
+              <select id="as-loja" value={d.loja ?? ""} onChange={(e) => setD({ ...d, loja: e.target.value })}>{lojas.map((l) => <option key={l}>{l}</option>)}</select></div>}
+            <div><label className="rotulo" htmlFor="as-sem">Qualquer dia da semana analisada</label>
+              <input id="as-sem" type="date" value={d.semana ?? ""} onChange={(e) => { const s = segundaDa(e.target.value || hoje()); setD({ ...d, semana: s, mes: s.slice(0, 7) }); }} required /></div>
+          </>
+        ) : (
+          <div><label className="rotulo">{tipo === "analise" ? "Mês analisado" : "Mês planejado"}</label><input type="month" value={d.mes} onChange={(e) => setD({ ...d, mes: e.target.value })} required /></div>
+        )}
         <div><label className="rotulo">Dia da reunião</label><input type="date" value={data} onChange={(e) => setData(e.target.value)} required /></div>
       </div>
 
@@ -47,6 +84,8 @@ function Editor({ portalId, tipo, r, aoFim }: { portalId: string; tipo: TipoGest
             </select></div>
         </div>
       )}
+
+      {tipo === "analise_semana" && d.semana && <NumerosDaSemana portalId={portalId} loja={d.loja ?? ""} semana={d.semana} />}
 
       {campos.map((c) => (
         <div key={c.chave} className="mt">
@@ -89,12 +128,12 @@ function Editor({ portalId, tipo, r, aoFim }: { portalId: string; tipo: TipoGest
 /** Uma reunião registrada: o que foi decidido, com editar, excluir e a validação da Camilla. */
 function Registro({ r, equipe, aoEditar, aoMudar }: { r: ReuniaoGestao; equipe: boolean; aoEditar: () => void; aoMudar: () => void }) {
   const [aberto, setAberto] = useState(false);
-  const campos = r.tipo === "analise" ? CAMPOS_ANALISE : CAMPOS_PLANO;
+  const campos = CAMPOS_DO[r.tipo];
   const validar = async (v: boolean) => { try { await reuniaoGestaoSalvar("", r.id, r.tipo, r.data, { ...r.dados, validado: v }); aoMudar(); } catch (x) { alert((x as Error).message); } };
   return (
     <div className="card mb">
       <div className="linha entre" style={{ flexWrap: "wrap", gap: 8 }}>
-        <span><b>{NOME[r.tipo]} · {nomeMes(r.dados.mes)}</b> <span className="mudo">· reunião em {dataCurta(r.data)}</span></span>
+        <span><b>{rotuloDe(r.tipo, r.dados)}</b> <span className="mudo">· reunião em {dataCurta(r.data)}</span></span>
         <span className={`selo ${r.dados.validado ? "feito" : "espera"}`}>{r.dados.validado ? "validada pela Camilla" : "aguardando a Camilla"}</span>
       </div>
       {aberto && (
@@ -120,7 +159,7 @@ function Registro({ r, equipe, aoEditar, aoMudar }: { r: ReuniaoGestao; equipe: 
         {equipe && (r.dados.validado
           ? <button type="button" className="btn s peq" onClick={() => validar(false)}>Tirar a validação</button>
           : <button type="button" className="btn p peq" onClick={() => validar(true)}>Validar</button>)}
-        <Excluir pergunta={`Excluir ${NOME[r.tipo].toLowerCase()} de ${nomeMes(r.dados.mes)}?`} fazer={() => reuniaoGestaoExcluir(r.id)} aoFim={aoMudar} />
+        <Excluir pergunta={`Excluir: ${rotuloDe(r.tipo, r.dados).toLowerCase()}?`} fazer={() => reuniaoGestaoExcluir(r.id)} aoFim={aoMudar} />
       </div>
     </div>
   );
@@ -156,11 +195,12 @@ export default function ReunioesGestao() {
       </div>
 
       {editando
-        ? <Editor portalId={portal.id} tipo={editando.tipo} r={editando.r} aoFim={(s) => { setEditando(null); if (s) recarregar(); }} />
+        ? <Editor portalId={portal.id} lojas={portal.lojas ?? []} tipo={editando.tipo} r={editando.r} aoFim={(s) => { setEditando(null); if (s) recarregar(); }} />
         : (
           <div className="linha mb" style={{ gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn p" onClick={() => setEditando({ tipo: "analise", r: null })}>+ Análise do mês</button>
             <button type="button" className="btn p" onClick={() => setEditando({ tipo: "planejamento", r: null })}>+ Planejamento do mês</button>
+            <button type="button" className="btn p" onClick={() => setEditando({ tipo: "analise_semana", r: null })}>+ Análise da semana</button>
           </div>
         )}
 

@@ -4,8 +4,10 @@
 // Ficam em loja_reunioes (tipo "analise" e "planejamento"), um registro por mês. A Camilla valida.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES } from "@/lib/conteudo";
+import { buscarCaixa } from "@/lib/caixa";
+import { somarDias } from "@/lib/acoes-mes";
 
-export type TipoGestao = "analise" | "planejamento";
+export type TipoGestao = "analise" | "planejamento" | "analise_semana";
 export type Campo = { chave: string; titulo: string; ajuda: string };
 export type Combinado = { tipo: "erro" | "potencializar" | "atencao"; oque: string; quem: string; ate: string };
 export type DadosGestao = {
@@ -15,6 +17,8 @@ export type DadosGestao = {
   meta_ano_passado?: number; meta?: number;
   conferencia?: "" | "segue" | "ajusta";
   validado?: boolean;
+  /** Análise da semana: a loja e a segunda-feira da semana. */
+  loja?: string; semana?: string;
 };
 export type ReuniaoGestao = { id: string; tipo: TipoGestao; data: string; dados: DadosGestao };
 
@@ -40,6 +44,15 @@ export const CAMPOS_PLANO: Campo[] = [
   { chave: "proximas", titulo: "As próximas datas", ajuda: "Dia da análise do mês, dia da reunião com o time e dia do próximo planejamento (até o dia 20)." },
 ];
 
+/** Análise da semana de uma loja: os números vêm do Fechamento de caixa, o resto a dupla preenche. */
+export const CAMPOS_SEMANA: Campo[] = [
+  { chave: "resultado", titulo: "O resultado da semana", ajuda: "Venda × meta, PA, ticket e preço médio. Os números do caixa estão acima." },
+  { chave: "funcionou", titulo: "O que funcionou e o que não funcionou", ajuda: "Reconheça o que deu certo e diga com clareza o que não deu." },
+  { chave: "estoque", titulo: "O estoque e a decisão de cada linha", ajuda: "O que vendeu, o que está parado e o que fazer com cada linha: girar, destacar ou mudar de lugar." },
+  { chave: "direcao", titulo: "A direção da semana seguinte", ajuda: "O foco (desejo e giro), a meta da semana, a missão da carteira e o VM. Fica escrita para a semana começar pronta." },
+  { chave: "combinado", titulo: "O combinado", ajuda: "O que a pessoa vai fazer, quanto e até quando. O combinado sai dela." },
+];
+
 export const TIPOS_COMBINADO: { tipo: Combinado["tipo"]; titulo: string }[] = [
   { tipo: "erro", titulo: "Onde erramos" },
   { tipo: "potencializar", titulo: "O que está dando certo e vamos potencializar" },
@@ -62,15 +75,17 @@ async function ok<T extends { error: { message: string } | null }>(p: PromiseLik
 }
 
 export async function buscarReunioesGestao(portalId: string) {
-  const { data, error } = await sb().from("loja_reunioes").select("id, tipo, data, dados").eq("portal_id", portalId).in("tipo", ["analise", "planejamento"]).order("data", { ascending: false });
+  const { data, error } = await sb().from("loja_reunioes").select("id, tipo, data, dados").eq("portal_id", portalId).in("tipo", ["analise", "planejamento", "analise_semana"]).order("data", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as ReuniaoGestao[];
 }
 
 /** O texto da reunião, para guardar junto (e copiar). */
 export function textoDaReuniao(tipo: TipoGestao, d: DadosGestao) {
-  const campos = tipo === "analise" ? CAMPOS_ANALISE : CAMPOS_PLANO;
-  const l = [`${tipo === "analise" ? "Análise" : "Planejamento"} · ${nomeMes(d.mes)}`];
+  const campos = tipo === "analise" ? CAMPOS_ANALISE : tipo === "planejamento" ? CAMPOS_PLANO : CAMPOS_SEMANA;
+  const l = [tipo === "analise_semana"
+    ? `Análise da semana${d.loja ? ` · ${d.loja}` : ""} · semana de ${d.semana ? `${d.semana.slice(8)}/${d.semana.slice(5, 7)}` : ""}`
+    : `${tipo === "analise" ? "Análise" : "Planejamento"} · ${nomeMes(d.mes)}`];
   if (tipo === "planejamento" && d.meta) l.push(`Meta: ${d.meta}`);
   for (const c of campos) if (d.campos[c.chave]?.trim()) l.push("", c.titulo, d.campos[c.chave].trim());
   if (d.combinados.length) {
@@ -87,3 +102,23 @@ export const reuniaoGestaoSalvar = (portalId: string, id: string | null, tipo: T
     : ok(sb().from("loja_reunioes").insert({ portal_id: portalId, ...linha }));
 };
 export const reuniaoGestaoExcluir = (id: string) => ok(sb().from("loja_reunioes").delete().eq("id", id));
+
+export type NumerosSemana = { dias: number; fat: number; vendas: number; pecas: number; vendedoras: { nome: string; fat: number; vendas: number; pecas: number }[] };
+
+/** Os números da semana de uma loja (segunda a domingo), somados do Fechamento de caixa. */
+export async function numerosDaSemana(portalId: string, loja: string, segunda: string): Promise<NumerosSemana> {
+  const fim = somarDias(segunda, 6);
+  const meses = [...new Set([segunda.slice(0, 7), fim.slice(0, 7)])];
+  const todos = (await Promise.all(meses.map((m) => buscarCaixa(portalId, m)))).flat();
+  const doPeriodo = todos.filter((c) => c.dia >= segunda && c.dia <= fim && (!loja || (c.loja ?? "") === loja));
+  const por = new Map<string, { nome: string; fat: number; vendas: number; pecas: number }>();
+  for (const c of doPeriodo) for (const v of c.vendedoras ?? []) {
+    const x = por.get(v.nome) ?? { nome: v.nome, fat: 0, vendas: 0, pecas: 0 };
+    x.fat += v.faturamento; x.vendas += v.vendas; x.pecas += v.pecas; por.set(v.nome, x);
+  }
+  return {
+    dias: doPeriodo.length,
+    fat: doPeriodo.reduce((n, c) => n + c.faturamento, 0), vendas: doPeriodo.reduce((n, c) => n + c.vendas, 0), pecas: doPeriodo.reduce((n, c) => n + c.pecas, 0),
+    vendedoras: [...por.values()].sort((a, b) => b.fat - a.fat),
+  };
+}

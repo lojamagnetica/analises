@@ -96,6 +96,18 @@ export default function Consultoria() {
 
       {equipe && <EstruturaEditor portalId={portal.id} c={c} aoSalvar={recarregar} />}
 
+      {/* A reunião de hoje, no começo do painel: o dia da visita liberado com a data de hoje (dd/mm). */}
+      {(c.visita_dias ?? []).filter((d) => d.liberado && d.data.trim().slice(0, 5) === dia(hoje()).slice(0, 5)).map((d) => (
+        <div key={d.id} className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>
+          <small className="mudo" style={{ letterSpacing: ".08em", textTransform: "uppercase" }}>Hoje · {d.data}</small>
+          <h2 style={{ margin: "4px 0 6px" }}>{d.titulo}</h2>
+          {d.objetivo && <p style={{ margin: "0 0 8px", whiteSpace: "pre-line" }}>{d.objetivo}</p>}
+          <ol style={{ margin: 0, paddingLeft: 20, display: "flex", flexDirection: "column", gap: 4 }}>
+            {(d.checks ?? []).map((i) => <li key={i.id}>{i.texto}</li>)}
+          </ol>
+        </div>
+      ))}
+
       <div className="heroi mb">
         <div style={{ minWidth: 180 }}>
           <small style={{ opacity: 0.8, letterSpacing: ".08em" }}>VOCÊS ESTÃO NO</small>

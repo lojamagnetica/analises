@@ -77,7 +77,7 @@ function Resultado() {
   const varias = lojas.length > 1;
   const todas = lojas.length === 2 ? "As duas lojas" : "Todas as lojas";
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) && m <= mesDeHoje() ? m : mesDeHoje(); });
-  const [loja, setLoja] = useState(() => { const l = params.get("loja"); return l && lojas.includes(l) ? l : ""; });
+  const [loja, setLoja] = useState(() => { const l = params.get("loja"); return l && lojas.includes(l) ? l : varias ? lojas[0] : ""; });
   const { dados } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
   if (!dados) return <Carregando />;
 

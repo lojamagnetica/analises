@@ -53,7 +53,7 @@ function FechamentoCaixa() {
   const lojas = portal.lojas ?? [];
   const varias = lojas.length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
-  const [filtro, setFiltro] = useState("");
+  const [filtro, setFiltro] = useState(varias ? lojas[0] : "");
   const [f, setF] = useState<Form>(() => novo(varias ? lojas[0] : ""));
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
@@ -338,7 +338,7 @@ function FechamentoCaixa() {
       {varias && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">
           {["", ...lojas].map((l) => (
-            <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => setFiltro(l)}
+            <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => { setFiltro(l); if (l && !f.id) setF({ ...f, loja: l }); }}
               style={filtro === l ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
               {l || (lojas.length === 2 ? "As duas lojas" : "Todas as lojas")}
             </button>

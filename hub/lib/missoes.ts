@@ -7,7 +7,7 @@ import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Missao = { id: string; portal_id: string; semana: string; foco: string; criterio: string; mensagem: string; meta: number; obs: string; created_at: string };
+export type Missao = { id: string; portal_id: string; semana: string; /** "" = o portal inteiro; com mais de uma loja, o nome da loja. */ loja: string; foco: string; criterio: string; mensagem: string; meta: number; obs: string; created_at: string };
 export type MissaoPessoa = { id: string; missao_id: string; portal_id: string; pessoa_id: string | null; pessoa_nome: string; token: string; enviadas: number; respostas: number; vendas: number };
 
 export type Foco = { id: string; nome: string; tipo: "Clientes" | "Venda"; criterio: string; mensagem: string };
@@ -58,7 +58,7 @@ export async function buscarMissoes(portalId: string) {
 }
 /** Cria (ou atualiza) a missão da semana e garante uma linha para cada pessoa do time. */
 export async function salvarMissao(portalId: string, d: Omit<Missao, "id" | "portal_id" | "created_at">, time: { id: string; nome: string }[]) {
-  const { data, error } = await sb().from("loja_missoes").upsert({ ...d, portal_id: portalId }, { onConflict: "portal_id,semana" }).select("*").single();
+  const { data, error } = await sb().from("loja_missoes").upsert({ ...d, portal_id: portalId }, { onConflict: "portal_id,semana,loja" }).select("*").single();
   if (error) throw new Error(error.message);
   const m = data as Missao;
   if (time.length) await ok(sb().from("loja_missao_pessoas").upsert(time.map((p) => ({ missao_id: m.id, portal_id: portalId, pessoa_id: p.id, pessoa_nome: p.nome })), { onConflict: "missao_id,pessoa_id", ignoreDuplicates: true }));

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
@@ -48,25 +48,18 @@ function BlocoMissao({ loja, dados: tudo, recarregar }: { loja: string; dados: D
   const [ed, setEd] = useState<{ foco: string; criterio: string; mensagem: string; meta: number; obs: string; produto: string; presente?: string } | null>(null);
   const [erro, setErro] = useState("");
   const daSemana = dados.missoes.find((m) => m.semana === semana) ?? null;
-  // Sem missão nesta semana: já abre o formulário com o foco sugerido pelo momento da loja.
-  useEffect(() => {
-    if (daSemana || ed) return;
-    const s = FOCOS.find((f) => f.id === focoSugerido(dados.abaixo).foco)!;
-    setEd({ foco: s.id, criterio: s.criterio, mensagem: s.mensagem, meta: 20, obs: "", produto: "" });
-  }, [dados, daSemana, ed]);
+  // O foco não é automático: a missão só abre em branco, e a ideia do Hub aparece como sugestão para a gestora decidir.
   const sugestao = focoSugerido(dados.abaixo);
   const linhas = (m: Missao) => dados.pessoas.filter((p) => p.missao_id === m.id);
 
   return (
     <>
-      <Titulo titulo="Missão da semana" sub="Uma força de venda unificada: toda semana, uma missão igual para o time todo, com o mesmo modelo de mensagem e a mesma meta por pessoa. A lista de clientes sai do sistema da loja. Cada pessoa marca pelo link dela o que mandou, quem respondeu e quem comprou, e você acompanha o retorno de cada uma." />
-
       {ed && (
         <div className="card mb">
           <h3 style={{ marginTop: 0 }}>{daSemana ? "Editar a missão desta semana" : `Missão da semana de ${dia(semana)}`}</h3>
-          <p className="ajuda" style={{ marginTop: 0 }}>Sugestão do Hub: <b>{FOCOS.find((f) => f.id === sugestao.foco)?.nome}</b>. {sugestao.porque}</p>
+          <p className="ajuda" style={{ marginTop: 0 }}>Ideia do Hub, só uma sugestão (quem decide é você): <b>{FOCOS.find((f) => f.id === sugestao.foco)?.nome}</b>. {sugestao.porque}</p>
           <div className="chips mb">
-            {FOCOS.map((f) => <button key={f.id} type="button" className={`chip${ed.foco === f.id ? " escolhido" : ""}`} onClick={() => setEd({ ...ed, foco: f.id, criterio: f.criterio, mensagem: f.mensagem })}>{f.nome}{f.id === sugestao.foco ? " ★" : ""}</button>)}
+            {FOCOS.map((f) => <button key={f.id} type="button" className={`chip${ed.foco === f.id ? " escolhido" : ""}`} onClick={() => setEd({ ...ed, foco: f.id, criterio: f.criterio, mensagem: f.mensagem })}>{f.nome}</button>)}
           </div>
           {ed.mensagem.includes("{presente}") && <label className="ajuda" style={{ display: "block" }}>Qual é o presente do aniversário (vale o mês inteiro)<input type="text" value={ed.presente ?? ""} placeholder="Ex.: 15% de desconto em uma compra / um brinde" onChange={(e) => setEd({ ...ed, presente: e.target.value })} /></label>}
           {ed.mensagem.includes("{produto}") && <label className="ajuda" style={{ display: "block" }}>Qual coleção, linha ou produto<input type="text" value={ed.produto} placeholder="Ex.: a coleção de verão / os vestidos de festa" onChange={(e) => setEd({ ...ed, produto: e.target.value })} /></label>}
@@ -76,11 +69,11 @@ function BlocoMissao({ loja, dados: tudo, recarregar }: { loja: string; dados: D
             <label className="ajuda" style={{ display: "block" }}>Meta de mensagens por pessoa na semana<input type="number" min={1} max={200} value={ed.meta} onChange={(e) => setEd({ ...ed, meta: Math.max(1, Number(e.target.value) || 1) })} /></label>
             <label className="ajuda" style={{ display: "block" }}>Recado para o time (opcional)<input type="text" value={ed.obs} placeholder="Ex.: quem fechar mais vendas ganha folga no sábado" onChange={(e) => setEd({ ...ed, obs: e.target.value })} /></label>
           </div>
-          {ed.mensagem.split("\n---\n").map((bloco, i) => (
+          {ed.mensagem && ed.mensagem.split("\n---\n").map((bloco, i) => (
             <p key={i} className="ajuda" style={{ whiteSpace: "pre-wrap" }}>{i === 0 ? "Como fica: " : ""}“{preencher(bloco.replace(/\{produto\}/g, ed.produto || "[coleção ou linha]").replace(/\{presente\}/g, ed.presente || "[o presente]"), { nome: "Helena", loja: loja || portal.loja, consultora: dados.time[0]?.nome ?? "Larissa" })}”</p>
           ))}
           <div className="linha" style={{ gap: 8 }}>
-            <button type="button" className="btn p" disabled={!dados.time.length} onClick={async () => {
+            <button type="button" className="btn p" disabled={!dados.time.length || !ed.foco} onClick={async () => {
               setErro("");
               try {
                 await salvarMissao(portal.id, { semana, loja, foco: ed.foco, criterio: ed.criterio, mensagem: ed.mensagem.replace(/\{produto\}/g, ed.produto || "as novidades").replace(/\{presente\}/g, ed.presente || "um presente especial"), meta: ed.meta, obs: ed.obs }, dados.time.map((p) => ({ id: p.id, nome: p.nome })));
@@ -130,7 +123,12 @@ function BlocoMissao({ loja, dados: tudo, recarregar }: { loja: string; dados: D
           </div>
         );
       })}
-      {!dados.missoes.length && !ed && <div className="card mudo">Nenhuma missão ainda{loja ? ` na ${loja}` : ""}.</div>}
+      {!daSemana && !ed && (
+        <div className="card">
+          <p className="mudo" style={{ marginTop: 0 }}>Ainda não tem missão nesta semana{loja ? ` na ${loja}` : ""}.</p>
+          <button type="button" className="btn p" onClick={() => setEd({ foco: "", criterio: "", mensagem: "", meta: 20, obs: "", produto: "" })}>Montar a missão desta semana</button>
+        </div>
+      )}
     </>
   );
 }

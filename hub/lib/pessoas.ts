@@ -12,7 +12,7 @@ export type Falta = "Saber" | "Poder" | "Querer";
 export type Pessoa = {
   id: string; portal_id: string; nome: string; funcao: string | null; entrada: string | null; ativo: boolean;
   respostas: Letra[] | { mais: Letra[]; menos: Letra[] } | null; perfil: Record<Letra, number> | null; respondido_por: "pessoa" | "gestor" | null;
-  perfil_em: string | null; motor: Motor | null;
+  perfil_em: string | null; motor: Motor | null; loja?: string | null;
 };
 export type Retorno = { id: string; pessoa_id: string; tipo: string; situacao: string; roteiro: string; feito: boolean; created_at: string };
 export type Ficha = {

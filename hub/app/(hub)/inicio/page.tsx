@@ -205,6 +205,8 @@ export default function Inicio() {
         <p className="ajuda"><Link className="link-loja" href="/comece">▶ Rever o vídeo de boas-vindas e o passo a passo</Link></p>
       )}
 
+      {/* No onboarding, o Início fica só com a boas-vindas e o passo a passo de envio. */}
+      {!onboarding && <>
       <div className="grade g3 mt">
         {consultoria ? (
           <>
@@ -264,6 +266,7 @@ export default function Inicio() {
           <SetePassos passos={passos} atual={portal.passo_atual} />
         </>
       )}
+      </>}
     </>
   );
 }

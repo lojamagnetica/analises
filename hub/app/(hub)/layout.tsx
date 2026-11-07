@@ -7,7 +7,7 @@ import { Bloqueado } from "@/components/Bloqueado";
 import { Menu, grupoDaPagina, grupos } from "@/components/Menu";
 import { Ferramentas } from "@/components/Ferramentas";
 import { NovaVersao } from "@/components/NovaVersao";
-import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
+import { Carregando, HubProvider, desvio, emDemonstracao, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { emOnboarding, podeAbrir, requisito } from "@/lib/entrada";
 import { buscarCursoAberto } from "@/lib/curso";
@@ -26,7 +26,10 @@ function Casca({ children }: { children: React.ReactNode }) {
   const equipe = hub.equipe && (!hub.comoLoja || areaEquipe);
   const destino = desvio(caminho, { ...hub, equipe });
   // A loja (ou a equipe vendo como a loja) passa pela entrada; a equipe vê tudo.
-  const ent = !equipe && hub.portal && !hub.soCaixa ? hub.entrada : null;
+  const entReal = !equipe && hub.portal && !hub.soCaixa ? hub.entrada : null;
+  // Demonstração do onboarding: o vídeo de boas-vindas não trava as telas (a Claudia mostra cada etapa).
+  const demo = emDemonstracao();
+  const ent = entReal && demo ? { ...entReal, video: true } : entReal;
   // Fora do onboarding a página fechada mostra o caminho até o Diagnóstico.
   const req = requisito(caminho) ?? (ent && !podeAbrir(caminho, ent) ? "diagnostico" : null);
   const semVideo = !!ent && !ent.video && !ent.livre && !ANTES_DO_VIDEO.some((b) => caminho.startsWith(b));
@@ -83,7 +86,7 @@ function Casca({ children }: { children: React.ReactNode }) {
       <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
-        {hub.apresentacao ? (
+        {demo ? null : hub.apresentacao ? (
           <button type="button" className="sair-apresentacao" onClick={() => hub.modoApresentacao(false)} title="Sair do modo apresentação (Esc)">✕</button>
         ) : hub.comoLoja && hub.portal ? (
           <div className="faixa equipe">

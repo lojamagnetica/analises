@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Copiar } from "@/components/Copiar";
 import { CampoEtapa } from "@/components/CampoEtapa";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
-import { dataCurta, dataHora, hoje, isoParaLocal, localParaIso } from "@/lib/formato";
+import { dataCurta, hoje } from "@/lib/formato";
 import { gerarLink } from "@/lib/acoes";
 import { ETAPAS } from "@/lib/conteudo";
 import { ARQUIVOS_ETAPA, RELATORIOS } from "@/lib/relatorios";
@@ -19,6 +18,8 @@ import { buscarJornada, diasUteisDepois, marcarCheck, type ClienteJornada } from
 
 const PLANOS: Record<string, string> = { start: "Start", gold: "Gold", premium: "Premium", consultoria: "Consultoria" };
 const primeiro = (n: string | null | undefined) => (n ?? "").trim().split(" ")[0] || "";
+/** O nome da loja (o que o Comercial anotou como loja mentorada); o cadastro do portal às vezes tem o nome da pessoa. */
+const nomeDaLoja = (c: ClienteJornada) => c.passagem?.lojas_mentoradas?.trim() || c.loja;
 
 type Tela = { titulo: string; roteiro: string; corpo: React.ReactNode };
 
@@ -62,48 +63,33 @@ function Acesso({ c }: { c: ClienteJornada }) {
   );
 }
 
-function Agendar({ c, nome, aoMudar }: { c: ClienteJornada; nome: string; aoMudar: () => void }) {
-  const marcado = c.checks.get("diag_marcado");
-  const [quando, setQuando] = useState(marcado?.marcado_para ? isoParaLocal(marcado.marcado_para) : "");
+/** Fechamento: combina o prazo de envio. A reunião com a Camilla só é marcada depois que tudo chega sem pendência. */
+function Fechar({ c, nome, aoMudar }: { c: ClienteJornada; nome: string; aoMudar: () => void }) {
+  const salvo = c.checks.get("onboarding");
+  const [prazo, setPrazo] = useState(salvo?.marcado_para?.slice(0, 10) ?? diasUteisDepois(hoje(), 5));
   const [msg, setMsg] = useState("");
-  const prazo = diasUteisDepois(hoje(), 5);
-  const site = typeof window !== "undefined" ? `${location.origin}${BASE}` : "";
-  const resumo = `${primeiro(c.responsavel) || "Oi"}, que bom ter você com a gente! Resumo do nosso onboarding:
-
-1. Entre no Hub (${site}/) e assista ao vídeo de boas-vindas em Comece aqui.
-2. Preencha os Dados da loja, etapa por etapa. Não tem algum arquivo ou número? Escreva o que souber ou marque "Ainda não tenho".
-3. Combinado: tudo enviado até ${dataCurta(prazo)}.${quando ? `\n4. Reunião de Diagnóstico com a Camilla: ${dataHora(localParaIso(quando))}.` : "\n4. Com tudo enviado, o Diagnóstico fica pronto em até 5 dias úteis e marcamos a reunião com a Camilla."}
-
-Qualquer dúvida, é só chamar no Fale com a Camilla.`;
   return (
     <>
       <Passos itens={[
         ["Você envia tudo", `Combinado: as 8 etapas até ${dataCurta(prazo)}.`],
-        ["A equipe monta", "O seu Diagnóstico fica pronto em até 5 dias úteis depois que você envia tudo."],
-        ["Reunião com a Camilla", "1h30 para ver o Diagnóstico juntas e sair com o seu Plano de Ação."],
+        ["A equipe confere e monta", "Com tudo recebido e sem pendências, o seu Diagnóstico fica pronto em até 5 dias úteis."],
+        ["Reunião com a Camilla", "Marcamos com você assim que o Diagnóstico estiver pronto: 1h30 para ver tudo juntas e sair com o seu Plano de Ação."],
       ]} />
       <div className="card mt">
-        <label className="rotulo" style={{ marginTop: 0 }}>Data da reunião de Diagnóstico com a Camilla</label>
+        <label className="rotulo" style={{ marginTop: 0 }}>Até quando você envia tudo</label>
         <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
-          <input type="datetime-local" value={quando} onChange={(e) => setQuando(e.target.value)} style={{ maxWidth: 240 }} />
-          <button type="button" className="btn p peq" disabled={!quando} onClick={async () => {
+          <input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} style={{ maxWidth: 200 }} />
+          <button type="button" className="btn p peq" disabled={!prazo} onClick={async () => {
             setMsg("");
             try {
-              await marcarCheck(c.id, "diag_marcado", { feito: true, marcado_para: localParaIso(quando) }, nome);
-              await marcarCheck(c.id, "onboarding", { feito: true }, nome);
-              setMsg("Marcado ✓ O onboarding e a data do Diagnóstico já estão no checklist da Central.");
+              await marcarCheck(c.id, "onboarding", { feito: true, marcado_para: `${prazo}T12:00:00-03:00`, obs: `Prazo de envio combinado: ${dataCurta(prazo)}` }, nome);
+              setMsg("Combinado ✓");
               aoMudar();
             } catch (e) { setMsg((e as Error).message); }
-          }}>Marcar o Diagnóstico</button>
+          }}>Combinar este prazo</button>
         </div>
-        <p className="ajuda">Confira a agenda da Camilla antes de fechar a data. Ainda sem data? Feche o onboarding sem ela e marque quando os dados chegarem.</p>
-        {!quando && <button type="button" className="link-loja" onClick={async () => { try { await marcarCheck(c.id, "onboarding", { feito: true }, nome); setMsg("Onboarding marcado como feito ✓"); aoMudar(); } catch (e) { setMsg((e as Error).message); } }}>Fechar o onboarding sem data</button>}
+        <p className="ajuda">A reunião com a Camilla é marcada assim que tudo chegar completo, sem pendências.</p>
         {msg && <div className="aviso ok mt">{msg}</div>}
-      </div>
-      <div className="card mt">
-        <b>Resumo para mandar no grupo dela</b>
-        <p style={{ whiteSpace: "pre-wrap", background: "var(--soft)", borderRadius: 10, padding: 10, fontSize: 14 }}>{resumo}</p>
-        <Copiar texto={resumo} rotulo="Copiar o resumo" />
       </div>
     </>
   );
@@ -151,6 +137,34 @@ function EspelhoEtapa({ etapa, posicao }: { etapa: (typeof ETAPAS)[number]; posi
   );
 }
 
+/** Visão geral do que a loja ganha depois do Diagnóstico, por área, e de que dado cada parte depende. */
+const AREAS: { area: string; vem: string; itens: string[] }[] = [
+  { area: "Diagnóstico", vem: "Todos os Dados da loja e os relatórios", itens: ["Diagnóstico da loja: os números, os alertas e o foco", "Diagnóstico de estoque: o que gira e o que está parado", "Análise do Instagram"] },
+  { area: "Minha mentoria", vem: "O Diagnóstico e os seus objetivos", itens: ["Plano de Ação 90 dias, mês a mês", "Os 7 passos da mentoria", "Reuniões, gravações e notas"] },
+  { area: "Gestão estratégica", vem: "Faturamento, estoque e crediário", itens: ["Fechamento de caixa do dia", "Resultado do mês", "Metas e calculadora"] },
+  { area: "Gestão de pessoas", vem: "O time e o teste de perfil", itens: ["Minha equipe e o perfil de cada pessoa", "Reuniões prontas (semanal e do mês) e Dar retorno", "Desenvolvimento, gincanas, contratação e organograma"] },
+  { area: "Vendas", vem: "Mix, preços e o que mais vende", itens: ["Ações do Mês", "Scripts de venda", "Planeje aqui: o planejamento do mês"] },
+  { area: "De cliente a fã", vem: "O cadastro de clientes", itens: ["Minhas clientes, com a carteira de cada vendedora", "Missão da semana e resgate de clientes", "Campanhas e experiência da cliente"] },
+  { area: "Conteúdo", vem: "Instagram, cliente ideal e inspirações", itens: ["Programação da semana e pautas quentes", "Criar roteiro e Link da Bio", "Resultados do Instagram"] },
+  { area: "E mais", vem: "Tudo o que você contar", itens: ["Bússola do gestor", "Curso", "Mural e Nossa história da loja"] },
+];
+function Ferramentas() {
+  return (
+    <>
+      <p style={{ fontSize: 17, marginTop: 0 }}>Cada resposta que você dá vira uma ferramenta pronta para a sua loja. Elas abrem quando o seu Diagnóstico ficar pronto.</p>
+      <div className="grade g4" style={{ gap: 10 }}>
+        {AREAS.map((a) => (
+          <div key={a.area} className="card card-borda" style={{ ["--c" as string]: "var(--red)", margin: 0, padding: 14 }}>
+            <b>{a.area}</b>
+            <ul style={{ margin: "6px 0", paddingLeft: 16, fontSize: 13.5, lineHeight: 1.5 }}>{a.itens.map((i) => <li key={i}>{i}</li>)}</ul>
+            <small className="mudo">Vem de: {a.vem}</small>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 /** O portal da cliente ao vivo, dentro de um celular na própria tela: a Claudia navega sem sair da apresentação. */
 function PortalAoVivo({ portalId }: { portalId: string }) {
   const [aberto, setAberto] = useState(false);
@@ -190,12 +204,12 @@ function Apresentacao() {
 
   const telas: Tela[] = !c ? [] : [
     {
-      titulo: `Boas-vindas, ${primeiro(c.responsavel) || c.loja}!`,
+      titulo: `Boas-vindas, ${primeiro(c.responsavel) || nomeDaLoja(c)}!`,
       roteiro: "Apresente-se, conte que você é quem acompanha o dia a dia dela na mentoria e que hoje vocês vão deixar tudo pronto para o Diagnóstico com a Camilla.",
       corpo: (
         <div style={{ textAlign: "center", padding: "30px 0" }}>
           <div style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase" }} className="mudo">Mentoria Loja Magnética{c.plano ? ` · Plano ${PLANOS[c.plano] ?? c.plano}` : ""}</div>
-          <h1 style={{ fontSize: 44, margin: "14px 0" }}>{c.loja}</h1>
+          <h1 style={{ fontSize: 44, margin: "14px 0" }}>{nomeDaLoja(c)}</h1>
           <p style={{ fontSize: 20 }}>Hoje a gente deixa o seu Hub pronto e combina os próximos passos até a reunião de Diagnóstico com a Camilla.</p>
           <p className="mudo" style={{ fontSize: 16, marginTop: 24 }}>ATRAIR. VENDER. MULTIPLICAR.</p>
         </div>
@@ -256,6 +270,22 @@ function Apresentacao() {
         </>
       ),
     },
+    {
+      titulo: "Como usar o Hub no dia a dia",
+      roteiro: "Mostre no celular ao vivo (tela anterior) onde fica cada coisa: o menu, o Início e o Fale com a Camilla.",
+      corpo: (
+        <div className="grade g3" style={{ gap: 12 }}>
+          {[
+            ["☰ Menu", "No celular, o menu abre no botão do canto de cima. Cada área tem as suas ferramentas dentro."],
+            ["🏠 Início", "Sempre mostra o seu próximo passo, o que falta e o seu próximo encontro."],
+            ["🔍 Busca", "Digite o nome do que procura (ex.: metas, clientes) e vá direto."],
+            ["💬 Fale com a Camilla", "Dúvidas e pedidos para a equipe. A resposta chega no próprio Hub."],
+            ["🟠 Ponto laranja", "Mostra onde ainda falta algo seu. Some quando você completa."],
+            ["❓ Como usar o Hub", "Um guia rápido, no fim do menu, sempre que precisar."],
+          ].map(([t, d]) => <div key={t} className="card" style={{ margin: 0 }}><b>{t}</b><p className="mudo" style={{ margin: "4px 0 0" }}>{d}</p></div>)}
+        </div>
+      ),
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,
@@ -268,6 +298,11 @@ function Apresentacao() {
       };
     }),
     {
+      titulo: "O que abre com os seus dados bem preenchidos",
+      roteiro: "Passe rápido, sem aprofundar: o objetivo é ela ver que cada resposta vira uma ferramenta. Quanto mais completo, mais certeiro fica tudo.",
+      corpo: <Ferramentas />,
+    },
+    {
       titulo: "A cada etapa, a equipe acompanha",
       roteiro: "Conte que a equipe recebe um aviso a cada etapa enviada e que, se faltar algo, ela recebe uma mensagem só com o que falta.",
       corpo: <Passos itens={[
@@ -276,7 +311,7 @@ function Apresentacao() {
         ["Faltou algo?", "Você recebe uma mensagem só com o que falta. Nunca perguntamos de novo o que você já contou."],
       ]} />,
     },
-    { titulo: "Próximo passo: o seu Diagnóstico", roteiro: "Combine a data de envio, marque a reunião com a Camilla e mande o resumo no grupo dela.", corpo: <Agendar c={c} nome={nome} aoMudar={recarregar} /> },
+    { titulo: "Próximo passo: enviar tudo", roteiro: "Combine com ela o prazo para enviar tudo e clique em Combinar este prazo (isso conclui o onboarding no checklist). Depois da call, copie o resumo na Central do Cliente e mande no grupo dela. A reunião com a Camilla é marcada só quando tudo chegar sem pendência.", corpo: <Fechar c={c} nome={nome} aoMudar={recarregar} /> },
   ];
 
   const total = telas.length;

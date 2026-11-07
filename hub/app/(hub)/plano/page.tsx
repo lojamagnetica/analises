@@ -5,7 +5,8 @@ import { Carregando, useDados, useHub, usePortal } from "@/lib/hub";
 import { planoApagar } from "@/lib/acoes";
 import { NovaTarefaPlano } from "@/components/NovaTarefaPlano";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { MESES_PLANO } from "@/lib/conteudo";
+import { tituloMes } from "@/lib/conteudo";
+import { TituloMesPlano } from "@/components/TituloMesPlano";
 import { periodoDoMes } from "@/lib/periodo-plano";
 import { Checklist } from "./Checklist";
 
@@ -27,7 +28,7 @@ export default function Plano() {
           <button className="btn s peq" type="button" aria-label="Excluir tarefa" onClick={async () => { if (!confirm("Excluir esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
         </div>
       ))}
-      <NovaTarefaPlano portalId={portal.id} mes={m} rotuloMes={MESES_PLANO[m]} aoIncluir={recarregar} />
+      <NovaTarefaPlano portalId={portal.id} mes={m} rotuloMes={tituloMes(m, portal.plano_titulos)} aoIncluir={recarregar} />
     </div>
   );
   const feitos = itens.filter((i) => i.feito).length;
@@ -47,7 +48,7 @@ export default function Plano() {
           <div className="grade g3">
             {[1, 2, 3].map((m) => (
               <div key={m} className="card card-borda" style={{ ["--c" as string]: ["", "var(--red)", "var(--purple)", "var(--green)"][m] }}>
-                <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+                <TituloMesPlano portalId={portal.id} mes={m} titulos={portal.plano_titulos} editar={equipe} aoSalvar={hub.recarregar} />
                 {periodoDoMes(m, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, portal.plano_inicio, portal.inicio)}</div>}
                 <Checklist itens={itens.filter((i) => i.mes === m)} aoMudar={recarregar} />
                 {editar(m)}
@@ -56,7 +57,7 @@ export default function Plano() {
           </div>
           {(itens.some((i) => i.mes === 4) || equipe) && (
             <div className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
-              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[4]}</h3>
+              <TituloMesPlano portalId={portal.id} mes={4} titulos={portal.plano_titulos} editar={equipe} aoSalvar={hub.recarregar} />
               {periodoDoMes(4, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(4, portal.plano_inicio, portal.inicio)}</div>}
               <Checklist itens={itens.filter((i) => i.mes === 4)} aoMudar={recarregar} />
               {editar(4)}

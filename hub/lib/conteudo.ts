@@ -18,7 +18,12 @@ export const BLOCOS_PLANEJE = [
 
 export const COLUNAS_KANBAN = ["Ideias", "Roteiro", "Gravar", "Editar", "Publicado"];
 
-export const MESES_PLANO = ["", "Mês 1 · Arrumar a casa", "Mês 2 · Vender mais para quem já compra", "Mês 3 · Escalar e medir", "Bônus · Revisão de 90 dias"];
+export const MESES_PLANO = ["", "Mês 1", "Mês 2", "Mês 3", "Mês 4"];
+/** O título do mês no Plano de Ação: o número do mês e o tema que a Camilla escreveu para esta loja (se escreveu). */
+export const tituloMes = (m: number, titulos?: Record<string, string> | null) => {
+  const t = titulos?.[String(m)]?.trim();
+  return t ? `Mês ${m} · ${t}` : `Mês ${m}`;
+};
 
 export type Campo = {
   id: string;

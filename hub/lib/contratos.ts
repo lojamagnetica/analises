@@ -123,21 +123,50 @@ export function preencher(texto: string, campos: Record<string, string>, blocos:
   return t.replace(/\{\{([A-Z_]+)\}\}/g, (_, k: string) => campos[k] || `[PREENCHER: ${k}]`);
 }
 
-/** Arquivo .doc (Word abre direto; dá para subir no Autentique). */
-export function baixarDoc(titulo: string, texto: string) {
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const corpo = texto.split(/\n{2,}/).map((p) => {
-    const l = p.trim();
-    if (/^(CL[ÁA]USULA|QUALIFICA|CONTRATO DE)/.test(l)) return `<p style="font-weight:bold;margin-top:14pt">${esc(l).replace(/\n/g, "<br>")}</p>`;
-    return `<p style="text-align:justify">${esc(l).replace(/\n/g, "<br>")}</p>`;
-  }).join("");
-  const html = `<html><head><meta charset="utf-8"><title>${esc(titulo)}</title></head><body style="font-family:Arial;font-size:11pt;line-height:1.4">${corpo}</body></html>`;
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_")}.doc`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+/** Arquivo .pdf do contrato (A4, texto justificado, títulos das cláusulas em negrito, página X de Y). */
+export async function baixarPdf(titulo: string, texto: string) {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const M = 22, L = 210 - 2 * M, ALTURA = 297, LH = 5.4;
+  let y = M;
+  const quebra = (h: number) => { if (y + h > ALTURA - M) { pdf.addPage(); y = M; } };
+  pdf.setProperties({ title: titulo, creator: "magnética.hub" });
+  const ehTitulo = (l: string) => /^(CL[ÁA]USULA|QUALIFICA|CONTRATO DE)/.test(l);
+  for (const bloco of texto.split(/\n{2,}/)) {
+    const partes = bloco.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!partes.length) continue;
+    for (const parte of partes) {
+      const t = ehTitulo(parte);
+      pdf.setFont("helvetica", t ? "bold" : "normal");
+      pdf.setFontSize(t ? 11 : 10.5);
+      if (t) { y += 2; quebra(LH * 3); }
+      const linhas: string[] = pdf.splitTextToSize(parte, L - 1);
+      linhas.forEach((l, i) => {
+        quebra(LH);
+        // Justificado, menos a última linha do parágrafo e os títulos.
+        if (t || i === linhas.length - 1) pdf.text(l, M, y);
+        else {
+          const palavras = l.split(" ").filter(Boolean);
+          const livre = L - palavras.reduce((t, w) => t + pdf.getTextWidth(w), 0);
+          // Nunca menos que um espaço normal, para as palavras não colarem.
+          const espaco = Math.max(livre / Math.max(palavras.length - 1, 1), pdf.getTextWidth(" "));
+          let x = M;
+          for (const w of palavras) { pdf.text(w, x, y); x += pdf.getTextWidth(w) + espaco; }
+        }
+        y += LH;
+      });
+    }
+    y += 2.6;
+  }
+  const total = pdf.getNumberOfPages();
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(120);
+  for (let i = 1; i <= total; i++) {
+    pdf.setPage(i);
+    pdf.text(`Página ${i} de ${total}`, 210 - M, ALTURA - 10, { align: "right" });
+  }
+  pdf.save(`${titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_")}.pdf`);
 }
 
 export async function registrarContrato(portalId: string, planoId: string | null, texto: string, porNome: string) {

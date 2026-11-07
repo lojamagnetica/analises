@@ -8,7 +8,7 @@ import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { buscarJornada, marcarCheck } from "@/lib/jornada";
-import { baixarDoc, buscarModelos, camposDoContrato, preencher, registrarContrato } from "@/lib/contratos";
+import { baixarPdf, buscarModelos, camposDoContrato, preencher, registrarContrato } from "@/lib/contratos";
 
 // Gera o contrato da cliente a partir do modelo do plano e dos dados da passagem do Comercial.
 function GerarContrato() {
@@ -34,6 +34,15 @@ function GerarContrato() {
   if (!c.passagem) return (<><Titulo voltar={voltar} titulo="Gerar contrato" /><div className="card">Esta cliente não tem a passagem do Comercial no Hub. O contrato sai dos dados da venda. <Link className="btn p peq" href={`/equipe/comercial/venda?portal=${c.id}`}>Registrar a passagem</Link></div></>);
   if (!modelo || !plano) return (<><Titulo voltar={voltar} titulo="Gerar contrato" /><div className="card">Não há modelo de contrato para este plano. Cadastre em <Link href="/empresa/contratos">Empresa › Modelos de contrato</Link>.</div></>);
   const titulo = `Contrato ${plano.nome} · ${c.loja}`;
+  // Baixa o PDF e registra o contrato gerado no checklist da cliente.
+  const baixar = async (arquivo: () => Promise<void>) => {
+    try {
+      await arquivo();
+      await registrarContrato(c.id, c.plano, texto, nome);
+      await marcarCheck(c.id, "contrato", { feito: true }, nome);
+      setMsg("Contrato baixado e marcado como gerado no checklist. Agora é só subir no Autentique e mandar para a assinatura.");
+    } catch (e) { alert(`Não deu para baixar: ${(e as Error).message}`); }
+  };
 
   return (
     <>
@@ -46,13 +55,8 @@ function GerarContrato() {
       <div className="card mb">
         <textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={28} style={{ fontFamily: "inherit", fontSize: 14, lineHeight: 1.5 }} />
       </div>
-      <div className="linha" style={{ gap: 8 }}>
-        <button type="button" className="btn p" onClick={async () => {
-          baixarDoc(titulo, texto);
-          await registrarContrato(c.id, c.plano, texto, nome);
-          await marcarCheck(c.id, "contrato", { feito: true }, nome);
-          setMsg("Contrato baixado e marcado como gerado no checklist. Agora é só subir no Autentique e mandar para a assinatura.");
-        }}>Baixar em Word e marcar como gerado</button>
+      <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+        <button type="button" className="btn p" onClick={() => baixar(() => baixarPdf(titulo, texto))}>Baixar em PDF e marcar como gerado</button>
         <Copiar texto={texto} rotulo="Copiar o texto" />
       </div>
       {/[\[]PREENCHER/.test(texto) && <p className="ajuda mt">Ainda há campos [PREENCHER] no texto.</p>}

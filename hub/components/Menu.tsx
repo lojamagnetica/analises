@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { DE_TIME } from "@/lib/hub";
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };
 export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
@@ -249,7 +250,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -257,6 +258,10 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
     .filter((g) => !props.ocultos?.includes(g.id))
     // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
     .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }))
+    // Loja sem equipe: sai o que é de time; o Conteúdo mostra quem ajuda.
+    .filter((g) => !props.semEquipe || g.id !== "pessoas")
+    .map((g) => (props.semEquipe ? { ...g, itens: g.itens.filter((i) => !DE_TIME.test(i.href)) } : g))
+    .map((g) => (g.id === "conteudo" && props.apoioConteudo ? { ...g, rotulo: `Conteúdo · ${props.apoioConteudo}` } : g))
     // Onboarding: só as áreas onde a loja manda os arquivos e as informações.
     .filter((g) => !props.soEnvio || g.id === "loja")
     .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao")) } : g));

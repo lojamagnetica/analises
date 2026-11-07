@@ -166,6 +166,27 @@ function EditarPortal() {
       })()}
 
       <div className="card mb">
+        <h2 style={{ marginTop: 0 }}>Loja sem equipe</h2>
+        <label className="marcar">
+          <input type="checkbox" checked={!!p.sem_equipe} onChange={async (e) => {
+            const { error } = await supabaseBrowser().from("portais").update({ sem_equipe: e.target.checked }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: e.target.checked ? "Pronto: as áreas de time saíram do portal da loja." : "As áreas de time voltaram para o portal da loja." });
+            recarregar();
+          }} />
+          <span>A dona vende sozinha (sem Gestão de pessoas, mural e missão do time; o passo &quot;cadastrar a equipe&quot; não trava)</span>
+        </label>
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Quem ajuda no conteúdo</b> (aparece no menu Conteúdo)
+          <input key={p.apoio_conteudo ?? ""} defaultValue={p.apoio_conteudo ?? ""} placeholder="Ex.: as filhas, uma social media" style={{ display: "block", marginTop: 4, maxWidth: 360 }} onBlur={async (e) => {
+            const v = e.target.value.trim() || null;
+            if (v === (p.apoio_conteudo ?? null)) return;
+            const { error } = await supabaseBrowser().from("portais").update({ apoio_conteudo: v }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: "Apoio de conteúdo salvo." });
+            recarregar();
+          }} />
+        </label>
+      </div>
+
+      <div className="card mb">
         <h2 style={{ marginTop: 0 }}>Áreas que esta loja vê</h2>
         <p className="ajuda" style={{ marginTop: -4 }}>Para personalizar consultorias: desmarque o que não faz sentido para esta loja. Some do menu e dos atalhos dela (você continua vendo tudo).</p>
         <div className="chips">

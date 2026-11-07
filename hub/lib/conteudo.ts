@@ -138,6 +138,7 @@ export const ETAPAS: Etapa[] = [
       { id: "fornecedores", rotulo: "Principais fornecedores (até 5) e quanto cada um representa", tipo: "textarea", dado: true },
       { id: "compra_mes", rotulo: "Quanto você compra por mês, em média (R$)?", tipo: "numero", dado: true },
       { id: "parado", rotulo: "Que parte do estoque está parada há mais de 3 meses?", tipo: "opcao", dado: true, opcoes: ["Quase nada (até 10%)", "Um pouco (10% a 30%)", "Bastante (30% a 50%)", "Mais da metade"] },
+      { id: "receber_manual", rotulo: "Sem o relatório de contas a receber? Escreva quanto você tem a receber no crediário e quanto está atrasado.", tipo: "textarea", dado: true, novo: true, ajuda: "Ex.: R$ 180 mil a receber, R$ 25 mil atrasado há mais de 30 dias. Se não vende fiado, marque \"Ainda não tenho\"." },
       { id: "crediario_pct", rotulo: "Quanto do faturamento é vendido no crediário ou fiado (boleto, nota, carnê)? (%)", tipo: "numero", dado: true, novo: true, ajuda: "Se não vende fiado, coloque 0." },
       { id: "crediario_como", rotulo: "Como funciona o crediário: em quantas vezes, quem libera e como vocês cobram?", tipo: "textarea", novo: true },
     ],
@@ -159,6 +160,8 @@ export const ETAPAS: Etapa[] = [
       { id: "inspiracoes", rotulo: "Quais perfis te inspiram? Coloque o @ de cada um.", tipo: "textarea", novo: true },
       { id: "concorrentes", rotulo: "Quais são os @ dos seus principais concorrentes?", tipo: "textarea", novo: true },
       { id: "trafego", rotulo: "Vocês investem em anúncio pago (tráfego)? Quanto por mês e como sabem se deu resultado?", tipo: "textarea", novo: true },
+      { id: "insta_numeros", rotulo: "Sem os prints do Instagram? Escreva os números do Painel Profissional dos últimos 30 dias.", tipo: "textarea", dado: true, novo: true, ajuda: "Contas alcançadas, interações, seguidores e, mais ou menos, quantas pessoas veem cada Story." },
+      { id: "loja_descricao", rotulo: "Sem vídeo ou fotos da loja? Descreva como ela é.", tipo: "textarea", dado: true, novo: true, ajuda: "Rua e entorno, tamanho, quantas araras, vitrine, provador e onde fica o estoque." },
     ],
   },
 ];

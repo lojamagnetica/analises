@@ -211,7 +211,7 @@ function Etapa() {
       <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} sub={etapa.descricao} />
       {feita && <div className="aviso ok mb" style={{ maxWidth: 720 }}>Etapa {feita} enviada ✓ Agora a etapa {posicao} de {ETAPAS.length}.</div>}
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
-      {etapa.numero === 5 && <div style={demo ? { pointerEvents: "none" } : undefined}><EquipeDaEtapa portalId={portal.id} /></div>}
+      {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} demo={demo} />}
       <ArquivosDaEtapa portalId={portal.id} etapa={etapa.numero} />
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
       <form

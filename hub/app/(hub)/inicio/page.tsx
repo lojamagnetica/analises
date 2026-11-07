@@ -10,7 +10,7 @@ import { buscarPlanos, mesDoPlano, mesesDoInicio, semanaDoDia } from "@/lib/plan
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
-import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/entrada";
+import { dadosCompletos, liberado, prazoDiagnostico, requisito, emOnboarding } from "@/lib/entrada";
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
@@ -89,6 +89,8 @@ export default function Inicio() {
   const ent = equipe ? null : entrada;
   const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
   const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
+  // Onboarding: o Início mostra só a boas-vindas e o passo a passo de envio.
+  const onboarding = emOnboarding(ent);
   // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
   const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;
   // Diagnóstico liberado nos últimos 15 dias: avisa no Início.
@@ -129,8 +131,7 @@ export default function Inicio() {
       </div>
 
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
-      <LeituraDaSemana />
-      <CaixaDaSemana />
+      {!onboarding && <><LeituraDaSemana /><CaixaDaSemana /></>}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
@@ -154,8 +155,7 @@ export default function Inicio() {
             Seu Diagnóstico fica pronto em até 5 dias úteis{ent.dadosEm ? <>, até <b>{dataCurta(prazoDiagnostico(ent.dadosEm))}</b></> : ""}.
             Assim que ele sair, o Plano de Ação e as outras áreas abrem para você.
           </p>
-          <p style={{ margin: "10px 0 0" }}><b>Enquanto isso, comece pelo Curso:</b> o módulo Carteira Ativa já te ajuda a vender mais para quem já é sua cliente.</p>
-          <Link className="btn p peq mt" href="/cursos">Começar pelo Curso · Carteira Ativa →</Link>
+          <p style={{ margin: "10px 0 0" }}>Lembrou de algo ou tem mais algum arquivo? Mande em <Link className="link-loja" href="/personalizacao/etapa?n=8">Estoque e relatórios</Link> ou no Fale com a Camilla.</p>
         </div>
       )}
 
@@ -190,6 +190,7 @@ export default function Inicio() {
 
       {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
 
+      {!onboarding && <>
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
         {atalhos.map((a) => (
@@ -199,6 +200,7 @@ export default function Inicio() {
           </Link>
         ))}
       </div>
+      </>}
       {ent && (ent.livre || (ent.video && ent.loja && ent.equipe)) && (
         <p className="ajuda"><Link className="link-loja" href="/comece">▶ Rever o vídeo de boas-vindas e o passo a passo</Link></p>
       )}

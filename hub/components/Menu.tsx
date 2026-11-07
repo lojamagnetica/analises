@@ -249,14 +249,17 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova, props.monta)
     .filter((g) => !props.ocultos?.includes(g.id))
     // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
-    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }));
+    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }))
+    // Onboarding: só as áreas onde a loja manda os arquivos e as informações.
+    .filter((g) => !props.soEnvio || g.id === "loja")
+    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao")) } : g));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
@@ -325,7 +328,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {props.temPortal && !props.soCurso && (
+          {props.temPortal && !props.soCurso && !props.soEnvio && (
             <div className="nav-linha">
               <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
                 <Icone nome="compass" /> BÚSSOLA DO GESTOR{props.trava?.("/bussola") ? " 🔒" : ""}
@@ -375,7 +378,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           ))}
 
-          {(props.temPortal || props.equipe) && (
+          {(props.temPortal || props.equipe) && !props.soEnvio && (
             <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
               <Icone nome="play" /> CURSO{props.cursoFechado ? " 🔒" : ""}
             </Link>
@@ -387,7 +390,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </Link>
           )}
 
-          {props.temPortal && !props.soCurso && (
+          {props.temPortal && !props.soCurso && !props.soEnvio && (
             <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
               <Icone nome="gift" /> Indique uma loja 🎁
               {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}

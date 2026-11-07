@@ -9,7 +9,7 @@ import { Ferramentas } from "@/components/Ferramentas";
 import { NovaVersao } from "@/components/NovaVersao";
 import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
-import { liberado, requisito } from "@/lib/entrada";
+import { emOnboarding, podeAbrir, requisito } from "@/lib/entrada";
 import { buscarCursoAberto } from "@/lib/curso";
 import { areaFechada } from "@/lib/bussola";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -27,9 +27,11 @@ function Casca({ children }: { children: React.ReactNode }) {
   const destino = desvio(caminho, { ...hub, equipe });
   // A loja (ou a equipe vendo como a loja) passa pela entrada; a equipe vê tudo.
   const ent = !equipe && hub.portal && !hub.soCaixa ? hub.entrada : null;
-  const req = requisito(caminho);
+  // Fora do onboarding a página fechada mostra o caminho até o Diagnóstico.
+  const req = requisito(caminho) ?? (ent && !podeAbrir(caminho, ent) ? "diagnostico" : null);
   const semVideo = !!ent && !ent.video && !ent.livre && !ANTES_DO_VIDEO.some((b) => caminho.startsWith(b));
-  const travado = !!ent && !!req && !liberado(req, ent);
+  const travado = !!ent && !podeAbrir(caminho, ent);
+  const onboarding = emOnboarding(ent);
   const completa = !ent || ent.livre || (ent.video && ent.loja && ent.equipe);
 
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
@@ -60,8 +62,7 @@ function Casca({ children }: { children: React.ReactNode }) {
   const trava = (href: string) => {
     if (!equipe && hub.portal && areaFechada(href)) return true;
     if (!ent) return false;
-    const r = requisito(href.split("?")[0]);
-    return !!r && !liberado(r, ent);
+    return !podeAbrir(href.split("?")[0], ent);
   };
 
   // Acesso só do caixa: sem menu, só o Fechamento de caixa da loja.
@@ -79,7 +80,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent}
+      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (

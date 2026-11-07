@@ -6,11 +6,14 @@ import { useSearchParams } from "next/navigation";
 import { Icone } from "@/components/Icone";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, usePortal } from "@/lib/hub";
+import { emOnboarding } from "@/lib/entrada";
 import { ETAPAS, chaveSituacao } from "@/lib/conteudo";
 
 function Personalizacao() {
   const salvo = useSearchParams().get("salvo");
-  const { pers } = usePortal();
+  const { pers, equipe, entrada } = usePortal();
+  // Trilha guiada no onboarding: só a próxima etapa abre; as seguintes esperam a anterior.
+  const naTrilha = !equipe && emOnboarding(entrada);
   const feitas = ETAPAS.filter((e) => pers.get(e.numero)?.concluida).length;
   const proxima = ETAPAS.find((e) => !pers.get(e.numero)?.concluida);
 
@@ -34,16 +37,19 @@ function Personalizacao() {
           const vazio = (v: unknown) => v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length);
           const faltam = e.campos.filter((c) => vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho").length;
           const comeco = !feita && faltam < e.campos.length;
-          const cor = feita ? "var(--green)" : comeco ? "var(--amber, #d98a00)" : "var(--red)";
+          const fechada = naTrilha && !feita && !!proxima && proxima.numero !== e.numero;
+          const cor = feita ? "var(--green)" : fechada ? "var(--line)" : comeco ? "var(--amber, #d98a00)" : "var(--red)";
           return (
             <div key={e.numero} className="card card-borda etapa" style={{ ["--c" as string]: cor }}>
-              <span className={`selo ${feita ? "feito" : comeco ? "espera" : "andamento"}`}>{feita ? "feito" : comeco ? (faltam ? `falta${faltam > 1 ? "m" : ""} ${faltam}` : "conferir e concluir") : "pendente"}</span>
+              <span className={`selo ${feita ? "feito" : comeco ? "espera" : "andamento"}`}>{feita ? "feito" : fechada ? "a seguir" : comeco ? (faltam ? `falta${faltam > 1 ? "m" : ""} ${faltam}` : "conferir e concluir") : "pendente"}</span>
               <span className="quadrado" style={{ ["--c" as string]: cor }}>
                 {feita ? <Icone nome="check" /> : <b style={{ fontSize: 18 }}>{i + 1}</b>}
               </span>
               <h3>{e.titulo}</h3>
               <p>{e.descricao}</p>
-              <Link className="btn-contorno" href={`/personalizacao/etapa?n=${e.numero}`}>{feita ? "Ver minhas respostas" : comeco ? "Conferir e completar" : "Responder"}</Link>
+              {fechada
+                ? <span className="ajuda">🔒 Abre quando você concluir a etapa anterior</span>
+                : <Link className="btn-contorno" href={`/personalizacao/etapa?n=${e.numero}`}>{feita ? "Ver minhas respostas" : comeco ? "Conferir e completar" : "Responder"}</Link>}
             </div>
           );
         })}

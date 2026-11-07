@@ -239,12 +239,12 @@ export default function Inicio() {
           </>
         ) : (
           <>
-            <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+            {!escondido("/jornada") && <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
               <h3>Sua jornada</h3>
               <p className="mudo">Passo {portal.passo_atual} de 7 · {passo?.titulo}</p>
               <div className="barra"><i style={{ width: `${(portal.passo_atual / 7) * 100}%` }} /></div>
               <Link className="btn s peq mt" href="/jornada">Ver os 7 passos</Link>
-            </div>
+            </div>}
             <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
               <h3>Plano de Ação 90 dias{trancado("/plano") ? " 🔒" : ""}</h3>
               {trancado("/plano") ? (
@@ -271,7 +271,7 @@ export default function Inicio() {
       {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
         <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} /></div>
-      ) : !consultoria && passos.length > 0 && (
+      ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>
           <SetePassos passos={passos} atual={portal.passo_atual} />

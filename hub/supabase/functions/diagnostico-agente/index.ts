@@ -38,6 +38,10 @@ const obj = (props: Record<string, unknown>) => ({ type: "object", additionalPro
 const PILARES = ["Gestão Analítica", "Gestão Pessoas", "Processos Comerciais", "MKT Conteúdo"];
 const NIVEL = { type: "string", enum: ["ok", "atencao", "critico"] };
 
+// Os campos de Dados da loja (cópia de hub/lib/conteudo.ts, ETAPAS; atualizar junto quando mudar).
+const CAMPOS_TEXTO = "1 A loja hoje: tempo_loja (Há quanto tempo a loja existe?); segmento (Segmento; uma de: Multimarca feminina | Multimarca masculina | Moda praia | Infantil | Plus size | Marca própria | Outro); faturamento_medio (Faturamento médio mensal (R$); número); maior_desafio (Hoje, qual é o maior desafio da loja?); o_que_funciona (O que já funciona bem?); onde_quer_chegar (Onde você quer que a loja esteja daqui a 12 meses?); o_que_movimenta (O que hoje você acredita que mais movimenta a loja?)\n9 Gestão da loja: freq_reuniao (Com que frequência você faz reunião com o time?; uma de: Toda semana | A cada 15 dias | Uma vez por mês | Só quando precisa | Não faço reunião); reconhece (Quando você faz as reuniões, costuma mostrar o resultado de todos e reconhecer publicamente?); rotina_dona (Me descreva a sua rotina hoje na loja); ultimo_treinamento (Qual foi a última vez que foi feito um treinamento com o seu time? Conte um pouco sobre o resultado.)\n10 Ações e resultados: acao_sucesso (Qual a ação de maior sucesso da loja até hoje? Me descreva como foi feita e qual resultado teve.); acao_sem_retorno (Em qual ação você fez um grande investimento de energia ou dinheiro e não teve o retorno esperado? Descreva com detalhes.)\n5 Time de vendas: tamanho_time (Quantas pessoas atendem?; número); comissao (Como funciona a comissão?)\n3 Cliente ideal: idade (Faixa de idade); perfil (Como ela é? (profissão, rotina, estilo)); valoriza (O que ela mais valoriza na sua loja?); objecoes (Objeções que mais aparecem)\n4 Mix de produtos e preços: marcas (Principais marcas); categorias (Categorias que mais vendem); faixa_preco (Faixa de preço (da peça mais barata à mais cara)); markup (Markup médio; número); estoque (Como está o estoque hoje?; uma de: Equilibrado | Muita peça parada | Falta peça boa | Não sei)\n8 Estoque e relatórios: valor_estoque (Quanto você tem em estoque, a preço de venda (R$)?; número); pecas_estoque (Quantas peças tem em estoque?; número); pm_estoque (Preço médio das peças do estoque (R$); número); linhas (Principais linhas e quanto cada uma representa); fornecedores (Principais fornecedores (até 5) e quanto cada um representa); compra_mes (Quanto você compra por mês, em média (R$)?; número); parado (Que parte do estoque está parada há mais de 3 meses?; uma de: Quase nada (até 10%) | Um pouco (10% a 30%) | Bastante (30% a 50%) | Mais da metade)\n7 Canais e conteúdo: canais (Onde você vende hoje?; várias de: Loja física | WhatsApp | Instagram (Direct) | Site / e-commerce | Malinha / condicional); principal (Qual canal traz mais faturamento?); base_clientes (Quantas clientes tem na base (com WhatsApp)?; número); freq_posts (Com que frequência você posta os conteúdos da loja hoje?; uma de: Todo dia | 3 a 5 vezes por semana | 1 a 2 vezes por semana | Menos de 1 vez por semana | Quase nunca); como_pensa (Como você pensa nos conteúdos hoje?); dificuldade_conteudo (O que você acha mais difícil na hora de produzir os conteúdos da loja?); resultado_conteudo (O quanto você acha que postar conteúdo hoje traz resultado para a loja?; uma de: Traz muito resultado | Traz algum resultado | Traz pouco resultado | Não traz resultado | Não sei dizer)";
+const CAMPOS: Record<number, Record<string, string>> = {"1":{"tempo_loja":"texto","segmento":"opcao","faturamento_medio":"numero","maior_desafio":"textarea","o_que_funciona":"textarea","onde_quer_chegar":"textarea","o_que_movimenta":"textarea"},"3":{"idade":"texto","perfil":"textarea","valoriza":"textarea","objecoes":"textarea"},"4":{"marcas":"textarea","categorias":"textarea","faixa_preco":"texto","markup":"numero","estoque":"opcao"},"5":{"tamanho_time":"numero","comissao":"textarea"},"7":{"canais":"multi","principal":"texto","base_clientes":"numero","freq_posts":"opcao","como_pensa":"textarea","dificuldade_conteudo":"textarea","resultado_conteudo":"opcao"},"8":{"valor_estoque":"numero","pecas_estoque":"numero","pm_estoque":"numero","linhas":"textarea","fornecedores":"textarea","compra_mes":"numero","parado":"opcao"},"9":{"freq_reuniao":"opcao","reconhece":"textarea","rotina_dona":"textarea","ultimo_treinamento":"textarea"},"10":{"acao_sucesso":"textarea","acao_sem_retorno":"textarea"}};
+
 // A pesquisa de mercado responde em texto (com as fontes da busca), sem esquema.
 const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
   raiox: obj({
@@ -48,6 +52,10 @@ const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
     gargalo: obj({ pilar: { type: "string", enum: PILARES }, tema: t, porque: t, alternativa: t }),
     alavanca: obj({ tipo: { type: "string", enum: ["Base de clientes", "Instagram"] }, porque: t }),
     faltando: lista(obj({ item: t, para_que: t })),
+    // O que já foi informado vai direto para as áreas do portal (só nos campos vazios).
+    dados_da_loja: lista(obj({ etapa: n, campo: t, valor: t, situacao: { type: "string", enum: ["tenho", "estimado", "nao_tenho"] }, fonte: t })),
+    equipe: lista(obj({ nome: t, funcao: t })),
+    contato: obj({ whatsapp: t, cidade: t, instagram: t, email: t }),
   }),
   perguntas: obj({ perguntas: lista(t) }),
   solucao: obj({
@@ -76,7 +84,13 @@ const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
 };
 
 const TAREFA: Record<Parada, string> = {
-  raiox: "Faça a PARADA 1 (Raio-X e proposta de gargalo e alavanca). Em \"faltando\", liste o que falta e para que serve.",
+  raiox: [
+    "Faça a PARADA 1 (Raio-X e proposta de gargalo e alavanca). Em \"faltando\", liste o que falta e para que serve.",
+    "SEJA EXTREMAMENTE MINUCIOSO: leia todo o material (formulário, planilhas de respostas, contrato, pedidos de fornecedor, relatórios, transcrições, anotações, Análise do Instagram) antes de dizer que algo falta. Nunca liste em \"faltando\" o que já está no material, nem em parte: diga o que já tem e peça só o resto.",
+    "Em \"dados_da_loja\", preencha TODOS os campos dos Dados da loja que estão vazios no Hub (veja dados_da_loja em \"Dados que estão no Hub\") e cuja resposta está no material, um item por campo, com a etapa e o id do campo exatamente como na lista abaixo, o valor em linguagem simples (número sem R$ nem pontos nos campos de número; nas opções, exatamente uma das opções; em \"várias de\", as opções separadas por \" | \") e a fonte. situacao: \"tenho\" quando o dado está escrito no material; \"estimado\" quando você calculou ou montou (ex.: a cliente ideal pela Análise do Instagram, pelas marcas, pelo ticket e pela forma de pagamento; o tempo de loja pela data do CNPJ); \"nao_tenho\" quando o material mostra que a loja não tem esse dado (ex.: não controla a base de clientes) e não vale pedir de novo. Não repita campo já preenchido no Hub.",
+    "Em \"equipe\", cada pessoa que trabalha na loja (nome e função), se o material trouxer. Em \"contato\", o WhatsApp da dona, a cidade (cidade-UF), o @ e o e-mail que aparecem no material (contrato, pedidos, formulário); vazio quando não tiver.",
+    `Campos dos Dados da loja (etapa título: id (pergunta; tipo)):\n${CAMPOS_TEXTO}`,
+  ].join("\n"),
   mercado: [
     "Faça a PESQUISA DE CONCORRENTES E MERCADO desta loja, pesquisando na internet. É material para a Camilla revisar; depois pode ir para a loja ler. Escreva para a dona ler: linguagem simples, do dia a dia.",
     "ORDEM OBRIGATÓRIA:",
@@ -533,6 +547,53 @@ function lerMercado(m: Anthropic.Message) {
   return { resumo: parte("=== RESUMO ===", "=== PESQUISA ==="), texto: pesquisa || texto.trim(), fontes: fontes.trim(), em: new Date().toISOString() };
 }
 
+/** Leva para o portal o que o Raio-X achou no material: só campos vazios dos Dados da loja (nunca troca resposta da loja),
+ *  conclui a etapa que ficou completa, cadastra a equipe se ainda não tem ninguém e completa o contato da loja. */
+async function preencher(admin: SupabaseClient, portalId: string, saida: Record<string, unknown>) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const vazio = (v: unknown) => v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length);
+  const itens = (saida.dados_da_loja ?? []) as { etapa: number; campo: string; valor: string; situacao: string; fonte: string }[];
+  const { data: pers } = await admin.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", portalId);
+  const porEtapa = new Map((pers ?? []).map((p) => [p.etapa as number, { respostas: (p.respostas ?? {}) as Record<string, unknown>, concluida: !!p.concluida, mudou: false, fontes: new Set<string>() }]));
+  for (const i of itens) {
+    const tipo = CAMPOS[i.etapa]?.[i.campo];
+    if (!tipo) continue;
+    const e = porEtapa.get(i.etapa) ?? { respostas: {}, concluida: false, mudou: false, fontes: new Set<string>() };
+    porEtapa.set(i.etapa, e);
+    const r = e.respostas;
+    if (!vazio(r[i.campo]) || r[`${i.campo}__st`] === "nao_tenho") continue;
+    if (i.situacao === "nao_tenho") { r[`${i.campo}__st`] = "nao_tenho"; if (i.valor) r[`${i.campo}_obs`] = i.valor; }
+    else {
+      const v = String(i.valor ?? "").trim();
+      if (!v) continue;
+      r[i.campo] = tipo === "multi" ? v.split("|").map((x) => x.trim()).filter(Boolean) : tipo === "numero" ? v.replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "") : v;
+      if (vazio(r[i.campo])) continue;
+      r[`${i.campo}__st`] = i.situacao === "estimado" ? "estimado" : "tenho";
+    }
+    e.mudou = true;
+    if (i.fonte) e.fontes.add(i.fonte);
+  }
+  for (const [etapa, e] of porEtapa) {
+    if (!e.mudou) continue;
+    const r = e.respostas;
+    r._origem = [r._origem, `Preenchido pelo agente do Diagnóstico em ${hoje}: ${[...e.fontes].join("; ")}`].filter(Boolean).join(" · ");
+    const completa = Object.keys(CAMPOS[etapa] ?? {}).every((c) => !vazio(r[c]) || r[`${c}__st`] === "nao_tenho");
+    await admin.from("personalizacao").upsert({ portal_id: portalId, etapa, respostas: r, concluida: e.concluida || completa, updated_at: new Date().toISOString() }, { onConflict: "portal_id,etapa" });
+  }
+  const equipe = ((saida.equipe ?? []) as { nome: string; funcao: string }[]).filter((p) => p.nome?.trim());
+  if (equipe.length) {
+    const { count } = await admin.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId);
+    if (!count) await admin.from("loja_equipe").insert(equipe.map((p) => ({ portal_id: portalId, nome: p.nome.trim(), funcao: p.funcao?.trim() || null, ativo: true })));
+  }
+  const c = (saida.contato ?? {}) as { whatsapp?: string; instagram?: string; email?: string };
+  const { data: portal } = await admin.from("portais").select("whatsapp, email").eq("id", portalId).single();
+  const novo: Record<string, string> = {};
+  if (!portal?.whatsapp && c.whatsapp?.trim()) novo.whatsapp = c.whatsapp.trim();
+  if (!portal?.email && c.email?.trim()) novo.email = c.email.trim();
+  if (Object.keys(novo).length) await admin.from("portais").update(novo).eq("id", portalId);
+  if (c.instagram?.trim()) await admin.from("fichas").update({ instagram: c.instagram.trim() }).eq("portal_id", portalId).is("instagram", null);
+}
+
 /** Confere o lote da parada; quando terminou, guarda a resposta. Devolve o estado do agente. */
 async function conferir(admin: SupabaseClient, portalId: string, ag: Record<string, unknown>) {
   const parada = ag.parada as Parada;
@@ -571,6 +632,7 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
       const bloco = msg.content.find((b) => b.type === "text");
       if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
       const saida = lerJson(bloco.text);
+      if (parada === "raiox") await preencher(admin, portalId, saida).catch(() => {});
       campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : { hub: saida };
     }
     await admin.from("diagnostico_preparo").update({ ...campo, agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);

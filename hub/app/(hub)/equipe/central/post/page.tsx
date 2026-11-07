@@ -7,6 +7,7 @@ import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { buscarJornada, marcarCheck } from "@/lib/jornada";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 // Post de entrada: o crachá de boas-vindas do plano com o nome, a turma e a foto da cliente.
 // Tudo é montado no navegador; a foto não fica guardada no Hub.
@@ -39,10 +40,16 @@ function linhasDoNome(ctx: CanvasRenderingContext2D, nome: string, largura: numb
   return { tam: 40, linhas: [nome] };
 }
 
-async function desenhar(canvas: HTMLCanvasElement, plano: string, nome: string, turma: string, foto: HTMLImageElement | null) {
+/** "@loja" a partir do que estiver na ficha: link do Instagram, @loja ou loja. Mais de uma loja: separadas por espaço ou vírgula. */
+function arrobas(texto: string) {
+  return texto.split(/[\s,;]+/).map((x) => x.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/[/?#].*$/, "").replace(/^@/, "").trim())
+    .filter(Boolean).map((x) => `@${x}`).join("  ·  ");
+}
+
+async function desenhar(canvas: HTMLCanvasElement, plano: string, nome: string, turma: string, foto: HTMLImageElement | null, arroba = "") {
   const ctx = canvas.getContext("2d")!;
   const base = await carregarImagem(`${BASE}/marca/cracha-${plano}.png`);
-  await Promise.all([document.fonts.load("800 64px Archivo"), document.fonts.load("400 28px Archivo")]).catch(() => undefined);
+  await Promise.all([document.fonts.load("800 64px Archivo"), document.fonts.load("400 28px Archivo"), document.fonts.load("600 28px Archivo")]).catch(() => undefined);
   canvas.width = base.width; canvas.height = base.height;
   ctx.drawImage(base, 0, 0);
 
@@ -69,10 +76,20 @@ async function desenhar(canvas: HTMLCanvasElement, plano: string, nome: string, 
   ctx.fillRect(-14, 132, 360, 42);
   ctx.fillStyle = texto;
   ctx.textBaseline = "alphabetic";
-  const { tam, linhas } = linhasDoNome(ctx, nome.trim() || "Nome da Mentorada", 470);
+  const { tam: t0, linhas } = linhasDoNome(ctx, nome.trim() || "Nome da Mentorada", 470);
+  // Com o @ da loja embaixo do nome, o nome fica um pouco menor e sobe para caber tudo antes de "Método Loja Magnética".
+  const tam = arroba ? Math.min(t0, 56) : t0;
   ctx.font = `800 ${tam}px Archivo, sans-serif`;
   const passo = tam * 0.96;
-  linhas.forEach((l, i) => ctx.fillText(l, 0, (linhas.length === 1 ? passo / 2 : 0) + i * passo));
+  const topo = arroba ? (linhas.length === 1 ? 22 : -12) : linhas.length === 1 ? passo / 2 : 0;
+  linhas.forEach((l, i) => ctx.fillText(l, 0, topo + i * passo));
+  if (arroba) {
+    let tamA = 28;
+    do { ctx.font = `600 ${tamA}px Archivo, sans-serif`; } while (ctx.measureText(arroba).width > 470 && --tamA > 18);
+    ctx.globalAlpha = 0.92;
+    ctx.fillText(arroba, 0, topo + (linhas.length - 1) * passo + 40);
+    ctx.globalAlpha = 1;
+  }
   ctx.globalAlpha = 0.85;
   ctx.font = "400 28px Archivo, sans-serif";
   ctx.fillText(turma, 0, 162);
@@ -82,10 +99,14 @@ async function desenhar(canvas: HTMLCanvasElement, plano: string, nome: string, 
 function Post() {
   const id = useSearchParams().get("id") ?? "";
   const { nome: quem } = useEquipe();
-  const { dados } = useDados(async () => (await buscarJornada(id))[0] ?? null, [id]);
+  const { dados } = useDados(async () => {
+    const [j, { data: f }] = await Promise.all([buscarJornada(id), supabaseBrowser().from("fichas").select("instagram").eq("portal_id", id).maybeSingle()]);
+    return j[0] ? { ...j[0], instagram: (f?.instagram as string | null) ?? "" } : null;
+  }, [id]);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [nome, setNome] = useState<string | null>(null);
   const [turma, setTurma] = useState<string | null>(null);
+  const [insta, setInsta] = useState<string | null>(null);
   const [foto, setFoto] = useState<HTMLImageElement | null>(null);
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
@@ -96,11 +117,12 @@ function Post() {
   const turmaPadrao = `Turma ${MESES[Number(base.slice(5, 7)) - 1]} · ${base.slice(0, 4)}`;
   const nomeFinal = nome ?? c?.responsavel ?? "";
   const turmaFinal = turma ?? turmaPadrao;
+  const instaFinal = insta ?? arrobas(c?.instagram ?? "");
 
   useEffect(() => {
     if (!c || !canvas.current) return;
-    desenhar(canvas.current, plano, nomeFinal, turmaFinal, foto).catch((e) => setErro((e as Error).message));
-  }, [c, plano, nomeFinal, turmaFinal, foto]);
+    desenhar(canvas.current, plano, nomeFinal, turmaFinal, foto, arrobas(instaFinal)).catch((e) => setErro((e as Error).message));
+  }, [c, plano, nomeFinal, turmaFinal, foto, instaFinal]);
 
   if (!dados) return <Carregando />;
   if (!c) return <div className="card">Cliente não encontrada.</div>;
@@ -126,6 +148,8 @@ function Post() {
         <div className="card">
           <label className="rotulo">Nome no crachá</label>
           <input value={nomeFinal} onChange={(e) => setNome(e.target.value)} placeholder="Nome da cliente" />
+          <label className="rotulo">@ da loja no Instagram (mais de uma loja: separe por espaço)</label>
+          <input value={instaFinal} onChange={(e) => setInsta(e.target.value)} placeholder="@loja" />
           <label className="rotulo">Turma</label>
           <input value={turmaFinal} onChange={(e) => setTurma(e.target.value)} />
           <label className="rotulo">Foto da cliente (rosto, de preferência quadrada)</label>

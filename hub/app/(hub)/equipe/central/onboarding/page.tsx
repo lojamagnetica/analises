@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CampoEtapa } from "@/components/CampoEtapa";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, hoje } from "@/lib/formato";
 import { gerarLink } from "@/lib/acoes";
 import { ETAPAS } from "@/lib/conteudo";
-import { ARQUIVOS_ETAPA, RELATORIOS } from "@/lib/relatorios";
 import { buscarJornada, diasUteisDepois, marcarCheck, type ClienteJornada } from "@/lib/jornada";
 
 // Apresentação do onboarding: a Claudia conduz a call com a cliente, tela a tela. Cria o acesso, manda o link,
@@ -95,48 +93,6 @@ function Fechar({ c, nome, aoMudar }: { c: ClienteJornada; nome: string; aoMudar
   );
 }
 
-/** A etapa exatamente como ela aparece no portal (mesmas perguntas, botões e quadros de arquivo), para a cliente
- *  já conhecer a tela. Dá para digitar e clicar para mostrar: nada é salvo. */
-function EspelhoEtapa({ etapa, posicao }: { etapa: (typeof ETAPAS)[number]; posicao: number }) {
-  const lugares = [
-    ...ARQUIVOS_ETAPA.filter((a) => a.etapa === etapa.numero).map((a) => ({ titulo: a.titulo, oque: a.oque, video: !!a.video })),
-    ...(etapa.numero === 8 ? RELATORIOS.map((r) => ({ titulo: r.titulo, oque: r.oque, video: false })) : []),
-  ];
-  return (
-    <div style={{ maxWidth: 760, margin: "0 auto", border: "1px dashed var(--line)", borderRadius: 18, padding: "16px 18px", background: "var(--bg)" }}>
-      <small className="mudo">Assim fica no seu Hub · Dados da loja</small>
-      <h2 style={{ margin: "4px 0 2px" }}>{posicao}. {etapa.titulo}</h2>
-      <p className="mudo" style={{ marginTop: 0 }}>{etapa.descricao}</p>
-      {etapa.numero === 5 && (
-        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)" }}>
-          <b>Sua equipe</b>
-          <p className="ajuda" style={{ margin: "4px 0 8px" }}>Cadastre cada pessoa (nome e função) e mande para cada uma o link do teste de perfil. Ela responde no celular dela e o resultado aparece aqui.</p>
-          <span className="btn s peq" style={{ pointerEvents: "none" }}>+ Cadastrar pessoa</span>
-        </div>
-      )}
-      {lugares.length > 0 && (
-        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)" }}>
-          <h3 style={{ marginTop: 0 }}>{etapa.numero === 8 ? "Os relatórios do seu sistema" : "Arquivos desta etapa"}</h3>
-          {lugares.map((l) => (
-            <div key={l.titulo} style={{ padding: "10px 0", borderTop: "1px solid var(--line)" }}>
-              <span className="selo espera" style={{ float: "right" }}>falta</span>
-              <b>{l.titulo}</b>
-              <div className="ajuda" style={{ margin: "2px 0 8px" }}>{l.oque}</div>
-              <span className="btn s peq" style={{ pointerEvents: "none" }}>📎 {l.video ? "Subir o vídeo" : "Subir arquivo"}</span>
-            </div>
-          ))}
-          <p className="ajuda" style={{ marginBottom: 0 }}>Não tem algum desses arquivos? Sem problema: escreva no formulário abaixo o que souber ou marque &quot;Ainda não tenho&quot;.</p>
-        </div>
-      )}
-      <div className="card" style={{ margin: 0 }}>
-        {etapa.campos.some((c) => c.dado) && <p className="ajuda" style={{ marginTop: 0 }}>Nos números, marque se é um dado que você tem, uma estimativa ou se ainda não tem. Nada trava: o que faltar vira tarefa no seu Plano.</p>}
-        {etapa.campos.map((c) => <CampoEtapa key={c.id} c={c} r={{}} padrao="" />)}
-        <div className="linha mt"><span className="btn p" style={{ pointerEvents: "none", opacity: 0.85 }}>Salvar etapa</span></div>
-      </div>
-    </div>
-  );
-}
-
 /** Visão geral do que a loja ganha depois do Diagnóstico, por área, e de que dado cada parte depende. */
 const AREAS: { area: string; vem: string; itens: string[] }[] = [
   { area: "Diagnóstico", vem: "Todos os Dados da loja e os relatórios", itens: ["Diagnóstico da loja: os números, os alertas e o foco", "Diagnóstico de estoque: o que gira e o que está parado", "Análise do Instagram"] },
@@ -162,6 +118,28 @@ function Ferramentas() {
         ))}
       </div>
     </>
+  );
+}
+
+/** A tela de verdade do portal da cliente (menu, topo e página), do tamanho de um computador, encaixada no slide.
+ *  Fica em modo demonstração: as etapas abrem todas e nada é salvo. */
+function TelaDoPortal({ portalId, caminho }: { portalId: string; caminho: string }) {
+  const caixa = useRef<HTMLDivElement>(null);
+  const [escala, setEscala] = useState(0.7);
+  const L = 1360, A = 860;
+  useEffect(() => {
+    const medir = () => { const w = caixa.current?.clientWidth ?? 0; if (w) setEscala(Math.min(1, w / L)); };
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (caixa.current) ro.observe(caixa.current);
+    return () => ro.disconnect();
+  }, []);
+  const sep = caminho.includes("?") ? "&" : "?";
+  const url = `${BASE}${caminho}${sep}verComoLoja=${portalId}&demo=1`;
+  return (
+    <div ref={caixa} style={{ width: "100%", height: A * escala, overflow: "hidden", borderRadius: 14, border: "1px solid var(--line)", boxShadow: "0 8px 24px rgba(0,0,0,.12)", background: "#fff" }}>
+      <iframe key={url} src={url} title="Tela do portal" style={{ width: L, height: A, border: 0, transform: `scale(${escala})`, transformOrigin: "0 0" }} />
+    </div>
   );
 }
 
@@ -253,19 +231,11 @@ function Apresentacao() {
     },
     {
       titulo: "O que você vê no Hub agora",
-      roteiro: "Abra o portal dela ao vivo no celular da tela e passe pelo menu junto com ela. Explique que o resto do Hub abre quando o Diagnóstico sai. Só navegue: o que for salvo ali fica na conta dela.",
+      roteiro: "Esta é a tela real do portal dela. Passe pelo menu e mostre o Início. Se quiser, abra também no celular (botão abaixo). O resto do Hub abre quando o Diagnóstico sai.",
       corpo: (
         <>
-          <div className="grade g3" style={{ gap: 12 }}>
-            {[
-              ["Comece aqui", "O vídeo de boas-vindas. Assista primeiro: ele abre os Dados da loja."],
-              ["Dados da loja", "As 8 etapas, em ordem. É por aqui que você conta tudo da loja."],
-              ["Estoque e relatórios", "Onde você sobe os relatórios do sistema."],
-              ["Fale com a Camilla", "Para qualquer dúvida no caminho."],
-              ["Início", "Mostra o seu próximo passo e quanto falta."],
-              ["O resto do Hub", "Abre quando o seu Diagnóstico ficar pronto."],
-            ].map(([t, d]) => <div key={t} className="card" style={{ margin: 0 }}><b>{t}</b><p className="mudo" style={{ margin: "4px 0 0" }}>{d}</p></div>)}
-          </div>
+          <TelaDoPortal portalId={c.id} caminho="/inicio/" />
+          <p className="mudo mt" style={{ marginBottom: 0 }}>Agora você vê o Início, o Comece aqui (com o vídeo de boas-vindas), o Fale com a Camilla e a sua loja: Dados da loja e Estoque e relatórios. O resto do Hub abre quando o seu Diagnóstico ficar pronto.</p>
           <PortalAoVivo portalId={c.id} />
         </>
       ),
@@ -289,12 +259,12 @@ function Apresentacao() {
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,
-        roteiro: k === 0
+        roteiro: (k === 0
           ? "Mostre como a etapa funciona: responde, salva e a próxima abre sozinha. Nos números, ela marca se tem o dado, se é estimativa ou se ainda não tem."
           : e.numero === 5 ? "Mostre o cadastro do time e o link do teste de perfil: cada pessoa responde no celular dela, e o resultado aparece no Hub."
           : e.numero === 8 ? "Se ela tem sistema, mostre a mensagem pronta para pedir os relatórios ao suporte. Se não tem, ela responde estimando."
-          : "Passe pelo que é perguntado e combine o que ela já tem em mãos.",
-        corpo: <EspelhoEtapa etapa={e} posicao={k + 1} />,
+          : "Passe pelo que é perguntado e combine o que ela já tem em mãos.") + " A tela é a do portal dela, em demonstração: dá para clicar e digitar, nada é salvo.",
+        corpo: <TelaDoPortal portalId={c.id} caminho={`/personalizacao/etapa/?n=${e.numero}`} />,
       };
     }),
     {

@@ -74,10 +74,16 @@ const Contexto = createContext<Hub | null>(null);
  *  sem mexer na escolha das outras abas. Fica no nome da janela, que é só dela e sobrevive à navegação. */
 function janelaDaLoja() {
   try {
-    const pedido = new URLSearchParams(window.location.search).get("verComoLoja");
-    if (pedido && /^[\w-]{3,64}$/.test(pedido)) window.name = `lm-loja:${pedido}`;
-    return window.name.startsWith("lm-loja:") ? window.name.slice(8) : null;
+    const q = new URLSearchParams(window.location.search);
+    const pedido = q.get("verComoLoja");
+    if (pedido && /^[\w-]{3,64}$/.test(pedido)) window.name = `lm-loja${q.get("demo") === "1" ? "-demo" : ""}:${pedido}`;
+    const m = window.name.match(/^lm-loja(?:-demo)?:(.+)$/);
+    return m ? m[1] : null;
   } catch { return null; }
+}
+/** Demonstração da apresentação do onboarding: o portal da loja de verdade, com as etapas abertas e sem salvar nada. */
+export function emDemonstracao() {
+  try { return janelaDaLoja() !== null && window.name.startsWith("lm-loja-demo:"); } catch { return false; }
 }
 function lerComoLoja() {
   if (janelaDaLoja()) return true;

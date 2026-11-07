@@ -6,7 +6,7 @@ import { Copiar } from "@/components/Copiar";
 import { CampoEtapa } from "@/components/CampoEtapa";
 import { EquipeDaEtapa } from "@/components/EquipeDaEtapa";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { Carregando, emDemonstracao, primeiroNome, useDados, usePortal } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { salvarEtapa } from "@/lib/acoes";
 import { dataCurta } from "@/lib/formato";
@@ -29,6 +29,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
   const [erro, setErro] = useState("");
   const msg = mensagemSuporte(nome, loja);
   const subir = async (tipo: TipoRelatorio, arquivos: FileList | null) => {
+    if (emDemonstracao()) { setErro("Aqui é só uma demonstração: no seu Hub, o arquivo sobe e a equipe recebe na hora."); return; }
     setErro(""); setEnviando(tipo);
     try {
       const lista = [...(arquivos ?? [])];
@@ -127,6 +128,7 @@ function ArquivosDaEtapa({ portalId, etapa }: { portalId: string; etapa: number 
   const [erro, setErro] = useState("");
   if (!lugares.length) return null;
   const subir = async (chave: string, titulo: string, arquivos: FileList | null) => {
+    if (emDemonstracao()) { setErro("Aqui é só uma demonstração: no seu Hub, o arquivo sobe e a equipe recebe na hora."); return; }
     setErro(""); setEnviando(chave);
     try {
       const lista = [...(arquivos ?? [])];
@@ -183,7 +185,8 @@ function Etapa() {
   if (!etapa) return <div className="card">Etapa não encontrada.</div>;
   // Trilha guiada no onboarding: uma etapa abre quando a anterior foi concluída.
   const pendente = ETAPAS.find((e) => !pers.get(e.numero)?.concluida);
-  const naTrilha = !equipe && emOnboarding(entrada);
+  const demo = emDemonstracao();
+  const naTrilha = !equipe && emOnboarding(entrada) && !demo;
   if (naTrilha && pendente && !pers.get(etapa.numero)?.concluida && pendente.numero !== etapa.numero) {
     const pos = ETAPAS.indexOf(pendente) + 1;
     return (
@@ -208,13 +211,14 @@ function Etapa() {
       <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} sub={etapa.descricao} />
       {feita && <div className="aviso ok mb" style={{ maxWidth: 720 }}>Etapa {feita} enviada ✓ Agora a etapa {posicao} de {ETAPAS.length}.</div>}
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
-      {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} />}
+      {etapa.numero === 5 && <div style={demo ? { pointerEvents: "none" } : undefined}><EquipeDaEtapa portalId={portal.id} /></div>}
       <ArquivosDaEtapa portalId={portal.id} etapa={etapa.numero} />
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
       <form
         className="card"
         style={{ maxWidth: 720 }}
         action={async (form) => {
+          if (demo) { setErro("Aqui é só uma demonstração: no seu Hub, este botão salva a etapa e abre a próxima."); return; }
           setErro(""); setSalvando(true);
           try {
             await salvarEtapa(portal.id, etapa.numero, form, { semRelatorio: arquivos === 0 });

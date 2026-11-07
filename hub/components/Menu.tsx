@@ -262,7 +262,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
     .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao")) } : g));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
+    Object.fromEntries(lista.map((g) => [g.id, !!props.soEnvio || g.itens.some((i) => ativo(i.href))])),
   );
 
   useEffect(() => {

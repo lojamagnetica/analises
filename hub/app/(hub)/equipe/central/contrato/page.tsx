@@ -31,7 +31,7 @@ function GerarContrato() {
   if (!dados) return <Carregando />;
   if (!c) return <div className="card">Cliente não encontrada.</div>;
   const voltar = { href: `/equipe/central/cliente?id=${c.id}`, rotulo: c.loja };
-  if (!c.passagem) return (<><Titulo voltar={voltar} titulo="Gerar contrato" /><div className="card">Esta cliente não tem a passagem do Comercial no Hub. O contrato sai dos dados da venda: registre em Comercial › Nova venda (clientes novas) ou gere fora do Hub.</div></>);
+  if (!c.passagem) return (<><Titulo voltar={voltar} titulo="Gerar contrato" /><div className="card">Esta cliente não tem a passagem do Comercial no Hub. O contrato sai dos dados da venda. <Link className="btn p peq" href={`/equipe/comercial/venda?portal=${c.id}`}>Registrar a passagem</Link></div></>);
   if (!modelo || !plano) return (<><Titulo voltar={voltar} titulo="Gerar contrato" /><div className="card">Não há modelo de contrato para este plano. Cadastre em <Link href="/empresa/contratos">Empresa › Modelos de contrato</Link>.</div></>);
   const titulo = `Contrato ${plano.nome} · ${c.loja}`;
 

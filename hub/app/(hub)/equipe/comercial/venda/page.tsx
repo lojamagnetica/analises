@@ -7,32 +7,48 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { buscarComercial, registrarVenda } from "@/lib/comercial";
 import { buscarLead, fecharLead } from "@/lib/leads";
+import { buscarJornada } from "@/lib/jornada";
 
 // Nova venda: o que o Comercial passa para a CS. Cria o portal (sem mandar o acesso) e a passagem de bastão.
 // Vindo de um lead fechado (?lead=…), já vem com o que o lead tinha e, ao registrar, o lead guarda o portal criado.
+// Com ?portal=…, a cliente já está no Hub (entrou antes da Central): o portal é aproveitado e só a passagem é criada.
 function NovaVenda() {
   const { nome } = useEquipe();
   const router = useRouter();
-  const leadId = useSearchParams().get("lead");
+  const busca = useSearchParams();
+  const leadId = busca.get("lead");
+  const portalId = busca.get("portal");
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
-  const { dados } = useDados(async () => ({ ...(await buscarComercial()), lead: leadId ? await buscarLead(leadId) : null }), [leadId]);
+  const { dados } = useDados(async () => ({
+    ...(await buscarComercial()),
+    lead: leadId ? await buscarLead(leadId) : null,
+    cliente: portalId ? (await buscarJornada(portalId))[0] ?? null : null,
+  }), [leadId, portalId]);
   if (!dados) return <Carregando />;
-  const planos = dados.planos.filter((p) => p.vendendo);
-  const lead = dados.lead;
+  const planos = dados.planos.filter((p) => p.vendendo || p.id === dados.cliente?.plano);
+  const cli = dados.cliente;
+  // O que já se sabe da cliente: do lead ou do portal que já existe.
+  const lead = dados.lead ?? (cli ? { loja: cli.loja, instagram: "", nome: cli.responsavel ?? "", whatsapp: cli.whatsapp ?? "", valor_estimado: null, responsavel: null, origem: "", obs: "" } : null);
 
   return (
     <>
-      <Titulo voltar={{ href: "/equipe/comercial", rotulo: "Comercial" }} titulo="Nova venda" sub="Pagamento confirmado? Preencha aqui. O Hub cria o portal da cliente e a Claudia recebe a passagem na Central do Cliente. O acesso da cliente só vai no onboarding." />
+      <Titulo
+        voltar={cli ? { href: `/equipe/central/cliente?id=${cli.id}`, rotulo: cli.loja } : { href: "/equipe/comercial", rotulo: "Comercial" }}
+        titulo={cli ? "Passagem da cliente" : "Nova venda"}
+        sub={cli
+          ? "Esta cliente já está no Hub. Preencha os dados da venda e do contrato: o portal dela continua como está e a Claudia recebe a passagem na Central do Cliente."
+          : "Pagamento confirmado? Preencha aqui. O Hub cria o portal da cliente e a Claudia recebe a passagem na Central do Cliente. O acesso da cliente só vai no onboarding."}
+      />
       <form
         className="card"
         style={{ maxWidth: 820 }}
         action={async (f) => {
           setSalvando(true); setErro("");
           try {
-            const id = await registrarVenda(f, nome);
-            if (lead) await fecharLead(lead.id, id);
-            router.push(`/equipe/comercial?nova=${id}`);
+            const id = await registrarVenda(f, nome, cli?.id);
+            if (dados.lead) await fecharLead(dados.lead.id, id);
+            router.push(cli ? `/equipe/central/cliente?id=${id}` : `/equipe/comercial?nova=${id}`);
           } catch (e) { setErro((e as Error).message); setSalvando(false); }
         }}
       >
@@ -43,7 +59,7 @@ function NovaVenda() {
           <div><label className="rotulo">Responsável (como chamamos)</label><input name="responsavel" defaultValue={lead?.nome ?? ""} /></div>
           <div><label className="rotulo">WhatsApp</label><input name="whatsapp" defaultValue={lead?.whatsapp ?? ""} /></div>
           <div><label className="rotulo">Aniversário da responsável</label><input type="date" name="aniversario" /></div>
-          <div><label className="rotulo">E-mail de acesso ao Hub</label><input name="email" type="email" /></div>
+          <div><label className="rotulo">E-mail de acesso ao Hub</label><input name="email" type="email" defaultValue={cli?.email ?? ""} /></div>
           <div><label className="rotulo">Lojas mentoradas (se for mais de uma)</label><input name="lojas_mentoradas" placeholder="Ex.: Loja Feminina e Loja Masculina" /></div>
         </div>
 
@@ -51,7 +67,7 @@ function NovaVenda() {
         <div className="grade g2" style={{ gap: 12 }}>
           <div>
             <label className="rotulo">Plano</label>
-            <select name="plano" required defaultValue="">
+            <select name="plano" required defaultValue={cli?.plano ?? ""}>
               <option value="" disabled>Escolha</option>
               {planos.map((p) => <option key={p.id} value={p.id}>{p.nome}{p.meses ? ` · ${p.meses} meses` : ""}</option>)}
             </select>
@@ -83,7 +99,7 @@ function NovaVenda() {
         </div>
 
         {erro && <div className="aviso mt">{erro}</div>}
-        <div className="linha mt"><button className="btn p" type="submit" disabled={salvando}>{salvando ? "Registrando…" : "Registrar venda e passar para a CS"}</button></div>
+        <div className="linha mt"><button className="btn p" type="submit" disabled={salvando}>{salvando ? "Registrando…" : cli ? "Registrar a passagem para a CS" : "Registrar venda e passar para a CS"}</button></div>
       </form>
     </>
   );

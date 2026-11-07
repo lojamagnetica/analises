@@ -10,7 +10,7 @@ import { ETAPAS, SITUACOES, chaveSituacao, type Campo, type Respostas, type Situ
 import { salvarEtapa } from "@/lib/acoes";
 import { dataCurta } from "@/lib/formato";
 import { relatoriosNoDrive } from "@/lib/gestao";
-import { RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
+import { ARQUIVOS_ETAPA, RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
 import { Excluir } from "@/components/Excluir";
 import Link from "next/link";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -121,7 +121,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
       })}
       <div style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
         <b>Outros relatórios (opcional)</b>
-        <div className="ajuda" style={{ margin: "2px 0 8px" }}>Compras por fornecedor, contas a receber, vendas por vendedora ou o que mais achar útil.</div>
+        <div className="ajuda" style={{ margin: "2px 0 8px" }}>Vendas por vendedora, ticket médio ou o que mais achar útil.</div>
         <Lista tipo="outros" />
         <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
           📎 Subir arquivo
@@ -156,6 +156,55 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
           <li>Não tem sistema ou ainda não conseguiu? Responda as perguntas abaixo estimando e siga a jornada.</li>
         </ul>
       </details>
+    </div>
+  );
+}
+
+/** Arquivos das outras etapas (faturamento, prints do Instagram, vídeo e fotos da loja), cada um no seu lugar. */
+function ArquivosDaEtapa({ portalId, etapa }: { portalId: string; etapa: number }) {
+  const lugares = ARQUIVOS_ETAPA.filter((a) => a.etapa === etapa);
+  const { dados, recarregar } = useDados(() => listarRelatorios(portalId), [portalId]);
+  const [enviando, setEnviando] = useState<string | null>(null);
+  const [erro, setErro] = useState("");
+  if (!lugares.length) return null;
+  const subir = async (chave: string, titulo: string, arquivos: FileList | null) => {
+    setErro(""); setEnviando(chave);
+    try {
+      const lista = [...(arquivos ?? [])];
+      for (const f of lista) await subirRelatorio(portalId, f, chave);
+      if (lista.length) await supabaseBrowser().rpc("avisar_envio", { p_qtd: lista.length, p_tipo: titulo });
+      recarregar();
+    } catch (x) { setErro((x as Error).message); }
+    setEnviando(null);
+  };
+  return (
+    <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 720 }}>
+      <h2 style={{ marginTop: 0 }}>Arquivos desta etapa</h2>
+      {lugares.map((l) => {
+        const meus = (dados ?? []).filter((a) => a.tipo === l.chave);
+        return (
+          <div key={l.chave} style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
+            <span className={`selo ${meus.length ? "feito" : "espera"}`} style={{ float: "right" }}>{meus.length ? "recebido" : "falta"}</span>
+            <b>{l.titulo}</b>
+            <div className="ajuda" style={{ margin: "2px 0 8px" }}>{l.oque}</div>
+            {meus.map((a) => (
+              <div key={a.caminho} className="linha entre" style={{ padding: "4px 0" }}>
+                <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📎 {a.nome} <small className="mudo">· {tamanhoLegivel(a.tamanho)} · {dataCurta(a.em)}</small></span>
+                <span className="linha" style={{ gap: 10 }}>
+                  <button type="button" className="link-loja" onClick={() => abrirRelatorio(a.caminho)}>Abrir</button>
+                  <Excluir pergunta={`Excluir o arquivo ${a.nome}?`} fazer={() => excluirRelatorio(a.caminho)} aoFim={recarregar} />
+                </span>
+              </div>
+            ))}
+            <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
+              📎 {meus.length ? "Subir outro arquivo" : l.video ? "Subir o vídeo" : "Subir arquivo"}
+              <input type="file" hidden accept={l.aceita} multiple={!l.video} disabled={!!enviando} onChange={(e) => { subir(l.chave, l.titulo, e.target.files); e.target.value = ""; }} />
+            </label>
+            {enviando === l.chave && <p className="ajuda">Enviando… {l.video ? "(vídeo pode levar alguns minutos, não feche a página)" : ""}</p>}
+          </div>
+        );
+      })}
+      {erro && <div className="aviso mt">{erro}</div>}
     </div>
   );
 }
@@ -200,6 +249,7 @@ function Etapa() {
       {feita && <div className="aviso ok mb" style={{ maxWidth: 720 }}>Etapa {feita} enviada ✓ Agora a etapa {posicao} de {ETAPAS.length}.</div>}
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
       {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} />}
+      <ArquivosDaEtapa portalId={portal.id} etapa={etapa.numero} />
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
       <form
         className="card"

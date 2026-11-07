@@ -169,6 +169,13 @@ export async function baixarPdf(titulo: string, texto: string) {
   pdf.save(`${titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_")}.pdf`);
 }
 
+/** Contratos já gerados desta cliente (o texto fica guardado; dá para baixar de novo em PDF). */
+export async function buscarGerados(portalId: string) {
+  const { data, error } = await sb().from("contratos_gerados").select("id, plano_id, texto, status, gerado_por, created_at").eq("portal_id", portalId).order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as { id: string; plano_id: string | null; texto: string; status: string | null; gerado_por: string | null; created_at: string }[];
+}
+
 export async function registrarContrato(portalId: string, planoId: string | null, texto: string, porNome: string) {
   const { error } = await sb().from("contratos_gerados").insert({ portal_id: portalId, plano_id: planoId, texto, gerado_por: porNome });
   if (error) throw new Error(error.message);

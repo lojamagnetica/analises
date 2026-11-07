@@ -79,11 +79,13 @@ export default function Inicio() {
   const abertas = consult ? consult.acoes.filter((a) => a.tipo === "Ação da loja" && a.status !== "Feito").length : 0;
   // Áreas que a equipe tirou do menu desta loja (consultorias personalizadas) somem também dos atalhos.
   const ocultos = portal.menu_oculto ?? [];
-  const escondido = (href: string) => (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
+  const escondido = (href: string) => ocultos.includes(href.split("?")[0]) || (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
   const mesProx = mesesDoInicio().proximo;
   const atalhos = (consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
     : ATALHOS)
+    // Loja na mão: o atalho do caixa vira Registrar venda.
+    .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
     .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
@@ -105,6 +107,14 @@ export default function Inicio() {
 
   return (
     <>
+      {portal.venda_diaria && (
+        <div className="linha mt" style={{ gap: 10, flexWrap: "wrap" }}>
+          <Link className="btn p" href="/gestao/vendas">+ Registrar venda</Link>
+          <Link className="btn s" href="/gestao/crediario">Crediário</Link>
+          <Link className="btn s" href="/gestao/minhas-compras">Compras</Link>
+          <Link className="btn s" href="/clientes">Minhas clientes</Link>
+        </div>
+      )}
       <div className="heroi mt">
         <div>
           <h1>Que bom ter você aqui, {quem}!</h1>
@@ -260,7 +270,7 @@ export default function Inicio() {
 
       {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} /></div>
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} /></div>
       ) : !consultoria && passos.length > 0 && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>

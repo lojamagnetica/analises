@@ -31,6 +31,8 @@ export type Portal = {
   plano_meses?: number | null;
   /** A dona vende sozinha: sem as áreas de time. */
   sem_equipe?: boolean;
+  /** Loja na mão: Vendas do dia, Crediário e Compras no menu. */
+  venda_diaria?: boolean;
   /** Quem ajuda no conteúdo (nomes, mostrados no menu Conteúdo). */
   apoio_conteudo?: string | null;
   /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */

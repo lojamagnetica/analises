@@ -20,7 +20,9 @@ export type Entrada = {
 export type VideoBoasVindas = { url: string; segundos: number };
 
 /** Páginas que nunca travam. */
-const SEMPRE = ["/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
+/** Loja na mão (Vendas do dia, Crediário, Compras): a loja registra desde o primeiro dia. */
+export const LOJA_NA_MAO = ["/gestao/vendas", "/gestao/crediario", "/gestao/minhas-compras"];
+const SEMPRE = [...LOJA_NA_MAO, "/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
 /** Só a página exata (as subpáginas seguem as regras). */
 const SEMPRE_EXATA = ["/conteudo"];
 /** Do mais específico para o mais geral: a primeira regra que casa decide. O que não está aqui espera o Diagnóstico. */
@@ -38,7 +40,7 @@ export function requisito(caminho: string): Requisito | null {
 }
 
 /** Onboarding: enquanto o Diagnóstico não sai, a loja vê só a boas-vindas e as áreas onde manda arquivos e informações. */
-const ABERTAS_NO_ONBOARDING = ["/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/assistente", "/duvidas", "/personalizacao", "/pessoas/teste"];
+const ABERTAS_NO_ONBOARDING = [...LOJA_NA_MAO, "/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/assistente", "/duvidas", "/personalizacao", "/pessoas/teste"];
 export const emOnboarding = (e: Entrada | null | undefined) => !!e && !e.livre && !e.diagnostico;
 export const abertaNoOnboarding = (caminho: string) => ABERTAS_NO_ONBOARDING.some((b) => casa(caminho, b));
 

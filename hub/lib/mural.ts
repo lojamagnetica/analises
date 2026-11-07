@@ -21,7 +21,10 @@ export type DadosMural = {
   /** Eventos por dia do mês (AAAA-MM-DD → lista de {t, c}); c é o índice da cor. */
   eventos: Record<string, { t: string; c: number }[]>;
   legenda: CorEvento[];
+  /** Dia do conhecimento, por mês (AAAA-MM): os temas que a gestão definiu e, por semana, o tema sorteado e quem apresenta. */
+  conhecimento: Record<string, Conhecimento>;
 };
+export type Conhecimento = { temas: string[]; semanas: Record<string, { tema: string; pessoa: string }> };
 
 export const CORES_EVENTO = ["#2E9D57", "#F2C230", "#D9332B", "#1F5FBF", "#8A3FA8"];
 export const LEGENDA_PADRAO: CorEvento[] = ["Ação da loja", "Data comercial", "Evento externo", "Reunião do time", "Outros"].map((nome, i) => ({ cor: CORES_EVENTO[i], nome }));
@@ -30,11 +33,11 @@ export const muralVazio = (): DadosMural => ({
   missao: "", visao: "", valores: [], versiculo: "", versiculo_ref: "",
   pa: 2.5, tkm: 800,
   cores: { f1: "#B9A592", f2: "#4F2110", f3: "#F5F0EA", texto: "#1B1B1B", destaque: "#7A5640", claro: "#F3ECE4", fundo: "#FBF7F2", suave: "#EBDCCB", tinta: "#3A2419" },
-  simbolo: "", simbolo2: "", cartaz: { titulo: "Nossos valores", rodape: "", simbolos: [], itens: [] }, eventos: {}, legenda: LEGENDA_PADRAO,
+  simbolo: "", simbolo2: "", cartaz: { titulo: "Nossos valores", rodape: "", simbolos: [], itens: [] }, eventos: {}, legenda: LEGENDA_PADRAO, conhecimento: {},
 });
 export const completarMural = (d?: Partial<DadosMural>): DadosMural => {
   const v = muralVazio();
-  return { ...v, ...d, cartaz: { ...v.cartaz, ...(d?.cartaz ?? {}) }, cores: { ...v.cores, ...(d?.cores ?? {}) }, legenda: d?.legenda?.length ? d.legenda : v.legenda, eventos: d?.eventos ?? {}, valores: d?.valores ?? [] };
+  return { ...v, ...d, cartaz: { ...v.cartaz, ...(d?.cartaz ?? {}) }, cores: { ...v.cores, ...(d?.cores ?? {}) }, legenda: d?.legenda?.length ? d.legenda : v.legenda, eventos: d?.eventos ?? {}, valores: d?.valores ?? [], conhecimento: d?.conhecimento ?? {} };
 };
 
 export async function buscarMural(portalId: string, loja: string) {
@@ -54,6 +57,16 @@ export function gradeDoMes(mes: string): (string | null)[][] {
   const celulas: (string | null)[] = [...Array(offset).fill(null), ...Array.from({ length: dias }, (_, i) => `${mes}-${String(i + 1).padStart(2, "0")}`)];
   while (celulas.length % 7) celulas.push(null);
   return Array.from({ length: celulas.length / 7 }, (_, i) => celulas.slice(i * 7, i * 7 + 7));
+}
+
+/** As semanas do Dia do conhecimento: as segundas-feiras do mês (a semana vai de segunda a domingo). */
+export const semanasDoMes = (mes: string) => gradeDoMes(mes).map((s) => s[0]).filter((x): x is string => !!x);
+
+/** Sorteio do mês: embaralha os temas e as pessoas e distribui uma dupla por semana (as pessoas se revezam se forem menos que as semanas). */
+export function sortear(semanas: string[], temas: string[], pessoas: string[]) {
+  const mistura = <T,>(l: T[]) => { const a = [...l]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const t = mistura(temas.filter((x) => x.trim())), p = mistura(pessoas);
+  return Object.fromEntries(semanas.map((s, i) => [s, { tema: t[i] ?? "", pessoa: p.length ? p[i % p.length] : "" }]));
 }
 
 /** Bolinha da semana: verde = bateu P.A. e TKM; amarela = bateu um; vermelha = nenhum; null = sem venda na semana. */

@@ -11,7 +11,7 @@ import { semanaDe } from "@/lib/leitura";
 import { buscarCaixa, fimDoMes, nomeMes, somarMes, type Caixa } from "@/lib/caixa";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
 import { quemVende, type Pessoa } from "@/lib/pessoas";
-import { CORES_EVENTO, bolinha, buscarMural, completarMural, gradeDoMes, salvarMural, type DadosMural } from "@/lib/mural";
+import { CORES_EVENTO, bolinha, buscarMural, completarMural, gradeDoMes, salvarMural, semanasDoMes, sortear, type DadosMural } from "@/lib/mural";
 
 const somaDias = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -123,6 +123,7 @@ export default function Mural() {
       )}
 
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
+      <DiaDoConhecimento portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
       <Calendario d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
@@ -217,6 +218,85 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
         </div>
       </div>
       <p className="ajuda" style={{ marginBottom: 0 }}>P.A., TKM e a bolinha vêm do fechamento de caixa de cada vendedora. A meta semanal é a meta do mês dela no plano dividida pelas semanas do mês.</p>
+    </div>
+  );
+}
+
+/** Dia do conhecimento: toda semana uma pessoa do time apresenta um tema por 30 minutos, no primeiro horário do dia.
+ *  A gestão define os temas do mês; o sorteio é na 1ª reunião do mês. A folha tem espaço para escrever o tema à mão. */
+function DiaDoConhecimento({ portalId, loja, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
+  const [mes, setMes] = useState(hoje().slice(0, 7));
+  const [editar, setEditar] = useState(false);
+  const { dados: time } = useDados(async () => {
+    const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja").eq("portal_id", portalId).eq("ativo", true).order("nome");
+    return ((data ?? []) as { nome: string; loja: string | null }[]).filter((p) => !varias || !p.loja || p.loja === loja).map((p) => p.nome.split(" ")[0]);
+  }, [portalId, loja, varias]);
+  const semanas = semanasDoMes(mes);
+  const atual = d.conhecimento[mes] ?? { temas: [], semanas: {} };
+  const [temas, setTemas] = useState(atual.temas.join("\n"));
+  useEffect(() => { setTemas((d.conhecimento[mes]?.temas ?? []).join("\n")); }, [mes]); // eslint-disable-line react-hooks/exhaustive-deps
+  const mudar = (c: typeof atual) => guardar({ ...d, conhecimento: { ...d.conhecimento, [mes]: c } });
+  const listaTemas = temas.split("\n").map((x) => x.trim()).filter(Boolean);
+  const ate = (s: string) => somaDias(s, 6);
+  const dm = (x: string) => `${x.slice(8)}/${x.slice(5, 7)}`;
+  return (
+    <div className="card mb mu-folha" data-folha="conhec">
+      <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
+        <b>Dia do conhecimento</b>
+        <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, -1))}>‹</button><span>{nomeMes(mes)}</span>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, 1))}>›</button>
+          <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar" : "Temas e sorteio"}</button>
+          <button type="button" className="btn p peq" onClick={() => imprimir("conhec", false)}>Imprimir esta folha</button>
+        </span>
+      </div>
+      {editar && (
+        <div className="card mb" style={{ background: "var(--fundo, #faf7f3)" }}>
+          <label style={{ display: "block" }}><b>Temas do mês, definidos pela gestão (um por linha)</b>
+            <textarea rows={5} value={temas} onChange={(e) => setTemas(e.target.value)} onBlur={() => mudar({ ...atual, temas: listaTemas })} placeholder={"Ex.: Como apresentar o crediário\nOs tecidos da coleção nova\nComo fazer o pós-venda"} style={{ width: "100%" }} /></label>
+          <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+            <button type="button" className="btn p peq" disabled={!listaTemas.length || !time?.length} onClick={() => {
+              if (Object.values(atual.semanas).some((x) => x.tema || x.pessoa) && !confirm("Sortear de novo? O tema e o responsável de cada semana serão trocados.")) return;
+              mudar({ temas: listaTemas, semanas: sortear(semanas, listaTemas, time ?? []) });
+            }}>🎲 Sortear (1ª reunião do mês)</button>
+            <small className="mudo">{time?.length ? `${time.length} pessoas no sorteio · ${semanas.length} semanas no mês` : "Cadastre o time em Minha equipe para sortear."}</small>
+          </div>
+          <div className="mt">
+            {semanas.map((s) => {
+              const x = atual.semanas[s] ?? { tema: "", pessoa: "" };
+              const muda = (y: Partial<typeof x>) => mudar({ ...atual, semanas: { ...atual.semanas, [s]: { ...x, ...y } } });
+              return (
+                <div key={s} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                  <small style={{ width: 90 }}><b>{dm(s)} a {dm(ate(s))}</b></small>
+                  <input value={x.tema} onChange={(e) => muda({ tema: e.target.value })} placeholder="Tema" style={{ flex: 2, minWidth: 160 }} list="mu-temas" />
+                  <select value={x.pessoa} onChange={(e) => muda({ pessoa: e.target.value })} style={{ flex: 1, minWidth: 120 }}>
+                    <option value="">Responsável</option>{(time ?? []).map((p) => <option key={p}>{p}</option>)}
+                  </select>
+                  <button type="button" className="btn s peq" aria-label="Limpar a semana" onClick={() => { if (confirm("Limpar o tema e o responsável desta semana?")) muda({ tema: "", pessoa: "" }); }}>✕</button>
+                </div>
+              );
+            })}
+            <datalist id="mu-temas">{listaTemas.map((t) => <option key={t} value={t} />)}</datalist>
+          </div>
+        </div>
+      )}
+      <div className="mu-moldura">
+        <div className="mu-pag mu-metas mu-conhec" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
+          <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>DIA DO CONHECIMENTO {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
+          <h2>30 MINUTOS NO PRIMEIRO HORÁRIO DO DIA · UMA PESSOA DO TIME POR SEMANA</h2>
+          <table>
+            <thead><tr><th style={{ width: "18%" }}>SEMANA</th><th>TEMA</th><th style={{ width: "24%" }}>RESPONSÁVEL</th></tr></thead>
+            <tbody>
+              {semanas.map((s) => { const x = atual.semanas[s]; return (
+                <tr key={s}><td>{dm(s)} a {dm(ate(s))}</td><td className="mu-tema">{x?.tema ?? ""}</td><td>{x?.pessoa ?? ""}</td></tr>
+              ); })}
+            </tbody>
+          </table>
+          <p className="mu-leg" style={{ marginTop: "2%" }}>Tema sorteado na 1ª reunião do mês, entre os temas definidos pela gestão.</p>
+          {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+        </div>
+      </div>
+      <p className="ajuda" style={{ marginBottom: 0 }}>A gestão escreve os temas do mês e sorteia na 1ª reunião. Dá para trocar o tema e o responsável de cada semana à mão. A folha impressa tem espaço para escrever o tema.</p>
     </div>
   );
 }
@@ -318,6 +398,10 @@ const CSS = `
 .mu-bola{display:inline-block;width:clamp(12px,2.4vw,28px);height:clamp(12px,2.4vw,28px);border-radius:50%;border:1.5px dashed #555;vertical-align:middle}
 .mu-leg{display:flex;justify-content:center;gap:4%;font-size:clamp(8px,1.5vw,18px);margin:0}
 .mu-leg span{display:flex;align-items:center;gap:6px}.mu-leg i,.mu-legs i{display:inline-block;width:clamp(12px,2.4vw,28px);height:clamp(12px,2.4vw,28px);border-radius:50%}
+.mu-conhec td{height:clamp(22px,4.2vw,52px);white-space:nowrap}
+.mu-conhec .mu-topo h1{font-size:clamp(12px,2.8vw,32px)}
+.mu-conhec h2{font-size:clamp(8px,1.5vw,18px)}
+.mu-conhec td.mu-tema{text-align:left;padding:0 2%;font-size:clamp(9px,1.8vw,21px);white-space:normal}
 .mu-cal{padding:2% 3% 4%;display:flex;flex-direction:column;color:#000}
 .mu-cal h1{text-align:center;font-weight:800;font-size:clamp(16px,4vw,46px);margin:0 0 1.5%}
 .mu-quadro{background:#fff;border-radius:22px;padding:1.5% 2%;flex:1;display:flex;flex-direction:column}
@@ -340,6 +424,7 @@ const CSS = `
   body[data-imprimir="verso"] [data-folha="verso"] .mu-moldura,body[data-imprimir="verso"] [data-folha="verso"] .mu-moldura *,
   body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura,body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura *,
   body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura,body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura *,
+  body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura,body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura *,
   body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura,body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura *{visibility:visible!important}
   body[data-imprimir] [data-folha] .mu-moldura{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible}
   body[data-imprimir] .mu-pag{min-width:0;width:100vw;height:100vh;aspect-ratio:auto;max-width:none}

@@ -10,6 +10,8 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
 import * as XLSX from "npm:xlsx@0.18.5";
 import { strFromU8, unzipSync } from "npm:fflate@0.8.2";
+import { PDFDocument } from "npm:pdf-lib@1.17.1";
+import { extractText, getDocumentProxy } from "npm:unpdf@1.9.1";
 
 const URL = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -112,21 +114,38 @@ function textoWord(buf: Uint8Array) {
 }
 
 // Limites do Claude por pedido: 600 páginas de PDF, 32 MB e a janela de 1 milhão de tokens (cada página de PDF
-// vira texto + imagem, uns 1.500 a 3.000 tokens). Os arquivos entram por ordem de importância; antes de enviar,
-// o pedido é contado de verdade (count_tokens) e os menos importantes saem até caber. O que sai é avisado.
+// enviada como documento vira texto + imagem, uns 2.500 tokens). Por isso os PDFs com texto (relatórios de venda,
+// estoque, ticket) vão só como texto, umas 4 vezes mais leve; os escaneados e o formulário (com caixinhas marcadas)
+// vão como documento. O texto lido fica guardado em relatorios/<loja>/_texto/ para as próximas etapas.
+// Os arquivos entram por ordem de importância; antes de enviar, o pedido é contado de verdade (count_tokens)
+// e os menos importantes saem até caber. O que sai é avisado.
+const MAX_TEXTO_PDF = 1_600_000; // letras de PDFs lidos como texto, somadas
 const MAX_PAGINAS = 550;
 const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_IMAGENS = 20;
 const MAX_IMAGEM = 5 * 1024 * 1024;
 const MAX_TOKENS_ENTRADA = 700_000; // folga para a resposta e para não pesar no custo de cada parada
 
-/** Páginas de um PDF: o maior /Count da árvore de páginas ou as páginas contadas; sem nenhum dos dois, estima pelo tamanho. */
-function paginasPdf(buf: Uint8Array) {
-  const s = new TextDecoder("latin1").decode(buf);
-  let maior = 0;
-  for (const m of s.matchAll(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)) maior = Math.max(maior, Number(m[1] ?? m[2]));
-  const soltas = (s.match(/\/Type\s*\/Page(?![a-zA-Z])/g) ?? []).length;
-  return Math.max(maior, soltas) || Math.max(1, Math.ceil(buf.length / 60_000));
+/** Páginas de um PDF lidas por um leitor de PDF de verdade (conta certo também nos PDFs com páginas comprimidas).
+ *  Devolve null quando o PDF tem senha ou está quebrado: o Claude também não conseguiria ler. */
+async function paginasPdf(buf: Uint8Array): Promise<number | null> {
+  try {
+    const doc = await PDFDocument.load(buf, { updateMetadata: false, throwOnInvalidObject: false });
+    return doc.getPageCount();
+  } catch {
+    return null;
+  }
+}
+
+/** O texto de um PDF, página por página. null quando não dá para ler. Recebe uma cópia: o leitor consome o buffer. */
+async function textoPdf(buf: Uint8Array): Promise<string | null> {
+  try {
+    const pdf = await getDocumentProxy(new Uint8Array(buf));
+    const { text } = await extractText(pdf, { mergePages: false });
+    return (text as string[]).map((t, i) => `--- página ${i + 1} ---\n${t}`).join("\n");
+  } catch {
+    return null;
+  }
 }
 
 /** Tipo real da imagem pelos primeiros bytes (a extensão do arquivo pode mentir, ex.: foto HEIC salva como .jpg). */
@@ -165,7 +184,10 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
     vistos.add(chave);
     return true;
   }).sort((a, b) => prioridade(a.name) - prioridade(b.name));
-  let texto = 0, paginas = 0, bytes = 0, imagens = 0;
+  let texto = 0, paginas = 0, bytes = 0, imagens = 0, textoPdfs = 0;
+  // Textos de PDF já lidos em outra etapa.
+  const { data: guardados } = await admin.storage.from("relatorios").list(`${portalId}/_texto`, { limit: 1000 });
+  const jaLidos = new Set((guardados ?? []).map((x) => x.name));
   for (const f of lista) {
     const nome = f.name;
     const ext = nome.split(".").pop()?.toLowerCase() ?? "";
@@ -174,15 +196,37 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
     if (tam > MAX_ARQUIVO) { avisos.push(`${nome}: grande demais (${Math.round(tam / 1048576)} MB), não foi lido`); continue; }
     if (ehImagem && tam > MAX_IMAGEM) { avisos.push(`${nome}: imagem acima de 5 MB, não foi lida`); continue; }
     if (ehImagem && imagens >= MAX_IMAGENS) { avisos.push(`${nome}: ficou de fora (já entraram ${MAX_IMAGENS} imagens)`); continue; }
-    if ((ext === "pdf" || ehImagem) && bytes + tam > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
+    if (ehImagem && bytes + tam > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
     const { data: blob } = await admin.storage.from("relatorios").download(`${portalId}/${nome}`);
     if (!blob) { avisos.push(`${nome}: não deu para abrir`); continue; }
     const buf = new Uint8Array(await blob.arrayBuffer());
     if (ext === "pdf") {
       const cabeca = new TextDecoder("latin1").decode(buf.subarray(0, 1024));
       if (!cabeca.includes("%PDF")) { avisos.push(`${nome}: não é um PDF de verdade, não foi lido`); continue; }
-      if (/\/Encrypt\b/.test(new TextDecoder("latin1").decode(buf.subarray(Math.max(0, buf.length - 4096))))) { avisos.push(`${nome}: PDF com senha, não foi lido (salve sem senha e suba de novo)`); continue; }
-      const pg = paginasPdf(buf);
+      // Formulário e diagnóstico vão sempre como documento (as caixinhas marcadas só aparecem na imagem).
+      let txt: string | null = null;
+      if (prioridade(nome) > 0) {
+        const guardado = `${nome}.txt`;
+        if (jaLidos.has(guardado)) {
+          const { data: b } = await admin.storage.from("relatorios").download(`${portalId}/_texto/${guardado}`);
+          txt = b ? await b.text() : null;
+        }
+        if (txt === null) {
+          txt = await textoPdf(buf);
+          if (txt !== null) await admin.storage.from("relatorios").upload(`${portalId}/_texto/${guardado}`, new Blob([txt], { type: "text/plain" }), { upsert: true });
+        }
+      }
+      // As páginas vêm do texto já lido; sem ele, do leitor de PDF (que também acusa PDF com senha ou quebrado).
+      const pg = txt ? Math.max(1, (txt.match(/^--- página \d+ ---$/gm) ?? []).length) : await paginasPdf(buf);
+      if (pg === null) { avisos.push(`${nome}: PDF com senha ou danificado, não foi lido (salve de novo como PDF, sem senha, e suba)`); continue; }
+      // Com texto de verdade (não escaneado), vai como texto.
+      if (txt && txt.length / pg >= 800) {
+        if (textoPdfs + txt.length > MAX_TEXTO_PDF) { avisos.push(`${nome}: ficou de fora (o limite de texto dos relatórios já estava cheio)`); continue; }
+        textoPdfs += txt.length;
+        itens.push({ nome, est: Math.ceil(txt.length / 3), blocos: [{ type: "text", text: `Arquivo: ${nome} (texto do PDF)\n${txt}` }] });
+        continue;
+      }
+      if (bytes + buf.length > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
       if (paginas + pg > MAX_PAGINAS) { avisos.push(`${nome}: ficou de fora (${pg} páginas; o limite de páginas de PDF já estava cheio)`); continue; }
       paginas += pg; bytes += buf.length;
       itens.push({ nome, est: pg * 2500, blocos: [
@@ -236,7 +280,7 @@ async function caber(system: string, itens: Item[], fim: () => string, avisos: s
     }
     if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total };
     // Tira do fim (menos importante) até a estimativa cobrir o excesso, com folga.
-    let falta = total === Number.MAX_SAFE_INTEGER ? Math.ceil(itens.reduce((s, i) => s + i.est, 0) * 0.3) : Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.15);
+    let falta = total === Number.MAX_SAFE_INTEGER ? Math.ceil(itens.reduce((s, i) => s + i.est, 0) * 0.15) : Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.1);
     if (!itens.length) break;
     while (falta > 0 && itens.length) {
       const i = itens.pop()!;
@@ -443,14 +487,23 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
-  const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
+  const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
   // Quem monta (Camilla e CS) roda o agente; liberar para a loja continua só com a Camilla.
-  const { data: monta } = await usuario.rpc("pode_montar");
-  if (monta !== true) return json({ erro: "Só a Camilla e a CS usam o agente do Diagnóstico." }, 403);
+  // O próprio banco também pode chamar (chave guardada em chaves_internas, nome "diagnostico"), como a agenda.
+  const interno = req.headers.get("x-hub-interno");
+  let liberado = false;
+  if (interno) {
+    const { data } = await admin.from("chaves_internas").select("valor").eq("nome", "diagnostico").maybeSingle();
+    liberado = !!data?.valor && data.valor.length >= 32 && data.valor === interno;
+  }
+  if (!liberado) {
+    const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
+    const { data: monta } = await usuario.rpc("pode_montar");
+    if (monta !== true) return json({ erro: "Só a Camilla e a CS usam o agente do Diagnóstico." }, 403);
+  }
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
   const { portal_id, parada, conferir: so_conferir } = await req.json().catch(() => ({}));
-  const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
   if (so_conferir) {
     if (!portal_id) return json({ erro: "Informe a loja." }, 400);
     const { data } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();

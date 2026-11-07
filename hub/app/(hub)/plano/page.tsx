@@ -2,7 +2,8 @@
 
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useHub, usePortal } from "@/lib/hub";
-import { planoAdicionar, planoApagar } from "@/lib/acoes";
+import { planoApagar } from "@/lib/acoes";
+import { NovaTarefaPlano } from "@/components/NovaTarefaPlano";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES_PLANO } from "@/lib/conteudo";
 import { periodoDoMes } from "@/lib/periodo-plano";
@@ -26,11 +27,7 @@ export default function Plano() {
           <button className="btn s peq" type="button" aria-label="Excluir tarefa" onClick={async () => { if (!confirm("Excluir esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
         </div>
       ))}
-      <form action={async (f) => { try { await planoAdicionar(portal.id, f); recarregar(); } catch (e) { alert((e as Error).message); } }} className="linha mt" style={{ flexWrap: "nowrap", gap: 6 }}>
-        <input type="hidden" name="mes" value={m} />
-        <input type="text" name="texto" placeholder="Nova tarefa…" required />
-        <button className="btn p peq" type="submit" aria-label="Incluir tarefa">+</button>
-      </form>
+      <NovaTarefaPlano portalId={portal.id} mes={m} rotuloMes={MESES_PLANO[m]} aoIncluir={recarregar} />
     </div>
   );
   const feitos = itens.filter((i) => i.feito).length;

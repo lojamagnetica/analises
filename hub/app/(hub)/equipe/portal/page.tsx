@@ -1,5 +1,6 @@
 "use client";
 
+import { NovaTarefaPlano } from "@/components/NovaTarefaPlano";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnotacoesDaCliente } from "@/components/Anotacoes";
@@ -18,7 +19,7 @@ import { ETAPAS, MESES_PLANO, type Respostas } from "@/lib/conteudo";
 import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
 import { liberarTudo } from "@/lib/entrada";
 import {
-  atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
+  atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoApagar, reuniaoApagar, reuniaoSalvar,
 } from "@/lib/acoes";
 
 
@@ -296,11 +297,7 @@ function EditarPortal() {
                   <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
                 </div>
               ))}
-              <form action={async (f) => { try { await planoAdicionar(p.id, f); recarregar(); } catch (e) { alert((e as Error).message); } }} className="linha mt" style={{ flexWrap: "nowrap" }}>
-                <input type="hidden" name="mes" value={m} />
-                <input type="text" name="texto" placeholder="Nova tarefa…" />
-                <button className="btn p peq" type="submit">+</button>
-              </form>
+              <NovaTarefaPlano portalId={p.id} mes={m} rotuloMes={MESES_PLANO[m]} aoIncluir={recarregar} />
             </div>
           ))}
         </div>

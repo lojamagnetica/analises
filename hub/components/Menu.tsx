@@ -152,6 +152,8 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
+        // Só aparece para a loja com uma medição de Vendas por canal em andamento (o layout esconde nas outras).
+        { href: "/gestao/canais", rotulo: "Vendas por canal", icone: "chart" },
         { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
       ],
     },

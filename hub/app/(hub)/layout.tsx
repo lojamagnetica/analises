@@ -10,6 +10,7 @@ import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { liberado, requisito } from "@/lib/entrada";
 import { buscarCursoAberto } from "@/lib/curso";
+import { bussolaFechada } from "@/lib/bussola";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 /** Páginas que abrem mesmo antes do vídeo de boas-vindas. */
@@ -52,9 +53,11 @@ function Casca({ children }: { children: React.ReactNode }) {
   const area = !equipe && hub.portal?.menu_trancado?.length
     ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso", hub.portal.canais ?? []), caminho)
     : undefined;
-  const areaTrancada = area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
+  const areaTrancada = !equipe && hub.portal && bussolaFechada(caminho) ? { rotulo: "A Bússola do gestor" }
+    : area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
 
   const trava = (href: string) => {
+    if (!equipe && hub.portal && bussolaFechada(href)) return true;
     if (!ent) return false;
     const r = requisito(href.split("?")[0]);
     return !!r && !liberado(r, ent);
@@ -75,7 +78,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava}
+      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {hub.apresentacao ? (

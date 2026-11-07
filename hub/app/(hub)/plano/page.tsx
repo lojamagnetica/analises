@@ -4,6 +4,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES_PLANO } from "@/lib/conteudo";
+import { periodoDoMes } from "@/lib/periodo-plano";
 import { Checklist } from "./Checklist";
 
 export default function Plano() {
@@ -30,11 +31,19 @@ export default function Plano() {
           <div className="grade g3">
             {[1, 2, 3].map((m) => (
               <div key={m} className="card card-borda" style={{ ["--c" as string]: ["", "var(--red)", "var(--purple)", "var(--green)"][m] }}>
-                <h3>{MESES_PLANO[m]}</h3>
+                <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+                {periodoDoMes(m, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, portal.plano_inicio, portal.inicio)}</div>}
                 <Checklist itens={itens.filter((i) => i.mes === m)} aoMudar={recarregar} />
               </div>
             ))}
           </div>
+          {itens.some((i) => i.mes === 4) && (
+            <div className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
+              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[4]}</h3>
+              {periodoDoMes(4, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(4, portal.plano_inicio, portal.inicio)}</div>}
+              <Checklist itens={itens.filter((i) => i.mes === 4)} aoMudar={recarregar} />
+            </div>
+          )}
         </>
       )}
     </>

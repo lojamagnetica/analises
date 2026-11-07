@@ -94,7 +94,9 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         id: "consultoria", rotulo: "Minha consultoria", icone: "target",
         itens: [
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
+          { href: "/consultoria/rotina", rotulo: "Rotina da gestão", icone: "target" },
           { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal" },
+          { href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users" },
           { href: "/consultoria/materiais", rotulo: "Materiais", icone: "folder" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
@@ -119,6 +121,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
         { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
+        { href: "/mural", rotulo: "Mural da loja", icone: "target" },
         { href: "/guia-marcas", rotulo: "Guia das marcas", icone: "tag" },
       ],
     },
@@ -134,7 +137,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     {
       id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
       itens: [
-        { href: "/gestao/tempo", rotulo: "Onde está o meu tempo", icone: "cal" },
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
         { href: "/gestao/canais", rotulo: "Vendas por canal", icone: "chart" },
@@ -233,12 +235,14 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; semComece?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova)
-    .filter((g) => !props.ocultos?.includes(g.id));
+    .filter((g) => !props.ocultos?.includes(g.id))
+    // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
+    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
@@ -308,6 +312,15 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
           )}
 
           {props.temPortal && !props.soCurso && (
+            <div className="nav-linha">
+              <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
+                <Icone nome="compass" /> BÚSSOLA DO GESTOR{props.trava?.("/bussola") ? " 🔒" : ""}
+              </Link>
+            </div>
+          )}
+
+          {/* Depois que a loja termina a entrada (vídeo, dados da loja e da equipe), o Comece aqui sai da barra para ficar mais objetiva. */}
+          {props.temPortal && !props.soCurso && !props.semComece && (
             <div className="nav-linha">
               <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
                 <Icone nome="play" /> COMECE AQUI

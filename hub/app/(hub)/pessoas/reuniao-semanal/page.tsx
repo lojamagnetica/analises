@@ -61,11 +61,12 @@ export default function ReuniaoSemanal() {
     ]);
     const time = quemVende(pessoas.pessoas.filter((p) => p.ativo).map((p) => ({ ...p, funcao: p.funcao ?? null })), Object.keys(plano?.dados.metas ?? {}));
     const metaMes = metasDoTime(plano ? metaDoPlano(plano.dados) : null, time.map((p) => p.id), plano?.dados.metas);
-    return { ...pessoas, m, auto: doCaixa([...c1, ...c2], ini, fim, metaMes, mes) };
+    return { ...pessoas, time, m, auto: doCaixa([...c1, ...c2], ini, fim, metaMes, mes) };
   }, [portal.id, ini]);
   if (!dados) return <Carregando />;
   const { m } = dados;
-  const ativos = dados.pessoas.filter((p) => p.ativo);
+  // Só quem vende entra nos números da semana (administrativo e financeiro ficam de fora).
+  const ativos = dados.time;
   const vazia: Linha = { venda: "", meta: "", ticket: "", pa: "", conversao: "" };
   const puxou = Object.values(dados.auto).some((l) => l.venda);
   // O que foi digitado vale mais que o que veio do caixa.

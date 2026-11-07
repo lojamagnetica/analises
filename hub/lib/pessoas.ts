@@ -12,7 +12,7 @@ export type Falta = "Saber" | "Poder" | "Querer";
 export type Pessoa = {
   id: string; portal_id: string; nome: string; funcao: string | null; entrada: string | null; ativo: boolean;
   respostas: Letra[] | { mais: Letra[]; menos: Letra[] } | null; perfil: Record<Letra, number> | null; respondido_por: "pessoa" | "gestor" | null;
-  perfil_em: string | null; motor: Motor | null;
+  perfil_em: string | null; motor: Motor | null; loja?: string | null;
 };
 export type Retorno = { id: string; pessoa_id: string; tipo: string; situacao: string; roteiro: string; feito: boolean; created_at: string };
 export type Ficha = {
@@ -56,12 +56,16 @@ export function blocoDoTeste(funcao: string | null | undefined): "venda" | "apoi
   return "venda";
 }
 
-/** Quem entra na meta e no caixa por vendedora: só quem tem função de venda.
- *  Se ninguém tem função de venda cadastrada, vale o time todo. `manter` = ids que já têm número lançado. */
+/** A função cadastrada é de venda (vendedora, consultora, atendimento)? */
+export const vendeNaLoja = (funcao: string | null | undefined) => /vend|consult|atend/i.test(funcao ?? "");
+
+/** Quem entra na meta, no caixa por vendedora e em qualquer análise de vendas: só quem tem função de venda.
+ *  Quem tem outra função (administrativo, financeiro, gerência sem venda) nunca entra, nem com meta ajustada.
+ *  Só quando ninguém tem função cadastrada vale o time todo. `manter` = ids de vendedoras que já têm número lançado. */
 export function quemVende<T extends { id: string; funcao: string | null }>(time: T[], manter: string[] = []): T[] {
-  const vende = (p: T) => /vend|consult|atend/i.test(p.funcao ?? "");
-  if (!time.some(vende)) return time;
-  return time.filter((p) => vende(p) || manter.includes(p.id));
+  const semFuncao = (p: T) => !(p.funcao ?? "").trim();
+  const vendedores = time.filter((p) => vendeNaLoja(p.funcao) || (manter.includes(p.id) && !/\badm|administrativ|financ/i.test(p.funcao ?? "")));
+  return vendedores.length ? vendedores : time.filter(semFuncao);
 }
 
 /** As perguntas do teste para a função da pessoa. */

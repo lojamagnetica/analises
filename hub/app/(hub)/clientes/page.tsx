@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
+import { MESES } from "@/lib/conteudo";
 import {
   CAMPOS, CLASSE_TIPO, REGRAS, TIPOS, buscarClientes, classificar, clienteRemover, clienteSalvar, contarTipos, detectarColunas, diaMes,
   importar, lerTabela, linhasDaTabela, planoImportacao, semAcento, telefoneBonito,
@@ -17,7 +18,8 @@ export default function MinhasClientes() {
   const { portal } = usePortal();
   const { dados, recarregar } = useDados(() => buscarClientes(portal.id), [portal.id]);
   const [busca, setBusca] = useState("");
-  const [loja, setLoja] = useState("");
+  const [loja, setLoja] = useState(() => ((portal.lojas ?? []).length > 1 ? (portal.lojas ?? [])[0] : ""));
+  const [aniv, setAniv] = useState(false);
   const [tipo, setTipo] = useState<TipoOuSem | "">("");
   const [editando, setEditando] = useState<Cliente | "nova" | null>(null);
   const [importando, setImportando] = useState(false);
@@ -31,9 +33,14 @@ export default function MinhasClientes() {
   const daLoja = dados.filter((c) => !loja || c.loja === loja);
   const n = contarTipos(leituras, daLoja.map((c) => c.id));
   const termo = semAcento(busca);
+  // Aniversariantes do mês: o aniversário vem do cadastro do sistema da loja (coluna de nascimento na importação).
+  const mesAtual = ref.slice(5, 7);
+  const doMes = daLoja.filter((c) => c.aniversario && c.aniversario.slice(5, 7) === mesAtual);
   const lista = daLoja
+    .filter((c) => !aniv || (c.aniversario && c.aniversario.slice(5, 7) === mesAtual))
     .filter((c) => !tipo || leituras.get(c.id)?.tipo === tipo)
-    .filter((c) => !termo || semAcento(c.nome).includes(termo));
+    .filter((c) => !termo || semAcento(c.nome).includes(termo))
+    .sort((a, b) => (aniv ? (a.aniversario ?? "").slice(8, 10).localeCompare((b.aniversario ?? "").slice(8, 10)) : 0));
 
   return (
     <>
@@ -62,6 +69,14 @@ export default function MinhasClientes() {
           ))}
         </div>
       )}
+
+      <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Aniversariantes do mês">
+        <button type="button" className="chip" aria-pressed={aniv} onClick={() => { setAniv(!aniv); setMostrar(PASSO); }}
+          style={aniv ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
+          Aniversariantes de {MESES[Number(mesAtual) - 1].toLowerCase()} ({doMes.length})
+        </button>
+        {aniv && doMes.length === 0 && <span className="ajuda" style={{ margin: 0 }}>Nenhuma cliente com aniversário cadastrado neste mês.</span>}
+      </div>
 
       <div className="secao">Seus tipos de cliente</div>
       <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))" }}>

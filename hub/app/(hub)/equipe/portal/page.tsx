@@ -8,6 +8,9 @@ import { FichaLoja } from "@/components/FichaLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
+import { PerfilDoLojista } from "@/components/PerfilDoLojista";
+import { RascunhoReuniao } from "@/components/RascunhoReuniao";
+import { periodoDoMes } from "@/lib/periodo-plano";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -283,13 +286,14 @@ function EditarPortal() {
       <div className="card mt">
         <h2>Plano de Ação</h2>
         <div className="grade g3">
-          {[1, 2, 3].map((m) => (
+          {[1, 2, 3, 4].map((m) => (
             <div key={m}>
-              <h3>{MESES_PLANO[m]}</h3>
+              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+              {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span style={{ textDecoration: i.feito ? "line-through" : undefined }}>{i.feito ? "✓ " : ""}{i.texto}</span>
-                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { await planoApagar(i.id); recarregar(); }}>✕</button>
+                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; await planoApagar(i.id); recarregar(); }}>✕</button>
                 </div>
               ))}
               <form action={async (f) => { await planoAdicionar(p.id, f); recarregar(); }} className="linha mt" style={{ flexWrap: "nowrap" }}>
@@ -318,10 +322,13 @@ function EditarPortal() {
               <CamposReuniao r={r} />
               <div className="linha mt"><button className="btn p peq" type="submit">Salvar</button></div>
             </form>
-            <button className="btn s peq mt" type="button" onClick={async () => { await reuniaoApagar(r.id); recarregar(); }}>Apagar reunião</button>
+            <RascunhoReuniao reuniaoId={r.id} portalId={p.id} ataLiberada={r.ata} aoMudar={recarregar} />
+            <button className="btn s peq mt" type="button" onClick={async () => { if (!confirm("Apagar esta reunião?")) return; await reuniaoApagar(r.id); recarregar(); }}>Apagar reunião</button>
           </details>
         ))}
       </div>
+
+      <PerfilDoLojista portalId={id} nome={hub.nome} />
 
       <AnotacoesDaCliente portalId={id} nome={hub.nome} />
 
@@ -337,6 +344,8 @@ function EditarPortal() {
 const AREAS_MENU: [string, string][] = [
   ["loja", "Minha loja"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
   ["vendas", "Vendas"], ["clientes", "De cliente a fã"], ["conteudo", "Conteúdo"],
+  // Páginas soltas que dá para esconder sem tirar a área inteira.
+  ["/gestao/canais", "Vendas por canal"],
 ];
 
 export default function Pagina() {

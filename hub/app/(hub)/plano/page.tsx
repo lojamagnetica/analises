@@ -1,7 +1,8 @@
 "use client";
 
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useHub, usePortal } from "@/lib/hub";
+import { planoAdicionar, planoApagar } from "@/lib/acoes";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES_PLANO } from "@/lib/conteudo";
 import { periodoDoMes } from "@/lib/periodo-plano";
@@ -9,18 +10,36 @@ import { Checklist } from "./Checklist";
 
 export default function Plano() {
   const { portal } = usePortal();
+  // A equipe (Camilla e CS) inclui e tira tarefas aqui mesmo; a loja só marca o que fez.
+  const hub = useHub();
+  const equipe = hub.equipe && !hub.comoLoja; // no "Ver como a loja" fica igual ao que a loja vê
   const { dados: itens, recarregar } = useDados(
     async () => (await supabaseBrowser().from("plano_itens").select("id, mes, texto, feito").eq("portal_id", portal.id).order("mes").order("ordem")).data ?? [],
     [portal.id],
   );
   if (!itens) return <Carregando />;
+  const editar = (m: number) => equipe && (
+    <div className="mt">
+      {itens.filter((i) => i.mes === m).map((i) => (
+        <div key={i.id} className="linha entre" style={{ gap: 6, flexWrap: "nowrap" }}>
+          <small className="mudo">{i.texto}</small>
+          <button className="btn s peq" type="button" aria-label="Excluir tarefa" onClick={async () => { if (!confirm("Excluir esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
+        </div>
+      ))}
+      <form action={async (f) => { try { await planoAdicionar(portal.id, f); recarregar(); } catch (e) { alert((e as Error).message); } }} className="linha mt" style={{ flexWrap: "nowrap", gap: 6 }}>
+        <input type="hidden" name="mes" value={m} />
+        <input type="text" name="texto" placeholder="Nova tarefa…" required />
+        <button className="btn p peq" type="submit" aria-label="Incluir tarefa">+</button>
+      </form>
+    </div>
+  );
   const feitos = itens.filter((i) => i.feito).length;
   const pct = itens.length ? Math.round((feitos / itens.length) * 100) : 0;
 
   return (
     <>
       <Titulo titulo="Plano de Ação · 90 dias" aba="Plano de Ação" sub="O seu PLANO DE AÇÃO é 100% personalizado. Marque o que for concluindo: a Camilla acompanha daqui." />
-      {itens.length === 0 ? (
+      {itens.length === 0 && !equipe ? (
         <div className="card">Seu Plano de Ação está sendo montado. Ele é entregue em até 7 dias após o envio da documentação.</div>
       ) : (
         <>
@@ -34,14 +53,16 @@ export default function Plano() {
                 <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
                 {periodoDoMes(m, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, portal.plano_inicio, portal.inicio)}</div>}
                 <Checklist itens={itens.filter((i) => i.mes === m)} aoMudar={recarregar} />
+                {editar(m)}
               </div>
             ))}
           </div>
-          {itens.some((i) => i.mes === 4) && (
+          {(itens.some((i) => i.mes === 4) || equipe) && (
             <div className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
               <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[4]}</h3>
               {periodoDoMes(4, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(4, portal.plano_inicio, portal.inicio)}</div>}
               <Checklist itens={itens.filter((i) => i.mes === 4)} aoMudar={recarregar} />
+              {editar(4)}
             </div>
           )}
         </>

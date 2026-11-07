@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
+import { CampoEtapa } from "@/components/CampoEtapa";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
@@ -108,9 +109,78 @@ Qualquer dúvida, é só chamar no Fale com a Camilla.`;
   );
 }
 
+/** A etapa exatamente como ela aparece no portal (mesmas perguntas, botões e quadros de arquivo), para a cliente
+ *  já conhecer a tela. Dá para digitar e clicar para mostrar: nada é salvo. */
+function EspelhoEtapa({ etapa, posicao }: { etapa: (typeof ETAPAS)[number]; posicao: number }) {
+  const lugares = [
+    ...ARQUIVOS_ETAPA.filter((a) => a.etapa === etapa.numero).map((a) => ({ titulo: a.titulo, oque: a.oque, video: !!a.video })),
+    ...(etapa.numero === 8 ? RELATORIOS.map((r) => ({ titulo: r.titulo, oque: r.oque, video: false })) : []),
+  ];
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", border: "1px dashed var(--line)", borderRadius: 18, padding: "16px 18px", background: "var(--bg)" }}>
+      <small className="mudo">Assim fica no seu Hub · Dados da loja</small>
+      <h2 style={{ margin: "4px 0 2px" }}>{posicao}. {etapa.titulo}</h2>
+      <p className="mudo" style={{ marginTop: 0 }}>{etapa.descricao}</p>
+      {etapa.numero === 5 && (
+        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+          <b>Sua equipe</b>
+          <p className="ajuda" style={{ margin: "4px 0 8px" }}>Cadastre cada pessoa (nome e função) e mande para cada uma o link do teste de perfil. Ela responde no celular dela e o resultado aparece aqui.</p>
+          <span className="btn s peq" style={{ pointerEvents: "none" }}>+ Cadastrar pessoa</span>
+        </div>
+      )}
+      {lugares.length > 0 && (
+        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)" }}>
+          <h3 style={{ marginTop: 0 }}>{etapa.numero === 8 ? "Os relatórios do seu sistema" : "Arquivos desta etapa"}</h3>
+          {lugares.map((l) => (
+            <div key={l.titulo} style={{ padding: "10px 0", borderTop: "1px solid var(--line)" }}>
+              <span className="selo espera" style={{ float: "right" }}>falta</span>
+              <b>{l.titulo}</b>
+              <div className="ajuda" style={{ margin: "2px 0 8px" }}>{l.oque}</div>
+              <span className="btn s peq" style={{ pointerEvents: "none" }}>📎 {l.video ? "Subir o vídeo" : "Subir arquivo"}</span>
+            </div>
+          ))}
+          <p className="ajuda" style={{ marginBottom: 0 }}>Não tem algum desses arquivos? Sem problema: escreva no formulário abaixo o que souber ou marque &quot;Ainda não tenho&quot;.</p>
+        </div>
+      )}
+      <div className="card" style={{ margin: 0 }}>
+        {etapa.campos.some((c) => c.dado) && <p className="ajuda" style={{ marginTop: 0 }}>Nos números, marque se é um dado que você tem, uma estimativa ou se ainda não tem. Nada trava: o que faltar vira tarefa no seu Plano.</p>}
+        {etapa.campos.map((c) => <CampoEtapa key={c.id} c={c} r={{}} padrao="" />)}
+        <div className="linha mt"><span className="btn p" style={{ pointerEvents: "none", opacity: 0.85 }}>Salvar etapa</span></div>
+      </div>
+    </div>
+  );
+}
+
+/** O portal da cliente ao vivo, dentro de um celular na própria tela: a Claudia navega sem sair da apresentação. */
+function PortalAoVivo({ portalId }: { portalId: string }) {
+  const [aberto, setAberto] = useState(false);
+  const url = `${BASE}/inicio/?verComoLoja=${portalId}`;
+  return (
+    <div className="mt">
+      {!aberto ? (
+        <button type="button" className="btn s" onClick={() => setAberto(true)}>👁 Mostrar o portal dela ao vivo</button>
+      ) : (
+        <div className="linha" style={{ gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ width: 300, height: 600, borderRadius: 36, border: "10px solid #141210", overflow: "hidden", background: "#fff", boxShadow: "0 10px 30px rgba(0,0,0,.2)", flexShrink: 0 }}>
+            <iframe src={url} title="Portal da cliente ao vivo" style={{ width: 390, height: 780, border: 0, transform: "scale(0.7436)", transformOrigin: "0 0" }} />
+          </div>
+          <div style={{ maxWidth: 360 }}>
+            <p style={{ marginTop: 0 }}>É exatamente o que ela vê no celular. Dá para tocar e navegar aqui mesmo.</p>
+            <p className="ajuda">Só navegue: o que for salvo aqui fica na conta dela.</p>
+            <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button type="button" className="btn s peq" onClick={() => window.open(url, "_blank", "noopener")}>Abrir em tela grande (aba nova)</button>
+              <button type="button" className="link-loja" onClick={() => setAberto(false)}>Fechar o celular</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Apresentacao() {
   const id = useSearchParams().get("id") ?? "";
-  const { nome, abrirPortal } = useEquipe();
+  const { nome } = useEquipe();
   const { dados, recarregar } = useDados(async () => ({ c: (await buscarJornada(id))[0] ?? null }), [id]);
   const c = dados?.c ?? null;
   const [i, setI] = useState(0);
@@ -169,7 +239,7 @@ function Apresentacao() {
     },
     {
       titulo: "O que você vê no Hub agora",
-      roteiro: "Abra o portal dela ao vivo (botão abaixo) e passe pelo menu. Explique que o resto do Hub abre quando o Diagnóstico sai. Para voltar, use \"Voltar para a visão da equipe\" e abra a apresentação de novo.",
+      roteiro: "Abra o portal dela ao vivo no celular da tela e passe pelo menu junto com ela. Explique que o resto do Hub abre quando o Diagnóstico sai. Só navegue: o que for salvo ali fica na conta dela.",
       corpo: (
         <>
           <div className="grade g3" style={{ gap: 12 }}>
@@ -182,15 +252,11 @@ function Apresentacao() {
               ["O resto do Hub", "Abre quando o seu Diagnóstico ficar pronto."],
             ].map(([t, d]) => <div key={t} className="card" style={{ margin: 0 }}><b>{t}</b><p className="mudo" style={{ margin: "4px 0 0" }}>{d}</p></div>)}
           </div>
-          <button type="button" className="btn s mt" onClick={() => abrirPortal(c.id, "/inicio", true)}>👁 Mostrar o portal dela ao vivo</button>
+          <PortalAoVivo portalId={c.id} />
         </>
       ),
     },
     ...ETAPAS.map((e, k) => {
-      const arquivos = [
-        ...ARQUIVOS_ETAPA.filter((a) => a.etapa === e.numero).map((a) => a.titulo),
-        ...(e.numero === 8 ? RELATORIOS.map((r) => r.titulo) : []),
-      ];
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,
         roteiro: k === 0
@@ -198,27 +264,7 @@ function Apresentacao() {
           : e.numero === 5 ? "Mostre o cadastro do time e o link do teste de perfil: cada pessoa responde no celular dela, e o resultado aparece no Hub."
           : e.numero === 8 ? "Se ela tem sistema, mostre a mensagem pronta para pedir os relatórios ao suporte. Se não tem, ela responde estimando."
           : "Passe pelo que é perguntado e combine o que ela já tem em mãos.",
-        corpo: (
-          <>
-            <p style={{ fontSize: 18, marginTop: 0 }}>{e.descricao}</p>
-            <div className="grade g2" style={{ gap: 14 }}>
-              <div className="card" style={{ margin: 0 }}>
-                <b>O que você responde</b>
-                <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
-                  {e.campos.map((x) => <li key={x.id}>{x.rotulo}</li>)}
-                  {e.numero === 5 && <li>Cadastro de cada pessoa do time e o teste de perfil de cada uma</li>}
-                </ul>
-              </div>
-              <div className="card" style={{ margin: 0 }}>
-                <b>O que você envia</b>
-                {arquivos.length
-                  ? <ul style={{ margin: "6px 0 0", paddingLeft: 18, lineHeight: 1.6 }}>{arquivos.map((a) => <li key={a}>{a}</li>)}</ul>
-                  : <p className="mudo" style={{ margin: "6px 0 0" }}>Nesta etapa é só responder.</p>}
-                <div className="aviso mt" style={{ fontSize: 14 }}>Não tem o arquivo ou o número? Escreva o que souber ou marque &quot;Ainda não tenho&quot;. Nada trava.</div>
-              </div>
-            </div>
-          </>
-        ),
+        corpo: <EspelhoEtapa etapa={e} posicao={k + 1} />,
       };
     }),
     {

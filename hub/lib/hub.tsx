@@ -70,15 +70,27 @@ export type Hub = {
 
 const Contexto = createContext<Hub | null>(null);
 
+/** Janela só da loja (o celular dentro da apresentação do onboarding ou uma aba aberta de lá): vê o portal como a loja
+ *  sem mexer na escolha das outras abas. Fica no nome da janela, que é só dela e sobrevive à navegação. */
+function janelaDaLoja() {
+  try {
+    const pedido = new URLSearchParams(window.location.search).get("verComoLoja");
+    if (pedido && /^[\w-]{3,64}$/.test(pedido)) window.name = `lm-loja:${pedido}`;
+    return window.name.startsWith("lm-loja:") ? window.name.slice(8) : null;
+  } catch { return null; }
+}
 function lerComoLoja() {
+  if (janelaDaLoja()) return true;
   try { return localStorage.getItem(CHAVE_COMO_LOJA) === "1"; } catch { return false; }
 }
 function gravarComoLoja(sim: boolean) {
+  if (janelaDaLoja()) return;
   try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
 }
 
 // Modo apresentação vale só enquanto a janela está aberta: ao reabrir o Hub, a faixa da equipe volta a aparecer.
 function lerApresentacao() {
+  if (janelaDaLoja()) return true;
   try { return sessionStorage.getItem(CHAVE_APRESENTACAO) === "1"; } catch { return false; }
 }
 function gravarApresentacao(sim: boolean) {
@@ -86,6 +98,8 @@ function gravarApresentacao(sim: boolean) {
 }
 
 function lerPortalEscolhido() {
+  const daJanela = janelaDaLoja();
+  if (daJanela) return daJanela;
   try {
     // Link direto da equipe para um portal: ?portal=<id> abre aquele portal e fica escolhido.
     const daUrl = new URLSearchParams(window.location.search).get("portal");

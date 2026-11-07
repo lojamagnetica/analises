@@ -7,7 +7,7 @@
     "build": "next build",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --no-warnings lib/agenda-regras.test.ts && node --experimental-strip-types --no-warnings lib/otb-conta.test.ts",
-    "publicar": "rm -rf .next out && next build && rm -rf ../portal && cp -r out ../portal && touch ../.nojekyll"
+    "publicar": "rm -rf .next out && export NEXT_PUBLIC_VERSAO=$(date +%s) && next build && echo \"{\\\"v\\\":\\\"$NEXT_PUBLIC_VERSAO\\\"}\" > out/versao.json && rm -rf ../portal && cp -r out ../portal && touch ../.nojekyll"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

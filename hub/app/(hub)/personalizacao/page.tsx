@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Icone } from "@/components/Icone";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, usePortal } from "@/lib/hub";
-import { ETAPAS } from "@/lib/conteudo";
+import { ETAPAS, chaveSituacao } from "@/lib/conteudo";
 
 function Personalizacao() {
   const salvo = useSearchParams().get("salvo");
@@ -29,16 +29,21 @@ function Personalizacao() {
       <div className="grade g3">
         {ETAPAS.map((e, i) => {
           const feita = !!pers.get(e.numero)?.concluida;
-          const cor = feita ? "var(--green)" : "var(--red)";
+          // O que a equipe já preencheu conta: mostra quanto falta em vez de "pendente" na etapa toda.
+          const r = (pers.get(e.numero)?.respostas ?? {}) as Record<string, unknown>;
+          const vazio = (v: unknown) => v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length);
+          const faltam = e.campos.filter((c) => vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho").length;
+          const comeco = !feita && faltam < e.campos.length;
+          const cor = feita ? "var(--green)" : comeco ? "var(--amber, #d98a00)" : "var(--red)";
           return (
             <div key={e.numero} className="card card-borda etapa" style={{ ["--c" as string]: cor }}>
-              <span className={`selo ${feita ? "feito" : "andamento"}`}>{feita ? "feito" : "pendente"}</span>
+              <span className={`selo ${feita ? "feito" : comeco ? "espera" : "andamento"}`}>{feita ? "feito" : comeco ? (faltam ? `falta${faltam > 1 ? "m" : ""} ${faltam}` : "conferir e concluir") : "pendente"}</span>
               <span className="quadrado" style={{ ["--c" as string]: cor }}>
                 {feita ? <Icone nome="check" /> : <b style={{ fontSize: 18 }}>{i + 1}</b>}
               </span>
               <h3>{e.titulo}</h3>
               <p>{e.descricao}</p>
-              <Link className="btn-contorno" href={`/personalizacao/etapa?n=${e.numero}`}>{feita ? "Ver minhas respostas" : "Responder"}</Link>
+              <Link className="btn-contorno" href={`/personalizacao/etapa?n=${e.numero}`}>{feita ? "Ver minhas respostas" : comeco ? "Conferir e completar" : "Responder"}</Link>
             </div>
           );
         })}

@@ -15,7 +15,9 @@ export function somarMeses(data: string, meses: number) {
   return d.toISOString().slice(0, 10);
 }
 
-export async function registrarVenda(f: FormData, porNome: string) {
+/** Registra a venda e a passagem para a CS. Com `existente`, a cliente já tem portal no Hub (entrou antes da Central):
+ *  só completa o portal e o contrato e cria a passagem, sem apagar nada do que a loja já fez. */
+export async function registrarVenda(f: FormData, porNome: string, existente?: string) {
   const loja = txt(f, "loja", 200);
   if (!loja) throw new Error("Preencha o nome da loja.");
   const planoId = txt(f, "plano", 40);
@@ -23,8 +25,7 @@ export async function registrarVenda(f: FormData, porNome: string) {
   const pagamento = txt(f, "pagamento_em", 10) || hoje();
   const { data: plano } = await sb().from("planos").select("id, tipo, meses").eq("id", planoId).single();
   const meses = Number(plano?.meses ?? 6);
-
-  const { data: portal, error } = await sb().from("portais").insert({
+  const dadosPortal = {
     loja,
     responsavel: txt(f, "responsavel", 200) || null,
     email: txt(f, "email", 200).toLowerCase() || null,
@@ -32,17 +33,33 @@ export async function registrarVenda(f: FormData, porNome: string) {
     aniversario: txt(f, "aniversario", 10) || null,
     tipo: plano?.tipo === "Consultoria" ? "Consultoria" : "Mentoria",
     inicio: pagamento,
-  }).select("id").single();
-  if (error || !portal) throw new Error(error?.message ?? "Não deu para criar o portal.");
-
-  // O Plano de Ação começa do modelo da Biblioteca (mentoria), como no Novo portal.
-  if (plano?.tipo !== "Consultoria") {
-    const { data: modelo } = await sb().from("plano_modelo").select("mes, ordem, texto").order("mes").order("ordem");
-    if (modelo?.length) await sb().from("plano_itens").insert(modelo.map((m) => ({ ...m, portal_id: portal.id })));
-  }
+  };
   const valor = num(txt(f, "valor", 30));
-  await sb().from("fichas").update({ plano_id: planoId, etapa: null, instagram: txt(f, "instagram", 200) || null, situacao: "Não iniciada" }).eq("portal_id", portal.id);
-  await sb().from("contratos").insert({ portal_id: portal.id, plano_id: planoId, inicio: pagamento, fim: somarMeses(pagamento, meses), valor, condicao: txt(f, "forma_pagamento", 300) || null });
+  const contrato = { plano_id: planoId, inicio: pagamento, fim: somarMeses(pagamento, meses), valor, condicao: txt(f, "forma_pagamento", 300) || null };
+  let portal: { id: string };
+
+  if (existente) {
+    const { data: ja } = await sb().from("passagens").select("portal_id").eq("portal_id", existente).maybeSingle();
+    if (ja) throw new Error("Esta cliente já tem a passagem registrada.");
+    const { error } = await sb().from("portais").update(dadosPortal).eq("id", existente);
+    if (error) throw new Error(error.message);
+    portal = { id: existente };
+    await sb().from("fichas").update({ plano_id: planoId, instagram: txt(f, "instagram", 200) || null }).eq("portal_id", existente);
+    const { data: cts } = await sb().from("contratos").select("id").eq("portal_id", existente).eq("status", "Ativo").limit(1);
+    if (cts?.length) await sb().from("contratos").update(contrato).eq("id", cts[0].id);
+    else await sb().from("contratos").insert({ portal_id: existente, ...contrato });
+  } else {
+    const { data: novo, error } = await sb().from("portais").insert(dadosPortal).select("id").single();
+    if (error || !novo) throw new Error(error?.message ?? "Não deu para criar o portal.");
+    portal = novo;
+    // O Plano de Ação começa do modelo da Biblioteca (mentoria), como no Novo portal.
+    if (plano?.tipo !== "Consultoria") {
+      const { data: modelo } = await sb().from("plano_modelo").select("mes, ordem, texto").order("mes").order("ordem");
+      if (modelo?.length) await sb().from("plano_itens").insert(modelo.map((m) => ({ ...m, portal_id: portal.id })));
+    }
+    await sb().from("fichas").update({ plano_id: planoId, etapa: null, instagram: txt(f, "instagram", 200) || null, situacao: "Não iniciada" }).eq("portal_id", portal.id);
+    await sb().from("contratos").insert({ portal_id: portal.id, ...contrato });
+  }
   const { error: e2 } = await sb().from("passagens").insert({
     portal_id: portal.id, vendido_por: txt(f, "vendido_por", 100) || porNome, plano_id: planoId, valor, pagamento_em: pagamento,
     forma_pagamento: txt(f, "forma_pagamento", 300) || null, resultado_90: txt(f, "resultado_90") || null,

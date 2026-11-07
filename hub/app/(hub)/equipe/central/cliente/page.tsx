@@ -95,6 +95,7 @@ function Cliente() {
       return <MensagensCS mensagens={mensagensCS(c).filter((m) => (quais[k.chave] ?? []).includes(m.chave))} />;
     }
     if (k.acao === "contrato") return <Link className="btn s peq" href={`/equipe/central/contrato?id=${c.id}`}>Gerar o contrato</Link>;
+    if (k.acao === "post") return <Link className="btn s peq" href={`/equipe/central/post?id=${c.id}`}>Fazer o post de entrada</Link>;
     if (k.acao === "acesso") {
       if (!c.email) return <small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small>;
       return link ? <LinkAcesso link={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
@@ -136,6 +137,13 @@ function Cliente() {
         <Link className="btn s peq" href={`/equipe/portal?id=${c.id}`}>Editar portal</Link>
       </div>
       {erro && <div className="aviso mb">{erro}</div>}
+
+      {!p && (
+        <div className="card card-borda mb linha entre" style={{ ["--c" as string]: "var(--orange)" }}>
+          <span><b>Sem a passagem do Comercial.</b> Esta cliente entrou no Hub antes da Central. Registre a venda e os dados do contrato para liberar o contrato e as mensagens.</span>
+          <Link className="btn p peq" href={`/equipe/comercial/venda?portal=${c.id}`}>Registrar a passagem</Link>
+        </div>
+      )}
 
       {p && (
         <details className="card mb" open={!p.recebida_em}>

@@ -4,8 +4,10 @@
 // cada uma com o responsável, as pessoas e o que a área faz.
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type PessoaOrg = { nome: string; funcao: string };
-export type Area = { id: string; nome: string; pai: string | null; lider: string; pessoas: PessoaOrg[]; responsabilidades: string };
+// Horário e salário de cada pessoa e o que a direção espera de cada área são só da direção:
+// somem na versão "para mostrar ao time".
+export type PessoaOrg = { nome: string; funcao: string; horario?: string; salario?: string };
+export type Area = { id: string; nome: string; pai: string | null; lider: string; pessoas: PessoaOrg[]; responsabilidades: string; espera?: string };
 export type Organograma = { topo: { nome: string; cargo: string }; areas: Area[] };
 
 const id = () => crypto.randomUUID().slice(0, 8);

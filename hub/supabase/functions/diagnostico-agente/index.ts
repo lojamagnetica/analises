@@ -221,7 +221,9 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
   }
   const ajuste = ((prep?.ajustes ?? {}) as Record<string, string>)[parada];
   if (ajuste) partes.push(`AJUSTES QUE A CAMILLA PEDIU NESTA VERSÃO (siga à risca): ${ajuste}`);
-  partes.push(TAREFA[parada], parada === "mercado" ? "Responda só no formato pedido, com os três marcadores." : "Responda só com o JSON pedido.");
+  partes.push(TAREFA[parada], parada === "mercado" ? "Responda só no formato pedido, com os três marcadores."
+    : parada === "hub" ? `Responda só com um JSON válido (sem texto antes ou depois), seguindo exatamente este esquema JSON: ${JSON.stringify(ESQUEMAS.hub)}`
+    : "Responda só com o JSON pedido.");
   conteudo.push({ type: "text", text: partes.filter(Boolean).join("\n\n") });
   return { system: memoria.instrucoes ?? "", conteudo, avisos: docs.avisos };
 }
@@ -235,10 +237,21 @@ function parametros(parada: Parada, system: string, mensagens: Anthropic.Message
       output_config: { effort: "medium" },
     };
   }
+  // O esquema do Hub é grande demais para a resposta presa ao esquema ("compiled grammar is too large"):
+  // ele vai escrito no pedido e a resposta é lida como JSON solto.
+  if (parada === "hub") return { model: MODELO, max_tokens: 32000, system, messages: mensagens, output_config: { effort: "medium" } };
   return {
     model: MODELO, max_tokens: 32000, system, messages: mensagens,
     output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMAS[parada as Exclude<Parada, "mercado">] } },
   };
+}
+
+/** O JSON da resposta, mesmo quando vem entre ``` ou com texto em volta. */
+function lerJson(texto: string) {
+  try { return JSON.parse(texto); } catch { /* segue */ }
+  const i = texto.indexOf("{"), f = texto.lastIndexOf("}");
+  if (i < 0 || f <= i) throw new Error("O Claude não devolveu o JSON pedido. Tente de novo.");
+  return JSON.parse(texto.slice(i, f + 1));
 }
 
 async function entregar(parada: Parada, system: string, mensagens: Anthropic.MessageParam[]) {
@@ -291,7 +304,10 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
     if (lote.processing_status !== "ended") return "trabalhando";
     let msg: Anthropic.Message | null = null;
     for await (const r of await client.messages.batches.results(lote.id)) {
-      if (r.result.type === "errored") throw new Error(`O Claude deu erro (${(r.result.error as { error?: { type?: string } }).error?.type ?? "erro"}). Tente de novo.`);
+      if (r.result.type === "errored") {
+        const e = (r.result.error as { error?: { type?: string; message?: string } }).error;
+        throw new Error(`O Claude deu erro (${e?.type ?? "erro"}${e?.message ? `: ${e.message}` : ""}). Tente de novo.`);
+      }
       if (r.result.type !== "succeeded") throw new Error("O pedido expirou sem resposta. Tente de novo.");
       msg = r.result.message;
     }
@@ -315,7 +331,7 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
     else {
       const bloco = msg.content.find((b) => b.type === "text");
       if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
-      const saida = JSON.parse(bloco.text);
+      const saida = lerJson(bloco.text);
       campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : { hub: saida };
     }
     await admin.from("diagnostico_preparo").update({ ...campo, agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);

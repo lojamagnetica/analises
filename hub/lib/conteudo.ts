@@ -33,6 +33,8 @@ export type Campo = {
   ajuda?: string;
   /** Dado de número ou de relatório: a loja pode marcar "É uma estimativa" ou "Ainda não tenho". */
   dado?: boolean;
+  /** Pergunta que entrou em 11/2026 (o que antes vinha pelo formulário do Drive): não vira pendência de quem já tinha concluído a etapa. */
+  novo?: boolean;
 };
 
 /** Situação de um dado: tenho (padrão), estimado ou ainda não tenho. Fica em respostas[`${id}__st`]. */
@@ -60,6 +62,8 @@ export const ETAPAS: Etapa[] = [
       { id: "o_que_funciona", rotulo: "O que já funciona bem?", tipo: "textarea" },
       { id: "onde_quer_chegar", rotulo: "Onde você quer que a loja esteja daqui a 12 meses?", tipo: "textarea" },
       { id: "o_que_movimenta", rotulo: "O que hoje você acredita que mais movimenta a loja?", tipo: "textarea" },
+      { id: "objetivos", rotulo: "Quais são os seus objetivos com a mentoria? Liste em ordem de prioridade, do mais importante para o menos importante.", tipo: "textarea", novo: true },
+      { id: "faturamento_12m", rotulo: "Faturamento e peças vendidas em cada um dos últimos 12 meses", tipo: "textarea", dado: true, novo: true, ajuda: "Ex.: nov/25 R$ 105 mil · 320 peças; dez/25 R$ 146 mil · 410 peças. Se tiver no sistema ou numa planilha, suba o arquivo no quadro \"Arquivos desta etapa\" e escreva \"está no arquivo\"." },
     ],
   },
   {
@@ -71,6 +75,9 @@ export const ETAPAS: Etapa[] = [
       { id: "reconhece", rotulo: "Quando você faz as reuniões, costuma mostrar o resultado de todos e reconhecer publicamente?", tipo: "textarea" },
       { id: "rotina_dona", rotulo: "Me descreva a sua rotina hoje na loja", tipo: "textarea" },
       { id: "ultimo_treinamento", rotulo: "Qual foi a última vez que foi feito um treinamento com o seu time? Conte um pouco sobre o resultado.", tipo: "textarea" },
+      { id: "processos", rotulo: "Vocês têm processos escritos na loja (metas, roteiro de venda, rotinas do time)?", tipo: "opcao", opcoes: ["Sim, temos e o time segue", "Temos algo, mas é informal", "Não temos nada escrito"], novo: true },
+      { id: "vm", rotulo: "Vitrine e arrumação da loja: quem cuida e de quanto em quanto tempo vocês trocam?", tipo: "textarea", novo: true },
+      { id: "sistema", rotulo: "Qual sistema vocês usam para vendas e estoque?", tipo: "texto", novo: true, ajuda: "Se não usam sistema, escreva \"não usamos\"." },
     ],
   },
   {
@@ -89,6 +96,8 @@ export const ETAPAS: Etapa[] = [
     campos: [
       { id: "tamanho_time", rotulo: "Quantas pessoas atendem?", tipo: "numero" },
       { id: "comissao", rotulo: "Como funciona a comissão?", tipo: "textarea" },
+      { id: "equipe_detalhe", rotulo: "Para cada pessoa: horário, salário fixo, comissão e benefícios", tipo: "textarea", novo: true, ajuda: "Ex.: Ana · 9h às 18h · R$ 1.800 + 1% · vale-transporte" },
+      { id: "desafio_time", rotulo: "Qual é o maior desafio do time no atendimento hoje?", tipo: "textarea", novo: true },
     ],
   },
   {
@@ -100,6 +109,9 @@ export const ETAPAS: Etapa[] = [
       { id: "perfil", rotulo: "Como ela é? (profissão, rotina, estilo)", tipo: "textarea" },
       { id: "valoriza", rotulo: "O que ela mais valoriza na sua loja?", tipo: "textarea" },
       { id: "objecoes", rotulo: "Objeções que mais aparecem", tipo: "textarea", ajuda: "Ex.: tá caro, vou pensar, não tem meu tamanho" },
+      { id: "pos_venda", rotulo: "Como é o depois da compra? Vocês fazem pós-venda, reativação ou acompanhamento? Como?", tipo: "textarea", novo: true },
+      { id: "carteira", rotulo: "Você trabalha a sua carteira de clientes (reativação, relacionamento, recompra)?", tipo: "opcao", opcoes: ["Sim, tenho um processo para isso", "Faço de vez em quando", "Ainda não faço"], novo: true },
+      { id: "malinha", rotulo: "Vocês trabalham com malinha (condicional)? Como funciona?", tipo: "textarea", novo: true },
     ],
   },
   {
@@ -126,6 +138,8 @@ export const ETAPAS: Etapa[] = [
       { id: "fornecedores", rotulo: "Principais fornecedores (até 5) e quanto cada um representa", tipo: "textarea", dado: true },
       { id: "compra_mes", rotulo: "Quanto você compra por mês, em média (R$)?", tipo: "numero", dado: true },
       { id: "parado", rotulo: "Que parte do estoque está parada há mais de 3 meses?", tipo: "opcao", dado: true, opcoes: ["Quase nada (até 10%)", "Um pouco (10% a 30%)", "Bastante (30% a 50%)", "Mais da metade"] },
+      { id: "crediario_pct", rotulo: "Quanto do faturamento é vendido no crediário ou fiado (boleto, nota, carnê)? (%)", tipo: "numero", dado: true, novo: true, ajuda: "Se não vende fiado, coloque 0." },
+      { id: "crediario_como", rotulo: "Como funciona o crediário: em quantas vezes, quem libera e como vocês cobram?", tipo: "textarea", novo: true },
     ],
   },
   {
@@ -140,6 +154,11 @@ export const ETAPAS: Etapa[] = [
       { id: "como_pensa", rotulo: "Como você pensa nos conteúdos hoje?", tipo: "textarea" },
       { id: "dificuldade_conteudo", rotulo: "O que você acha mais difícil na hora de produzir os conteúdos da loja?", tipo: "textarea" },
       { id: "resultado_conteudo", rotulo: "O quanto você acha que postar conteúdo hoje traz resultado para a loja?", tipo: "opcao", opcoes: ["Traz muito resultado", "Traz algum resultado", "Traz pouco resultado", "Não traz resultado", "Não sei dizer"] },
+      { id: "instagram", rotulo: "Qual é o @ do Instagram da loja?", tipo: "texto", novo: true },
+      { id: "quem_posta", rotulo: "Quem cria e quem posta os conteúdos?", tipo: "texto", novo: true },
+      { id: "inspiracoes", rotulo: "Quais perfis te inspiram? Coloque o @ de cada um.", tipo: "textarea", novo: true },
+      { id: "concorrentes", rotulo: "Quais são os @ dos seus principais concorrentes?", tipo: "textarea", novo: true },
+      { id: "trafego", rotulo: "Vocês investem em anúncio pago (tráfego)? Quanto por mês e como sabem se deu resultado?", tipo: "textarea", novo: true },
     ],
   },
 ];

@@ -76,8 +76,10 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
 
     // Dados da loja: cada etapa com campos em branco (quem marcou "ainda não tenho" já respondeu).
     for (const e of ETAPAS) {
-      const r = ((pers ?? []).find((x) => x.portal_id === p.id && x.etapa === e.numero)?.respostas ?? {}) as Record<string, unknown>;
-      const faltam = e.campos.filter((c) => vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho");
+      const linha = (pers ?? []).find((x) => x.portal_id === p.id && x.etapa === e.numero);
+      const r = (linha?.respostas ?? {}) as Record<string, unknown>;
+      // As perguntas novas não cobram de quem já tinha concluído a etapa antes delas existirem.
+      const faltam = e.campos.filter((c) => !(c.novo && linha?.concluida) && vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho");
       if (faltam.length) add(`dados_${e.numero}`, `Dados da loja · ${e.titulo}`, "Loja", faltam.map((c) => c.rotulo).join(" · "), `/personalizacao/etapa/?n=${e.numero}`);
     }
     const time = (equipe ?? []).filter((x) => x.portal_id === p.id && x.ativo !== false); // quem saiu da loja não conta

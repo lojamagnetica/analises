@@ -12,6 +12,9 @@ import { dataCurta } from "@/lib/formato";
 import { relatoriosNoDrive } from "@/lib/gestao";
 import { RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
 import { Excluir } from "@/components/Excluir";
+import Link from "next/link";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { emOnboarding } from "@/lib/entrada";
 
 /** Um campo da etapa. Os dados (números, relatório) têm as 3 opções: tenho, estimativa, ainda não tenho. */
 function CampoEtapa({ c, r, padrao }: { c: Campo; r: Respostas; padrao: string }) {
@@ -69,7 +72,13 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
   const msg = mensagemSuporte(nome, loja);
   const subir = async (tipo: TipoRelatorio, arquivos: FileList | null) => {
     setErro(""); setEnviando(tipo);
-    try { for (const f of [...(arquivos ?? [])]) await subirRelatorio(portalId, f, tipo); recarregar(); } catch (x) { setErro((x as Error).message); }
+    try {
+      const lista = [...(arquivos ?? [])];
+      for (const f of lista) await subirRelatorio(portalId, f, tipo);
+      // Camilla e Claudia recebem o alerta do envio (a equipe subindo não avisa).
+      if (lista.length) await supabaseBrowser().rpc("avisar_envio", { p_qtd: lista.length, p_tipo: RELATORIOS.find((x) => x.chave === tipo)?.titulo ?? "Outros relatórios" });
+      recarregar();
+    } catch (x) { setErro((x as Error).message); }
     setEnviando(null);
   };
   const Lista = ({ tipo }: { tipo: string }) => (
@@ -153,14 +162,34 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
 
 function Etapa() {
   const router = useRouter();
-  const n = Number(useSearchParams().get("n"));
+  const busca = useSearchParams();
+  const n = Number(busca.get("n"));
+  const feita = busca.get("feita");
   const etapa = ETAPAS.find((e) => e.numero === n);
   const posicao = ETAPAS.findIndex((e) => e.numero === n) + 1;
-  const { portal, pers, recarregar, nome } = usePortal();
+  const { portal, pers, recarregar, nome, equipe, entrada } = usePortal();
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [arquivos, setArquivos] = useState(0);
   if (!etapa) return <div className="card">Etapa não encontrada.</div>;
+  // Trilha guiada no onboarding: uma etapa abre quando a anterior foi concluída.
+  const pendente = ETAPAS.find((e) => !pers.get(e.numero)?.concluida);
+  const naTrilha = !equipe && emOnboarding(entrada);
+  if (naTrilha && pendente && !pers.get(etapa.numero)?.concluida && pendente.numero !== etapa.numero) {
+    const pos = ETAPAS.indexOf(pendente) + 1;
+    return (
+      <>
+        <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} />
+        <div className="card card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 640 }}>
+          <div style={{ fontSize: 30 }}>🔒</div>
+          <h3 style={{ margin: "6px 0" }}>Esta etapa abre quando você concluir a anterior.</h3>
+          <p className="mudo">Os Dados da loja seguem em ordem: o que você conta em uma etapa ajuda na próxima.</p>
+          <Link className="btn p" href={`/personalizacao/etapa?n=${pendente.numero}`}>Ir para a etapa {pos}: {pendente.titulo} →</Link>
+        </div>
+      </>
+    );
+  }
+  const seguinte = ETAPAS.slice(ETAPAS.indexOf(etapa) + 1).find((e) => !pers.get(e.numero)?.concluida) ?? ETAPAS.find((e) => e.numero !== etapa.numero && !pers.get(e.numero)?.concluida);
   const r = pers.get(etapa.numero)?.respostas ?? {};
   const assina = (pers.get(2)?.respostas?.seu_nome as string) || primeiroNome(nome);
   const varias = (portal.lojas ?? []).length > 1;
@@ -168,6 +197,7 @@ function Etapa() {
   return (
     <>
       <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} sub={etapa.descricao} />
+      {feita && <div className="aviso ok mb" style={{ maxWidth: 720 }}>Etapa {feita} enviada ✓ Agora a etapa {posicao} de {ETAPAS.length}.</div>}
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
       {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} />}
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
@@ -179,7 +209,8 @@ function Etapa() {
           try {
             await salvarEtapa(portal.id, etapa.numero, form, { semRelatorio: arquivos === 0 });
             await recarregar();
-            router.push(`/personalizacao?salvo=${posicao}`);
+            // Na trilha, segue direto para a próxima etapa; no fim, volta para o resumo.
+            router.push(naTrilha && seguinte ? `/personalizacao/etapa?n=${seguinte.numero}&feita=${posicao}` : `/personalizacao?salvo=${posicao}`);
           } catch (e) { setErro((e as Error).message); setSalvando(false); }
         }}
       >

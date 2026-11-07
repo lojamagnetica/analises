@@ -37,6 +37,17 @@ export function requisito(caminho: string): Requisito | null {
   return REGRAS.find(([b]) => casa(caminho, b))?.[1] ?? "diagnostico";
 }
 
+/** Onboarding: enquanto o Diagnóstico não sai, a loja vê só a boas-vindas e as áreas onde manda arquivos e informações. */
+const ABERTAS_NO_ONBOARDING = ["/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/assistente", "/duvidas", "/personalizacao", "/pessoas/teste"];
+export const emOnboarding = (e: Entrada | null | undefined) => !!e && !e.livre && !e.diagnostico;
+export const abertaNoOnboarding = (caminho: string) => ABERTAS_NO_ONBOARDING.some((b) => casa(caminho, b));
+
+/** A página abre para esta loja agora? Junta o onboarding com as regras de cada área. */
+export function podeAbrir(caminho: string, e: Entrada) {
+  if (emOnboarding(e) && !abertaNoOnboarding(caminho)) return false;
+  return liberado(requisito(caminho), e);
+}
+
 /** A página pode abrir? Equipe e lojas liberadas pela equipe veem tudo. */
 export function liberado(req: Requisito | null, e: Entrada) {
   if (!req || e.livre) return true;

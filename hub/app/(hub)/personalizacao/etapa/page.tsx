@@ -99,6 +99,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
     <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 720 }}>
       <h2 style={{ marginTop: 0 }}>Os relatórios do seu sistema · {recebidos} de {RELATORIOS.length}</h2>
       <p className="mudo" style={{ marginTop: -4 }}>São eles que mostram de verdade como a loja está: o que vende, o que está parado e quem são as suas clientes. Pode ser planilha do Excel, CSV, PDF ou até foto da tela. Os arquivos ficam guardados só para a sua loja e a equipe.</p>
+      <div className="aviso mb" style={{ fontSize: 14 }}>Não tem sistema ou algum relatório? Tudo bem: responda as perguntas lá embaixo com o que você souber (pode ser estimativa) ou marque &quot;Ainda não tenho&quot;. Nada trava.</div>
       {RELATORIOS.map((r, i) => {
         const tem = dados?.some((a) => a.tipo === r.chave);
         return (
@@ -204,6 +205,7 @@ function ArquivosDaEtapa({ portalId, etapa }: { portalId: string; etapa: number 
           </div>
         );
       })}
+      <p className="ajuda" style={{ marginBottom: 0 }}>Não tem algum desses arquivos? Sem problema: escreva no formulário abaixo o que souber ou marque &quot;Ainda não tenho&quot;.</p>
       {erro && <div className="aviso mt">{erro}</div>}
     </div>
   );

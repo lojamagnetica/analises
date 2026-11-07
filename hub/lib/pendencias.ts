@@ -47,7 +47,7 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
   const [{ data: portais }, { data: pers }, { data: equipe }, { data: caixa }, { data: clientes }, { data: reunioes }, { data: insta }, { data: diag }, { data: acessos }, { data: salvas }] = await Promise.all([
     qp,
     de("personalizacao", "portal_id, etapa, respostas, concluida", 5000),
-    de("loja_equipe", "portal_id, perfil", 5000),
+    de("loja_equipe", "portal_id, perfil, ativo", 5000),
     de("loja_caixa", "portal_id", 5000),
     de("loja_clientes", "portal_id", 20000),
     de("reunioes", "portal_id"),
@@ -80,7 +80,7 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
       const faltam = e.campos.filter((c) => vazio(r[c.id]) && r[chaveSituacao(c.id)] !== "nao_tenho");
       if (faltam.length) add(`dados_${e.numero}`, `Dados da loja · ${e.titulo}`, "Loja", faltam.map((c) => c.rotulo).join(" · "), `/personalizacao/etapa/?n=${e.numero}`);
     }
-    const time = (equipe ?? []).filter((x) => x.portal_id === p.id);
+    const time = (equipe ?? []).filter((x) => x.portal_id === p.id && x.ativo !== false); // quem saiu da loja não conta
     if (!time.length) add("equipe", "Nomes e funções de quem trabalha na loja", "Loja", undefined, "/personalizacao/etapa/?n=5");
     else if (time.some((x) => !x.perfil)) add("perfis", `Teste de perfil da equipe (${time.filter((x) => !x.perfil).length} de ${time.length} sem responder)`, "Loja", "Mandar o link do teste em Dados da loja · Time de vendas", "/personalizacao/etapa/?n=5");
     const rel = relatorios.get(p.id);

@@ -16,7 +16,7 @@ import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
-import { bussolaFechada } from "@/lib/bussola";
+import { areaFechada } from "@/lib/bussola";
 
 const ATALHOS = [
   { href: "/bussola", rotulo: "Bússola do gestor", icone: "compass", cor: "var(--red)" },
@@ -87,7 +87,7 @@ export default function Inicio() {
     .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
-  const trancado = (href: string) => { if (!equipe && bussolaFechada(href)) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
+  const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
   const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
   // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
   const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;

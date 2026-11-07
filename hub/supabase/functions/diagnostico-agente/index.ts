@@ -121,10 +121,10 @@ function textoWord(buf: Uint8Array) {
 // e os menos importantes saem até caber. O que sai é avisado.
 const MAX_TEXTO_PDF = 1_600_000; // letras de PDFs lidos como texto, somadas
 const MAX_PAGINAS = 550;
-const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_BYTES = 14 * 1024 * 1024; // em base64 vira uns 19 MB; o pedido todo tem de ficar abaixo de 32 MB
 const MAX_IMAGENS = 20;
 const MAX_IMAGEM = 5 * 1024 * 1024;
-const MAX_TOKENS_ENTRADA = 700_000; // folga para a resposta e para não pesar no custo de cada parada
+const MAX_TOKENS_ENTRADA = 850_000; // a janela é de 1 milhão; o resto fica para a resposta
 
 /** Páginas de um PDF lidas por um leitor de PDF de verdade (conta certo também nos PDFs com páginas comprimidas).
  *  Devolve null quando o PDF tem senha ou está quebrado: o Claude também não conseguiria ler. */
@@ -148,6 +148,35 @@ async function textoPdf(buf: Uint8Array): Promise<string | null> {
   }
 }
 
+/** Deixa o texto de um relatório mais leve sem perder dado: junta espaços repetidos e tira as linhas que se
+ *  repetem em quase todas as páginas (cabeçalho e rodapé do sistema), mantendo a primeira vez que aparecem. */
+function compactar(txt: string) {
+  if (!txt) return txt;
+  const paginas = txt.split(/^(?=--- página \d+ ---$)/m).map((p) => p.split("\n").map((l) => l.replace(/[ \t\u00a0]+/g, " ").trim()).filter(Boolean));
+  if (paginas.length >= 3) {
+    // Só conta como cabeçalho a linha comprida que aparece uma vez por página (dado de tabela, como "UN", fica).
+    const vezes = new Map<string, number>(), total = new Map<string, number>();
+    for (const p of paginas) {
+      for (const l of p) total.set(l, (total.get(l) ?? 0) + 1);
+      for (const l of new Set(p)) vezes.set(l, (vezes.get(l) ?? 0) + 1);
+    }
+    const repetidas = new Set([...vezes].filter(([l, v]) => l.length >= 12 && !/^--- página/.test(l)
+      && v >= paginas.length * 0.5 && (total.get(l) ?? 0) <= v * 1.2).map(([l]) => l));
+    // Só sai do topo e do pé de cada página (até 8 linhas de cada lado); o meio da página, onde ficam os dados, fica inteiro.
+    const vistas = new Set<string>();
+    for (let k = 0; k < paginas.length; k++) {
+      const p = paginas[k], n = p.length;
+      paginas[k] = p.filter((l, i) => {
+        if (!repetidas.has(l) || (i > 8 && i < n - 8)) return true;
+        if (vistas.has(l)) return false;
+        vistas.add(l);
+        return true;
+      });
+    }
+  }
+  return paginas.map((p) => p.join("\n")).join("\n");
+}
+
 /** Tipo real da imagem pelos primeiros bytes (a extensão do arquivo pode mentir, ex.: foto HEIC salva como .jpg). */
 function tipoImagem(b: Uint8Array) {
   if (b[0] === 0xff && b[1] === 0xd8) return "image/jpeg";
@@ -162,7 +191,7 @@ function prioridade(nome: string) {
   const n = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const ano = new Date().getFullYear();
   if (/formul|diagnostico/.test(n)) return 0;
-  if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque/.test(n) && !n.includes(String(ano - 1))) return 1;
+  if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque|fechamento|caixa|faturamento|analise/.test(n) && !n.includes(String(ano - 1))) return 1;
   if (n.includes(String(ano))) return 2;
   if (/pedido|contrato|guia|photo|\.jpe?g$|\.png$/.test(n)) return 5;
   if (n.includes(String(ano - 1))) return 4;
@@ -240,7 +269,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
         const guardado = `${nome}.txt`;
         if (jaLidos.has(guardado)) {
           const { data: b } = await admin.storage.from("relatorios").download(`${portalId}/_texto/${guardado}`);
-          txt = b ? await b.text() : null;
+          txt = b ? compactar(await b.text()) : null;
         }
         if (txt === "") txt = null; // não deu para ler o texto: vai como documento
       }
@@ -248,7 +277,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
       const pg = txt ? Math.max(1, (txt.match(/^--- página \d+ ---$/gm) ?? []).length) : await paginasPdf(buf);
       if (pg === null) { avisos.push(`${nome}: PDF com senha ou danificado, não foi lido (salve de novo como PDF, sem senha, e suba)`); continue; }
       // Com texto de verdade (não escaneado), vai como texto.
-      if (txt && txt.length / pg >= 800) {
+      if (txt && txt.length / pg >= 400) {
         if (textoPdfs + txt.length > MAX_TEXTO_PDF) { avisos.push(`${nome}: ficou de fora (o limite de texto dos relatórios já estava cheio)`); continue; }
         textoPdfs += txt.length;
         itens.push({ nome, est: Math.ceil(txt.length / 3), blocos: [{ type: "text", text: `Arquivo: ${nome} (texto do PDF)\n${txt}` }] });
@@ -294,7 +323,8 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
 /** Conta o pedido de verdade e tira os arquivos menos importantes (os últimos da lista) até caber na janela do Claude. */
 async function caber(system: string, itens: Item[], fim: () => string, avisos: string[]) {
   const client = new Anthropic({ apiKey: CHAVE });
-  for (let volta = 0; volta < 5; volta++) {
+  const contagens: (number | string)[] = [];
+  for (let volta = 0; volta < 8; volta++) {
     const conteudo: Bloco[] = [...itens.flatMap((i) => i.blocos), { type: "text", text: fim() }];
     let total: number;
     try {
@@ -304,15 +334,37 @@ async function caber(system: string, itens: Item[], fim: () => string, avisos: s
       const msg = (e as Error).message;
       // Erro que não é de tamanho (ex.: um PDF que o Claude não consegue abrir): diz qual foi, sem enviar o lote.
       if (!/too long|too large|maximum|exceed/i.test(msg)) throw new Error(`O Claude não aceitou o material: ${msg.slice(0, 300)}`);
-      total = Number.MAX_SAFE_INTEGER;
+      contagens.push(msg.slice(0, 200));
+      // "prompt is too long: 1229074 tokens > 1000000": o número de verdade vem no erro.
+      const m = msg.match(/(\d{6,})\s*tokens/);
+      if (m) total = Number(m[1]);
+      else {
+        // Passou de páginas de PDF ou de tamanho do pedido (não de tokens): saem só PDFs escaneados e imagens,
+        // do menos importante para o mais, até tirar um quarto deles. Os relatórios lidos como texto ficam.
+        const pesados = itens.filter((i) => i.blocos.some((b) => b.type === "document" || b.type === "image"));
+        let tirar = Math.ceil(pesados.reduce((s, i) => s + i.est, 0) * 0.25);
+        for (let k = itens.length - 1; k >= 0 && tirar > 0; k--) {
+          const i = itens[k];
+          if (!pesados.includes(i) || k === 0) continue;
+          itens.splice(k, 1);
+          tirar -= i.est;
+          avisos.push(`${i.nome}: ficou de fora (o pedido passou do tamanho de arquivos que o Claude aceita de uma vez)`);
+        }
+        if (!pesados.length) break;
+        continue;
+      }
     }
-    if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total };
-    // Tira do fim (menos importante) até a estimativa cobrir o excesso, com folga.
-    let falta = total === Number.MAX_SAFE_INTEGER ? Math.ceil(itens.reduce((s, i) => s + i.est, 0) * 0.15) : Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.1);
+    contagens.push(total);
+    if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total, contagens };
+    // A estimativa por arquivo é acertada pela contagem de verdade (tabela de números pesa mais que texto corrido),
+    // para não tirar arquivo a mais. Tira do fim (menos importante) até cobrir o excesso, com 5% de folga.
+    const estimado = itens.reduce((s, i) => s + i.est, 0) + Math.ceil(fim().length / 3);
+    const fator = Math.max(0.5, total / Math.max(1, estimado));
+    let falta = Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.05);
     if (!itens.length) break;
     while (falta > 0 && itens.length) {
       const i = itens.pop()!;
-      falta -= i.est;
+      falta -= i.est * fator;
       avisos.push(`${i.nome}: ficou de fora (o material todo passou do tamanho que o Claude lê de uma vez)`);
     }
   }
@@ -395,8 +447,8 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
     docs.itens.length ? `Arquivos lidos: ${docs.itens.map((i) => i.nome).join(", ")}.` : "Nenhum relatório foi subido no Hub para esta loja.",
     docs.avisos.length ? `Avisos sobre os arquivos (conte isso nas pendências): ${docs.avisos.join("; ")}.` : "",
   ].filter(Boolean).join("\n\n"));
-  const { conteudo } = await caber(system, docs.itens, fim, docs.avisos);
-  return { system, conteudo, avisos: docs.avisos };
+  const { conteudo, total, contagens } = await caber(system, docs.itens, fim, docs.avisos);
+  return { system, conteudo, avisos: docs.avisos, tokens: total, lidos: docs.itens.length, contagens };
 }
 
 /** Os parâmetros do pedido ao Claude. A pesquisa de mercado usa a busca na internet; as outras paradas respondem em JSON. */
@@ -438,7 +490,7 @@ async function rodar(admin: SupabaseClient, portalId: string, parada: Parada, in
   try {
     const pd = await pedido(admin, portalId, parada, inicio);
     const lote = await entregar(parada, pd.system, [{ role: "user", content: pd.conteudo as Anthropic.ContentBlockParam[] }]);
-    await marcar({ estado: "trabalhando", lote, avisos: pd.avisos });
+    await marcar({ estado: "trabalhando", lote, avisos: pd.avisos, tokens: pd.tokens, lidos: pd.lidos, contagens: pd.contagens });
   } catch (e) {
     if (e instanceof Continua) {
       // Ainda há PDFs para ler: guarda o andamento e chama a função de novo para continuar.
@@ -548,7 +600,16 @@ Deno.serve(async (req) => {
   }
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
-  const { portal_id, parada, conferir: so_conferir, continuar } = await req.json().catch(() => ({}));
+  const { portal_id, parada, conferir: so_conferir, continuar, medir } = await req.json().catch(() => ({}));
+  // Conferência sem custo (só a chave interna): monta o pedido da parada, conta e devolve o que coube, sem enviar ao Claude.
+  if (medir && liberado && portal_id && PARADAS.includes(parada)) {
+    try {
+      const pd = await pedido(admin, portal_id, parada as Parada, new Date().toISOString());
+      return json({ tokens: pd.tokens, lidos: pd.lidos, fora: pd.avisos.length, contagens: pd.contagens, avisos: pd.avisos });
+    } catch (e) {
+      return json({ erro: (e as Error).message });
+    }
+  }
   if (so_conferir) {
     if (!portal_id) return json({ erro: "Informe a loja." }, 400);
     const { data } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();

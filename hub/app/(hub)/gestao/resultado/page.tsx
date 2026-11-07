@@ -240,7 +240,7 @@ function Resultado() {
                 <p className="mudo" style={{ marginTop: 0 }}>{FOCOS[f.tipo].resumo}</p>
                 <p style={NUM}>{fraseFoco(f, mesFechado)}</p>
                 <ol style={{ paddingLeft: 18, margin: 0 }}>
-                  {FOCOS[f.tipo].acoes.map((a) => (
+                  {FOCOS[f.tipo].acoes.filter((a) => !portal.sem_equipe || !/time|gincana/i.test(a.texto)).map((a) => (
                     <li key={a.texto} style={{ marginBottom: 6 }}>
                       {a.texto}{a.link && <> <Link href={a.link.href}>{a.link.rotulo} →</Link></>}
                     </li>

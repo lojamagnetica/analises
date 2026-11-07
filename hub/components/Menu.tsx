@@ -7,6 +7,13 @@ import { Icone } from "@/components/Icone";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { DE_TIME } from "@/lib/hub";
+import { LOJA_NA_MAO } from "@/lib/entrada";
+
+const NA_MAO: Item[] = [
+  { href: "/gestao/vendas", rotulo: "Vendas do dia", icone: "bag" },
+  { href: "/gestao/crediario", rotulo: "Crediário", icone: "calc" },
+  { href: "/gestao/minhas-compras", rotulo: "Compras", icone: "box" },
+];
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };
 export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
@@ -250,7 +257,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
@@ -261,10 +268,12 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
     // Loja sem equipe: sai o que é de time; o Conteúdo mostra quem ajuda.
     .filter((g) => !props.semEquipe || g.id !== "pessoas")
     .map((g) => (props.semEquipe ? { ...g, itens: g.itens.filter((i) => !DE_TIME.test(i.href)) } : g))
+    // Loja na mão: Vendas do dia, Crediário e Compras no topo da Gestão; o caixa se soma sozinho.
+    .map((g) => (props.vendaDiaria && g.id === "gestao" ? { ...g, itens: [...NA_MAO, ...g.itens.filter((i) => i.href !== "/gestao/caixa")] } : g))
     .map((g) => (g.id === "conteudo" && props.apoioConteudo ? { ...g, rotulo: `Conteúdo · ${props.apoioConteudo}` } : g))
     // Onboarding: só as áreas onde a loja manda os arquivos e as informações.
-    .filter((g) => !props.soEnvio || g.id === "loja")
-    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao")) } : g));
+    .filter((g) => !props.soEnvio || g.id === "loja" || (props.vendaDiaria && g.id === "gestao"))
+    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao") || LOJA_NA_MAO.includes(i.href)) } : g));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, !!props.soEnvio || g.itens.some((i) => ativo(i.href))])),
@@ -333,7 +342,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {props.temPortal && !props.soCurso && !props.soEnvio && (
+          {props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/bussola") && (
             <div className="nav-linha">
               <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
                 <Icone nome="compass" /> BÚSSOLA DO GESTOR{props.trava?.("/bussola") ? " 🔒" : ""}

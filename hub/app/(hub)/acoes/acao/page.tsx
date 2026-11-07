@@ -160,7 +160,7 @@ function Acao() {
           <div className="grade g2 mb">
             <form className="card" action={() => fazer(() => lancarVenda(loja, venda.data, lerNumero(venda.valor), venda.pa ? lerNumero(venda.pa) : null, venda.cadastros ? Math.round(lerNumero(venda.cadastros)) : null).then(() => setVenda({ ...venda, valor: "", pa: "", cadastros: "" })))}>
               <h2>Lançar o dia</h2>
-              <p className="mudo" style={{ marginTop: 0 }}>No fim de cada dia, com o time: quanto vendeu, as peças por atendimento e os cadastros novos.</p>
+              <p className="mudo" style={{ marginTop: 0 }}>{portal.sem_equipe ? "No fim de cada dia" : "No fim de cada dia, com o time"}: quanto vendeu, as peças por atendimento e os cadastros novos.</p>
               <div className="grade g2" style={{ gap: 12 }}>
                 <div><label className="rotulo">Dia</label><input type="date" value={venda.data} onChange={(e) => setVenda({ ...venda, data: e.target.value })} /></div>
                 <div><label className="rotulo">Faturamento do dia</label><CampoNumero rotulo="Faturamento do dia" dica="R$" valor={venda.valor} aoMudar={(v) => setVenda({ ...venda, valor: v })} /></div>

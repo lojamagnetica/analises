@@ -175,6 +175,14 @@ function EditarPortal() {
           }} />
           <span>A dona vende sozinha (sem Gestão de pessoas, mural e missão do time; o passo &quot;cadastrar a equipe&quot; não trava)</span>
         </label>
+        <label className="marcar">
+          <input type="checkbox" checked={!!p.venda_diaria} onChange={async (e) => {
+            const { error } = await supabaseBrowser().from("portais").update({ venda_diaria: e.target.checked }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: e.target.checked ? "Vendas do dia, Crediário e Compras entraram no portal da loja." : "Vendas do dia, Crediário e Compras saíram do portal da loja." });
+            recarregar();
+          }} />
+          <span>Loja na mão: Vendas do dia (cada venda pelo celular, o caixa soma sozinho), Crediário e Compras</span>
+        </label>
         <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Quem ajuda no conteúdo</b> (aparece no menu Conteúdo)
           <input key={p.apoio_conteudo ?? ""} defaultValue={p.apoio_conteudo ?? ""} placeholder="Ex.: as filhas, uma social media" style={{ display: "block", marginTop: 4, maxWidth: 360 }} onBlur={async (e) => {
             const v = e.target.value.trim() || null;

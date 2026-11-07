@@ -101,7 +101,7 @@ export default function AcoesPorTipo() {
       ) : (
         <div className="card" style={{ padding: "6px 20px" }}>
           {doTipo.slice(0, mostrar).map((c) => {
-            const texto = mensagemDoTipo(m, equipe, tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora });
+            const texto = mensagemDoTipo(m, equipe, tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora || (portal.sem_equipe ? (portal.responsavel ?? "").trim().split(" ")[0] || null : null) });
             const link = linkWhats(c.whatsapp, texto);
             const l = leituras.get(c.id);
             return (

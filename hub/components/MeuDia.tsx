@@ -8,7 +8,7 @@ import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
 import {
-  DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
+  type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
 } from "@/lib/meu-dia";
 
@@ -16,16 +16,17 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respostas | undefined }) {
-  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId), m: await buscarMetodo().catch(() => null) }), [portalId]);
+export function MeuDia({ portalId, estoque, modo = {} }: { portalId: string; estoque: Respostas | undefined; modo?: Modo }) {
+  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio]);
   const [rotina, setRotina] = useState<Rotina | null>(null);
   const [erro, setErro] = useState("");
   if (!dados) return <Carregando />;
   const { d, m } = dados;
   const r = rotina ?? d.rotina;
   const p = placar(d);
-  const vs = vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
-  const padrao = padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
+  // Loja sem equipe: a dona não recebe feedback de vendedora sobre ela mesma.
+  const vs = modo.solo ? [] : vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
+  const padrao = modo.solo ? null : padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
   const lista = tarefas(d, p, vs);
   const feitosHoje = r.feitos[d.agora] ?? [];
   const at = atitudes(d, problemaDaLoja(vs, d.caixa), vs.filter((v) => v.vendas > 0).length);
@@ -58,7 +59,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
             {p.deHoje > 0 && <small>Parcial lançada: {moeda(p.deHoje)} · faltam {moeda(Math.max(0, (p.metaHoje ?? 0) - p.deHoje))}</small>}
             {p.ontem != null
               ? <div><small>Ontem: <b>{moeda(p.ontem)}</b>{p.metaOntem ? (p.ontem >= p.metaOntem ? " ✓ bateu a meta" : <span style={{ color: "var(--red)" }}> · {moeda(p.metaOntem - p.ontem)} abaixo</span>) : ""}</small></div>
-              : <div><small style={{ color: "var(--red)" }}>O caixa de ontem não foi lançado</small></div>}
+              : <div><small style={{ color: "var(--red)" }}>{modo.vendaDiaria ? "Nenhuma venda registrada ontem" : "O caixa de ontem não foi lançado"}</small></div>}
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
             <small className="mudo">No mês · meta {moeda(p.meta)}</small>
@@ -141,7 +142,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
           </div>
         </>
       )}
-      {vs.length === 0 && (
+      {vs.length === 0 && !modo.solo && (
         <Link href="/pessoas" className="card mb linha entre" style={{ textDecoration: "none", color: "inherit" }}>
           <span>Cadastre o seu time em <b>Minha equipe</b> e lance o caixa por vendedora para ver o feedback de cada uma aqui.</span>
           <span className="btn s peq">Cadastrar</span>
@@ -163,16 +164,16 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
       <details className="card mb">
         <summary style={{ cursor: "pointer" }}><b>Minha rotina</b> <span className="mudo">· os dias fixos da sua gestão: o Hub te lembra e acompanha</span></summary>
         <div className="grade g3 mt" style={{ gap: 12 }}>
-          <div>
+          {!modo.solo && <div>
             <label className="rotulo" htmlFor="rot-reuniao">Reunião semanal individual</label>
             <select id="rot-reuniao" value={r.config.reuniao ?? ""} onChange={(e) => mudarConfig({ ...r.config, reuniao: e.target.value === "" ? undefined : Number(e.target.value) })}>
               <option value="">Escolha o dia</option>
               {[1, 2, 3, 4, 5, 6, 0].map((x) => <option key={x} value={x}>Toda {DIAS[x]}</option>)}
             </select>
             {ac.reuniao && <small className="mudo">Este mês: {ac.reuniao.feitos} de {ac.reuniao.previstos} feitas</small>}
-          </div>
+          </div>}
           <div>
-            <label className="rotulo" htmlFor="rot-conteudo">Calendário de conteúdo da semana</label>
+            <label className="rotulo" htmlFor="rot-conteudo">{modo.apoio ? `Combinar o conteúdo com ${modo.apoio}` : "Calendário de conteúdo da semana"}</label>
             <select id="rot-conteudo" value={r.config.conteudo ?? ""} onChange={(e) => mudarConfig({ ...r.config, conteudo: e.target.value === "" ? undefined : Number(e.target.value) })}>
               <option value="">Escolha o dia</option>
               {[1, 2, 3, 4, 5, 6, 0].map((x) => <option key={x} value={x}>Toda {DIAS[x]}</option>)}

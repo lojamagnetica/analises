@@ -176,7 +176,7 @@ function Plano({ mes }: { mes: string }) {
             )}
           </div>
         )}
-        {meta && (
+        {meta && !portal.sem_equipe && (
           <label className="ajuda mt" style={{ display: "block" }}><b style={{ color: "var(--ink)", fontSize: 15 }}>Premiação</b><br />
             O que o time ganha ao bater a meta: o prêmio, de quem é (cada vendedor ou o time todo) e a regra.
             <textarea rows={4} value={d.premiacao ?? ""} onChange={(e) => muda({ premiacao: e.target.value })}

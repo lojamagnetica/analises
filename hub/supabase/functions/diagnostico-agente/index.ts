@@ -111,10 +111,14 @@ function textoWord(buf: Uint8Array) {
     .replace(/\n{3,}/g, "\n\n").trim();
 }
 
-// O Claude lê no máximo 600 páginas de PDF por pedido e o pedido tem limite de tamanho:
-// os arquivos entram por ordem de importância até a cota, e o que sobrar é avisado.
-const MAX_PAGINAS = 520;
-const MAX_BYTES = 18 * 1024 * 1024;
+// Limites do Claude por pedido: 600 páginas de PDF, 32 MB e a janela de 1 milhão de tokens (cada página de PDF
+// vira texto + imagem, uns 1.500 a 3.000 tokens). Os arquivos entram por ordem de importância; antes de enviar,
+// o pedido é contado de verdade (count_tokens) e os menos importantes saem até caber. O que sai é avisado.
+const MAX_PAGINAS = 550;
+const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGENS = 20;
+const MAX_IMAGEM = 5 * 1024 * 1024;
+const MAX_TOKENS_ENTRADA = 700_000; // folga para a resposta e para não pesar no custo de cada parada
 
 /** Páginas de um PDF: o maior /Count da árvore de páginas ou as páginas contadas; sem nenhum dos dois, estima pelo tamanho. */
 function paginasPdf(buf: Uint8Array) {
@@ -125,9 +129,18 @@ function paginasPdf(buf: Uint8Array) {
   return Math.max(maior, soltas) || Math.max(1, Math.ceil(buf.length / 60_000));
 }
 
+/** Tipo real da imagem pelos primeiros bytes (a extensão do arquivo pode mentir, ex.: foto HEIC salva como .jpg). */
+function tipoImagem(b: Uint8Array) {
+  if (b[0] === 0xff && b[1] === 0xd8) return "image/jpeg";
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return "image/png";
+  if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return "image/gif";
+  if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45) return "image/webp";
+  return null;
+}
+
 /** Ordem de leitura: formulário e diagnóstico, depois o ano atual (vendas, ticket, estoque), depois o resto e por último os anos anteriores e pedidos. */
 function prioridade(nome: string) {
-  const n = nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const n = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const ano = new Date().getFullYear();
   if (/formul|diagnostico/.test(n)) return 0;
   if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque/.test(n) && !n.includes(String(ano - 1))) return 1;
@@ -137,11 +150,14 @@ function prioridade(nome: string) {
   return 3;
 }
 
+/** Um arquivo pronto para entrar no pedido, com a estimativa de tokens (para escolher quem sai se não couber). */
+type Item = { nome: string; blocos: Bloco[]; est: number };
+
 async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp) {
-  const blocos: Bloco[] = [];
+  const itens: Item[] = [];
   const avisos: string[] = [];
   const { data: todos } = await admin.storage.from("relatorios").list(portalId, { limit: 300, sortBy: { column: "created_at", order: "desc" } });
-  // O mesmo arquivo importado duas vezes do Drive (mesmo nome e tamanho) entra uma vez só.
+  // O mesmo arquivo importado duas vezes do Drive (mesmo final de nome e tamanho) entra uma vez só.
   const vistos = new Set<string>();
   const lista = (todos ?? []).filter((x) => x.id && (!filtro || filtro.test(x.name))).filter((x) => {
     const chave = `${x.name.slice(-50)}|${x.metadata?.size ?? ""}`;
@@ -149,51 +165,86 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
     vistos.add(chave);
     return true;
   }).sort((a, b) => prioridade(a.name) - prioridade(b.name));
-  let texto = 0, paginas = 0, bytes = 0;
-  const lidos: string[] = [];
+  let texto = 0, paginas = 0, bytes = 0, imagens = 0;
   for (const f of lista) {
     const nome = f.name;
     const ext = nome.split(".").pop()?.toLowerCase() ?? "";
     const tam = Number(f.metadata?.size ?? 0);
+    const ehImagem = ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
     if (tam > MAX_ARQUIVO) { avisos.push(`${nome}: grande demais (${Math.round(tam / 1048576)} MB), não foi lido`); continue; }
-    const binario = ext === "pdf" || ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
-    if (binario && bytes + tam > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
+    if (ehImagem && tam > MAX_IMAGEM) { avisos.push(`${nome}: imagem acima de 5 MB, não foi lida`); continue; }
+    if (ehImagem && imagens >= MAX_IMAGENS) { avisos.push(`${nome}: ficou de fora (já entraram ${MAX_IMAGENS} imagens)`); continue; }
+    if ((ext === "pdf" || ehImagem) && bytes + tam > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
     const { data: blob } = await admin.storage.from("relatorios").download(`${portalId}/${nome}`);
     if (!blob) { avisos.push(`${nome}: não deu para abrir`); continue; }
     const buf = new Uint8Array(await blob.arrayBuffer());
     if (ext === "pdf") {
+      const cabeca = new TextDecoder("latin1").decode(buf.subarray(0, 1024));
+      if (!cabeca.includes("%PDF")) { avisos.push(`${nome}: não é um PDF de verdade, não foi lido`); continue; }
+      if (/\/Encrypt\b/.test(new TextDecoder("latin1").decode(buf.subarray(Math.max(0, buf.length - 4096))))) { avisos.push(`${nome}: PDF com senha, não foi lido (salve sem senha e suba de novo)`); continue; }
       const pg = paginasPdf(buf);
       if (paginas + pg > MAX_PAGINAS) { avisos.push(`${nome}: ficou de fora (${pg} páginas; o limite de páginas de PDF já estava cheio)`); continue; }
       paginas += pg; bytes += buf.length;
-    } else if (binario) bytes += buf.length;
-    lidos.push(nome);
-    if (ext === "pdf") {
-      blocos.push({ type: "text", text: `Arquivo: ${nome}` });
-      blocos.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: base64(buf) } });
-    } else if (["png", "jpg", "jpeg", "webp", "gif"].includes(ext)) {
-      blocos.push({ type: "text", text: `Imagem: ${nome}` });
-      blocos.push({ type: "image", source: { type: "base64", media_type: (ext === "jpg" ? "image/jpeg" : `image/${ext}`) as "image/png", data: base64(buf) } });
+      itens.push({ nome, est: pg * 2500, blocos: [
+        { type: "text", text: `Arquivo: ${nome}` },
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64(buf) } },
+      ] });
+    } else if (ehImagem) {
+      const tipo = tipoImagem(buf);
+      if (!tipo) { avisos.push(`${nome}: formato de imagem que o Claude não lê (ex.: HEIC do iPhone), não foi lida`); continue; }
+      imagens++; bytes += buf.length;
+      itens.push({ nome, est: 1600, blocos: [
+        { type: "text", text: `Imagem: ${nome}` },
+        { type: "image", source: { type: "base64", media_type: tipo as "image/png", data: base64(buf) } },
+      ] });
     } else if (["xlsx", "xls", "csv", "txt", "ods", "docx"].includes(ext)) {
       let conteudo = "";
-      if (ext === "csv" || ext === "txt") conteudo = new TextDecoder().decode(buf);
-      else if (ext === "docx") {
-        try { conteudo = textoWord(buf); } catch { avisos.push(`${nome}: não deu para ler o Word (salve como PDF e suba de novo)`); continue; }
-      }
-      else {
-        const wb = XLSX.read(buf, { type: "array" });
-        conteudo = wb.SheetNames.map((s) => `--- aba ${s} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[s], { blankrows: false })}`).join("\n");
-      }
+      try {
+        if (ext === "csv" || ext === "txt") conteudo = new TextDecoder().decode(buf);
+        else if (ext === "docx") conteudo = textoWord(buf);
+        else {
+          const wb = XLSX.read(buf, { type: "array" });
+          conteudo = wb.SheetNames.map((s) => `--- aba ${s} ---\n${XLSX.utils.sheet_to_csv(wb.Sheets[s], { blankrows: false })}`).join("\n");
+        }
+      } catch { avisos.push(`${nome}: não deu para ler (salve como PDF e suba de novo)`); continue; }
       if (texto + conteudo.length > MAX_TEXTO) {
         const cabe = Math.max(0, MAX_TEXTO - texto);
         avisos.push(`${nome}: só as primeiras ${cabe.toLocaleString("pt-BR")} de ${conteudo.length.toLocaleString("pt-BR")} letras couberam na leitura`);
         conteudo = conteudo.slice(0, cabe);
       }
       texto += conteudo.length;
-      if (conteudo) blocos.push({ type: "text", text: `Arquivo: ${nome}\n${conteudo}` });
+      if (conteudo) itens.push({ nome, est: Math.ceil(conteudo.length / 3), blocos: [{ type: "text", text: `Arquivo: ${nome}\n${conteudo}` }] });
     } else avisos.push(`${nome}: formato .${ext} não é lido (use PDF, Word, planilha, CSV ou imagem)`);
   }
-  if (avisos.some((a) => a.includes("ficou de fora"))) avisos.unshift(`Foram lidos ${lidos.length} arquivos (${paginas} páginas de PDF), por ordem de importância: formulário, ano atual, depois anos anteriores.`);
-  return { blocos, avisos, nomes: lidos };
+  return { itens, avisos };
+}
+
+/** Conta o pedido de verdade e tira os arquivos menos importantes (os últimos da lista) até caber na janela do Claude. */
+async function caber(system: string, itens: Item[], fim: () => string, avisos: string[]) {
+  const client = new Anthropic({ apiKey: CHAVE });
+  for (let volta = 0; volta < 5; volta++) {
+    const conteudo: Bloco[] = [...itens.flatMap((i) => i.blocos), { type: "text", text: fim() }];
+    let total: number;
+    try {
+      // @ts-ignore: documentos em base64 entram na contagem como no pedido
+      total = (await client.messages.countTokens({ model: MODELO, ...(system ? { system } : {}), messages: [{ role: "user", content: conteudo }] })).input_tokens;
+    } catch (e) {
+      const msg = (e as Error).message;
+      // Erro que não é de tamanho (ex.: um PDF que o Claude não consegue abrir): diz qual foi, sem enviar o lote.
+      if (!/too long|too large|maximum|exceed/i.test(msg)) throw new Error(`O Claude não aceitou o material: ${msg.slice(0, 300)}`);
+      total = Number.MAX_SAFE_INTEGER;
+    }
+    if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total };
+    // Tira do fim (menos importante) até a estimativa cobrir o excesso, com folga.
+    let falta = total === Number.MAX_SAFE_INTEGER ? Math.ceil(itens.reduce((s, i) => s + i.est, 0) * 0.3) : Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.15);
+    if (!itens.length) break;
+    while (falta > 0 && itens.length) {
+      const i = itens.pop()!;
+      falta -= i.est;
+      avisos.push(`${i.nome}: ficou de fora (o material todo passou do tamanho que o Claude lê de uma vez)`);
+    }
+  }
+  throw new Error("O material desta loja é grande demais mesmo sem os arquivos menos importantes. Tire arquivos repetidos ou antigos da pasta e tente de novo.");
 }
 
 async function juntar(admin: SupabaseClient, portalId: string) {
@@ -242,7 +293,6 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
     arquivos(admin, portalId, parada === "mercado" ? /formul|diagnostico-da-sua-loja/i : undefined),
   ]);
   const memoria = (mem?.dados ?? {}) as { instrucoes?: string; exemplo?: string };
-  const conteudo: Bloco[] = [...docs.blocos];
   const tr = (prep?.transcricoes ?? {}) as Record<string, string>;
   const partes = [
     `Loja: ${base.loja}. Dona ou dono: ${base.responsavel || "—"}. Hoje: ${hoje.slice(0, 10)}.`,
@@ -250,8 +300,7 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
     tr.comercial ? `Transcrição da reunião do Comercial:\n${tr.comercial}` : "Transcrição da reunião do Comercial: não colada.",
     tr.onboarding ? `Transcrição do onboarding com a CS:\n${tr.onboarding}` : "Transcrição do onboarding: não colada.",
     tr.outras ? `Outras anotações e conversas:\n${tr.outras}` : "",
-    docs.nomes.length ? `Arquivos lidos: ${docs.nomes.join(", ")}.` : "Nenhum relatório foi subido no Hub para esta loja.",
-    docs.avisos.length ? `Avisos sobre os arquivos (conte isso nas pendências): ${docs.avisos.join("; ")}.` : "",
+    "@@ARQUIVOS@@",
     memoria.exemplo && parada !== "mercado" ? `Exemplo de referência de um diagnóstico da Camilla (só para o padrão de profundidade e de frase, não copie números): ${memoria.exemplo}` : "",
   ];
   if (parada === "mercado") partes.push(`Concorrentes, referências e cidade que a Camilla anotou: ${prep?.concorrentes || "(não anotou; procure no formulário de diagnóstico e nas transcrições)"}`);
@@ -267,8 +316,14 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
   partes.push(TAREFA[parada], parada === "mercado" ? "Responda só no formato pedido, com os três marcadores."
     : parada === "hub" ? `Responda só com um JSON válido (sem texto antes ou depois), seguindo exatamente este esquema JSON: ${JSON.stringify(ESQUEMAS.hub)}`
     : "Responda só com o JSON pedido.");
-  conteudo.push({ type: "text", text: partes.filter(Boolean).join("\n\n") });
-  return { system: memoria.instrucoes ?? "", conteudo, avisos: docs.avisos };
+  const system = memoria.instrucoes ?? "";
+  // A lista de arquivos lidos e os avisos entram no texto depois de saber o que coube.
+  const fim = () => partes.filter(Boolean).join("\n\n").replace("@@ARQUIVOS@@", [
+    docs.itens.length ? `Arquivos lidos: ${docs.itens.map((i) => i.nome).join(", ")}.` : "Nenhum relatório foi subido no Hub para esta loja.",
+    docs.avisos.length ? `Avisos sobre os arquivos (conte isso nas pendências): ${docs.avisos.join("; ")}.` : "",
+  ].filter(Boolean).join("\n\n"));
+  const { conteudo } = await caber(system, docs.itens, fim, docs.avisos);
+  return { system, conteudo, avisos: docs.avisos };
 }
 
 /** Os parâmetros do pedido ao Claude. A pesquisa de mercado usa a busca na internet; as outras paradas respondem em JSON. */

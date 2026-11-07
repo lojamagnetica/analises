@@ -111,7 +111,7 @@ export default function Marca() {
             <li>A marca é <strong>magnética</strong>, em minúsculas. O @ é <strong>@magnetica.hub</strong>.</li>
             <li>Mostre a casa: sócios, educadores, turma e bastidores, cada um com o crachá.</li>
             <li>Black e off-white dominam o feed; o laranja aparece pouco, só para destacar.</li>
-            <li>Lema do método: <strong>ATRAIR. VENDER. REPETIR.</strong></li>
+            <li>Lema do método: <strong>ATRAIR. VENDER. MULTIPLICAR.</strong></li>
             <li>Os crachás de boas-vindas mantêm a cor de cada plano (Premium azul-noite, Gold black, Start laranja, Consultoria off-white).</li>
             <li>Nunca: símbolo de duas cores, azul-noite fora dos crachás, laranja neon, vermelho carmim ou a palavra &quot;Group&quot;.</li>
           </ul>

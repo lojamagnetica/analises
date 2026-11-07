@@ -25,8 +25,8 @@ const cors = {
 };
 const json = (corpo: unknown, status = 200) => new Response(JSON.stringify(corpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-type Parada = "raiox" | "mercado" | "perguntas" | "solucao" | "hub";
-const PARADAS: Parada[] = ["raiox", "mercado", "perguntas", "solucao", "hub"];
+type Parada = "raiox" | "mercado" | "perguntas" | "solucao" | "hub" | "plano";
+const PARADAS: Parada[] = ["raiox", "mercado", "perguntas", "solucao", "hub", "plano"];
 type Bloco = Anthropic.Beta.BetaContentBlockParam;
 
 // ───── Esquemas da resposta de cada parada ─────
@@ -81,6 +81,13 @@ const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
     linhas: lista(obj({ nome: t, parado: t, nivel: NIVEL, leitura: t, desejo: t })),
     equipe: obj({ leitura: t, pessoas: lista(obj({ nome: t, funcao: t, nota: t })) }),
   }),
+  // O Plano de Ação: tema e tarefas de cada mês e, para cada pedido da cliente, em que mês ele é atendido.
+  plano: obj({
+    resumo: t,
+    meses: lista(obj({ mes: n, tema: t, porque: t, tarefas: lista(t) })),
+    pedidos: lista(obj({ pedido: t, fonte: t, mes: n, como: t })),
+    fora: lista(obj({ pedido: t, porque: t })),
+  }),
 };
 
 const TAREFA: Record<Parada, string> = {
@@ -103,6 +110,13 @@ const TAREFA: Record<Parada, string> = {
   ].join("\n"),
   perguntas: "Faça a PARADA 2: as perguntas do gargalo que a Camilla escolheu (veja a escolha dela abaixo). Antes de escrever cada pergunta, procure a resposta no formulário, nas transcrições de áudio e de reunião, nas anotações, no planner e nos arquivos. Se já está respondida, não pergunte. Se está em parte, a pergunta começa pelo que ela já contou e pede só o que falta (ex.: \"Você contou que fotografa as peças e manda o preço no grupo para a Su. Quanto tempo leva, em média, da sacola chegar até a peça estar na arara?\"). Poucas perguntas e certeiras valem mais que muitas.",
   solucao: "Faça a PARADA 3 (rascunho da solução, roteiro de 1h30, as 2 missões, o filtro anti-excesso, a frase do que ela faz amanhã, o estacionamento e o conteúdo do PDF), usando o gargalo e a alavanca escolhidos e as respostas da loja.",
+  plano: [
+    "Monte o PLANO DE AÇÃO desta loja, mês a mês, do jeito da Camilla (veja os planos de outras lojas abaixo: o tamanho das tarefas, o tom e a ordem). É o que a dona vai ver e marcar no Hub.",
+    "1) PRIMEIRO, LISTE TUDO O QUE A CLIENTE PEDIU: objetivos e prioridades do formulário (na ordem que ela deu), o que quer ter construído ao fim da mentoria, os desafios marcados, o que disse na passagem do Comercial e nas transcrições, o resultado de 90 dias combinado. Cada pedido vira uma linha em \"pedidos\", com a fonte e o mês em que o plano entrega. O que não couber vai em \"fora\" com o motivo (e só se não couber mesmo).",
+    "2) A ORDEM DOS MESES segue o Diagnóstico: o gargalo e a alavanca escolhidos pela Camilla vêm primeiro. OS DOIS PRIMEIROS MESES TÊM DE ENTREGAR O QUE ELA MAIS QUER (as primeiras prioridades do formulário): ela precisa sentir o resultado cedo. Depois vêm os pedidos seguintes, em ordem lógica (um mês prepara o outro).",
+    "3) CADA MÊS: um tema curto, na linguagem da cliente (ex.: \"Crediário que vira dinheiro no caixa\"), o porquê em uma frase e de 4 a 7 tarefas. Tarefa começa com verbo, é concreta (o quê, quem, com que número ou ferramenta do Hub) e cabe no mês. Use os números do Diagnóstico e o nome das pessoas do time quando ajudar.",
+    "4) NÃO REPITA o que já está no plano atual da loja (lista abaixo): complete. Siga as regras do método (pós-venda em 24 h sem oferecer nada, aniversariantes, mensagem que diz quem fala, CTA que conduz, carteira por vendedora e missão da semana igual para o time) e a linha de gestão (a responsabilidade com a pessoa, o combinado sai dela). Nunca use \"balcão\".",
+  ].join("\n"),
   hub: "Monte o Diagnóstico da loja no Hub (o que a lojista vai ver), no formato e no padrão dos exemplos liberados, com o que foi preparado e decidido. Valores em reais como número (sem R$) nos campos numéricos; mês como AAAA-MM.",
 };
 
@@ -445,6 +459,28 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
   if (parada === "mercado") partes.push(`Concorrentes, referências e cidade que a Camilla anotou: ${prep?.concorrentes || "(não anotou; procure no formulário de diagnóstico e nas transcrições)"}`);
   if (parada !== "raiox") partes.push(`Raio-X já preparado: ${JSON.stringify(prep?.raiox ?? null)}`, `Escolha da Camilla: ${JSON.stringify(prep?.escolha ?? null)}`);
   if (parada === "solucao" || parada === "hub") partes.push(`Perguntas do gargalo: ${JSON.stringify(prep?.perguntas ?? [])}`, `Respostas da loja:\n${prep?.respostas || "(ainda não chegaram)"}`);
+  if (parada === "plano") {
+    const [{ data: diag }, { data: itens }, { data: portalP }, { data: outros }] = await Promise.all([
+      admin.from("loja_diagnostico").select("status, dados").eq("portal_id", portalId).eq("loja", "").maybeSingle(),
+      admin.from("plano_itens").select("mes, texto, feito").eq("portal_id", portalId).order("mes").order("ordem"),
+      admin.from("portais").select("plano_titulos").eq("id", portalId).single(),
+      admin.from("plano_itens").select("portal_id, mes, texto").neq("portal_id", portalId).order("portal_id").order("mes").order("ordem").limit(400),
+    ]);
+    const plano = (base.dados.passagem_do_comercial as { plano_id?: string } | null)?.plano_id ?? (base.dados.ficha as { plano_id?: string } | null)?.plano_id ?? "";
+    const meses = plano === "start" ? 4 : 3;
+    // Até 3 planos de outras lojas, como exemplo do jeito da Camilla montar.
+    const exemplos = new Map<string, string[]>();
+    for (const x of outros ?? []) { const l = exemplos.get(x.portal_id) ?? []; if (exemplos.size < 3 || exemplos.has(x.portal_id)) { l.push(`Mês ${x.mes}: ${x.texto}`); exemplos.set(x.portal_id, l); } }
+    partes.push(
+      `Solução e missões preparadas para a reunião: ${JSON.stringify(prep?.solucao ?? null)}`,
+      `Perguntas do gargalo e respostas da loja: ${JSON.stringify(prep?.perguntas ?? [])}\n${prep?.respostas || "(sem respostas ainda)"}`,
+      `Diagnóstico da loja no Hub (${diag?.status ?? "não existe"}): ${JSON.stringify(diag?.dados ?? prep?.hub ?? null)}`,
+      `Plano: ${plano || "não informado"}. Monte ${meses} meses (mes de 1 a ${meses}).`,
+      `Temas que a Camilla já escreveu para esta loja: ${JSON.stringify(portalP?.plano_titulos ?? {})} (mantenha se fizer sentido).`,
+      `Plano atual da loja (não repita, complete): ${(itens ?? []).map((i) => `Mês ${i.mes}: ${i.texto}${i.feito ? " (feito)" : ""}`).join(" | ") || "vazio"}`,
+      `Planos de outras lojas feitos pela Camilla (só o jeito de montar; não copie): ${[...exemplos.values()].map((l, i) => `Loja ${i + 1}: ${l.join(" | ")}`).join("\n") || "nenhum"}`,
+    );
+  }
   if (parada === "hub") {
     partes.push(`Preparação da reunião (solução, missões e estacionamento): ${JSON.stringify(prep?.solucao ?? null)}`);
     const { data: ex } = await admin.from("loja_diagnostico").select("dados").eq("status", "liberada").neq("portal_id", portalId).order("liberada_em", { ascending: false }).limit(2);
@@ -633,7 +669,7 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
       if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
       const saida = lerJson(bloco.text);
       if (parada === "raiox") await preencher(admin, portalId, saida).catch(() => {});
-      campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : { hub: saida };
+      campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : parada === "plano" ? { plano: saida } : { hub: saida };
     }
     await admin.from("diagnostico_preparo").update({ ...campo, agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
     return "pronto";

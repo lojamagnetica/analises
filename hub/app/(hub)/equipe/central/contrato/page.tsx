@@ -6,9 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
-import { hoje } from "@/lib/formato";
+import { dataHora, hoje } from "@/lib/formato";
 import { buscarJornada, marcarCheck } from "@/lib/jornada";
-import { baixarPdf, buscarModelos, camposDoContrato, preencher, registrarContrato } from "@/lib/contratos";
+import { baixarPdf, buscarGerados, buscarModelos, camposDoContrato, preencher, registrarContrato } from "@/lib/contratos";
 
 // Gera o contrato da cliente a partir do modelo do plano e dos dados da passagem do Comercial.
 function GerarContrato() {
@@ -16,9 +16,9 @@ function GerarContrato() {
   const { nome } = useEquipe();
   const [texto, setTexto] = useState("");
   const [msg, setMsg] = useState("");
-  const { dados } = useDados(async () => {
-    const [j, m] = await Promise.all([buscarJornada(id), buscarModelos()]);
-    return { c: j[0] ?? null, ...m };
+  const { dados, recarregar } = useDados(async () => {
+    const [j, m, g] = await Promise.all([buscarJornada(id), buscarModelos(), buscarGerados(id)]);
+    return { c: j[0] ?? null, ...m, gerados: g };
   }, [id]);
   const c = dados?.c ?? null;
   const modelo = dados && c ? dados.modelos.find((m) => m.plano_id === c.plano) ?? null : null;
@@ -40,6 +40,7 @@ function GerarContrato() {
       await arquivo();
       await registrarContrato(c.id, c.plano, texto, nome);
       await marcarCheck(c.id, "contrato", { feito: true }, nome);
+      recarregar();
       setMsg("Contrato baixado e marcado como gerado no checklist. Agora é só subir no Autentique e mandar para a assinatura.");
     } catch (e) { alert(`Não deu para baixar: ${(e as Error).message}`); }
   };
@@ -60,6 +61,18 @@ function GerarContrato() {
         <Copiar texto={texto} rotulo="Copiar o texto" />
       </div>
       {/[\[]PREENCHER/.test(texto) && <p className="ajuda mt">Ainda há campos [PREENCHER] no texto.</p>}
+      {dados.gerados.length > 0 && (
+        <div className="card mt">
+          <h3 style={{ margin: "0 0 6px" }}>Contratos já gerados</h3>
+          <p className="ajuda" style={{ marginTop: 0 }}>O texto de cada contrato gerado fica guardado. Baixe de novo em PDF quando precisar.</p>
+          {dados.gerados.map((g) => (
+            <div key={g.id} className="linha entre" style={{ gap: 8, padding: "8px 0", borderTop: "1px solid var(--line)", flexWrap: "wrap" }}>
+              <span>{dataHora(g.created_at)}{g.gerado_por ? ` · ${g.gerado_por}` : ""}{g.status ? ` · ${g.status.toLowerCase()}` : ""}</span>
+              <button type="button" className="btn s peq" onClick={() => baixarPdf(`${titulo} · ${g.created_at.slice(0, 10)}`, g.texto).catch((e) => alert(`Não deu para baixar: ${(e as Error).message}`))}>Baixar em PDF</button>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

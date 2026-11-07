@@ -331,7 +331,7 @@ const CSS = `
 .mu-dia em i{flex:0 0 auto;width:7px;height:7px;border-radius:50%}
 .mu-legs{display:flex;justify-content:space-between;gap:2%;margin-top:1.5%;padding-left:8%;padding-right:2%}
 .mu-legs span{display:flex;align-items:center;gap:6px;flex:1}
-.mu-legs input{flex:1;min-width:0;border:0;border-bottom:1px solid #000;background:transparent;font-size:clamp(8px,1.4vw,16px);padding:0}
+.mu-legs input{flex:1 1 0;width:0;min-width:0;border:0;border-bottom:1px solid #000;background:transparent;font-size:clamp(8px,1.4vw,16px);padding:0}
 .mu-cal .mu-simb{left:1.5%;bottom:1%;height:6%}
 @media print{
   body[data-imprimir] *{visibility:hidden!important}

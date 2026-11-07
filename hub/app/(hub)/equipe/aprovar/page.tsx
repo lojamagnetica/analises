@@ -44,7 +44,7 @@ export default function Aprovar() {
     ]);
     // O que o agente do Diagnóstico deixou pronto e espera a decisão da Camilla (antes de virar Diagnóstico da loja).
     const diagDe = new Map((diagTodos.data ?? []).map((d) => [d.portal_id as string, d as { status: string; updated_at: string }]));
-    const ETAPA: Record<string, string> = { raiox: "Raio-X pronto: escolher o gargalo e a alavanca", mercado: "Pesquisa de concorrentes e mercado pronta", perguntas: "Perguntas do gargalo prontas para revisar e mandar à loja", solucao: "Solução, roteiro e PDF prontos para revisar", hub: "Nova versão do Diagnóstico pronta para comparar e aplicar" };
+    const ETAPA: Record<string, string> = { raiox: "Raio-X pronto: escolher o gargalo e a alavanca", mercado: "Pesquisa de concorrentes e mercado pronta", perguntas: "Perguntas do gargalo prontas para revisar e mandar à loja", solucao: "Solução, roteiro e PDF prontos para revisar", hub: "Nova versão do Diagnóstico pronta para comparar e aplicar", plano: "Plano de Ação pronto para revisar e aplicar" };
     const doAgente = (preparo.data ?? []).flatMap((x) => {
       const a = (x.agente ?? {}) as { estado?: string; parada?: string; fim?: string };
       if (a.estado !== "pronto" || !a.parada || !ETAPA[a.parada]) return [];

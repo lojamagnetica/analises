@@ -346,7 +346,7 @@ function Corpo({ d, ed, muda, caixa, equipeHub }: { d: Diagnostico; ed: boolean;
 
 function DiagnosticoDaLoja() {
   const params = useSearchParams();
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
   const [escolhida, setEscolhida] = useState<string | null>(params.get("loja"));
   const [ed, setEd] = useState(false);
@@ -433,7 +433,7 @@ function DiagnosticoDaLoja() {
             ) : (
               <>
                 <button type="button" className="btn s peq" onClick={() => setEd(true)}>Editar</button>
-                {atual.status === "liberada"
+                {!aprova ? <small className="mudo">Só a Camilla libera para a loja.</small> : atual.status === "liberada"
                   ? <button type="button" className="btn s peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, false), "Voltou para rascunho.")}>Voltar para rascunho</button>
                   : <button type="button" className="btn p peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, true), "Liberado para a loja.")}>Liberar para a loja</button>}
               </>

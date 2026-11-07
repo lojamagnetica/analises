@@ -2,7 +2,7 @@
 // (instruções na tabela metodo, chave 'diagnostico_agente'). Lê a passagem do Comercial, os Dados da loja, o caixa,
 // a equipe, a Análise do Instagram, os relatórios que a loja (ou a Camilla) subiu e as transcrições coladas.
 // Paradas: raiox → perguntas → solucao → hub (a versão do Diagnóstico da loja, que a Camilla compara e aplica). Cada parada espera a decisão
-// da Camilla. Só quem aprova chama. Precisa da chave do Claude.
+// da Camilla. Só quem monta (Camilla e CS) chama. Precisa da chave do Claude.
 // Com muito material o Claude passa do tempo máximo de uma função do Supabase (150 s). Por isso o pedido vai como lote
 // (Message Batches): a função entrega o pedido e guarda o número do lote em agente.lote; a tela chama de novo com
 // { conferir: true } a cada pouco, e quando o lote termina a resposta é guardada.
@@ -346,8 +346,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
   const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
-  const { data: aprova } = await usuario.rpc("pode_aprovar");
-  if (aprova !== true) return json({ erro: "Só a Camilla usa o agente do Diagnóstico." }, 403);
+  // Quem monta (Camilla e CS) roda o agente; liberar para a loja continua só com a Camilla.
+  const { data: monta } = await usuario.rpc("pode_montar");
+  if (monta !== true) return json({ erro: "Só a Camilla e a CS usam o agente do Diagnóstico." }, 403);
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
   const { portal_id, parada, conferir: so_conferir } = await req.json().catch(() => ({}));

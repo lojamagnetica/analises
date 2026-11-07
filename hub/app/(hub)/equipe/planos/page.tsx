@@ -10,6 +10,7 @@ import { STATUS_PLANO, nomeMes, prazoDoPlano, responderPlano, type LinhaPlano } 
 
 /** Um plano: lê, escreve o retorno e aprova ou pede ajuste. */
 function Plano({ p, loja, aoMudar }: { p: LinhaPlano; loja: string; aoMudar: () => void }) {
+  const { aprova } = useEquipe();
   const [aberto, setAberto] = useState(p.status === "enviado");
   const [texto, setTexto] = useState(p.retorno ?? "");
   const [erro, setErro] = useState("");
@@ -34,10 +35,12 @@ function Plano({ p, loja, aoMudar }: { p: LinhaPlano; loja: string; aoMudar: () 
           <label className="rotulo mt">Seu retorno para a loja</label>
           <textarea rows={3} value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: Plano ótimo! Só antecipe o esquenta da Black para a semana 2." />
           {erro && <div className="aviso mt">{erro}</div>}
-          <div className="linha mt" style={{ gap: 8 }}>
-            <button type="button" className="btn p peq" onClick={() => responder("ok")}>Está ok ✓</button>
-            <button type="button" className="btn s peq" onClick={() => responder("ajustar")}>Pedir ajuste</button>
-          </div>
+          {aprova ? (
+            <div className="linha mt" style={{ gap: 8 }}>
+              <button type="button" className="btn p peq" onClick={() => responder("ok")}>Está ok ✓</button>
+              <button type="button" className="btn s peq" onClick={() => responder("ajustar")}>Pedir ajuste</button>
+            </div>
+          ) : <p className="ajuda mt">Quem responde à loja (ok ou ajuste) é a Camilla. Se vir algo importante, avise a Camilla.</p>}
         </div>
       )}
     </div>

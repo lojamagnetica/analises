@@ -1,7 +1,7 @@
 // Traz para o Hub os documentos da pasta da mentorada no Drive (fichas.pasta_interna), para os agentes lerem.
 // Usa a conta de serviço do Google do Hub (a mesma da Agenda), só leitura: a pasta precisa estar compartilhada com ela.
 // Planilha do Google vira Excel, documento e apresentação viram PDF; vídeo, áudio e a pasta de fotos ficam de fora.
-// Os arquivos entram em relatorios/<portal>/drive-<id>-<nome> e não se repetem numa nova importação. Só quem aprova chama.
+// Os arquivos entram em relatorios/<portal>/drive-<id>-<nome> e não se repetem numa nova importação. Só quem monta (Camilla e CS) chama.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const URL = Deno.env.get("SUPABASE_URL")!;
@@ -73,8 +73,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
   const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
-  const { data: aprova } = await usuario.rpc("pode_aprovar");
-  if (aprova !== true) return json({ erro: "Só a Camilla importa do Drive." }, 403);
+  const { data: monta } = await usuario.rpc("pode_montar");
+  if (monta !== true) return json({ erro: "Só a Camilla e a CS importam do Drive." }, 403);
   const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
 
   let segredo = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");

@@ -23,7 +23,7 @@ type Item = {
 
 /** Tudo o que espera a Camilla para a loja ver: um lugar só, com o atalho para abrir e o botão de liberar. */
 export default function Aprovar() {
-  const { abrirPortal } = useEquipe();
+  const { abrirPortal, aprova } = useEquipe();
   const [erro, setErro] = useState("");
   const [filtro, setFiltro] = useState("");
   const { dados, recarregar } = useDados(async () => {
@@ -90,7 +90,9 @@ export default function Aprovar() {
 
   return (
     <>
-      <Titulo titulo="Para aprovar" sub="Tudo o que está esperando a sua revisão para as lojas verem: Diagnósticos, Gestão, Análises do Instagram, planos do mês, Ações do Mês e pautas. Abra para revisar e libere quando estiver ok." />
+      <Titulo titulo={aprova ? "Para aprovar" : "Esperando a Camilla"} sub={aprova
+        ? "Tudo o que está esperando a sua revisão para as lojas verem: Diagnósticos, Gestão, Análises do Instagram, planos do mês, Ações do Mês e pautas. Abra para revisar e libere quando estiver ok."
+        : "Tudo o que está pronto e esperando a Camilla aprovar para as lojas verem. Abra para conferir e completar o que faltar; liberar é com a Camilla."} />
       <div className="chips mb">
         <button type="button" className={`chip ${!filtro ? "escolhido" : ""}`} aria-pressed={!filtro} onClick={() => setFiltro("")}>Tudo · {dados.itens.length}</button>
         {tipos.map((t) => (
@@ -115,7 +117,7 @@ export default function Aprovar() {
                 {i.destino && i.portal
                   ? <button type="button" className="btn s peq" onClick={() => abrirPortal(i.portal, i.destino)}>Abrir para revisar</button>
                   : i.href && <Link className="btn s peq" href={i.href}>Abrir para revisar</Link>}
-                {i.liberar && (
+                {i.liberar && aprova && (
                   <button type="button" className="btn p peq" onClick={async () => {
                     if (!confirm(`Liberar "${i.titulo}" para ${nome(i.portal)}? A loja passa a ver.`)) return;
                     setErro("");

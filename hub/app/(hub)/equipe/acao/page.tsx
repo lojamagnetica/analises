@@ -44,7 +44,7 @@ function CamposMaterial({ m }: { m?: Material }) {
 
 function EditarAcao() {
   const id = useSearchParams().get("id") ?? "";
-  useEquipe();
+  const { aprova } = useEquipe();
   const [aviso, setAviso] = useState<{ ok?: string; erro?: string }>({});
   const { dados, recarregar } = useDados(async () => ({ ...(await buscarAcao(id, null)), resultados: await resultadosDaAcao(id) }), [id]);
   if (!dados) return <Carregando />;
@@ -61,7 +61,9 @@ function EditarAcao() {
       <div className="card card-borda mb" style={{ ["--c" as string]: a.publicada ? "var(--green)" : "var(--orange)" }}>
         <div className="linha entre">
           <div><b>{a.publicada ? "Publicada: todos os portais veem esta ação." : "Rascunho: só a equipe vê."}</b></div>
-          <button className={`btn ${a.publicada ? "s" : "p"}`} type="button" onClick={() => fazer(() => acaoPublicar(a.id, !a.publicada), a.publicada ? "Voltou para rascunho." : "Publicada nos portais.")}>{a.publicada ? "Despublicar" : "Publicar nos portais"}</button>
+          {aprova
+            ? <button className={`btn ${a.publicada ? "s" : "p"}`} type="button" onClick={() => fazer(() => acaoPublicar(a.id, !a.publicada), a.publicada ? "Voltou para rascunho." : "Publicada nos portais.")}>{a.publicada ? "Despublicar" : "Publicar nos portais"}</button>
+            : <small className="mudo">{a.publicada ? "Publicada: para mudar, peça à Camilla para despublicar." : "Só a Camilla publica nos portais."}</small>}
         </div>
       </div>
       {aviso.ok && <div className="aviso ok mb">{aviso.ok}</div>}

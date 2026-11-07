@@ -9,9 +9,10 @@ const BASE = "/analises/portal";
 Deno.serve(async (req) => {
   const { data: cfg } = await sb.rpc("push_config");
   if (!cfg?.aviso_chave || req.headers.get("x-aviso") !== cfg.aviso_chave) return new Response("não autorizado", { status: 401 });
-  const { texto, link } = await req.json();
+  const { texto, link, para } = await req.json();
   webpush.setVapidDetails("https://lojamagnetica.github.io/analises/portal/", cfg.vapid_publica, cfg.vapid_privada);
-  const { data: destinos } = await sb.rpc("push_destinos");
+  // Com "para", só os celulares dessas pessoas (ex.: alteração de contrato vai só para Camilla e Claudia).
+  const { data: destinos } = Array.isArray(para) && para.length ? await sb.rpc("push_destinos_para", { p: para }) : await sb.rpc("push_destinos");
   const msg = JSON.stringify({ titulo: "magnética.hub", texto, url: `${BASE}${link ?? "/empresa/novidades"}` });
   let enviados = 0;
   for (const d of destinos ?? []) {

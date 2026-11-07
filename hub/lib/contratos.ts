@@ -23,6 +23,33 @@ export async function salvarModelo(m: Pick<Modelo, "plano_id" | "titulo" | "text
   if (error) throw new Error(error.message);
 }
 
+/** Cada alteração de um modelo fica guardada pelo banco (quem, quando, o quê). */
+export type VersaoModelo = { id: number; plano_id: string; titulo: string | null; texto: string | null; aprovado: boolean | null; acao: string; por_nome: string | null; created_at: string };
+
+export async function buscarVersoes(planoId: string) {
+  const { data, error } = await sb().from("contrato_modelo_versoes").select("*").eq("plano_id", planoId).order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as VersaoModelo[];
+}
+
+/** O que mudou de um texto para o outro, linha a linha (tirado / incluído / igual). */
+export function diferencas(antes: string, depois: string) {
+  const a = antes.split("\n"), b = depois.split("\n");
+  const n = a.length, m = b.length;
+  const t = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) t[i][j] = a[i] === b[j] ? t[i + 1][j + 1] + 1 : Math.max(t[i + 1][j], t[i][j + 1]);
+  const out: { tipo: "igual" | "tirou" | "incluiu"; linha: string }[] = [];
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { out.push({ tipo: "igual", linha: a[i] }); i++; j++; }
+    else if (t[i + 1][j] >= t[i][j + 1]) out.push({ tipo: "tirou", linha: a[i++] });
+    else out.push({ tipo: "incluiu", linha: b[j++] });
+  }
+  while (i < n) out.push({ tipo: "tirou", linha: a[i++] });
+  while (j < m) out.push({ tipo: "incluiu", linha: b[j++] });
+  return out;
+}
+
 const UNI = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
 const DEZ = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
 const CEN = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];

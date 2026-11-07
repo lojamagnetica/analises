@@ -85,7 +85,7 @@ export function videoVistoNaAba(portalId: string) {
   try { return sessionStorage.getItem(chaveVideo(portalId)) === "1"; } catch { return false; }
 }
 
-export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean): Promise<Entrada> {
+export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean, semEquipe = false): Promise<Entrada> {
   const sb = supabaseBrowser();
   const [{ data: e }, { count }, { data: diag }] = await Promise.all([
     sb.from("portal_entrada").select("video_visto_em, livre, dados_enviados_em").eq("portal_id", portalId).maybeSingle(),
@@ -96,7 +96,8 @@ export async function buscarEntrada(portalId: string, etapasFeitas: boolean, com
   return {
     video: !!e?.video_visto_em || (comoLoja && videoVistoNaAba(portalId)),
     loja: etapasFeitas,
-    equipe: pessoas > 0,
+    // Loja sem equipe: o passo de cadastrar o time não existe para ela.
+    equipe: semEquipe || pessoas > 0,
     diagnostico: (diag ?? []).length > 0,
     diagnosticoEm: (diag ?? []).map((d) => d.liberada_em as string | null).filter(Boolean).sort()[0] ?? null,
     livre: !!e?.livre,

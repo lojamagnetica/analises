@@ -29,6 +29,10 @@ export type Portal = {
   plano_titulos?: Record<string, string> | null;
   /** Meses do Plano de Ação quando foge do padrão (ex.: Start estendido para 5). */
   plano_meses?: number | null;
+  /** A dona vende sozinha: sem as áreas de time. */
+  sem_equipe?: boolean;
+  /** Quem ajuda no conteúdo (nomes, mostrados no menu Conteúdo). */
+  apoio_conteudo?: string | null;
   /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */
   medicao_canais?: boolean;
   canais?: string[] | null;
@@ -148,7 +152,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
     // Quem comprou só o curso não passa pela entrada da mentoria.
-    const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
+    const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora, !!portal.sem_equipe) : null;
     // A loja terminou de mandar tudo: começa o prazo do Diagnóstico.
     if (entrada && !equipe && !entrada.dadosEm && dadosCompletos(entrada)) {
       await marcarDadosEnviados();
@@ -233,11 +237,16 @@ export function useEquipe() {
   return useHub();
 }
 
+/** Páginas que só fazem sentido com equipe (somem na loja sem equipe). */
+export const DE_TIME = /^\/(pessoas|mural|clientes\/missoes)(\/|$)/;
+
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
 export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean; monta?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
+  // Loja sem equipe: as páginas de time não abrem nem pelo link.
+  if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
   // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.

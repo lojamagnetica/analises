@@ -70,6 +70,7 @@ export default function Inicio() {
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
   const pct = total ? Math.round((feitos / total) * 100) : 0;
+  const passosEntrada = PASSOS_ENTRADA.filter((p) => !(portal.sem_equipe && p.chave === "equipe"));
   const etapa2 = pers.get(2)?.respostas;
   const quem = (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
   const c = consult?.dados;
@@ -135,10 +136,10 @@ export default function Inicio() {
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
-          <h3 style={{ marginTop: 0 }}>Para montar o seu Diagnóstico · {PASSOS_ENTRADA.filter((p) => ent[p.chave]).length} de 3</h3>
+          <h3 style={{ marginTop: 0 }}>Para montar o seu Diagnóstico · {passosEntrada.filter((p) => ent[p.chave]).length} de {passosEntrada.length}</h3>
           <p className="mudo" style={{ marginTop: -4 }}>Com esses dados a equipe monta o Diagnóstico da sua loja em até 5 dias úteis. É dele que saem o seu Plano de Ação e o resto do Hub.</p>
           <div className="grade g3" style={{ gap: 10 }}>
-            {PASSOS_ENTRADA.map((p, i) => (
+            {passosEntrada.map((p, i) => (
               <Link key={p.chave} href={p.href} className="marcar" style={{ gap: 10 }}>
                 <span className={`selo ${ent[p.chave] ? "feito" : "espera"}`}>{ent[p.chave] ? "✓" : i + 1}</span>
                 <span>{p.titulo}{p.chave === "loja" && !ent.loja ? ` · falta${persFaltam > 1 ? "m" : ""} ${persFaltam}` : ""}</span>

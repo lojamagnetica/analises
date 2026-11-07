@@ -27,6 +27,8 @@ export type Portal = {
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
   plano_titulos?: Record<string, string> | null;
+  /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */
+  medicao_canais?: boolean;
   canais?: string[] | null;
   meet_url: string | null;
   apelidos: string[];
@@ -112,11 +114,12 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     let portal: Portal | null = null;
     const pers = new Map<number, { respostas: Respostas; concluida: boolean }>();
     if (portalId) {
-      const [{ data: p }, { data: linhas }] = await Promise.all([
+      const [{ data: p }, { data: linhas }, { count: medicoes }] = await Promise.all([
         sb.from("portais").select("*").eq("id", portalId).maybeSingle(),
         sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", portalId),
+        sb.from("loja_canais_medicao").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativa", true).gte("fim", new Date().toLocaleDateString("sv-SE", { timeZone: "America/Recife" })),
       ]);
-      portal = (p as Portal) ?? null;
+      portal = p ? { ...(p as Portal), medicao_canais: (medicoes ?? 0) > 0 } : null;
       (linhas ?? []).forEach((l) => pers.set(l.etapa, { respostas: l.respostas as Respostas, concluida: l.concluida }));
     }
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);

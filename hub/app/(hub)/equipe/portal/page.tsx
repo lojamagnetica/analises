@@ -293,10 +293,10 @@ function EditarPortal() {
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span style={{ textDecoration: i.feito ? "line-through" : undefined }}>{i.feito ? "✓ " : ""}{i.texto}</span>
-                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; await planoApagar(i.id); recarregar(); }}>✕</button>
+                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
                 </div>
               ))}
-              <form action={async (f) => { await planoAdicionar(p.id, f); recarregar(); }} className="linha mt" style={{ flexWrap: "nowrap" }}>
+              <form action={async (f) => { try { await planoAdicionar(p.id, f); recarregar(); } catch (e) { alert((e as Error).message); } }} className="linha mt" style={{ flexWrap: "nowrap" }}>
                 <input type="hidden" name="mes" value={m} />
                 <input type="text" name="texto" placeholder="Nova tarefa…" />
                 <button className="btn p peq" type="submit">+</button>

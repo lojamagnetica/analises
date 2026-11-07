@@ -196,10 +196,13 @@ export async function desligarPessoa(portalId: string, userId: string) {
 
 export async function planoAdicionar(portalId: string, form: FormData) {
   const texto = txt(form, "texto", 500);
-  if (texto) await sb().from("plano_itens").insert({ portal_id: portalId, mes: Number(form.get("mes")) || 1, ordem: 99, texto });
+  if (!texto) return;
+  const { error } = await sb().from("plano_itens").insert({ portal_id: portalId, mes: Number(form.get("mes")) || 1, ordem: 99, texto });
+  if (error) throw new Error(`Não incluiu a tarefa: ${error.message}`);
 }
 export async function planoApagar(id: string) {
-  await sb().from("plano_itens").delete().eq("id", id);
+  const { error } = await sb().from("plano_itens").delete().eq("id", id);
+  if (error) throw new Error(`Não excluiu a tarefa: ${error.message}`);
 }
 
 export async function reuniaoSalvar(portalId: string, id: string | null, form: FormData) {

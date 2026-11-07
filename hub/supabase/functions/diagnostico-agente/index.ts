@@ -402,7 +402,7 @@ async function caber(system: string, itens: Item[], fim: () => string, avisos: s
 async function juntar(admin: SupabaseClient, portalId: string) {
   const desde = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
   const [{ data: portal }, { data: ficha }, { data: contratos }, { data: passagem }, { data: pers }, { data: caixa }, { data: semanas }, { data: equipe }, { data: insta }] = await Promise.all([
-    admin.from("portais").select("loja, responsavel, tipo, inicio, canais, lojas").eq("id", portalId).single(),
+    admin.from("portais").select("loja, responsavel, tipo, inicio, canais, lojas, plano_meses").eq("id", portalId).single(),
     admin.from("fichas").select("plano_id, etapa, termometro, situacao, instagram, resultado_n1, indicador, observacoes, data_diagnostico").eq("portal_id", portalId).maybeSingle(),
     admin.from("contratos").select("plano_id, inicio, fim, status").eq("portal_id", portalId),
     admin.from("passagens").select("plano_id, valor, pagamento_em, resultado_90, origem, observacoes, lojas_mentoradas, bonus, garantia").eq("portal_id", portalId).maybeSingle(),
@@ -467,7 +467,8 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
       admin.from("plano_itens").select("portal_id, mes, texto").neq("portal_id", portalId).order("portal_id").order("mes").order("ordem").limit(400),
     ]);
     const plano = (base.dados.passagem_do_comercial as { plano_id?: string } | null)?.plano_id ?? (base.dados.ficha as { plano_id?: string } | null)?.plano_id ?? "";
-    const meses = plano === "start" ? 4 : 3;
+    // Meses do plano: o da loja quando foi ajustado (ex.: Start estendido para 5); senão, Start 4 e os outros 3.
+    const meses = Number((base.dados.loja as { plano_meses?: number | null } | null)?.plano_meses) || (plano === "start" ? 4 : 3);
     // Até 3 planos de outras lojas, como exemplo do jeito da Camilla montar.
     const exemplos = new Map<string, string[]>();
     for (const x of outros ?? []) { const l = exemplos.get(x.portal_id) ?? []; if (exemplos.size < 3 || exemplos.has(x.portal_id)) { l.push(`Mês ${x.mes}: ${x.texto}`); exemplos.set(x.portal_id, l); } }

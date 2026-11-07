@@ -111,20 +111,62 @@ function textoWord(buf: Uint8Array) {
     .replace(/\n{3,}/g, "\n\n").trim();
 }
 
+// O Claude lê no máximo 600 páginas de PDF por pedido e o pedido tem limite de tamanho:
+// os arquivos entram por ordem de importância até a cota, e o que sobrar é avisado.
+const MAX_PAGINAS = 520;
+const MAX_BYTES = 18 * 1024 * 1024;
+
+/** Páginas de um PDF: o maior /Count da árvore de páginas ou as páginas contadas; sem nenhum dos dois, estima pelo tamanho. */
+function paginasPdf(buf: Uint8Array) {
+  const s = new TextDecoder("latin1").decode(buf);
+  let maior = 0;
+  for (const m of s.matchAll(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)|\/Count\s+(\d+)[^>]*?\/Type\s*\/Pages\b/g)) maior = Math.max(maior, Number(m[1] ?? m[2]));
+  const soltas = (s.match(/\/Type\s*\/Page(?![a-zA-Z])/g) ?? []).length;
+  return Math.max(maior, soltas) || Math.max(1, Math.ceil(buf.length / 60_000));
+}
+
+/** Ordem de leitura: formulário e diagnóstico, depois o ano atual (vendas, ticket, estoque), depois o resto e por último os anos anteriores e pedidos. */
+function prioridade(nome: string) {
+  const n = nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const ano = new Date().getFullYear();
+  if (/formul|diagnostico/.test(n)) return 0;
+  if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque/.test(n) && !n.includes(String(ano - 1))) return 1;
+  if (n.includes(String(ano))) return 2;
+  if (/pedido|contrato|guia|photo|\.jpe?g$|\.png$/.test(n)) return 5;
+  if (n.includes(String(ano - 1))) return 4;
+  return 3;
+}
+
 async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp) {
   const blocos: Bloco[] = [];
   const avisos: string[] = [];
-  const { data: todos } = await admin.storage.from("relatorios").list(portalId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-  const lista = (todos ?? []).filter((x) => !filtro || filtro.test(x.name));
-  let texto = 0;
-  for (const f of lista.filter((x) => x.id)) {
+  const { data: todos } = await admin.storage.from("relatorios").list(portalId, { limit: 300, sortBy: { column: "created_at", order: "desc" } });
+  // O mesmo arquivo importado duas vezes do Drive (mesmo nome e tamanho) entra uma vez só.
+  const vistos = new Set<string>();
+  const lista = (todos ?? []).filter((x) => x.id && (!filtro || filtro.test(x.name))).filter((x) => {
+    const chave = `${x.name.slice(-50)}|${x.metadata?.size ?? ""}`;
+    if (vistos.has(chave)) return false;
+    vistos.add(chave);
+    return true;
+  }).sort((a, b) => prioridade(a.name) - prioridade(b.name));
+  let texto = 0, paginas = 0, bytes = 0;
+  const lidos: string[] = [];
+  for (const f of lista) {
     const nome = f.name;
     const ext = nome.split(".").pop()?.toLowerCase() ?? "";
     const tam = Number(f.metadata?.size ?? 0);
     if (tam > MAX_ARQUIVO) { avisos.push(`${nome}: grande demais (${Math.round(tam / 1048576)} MB), não foi lido`); continue; }
+    const binario = ext === "pdf" || ["png", "jpg", "jpeg", "webp", "gif"].includes(ext);
+    if (binario && bytes + tam > MAX_BYTES) { avisos.push(`${nome}: ficou de fora (o pedido já estava no limite de tamanho)`); continue; }
     const { data: blob } = await admin.storage.from("relatorios").download(`${portalId}/${nome}`);
     if (!blob) { avisos.push(`${nome}: não deu para abrir`); continue; }
     const buf = new Uint8Array(await blob.arrayBuffer());
+    if (ext === "pdf") {
+      const pg = paginasPdf(buf);
+      if (paginas + pg > MAX_PAGINAS) { avisos.push(`${nome}: ficou de fora (${pg} páginas; o limite de páginas de PDF já estava cheio)`); continue; }
+      paginas += pg; bytes += buf.length;
+    } else if (binario) bytes += buf.length;
+    lidos.push(nome);
     if (ext === "pdf") {
       blocos.push({ type: "text", text: `Arquivo: ${nome}` });
       blocos.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: base64(buf) } });
@@ -150,7 +192,8 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
       if (conteudo) blocos.push({ type: "text", text: `Arquivo: ${nome}\n${conteudo}` });
     } else avisos.push(`${nome}: formato .${ext} não é lido (use PDF, Word, planilha, CSV ou imagem)`);
   }
-  return { blocos, avisos, nomes: lista.filter((x) => x.id).map((x) => x.name) };
+  if (avisos.some((a) => a.includes("ficou de fora"))) avisos.unshift(`Foram lidos ${lidos.length} arquivos (${paginas} páginas de PDF), por ordem de importância: formulário, ano atual, depois anos anteriores.`);
+  return { blocos, avisos, nomes: lidos };
 }
 
 async function juntar(admin: SupabaseClient, portalId: string) {

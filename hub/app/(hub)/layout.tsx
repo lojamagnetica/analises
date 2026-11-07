@@ -10,7 +10,7 @@ import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { liberado, requisito } from "@/lib/entrada";
 import { buscarCursoAberto } from "@/lib/curso";
-import { bussolaFechada } from "@/lib/bussola";
+import { areaFechada } from "@/lib/bussola";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 /** Páginas que abrem mesmo antes do vídeo de boas-vindas. */
@@ -53,11 +53,11 @@ function Casca({ children }: { children: React.ReactNode }) {
   const area = !equipe && hub.portal?.menu_trancado?.length
     ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso", hub.portal.canais ?? []), caminho)
     : undefined;
-  const areaTrancada = !equipe && hub.portal && bussolaFechada(caminho) ? { rotulo: "A Bússola do gestor" }
+  const areaTrancada = !equipe && hub.portal && areaFechada(caminho) ? { rotulo: areaFechada(caminho)! }
     : area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
 
   const trava = (href: string) => {
-    if (!equipe && hub.portal && bussolaFechada(href)) return true;
+    if (!equipe && hub.portal && areaFechada(href)) return true;
     if (!ent) return false;
     const r = requisito(href.split("?")[0]);
     return !!r && !liberado(r, ent);

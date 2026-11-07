@@ -288,7 +288,7 @@ function EditarPortal() {
       <div className="card mt">
         <h2>Plano de Ação</h2>
         <div className="grade g3">
-          {[1, 2, 3, 4].map((m) => (
+          {Array.from({ length: Math.max(p.plano_meses ?? 4, ...dados.plano.map((i) => i.mes)) }, (_, k) => k + 1).map((m) => (
             <div key={m}>
               <TituloMesPlano portalId={p.id} mes={m} titulos={p.plano_titulos} editar aoSalvar={recarregar} />
               {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}

@@ -55,14 +55,17 @@ export default function Plano() {
               </div>
             ))}
           </div>
-          {(itens.some((i) => i.mes === 4) || equipe) && (
-            <div className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
-              <TituloMesPlano portalId={portal.id} mes={4} titulos={portal.plano_titulos} editar={equipe} aoSalvar={hub.recarregar} />
-              {periodoDoMes(4, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(4, portal.plano_inicio, portal.inicio)}</div>}
-              <Checklist itens={itens.filter((i) => i.mes === 4)} aoMudar={recarregar} />
-              {editar(4)}
+          {/* Do mês 4 em diante: até o número de meses desta loja (padrão 4), ou onde já tem tarefa. */}
+          {Array.from({ length: Math.max(portal.plano_meses ?? 4, ...itens.map((i) => i.mes)) - 3 }, (_, k) => k + 4)
+            .filter((m) => itens.some((i) => i.mes === m) || equipe || m <= (portal.plano_meses ?? 0))
+            .map((m) => (
+            <div key={m} className="card card-borda mt" style={{ ["--c" as string]: "var(--ink)" }}>
+              <TituloMesPlano portalId={portal.id} mes={m} titulos={portal.plano_titulos} editar={equipe} aoSalvar={hub.recarregar} />
+              {periodoDoMes(m, portal.plano_inicio, portal.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>Por volta de {periodoDoMes(m, portal.plano_inicio, portal.inicio)}</div>}
+              <Checklist itens={itens.filter((i) => i.mes === m)} aoMudar={recarregar} />
+              {editar(m)}
             </div>
-          )}
+          ))}
         </>
       )}
     </>

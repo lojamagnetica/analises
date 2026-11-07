@@ -27,6 +27,8 @@ export type Portal = {
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
   plano_titulos?: Record<string, string> | null;
+  /** Meses do Plano de Ação quando foge do padrão (ex.: Start estendido para 5). */
+  plano_meses?: number | null;
   /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */
   medicao_canais?: boolean;
   canais?: string[] | null;

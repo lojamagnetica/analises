@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Bloqueado } from "@/components/Bloqueado";
 import { Menu, grupoDaPagina, grupos } from "@/components/Menu";
 import { Ferramentas } from "@/components/Ferramentas";
+import { NovaVersao } from "@/components/NovaVersao";
 import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
 import { liberado, requisito } from "@/lib/entrada";
@@ -122,6 +123,7 @@ export default function HubLayout({ children }: { children: React.ReactNode }) {
   return (
     <HubProvider>
       <Casca>{children}</Casca>
+      <NovaVersao />
     </HubProvider>
   );
 }

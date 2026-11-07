@@ -13,6 +13,7 @@ import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/fo
 import { gerarLink } from "@/lib/acoes";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
 import { mensagemDiagnosticoPronto } from "@/lib/entrada";
+import { resumoOnboarding } from "@/lib/onboarding";
 import { perguntasParaCS, responderPerguntas } from "@/lib/diagnostico-preparo";
 import {
   etapasDoPlano, buscarJornada, mensagensCS, marcarCheck, mudarEtapa, prazoDoItem, atrasado, receberPassagem, situacao,
@@ -96,6 +97,18 @@ function Cliente() {
     }
     if (k.acao === "contrato") return <Link className="btn s peq" href={`/equipe/central/contrato?id=${c.id}`}>Gerar o contrato</Link>;
     if (k.acao === "post") return <Link className="btn s peq" href={`/equipe/central/post?id=${c.id}`}>Fazer o post de entrada</Link>;
+    if (k.acao === "acesso" && c.checks.get("onboarding")?.feito) {
+      // Depois da call: o resumo para o grupo (só a equipe vê; não entra na apresentação).
+      const feito = c.checks.get("onboarding");
+      const resumo = resumoOnboarding(c.responsavel, feito?.marcado_para?.slice(0, 10) ?? null);
+      return (
+        <span className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+          <Copiar texto={resumo} rotulo="Copiar o resumo para o grupo" />
+          {c.whatsapp && <a className="btn s peq" target="_blank" rel="noopener" href={`https://wa.me/${c.whatsapp.replace(/\D/g, "").replace(/^(?!55)/, "55")}?text=${encodeURIComponent(resumo)}`}>Mandar no WhatsApp</a>}
+          <Link className="link-loja" href={`/equipe/central/onboarding?id=${c.id}`}>Abrir a apresentação</Link>
+        </span>
+      );
+    }
     if (k.acao === "acesso") {
       const apresentar = <Link className="btn p peq" href={`/equipe/central/onboarding?id=${c.id}`} style={{ marginRight: 8 }}>▶ Apresentação do onboarding</Link>;
       if (!c.email) return <>{apresentar}<small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small></>;

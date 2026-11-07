@@ -308,11 +308,11 @@ const CSS = `
 .mu-cartaz footer{text-align:center;padding:4%;font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:.2em;text-transform:uppercase;font-size:clamp(12px,2.6vw,20px)}
 .mu-metas{padding:0 0 5%;color:#111}
 .mu-topo{padding:2.5% 0;text-align:center;color:#fff;margin:2% 4% 0}
-.mu-topo h1{margin:0;font-weight:800;font-size:clamp(14px,3.4vw,38px)}
+.mu-topo h1{margin:0;color:#fff!important;font-weight:800;font-size:clamp(14px,3.4vw,38px)}
 .mu-metas h2{text-align:center;font-weight:800;font-size:clamp(11px,2.2vw,26px);margin:2% 0}
 .mu-metas h3{text-align:center;font-weight:800;font-size:clamp(11px,2.4vw,28px);margin:2% 0 1%}
-.mu-metas table{border-collapse:collapse;margin:0 8%;width:84%}
-.mu-metas th{background:#111;color:#fff;font-size:clamp(8px,1.6vw,19px);padding:1.2% 1%;border:1px solid #111}
+.mu-metas table{border-collapse:collapse;margin:0 6%;width:88%;table-layout:fixed}
+.mu-metas th{background:#111;color:#fff;font-size:clamp(7px,1.4vw,17px);padding:1.2% 1%;border:1px solid #111}
 .mu-metas th i{font-weight:400}
 .mu-metas td{border:1px solid #111;height:clamp(18px,3.6vw,42px);text-align:center;font-size:clamp(9px,1.6vw,19px);font-weight:600}
 .mu-bola{display:inline-block;width:clamp(12px,2.4vw,28px);height:clamp(12px,2.4vw,28px);border-radius:50%;border:1.5px dashed #555;vertical-align:middle}
@@ -329,7 +329,7 @@ const CSS = `
 .mu-n{font-weight:700;font-size:clamp(8px,1.6vw,19px);background:#F3ECE4;border-radius:5px;padding:0 4px}
 .mu-dia em{display:flex;align-items:center;gap:3px;font-style:normal;font-size:clamp(6px,1.1vw,13px);line-height:1.15;margin-top:2px}
 .mu-dia em i{flex:0 0 auto;width:7px;height:7px;border-radius:50%}
-.mu-legs{display:flex;justify-content:space-between;gap:2%;margin-top:1.5%;padding-left:12%}
+.mu-legs{display:flex;justify-content:space-between;gap:2%;margin-top:1.5%;padding-left:8%;padding-right:2%}
 .mu-legs span{display:flex;align-items:center;gap:6px;flex:1}
 .mu-legs input{flex:1;min-width:0;border:0;border-bottom:1px solid #000;background:transparent;font-size:clamp(8px,1.4vw,16px);padding:0}
 .mu-cal .mu-simb{left:1.5%;bottom:1%;height:6%}

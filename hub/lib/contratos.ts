@@ -132,7 +132,13 @@ export async function baixarPdf(titulo: string, texto: string) {
   const quebra = (h: number) => { if (y + h > ALTURA - M) { pdf.addPage(); y = M; } };
   pdf.setProperties({ title: titulo, creator: "magnética.hub" });
   const ehTitulo = (l: string) => /^(CL[ÁA]USULA|QUALIFICA|CONTRATO DE)/.test(l);
-  for (const bloco of texto.split(/\n{2,}/)) {
+  // O fim (local e data + blocos que começam com a linha "____") vira o quadro de assinaturas, sempre inteiro numa página.
+  const blocos = texto.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const primeiraAss = blocos.findIndex((b) => /^_{5,}/.test(b));
+  const assinaturas = primeiraAss >= 0 ? blocos.slice(primeiraAss).filter((b) => /^_{5,}/.test(b)).map((b) => b.split("\n").slice(1).flatMap((l) => l.split(" · ")).map((l) => l.trim()).filter(Boolean)) : [];
+  const local = primeiraAss > 0 && blocos[primeiraAss - 1].length < 80 ? blocos[primeiraAss - 1] : "";
+  const corpo = primeiraAss >= 0 ? blocos.slice(0, local ? primeiraAss - 1 : primeiraAss) : blocos;
+  for (const bloco of corpo) {
     const partes = bloco.split("\n").map((l) => l.trim()).filter(Boolean);
     if (!partes.length) continue;
     for (const parte of partes) {
@@ -157,6 +163,39 @@ export async function baixarPdf(titulo: string, texto: string) {
       });
     }
     y += 2.6;
+  }
+  if (assinaturas.length) {
+    const COL = assinaturas.length === 2 ? (L - 14) / 2 : L;
+    pdf.setFontSize(9.5);
+    const alturaDe = (linhas: string[]) => 16 + linhas.slice(1).reduce((t, l) => t + pdf.splitTextToSize(l, COL).length * 4.6, 5);
+    const linhasQuadro = assinaturas.length === 2 ? [Math.max(...assinaturas.map(alturaDe))] : assinaturas.map(alturaDe);
+    quebra(14 + (local ? 12 : 0) + linhasQuadro.reduce((t, h) => t + h + 6, 0));
+    y += 6;
+    if (local) {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10.5);
+      pdf.text(local, 105, y, { align: "center" });
+      y += 12;
+    }
+    const desenhar = (linhas: string[], x: number, y0: number) => {
+      // Espaço para assinar, a linha e, embaixo, o papel em negrito e os dados.
+      let yy = y0 + 14;
+      pdf.setDrawColor(60); pdf.setLineWidth(0.3);
+      pdf.line(x, yy, x + COL, yy);
+      yy += 5;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
+      pdf.text(linhas[0] ?? "", x + COL / 2, yy, { align: "center" });
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9.5);
+      for (const l of linhas.slice(1)) {
+        for (const parte of pdf.splitTextToSize(l, COL) as string[]) { yy += 4.6; pdf.text(parte, x + COL / 2, yy, { align: "center" }); }
+      }
+    };
+    if (assinaturas.length === 2) {
+      desenhar(assinaturas[0], M, y);
+      desenhar(assinaturas[1], M + COL + 14, y);
+      y += linhasQuadro[0];
+    } else {
+      assinaturas.forEach((a, i) => { desenhar(a, M, y); y += linhasQuadro[i] + 6; });
+    }
   }
   const total = pdf.getNumberOfPages();
   pdf.setFont("helvetica", "normal");

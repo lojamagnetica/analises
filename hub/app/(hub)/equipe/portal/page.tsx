@@ -15,7 +15,8 @@ import { periodoDoMes } from "@/lib/periodo-plano";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ETAPAS, MESES_PLANO, type Respostas } from "@/lib/conteudo";
+import { ETAPAS, tituloMes, type Respostas } from "@/lib/conteudo";
+import { TituloMesPlano } from "@/components/TituloMesPlano";
 import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
 import { liberarTudo } from "@/lib/entrada";
 import {
@@ -289,7 +290,7 @@ function EditarPortal() {
         <div className="grade g3">
           {[1, 2, 3, 4].map((m) => (
             <div key={m}>
-              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+              <TituloMesPlano portalId={p.id} mes={m} titulos={p.plano_titulos} editar aoSalvar={recarregar} />
               {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
@@ -297,7 +298,7 @@ function EditarPortal() {
                   <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
                 </div>
               ))}
-              <NovaTarefaPlano portalId={p.id} mes={m} rotuloMes={MESES_PLANO[m]} aoIncluir={recarregar} />
+              <NovaTarefaPlano portalId={p.id} mes={m} rotuloMes={tituloMes(m, p.plano_titulos)} aoIncluir={recarregar} />
             </div>
           ))}
         </div>

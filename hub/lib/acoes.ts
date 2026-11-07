@@ -200,6 +200,15 @@ export async function planoAdicionar(portalId: string, form: FormData) {
   const { error } = await sb().from("plano_itens").insert({ portal_id: portalId, mes: Number(form.get("mes")) || 1, ordem: 99, texto });
   if (error) throw new Error(`Não incluiu a tarefa: ${error.message}`);
 }
+/** Tema de um mês do Plano de Ação desta loja (vazio tira o tema e fica só "Mês N"). */
+export async function salvarTituloMes(portalId: string, mes: number, texto: string) {
+  const { data, error: e1 } = await sb().from("portais").select("plano_titulos").eq("id", portalId).single();
+  if (e1) throw new Error(e1.message);
+  const titulos = { ...((data?.plano_titulos ?? {}) as Record<string, string>) };
+  if (texto.trim()) titulos[String(mes)] = texto.trim().slice(0, 120); else delete titulos[String(mes)];
+  const { error } = await sb().from("portais").update({ plano_titulos: titulos }).eq("id", portalId);
+  if (error) throw new Error(`Não salvou o título: ${error.message}`);
+}
 export async function planoApagar(id: string) {
   const { error } = await sb().from("plano_itens").delete().eq("id", id);
   if (error) throw new Error(`Não excluiu a tarefa: ${error.message}`);

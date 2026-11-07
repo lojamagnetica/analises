@@ -166,7 +166,7 @@ export async function criarPortal(form: FormData) {
 }
 
 export async function atualizarPortal(id: string, form: FormData) {
-  await sb().from("portais").update({
+  const { error } = await sb().from("portais").update({
     loja: txt(form, "loja", 200),
     responsavel: txt(form, "responsavel", 200) || null,
     email: txt(form, "email", 200) || null,
@@ -181,6 +181,7 @@ export async function atualizarPortal(id: string, form: FormData) {
     lojas: apelidos(txt(form, "lojas", 500)),
     ativo: form.get("ativo") === "on",
   }).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function convidarPessoa(portalId: string, form: FormData): Promise<{ link?: string; aviso?: string }> {

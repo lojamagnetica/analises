@@ -206,7 +206,7 @@ function EditarPortal() {
       </div>
 
       <div className="grade g2">
-        <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>
+        <form className="card" action={async (f) => { setSalvo(false); try { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); } catch (e) { alert(`Não salvou: ${(e as Error).message}`); } }}>
           <h2>Dados do portal</h2>
           <CamposPortal p={p} />
           <div className="grade g2" style={{ gap: 12 }}>

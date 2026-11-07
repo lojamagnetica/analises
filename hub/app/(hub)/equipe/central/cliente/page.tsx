@@ -97,9 +97,10 @@ function Cliente() {
     if (k.acao === "contrato") return <Link className="btn s peq" href={`/equipe/central/contrato?id=${c.id}`}>Gerar o contrato</Link>;
     if (k.acao === "post") return <Link className="btn s peq" href={`/equipe/central/post?id=${c.id}`}>Fazer o post de entrada</Link>;
     if (k.acao === "acesso") {
-      if (!c.email) return <small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small>;
+      const apresentar = <Link className="btn p peq" href={`/equipe/central/onboarding?id=${c.id}`} style={{ marginRight: 8 }}>▶ Apresentação do onboarding</Link>;
+      if (!c.email) return <>{apresentar}<small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small></>;
       return link ? <LinkAcesso link={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
-        <button type="button" className="btn s peq" onClick={async () => { setErro(""); try { setLink(await gerarLink(c.email!, c.responsavel ?? "", c.id)); } catch (e) { setErro((e as Error).message); } }}>Gerar o link de acesso agora (na call)</button>
+        <>{apresentar}<button type="button" className="btn s peq" onClick={async () => { setErro(""); try { setLink(await gerarLink(c.email!, c.responsavel ?? "", c.id)); } catch (e) { setErro((e as Error).message); } }}>Só gerar o link de acesso</button></>
       );
     }
     if (k.acao === "pendencias" && pend) return (

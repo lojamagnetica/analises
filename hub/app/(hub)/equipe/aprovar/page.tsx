@@ -28,7 +28,7 @@ export default function Aprovar() {
   const [filtro, setFiltro] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [portais, diag, gestao, analise, extra, planos, acoes, pautas, historias, leituras] = await Promise.all([
+    const [portais, diag, gestao, analise, extra, planos, acoes, pautas, historias, leituras, preparo, diagTodos] = await Promise.all([
       sb.from("portais").select("id, loja").eq("ativo", true),
       sb.from("loja_diagnostico").select("portal_id, loja, updated_at").eq("status", "rascunho"),
       sb.from("loja_gestao").select("portal_id, area, loja, updated_at").eq("status", "rascunho"),
@@ -39,10 +39,29 @@ export default function Aprovar() {
       sb.from("pautas").select("id, titulo, semana").eq("liberada", false),
       sb.from("loja_historia").select("id, portal_id, loja, updated_at").eq("narrativa_pronta", true).eq("narrativa_aprovada", false),
       sb.from("loja_leituras").select("portal_id, semana, updated_at").eq("pronta", true).eq("publicada", false).eq("semana", semanaDe()),
+      sb.from("diagnostico_preparo").select("portal_id, agente, escolha, updated_at"),
+      sb.from("loja_diagnostico").select("portal_id, status, updated_at").eq("loja", ""),
     ]);
+    // O que o agente do Diagnóstico deixou pronto e espera a decisão da Camilla (antes de virar Diagnóstico da loja).
+    const diagDe = new Map((diagTodos.data ?? []).map((d) => [d.portal_id as string, d as { status: string; updated_at: string }]));
+    const ETAPA: Record<string, string> = { raiox: "Raio-X pronto: escolher o gargalo e a alavanca", mercado: "Pesquisa de concorrentes e mercado pronta", perguntas: "Perguntas do gargalo prontas para revisar e mandar à loja", solucao: "Solução, roteiro e PDF prontos para revisar", hub: "Nova versão do Diagnóstico pronta para comparar e aplicar" };
+    const doAgente = (preparo.data ?? []).flatMap((x) => {
+      const a = (x.agente ?? {}) as { estado?: string; parada?: string; fim?: string };
+      if (a.estado !== "pronto" || !a.parada || !ETAPA[a.parada]) return [];
+      if (a.parada === "raiox" && x.escolha) return [];
+      const d = diagDe.get(x.portal_id as string);
+      // A versão do Hub já aplicada (o Diagnóstico foi salvo depois dela) não aparece de novo.
+      if (a.parada === "hub" && d && a.fim && Date.parse(d.updated_at) > Date.parse(a.fim)) return [];
+      return [{ portal_id: x.portal_id as string, parada: a.parada, quando: a.fim ?? (x.updated_at as string), liberado: d?.status === "liberada" }];
+    });
     const ativos = new Map((portais.data ?? []).map((p) => [p.id as string, p.loja as string]));
     const daLoja = (id: string) => ativos.has(id);
     const itens: Item[] = [
+      ...doAgente.filter((x) => daLoja(x.portal_id)).map((x) => ({
+        chave: `ag${x.portal_id}`, portal: x.portal_id, tipo: "Preparação do Diagnóstico",
+        titulo: ETAPA[x.parada] + (x.parada === "hub" && x.liberado ? " (o Diagnóstico atual está liberado: volte para rascunho antes de aplicar)" : ""),
+        quando: x.quando, href: `/empresa/minha-central/diagnostico?p=${x.portal_id}`,
+      })),
       ...(diag.data ?? []).filter((d) => daLoja(d.portal_id)).map((d) => ({
         chave: `d${d.portal_id}${d.loja}`, portal: d.portal_id, tipo: "Diagnóstico", titulo: d.loja ? `Diagnóstico · ${d.loja}` : "Diagnóstico",
         quando: d.updated_at, destino: "/painel", liberar: () => liberarDiagnostico(d.portal_id, d.loja, true),

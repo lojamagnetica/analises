@@ -36,7 +36,7 @@ function Rodar({ p, parada, rotulo, ocupado, pode, aoPedir }: { p: Preparo | nul
 }
 
 function Preparar({ portalId }: { portalId: string }) {
-  const { abrirPortal } = useEquipe();
+  const { abrirPortal, aprova } = useEquipe();
   const { dados, recarregar } = useDados(async () => {
     const [p, arquivos, { data: portal }] = await Promise.all([
       buscarPreparo(portalId), listarArquivos(portalId),
@@ -208,6 +208,7 @@ function Preparar({ portalId }: { portalId: string }) {
           <Copiar texto={pergs.map((q, i) => `${i + 1}. ${q}`).join("\n")} rotulo="Copiar" />
           {p?.perguntas_liberadas
             ? <button type="button" className="link-loja" onClick={() => salvar({ perguntas_liberadas: false })}>Tirar da Claudia</button>
+            : !aprova ? <small className="mudo">A Camilla confere e libera as perguntas para mandar.</small>
             : <button type="button" className="btn p peq" disabled={!!perg} onClick={() => { if (confirm("Liberar as perguntas para a Claudia mandar para a loja?")) salvar({ perguntas_liberadas: true }, "Liberado ✓ A Claudia vê as perguntas na ficha da loja, na Jornada das clientes."); }}>Liberar para a Claudia mandar</button>}
         </div>}
         {p?.perguntas_liberadas && <p className="ajuda">A Claudia vê as perguntas na ficha da loja (Jornada das clientes) e cola aqui as respostas quando a loja mandar.</p>}

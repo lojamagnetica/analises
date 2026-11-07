@@ -107,7 +107,7 @@ function CaixaArea({ a, org, nivel, paraTime, mudar, tirar, criar }: {
 }
 
 export default function OrganogramaPagina() {
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
   const { dados } = useDados(async () => ({
     salvo: await buscarOrganograma(portal.id),
     pessoas: (await buscarPessoas(portal.id)).pessoas.filter((p) => p.ativo),
@@ -150,7 +150,7 @@ export default function OrganogramaPagina() {
           {liberado
             ? <>A loja já vê o organograma. <button type="button" className="link-loja" onClick={() => salvar(org, false)}>Voltar para rascunho</button></>
             : <>Rascunho: só a equipe vê. {!dados.salvo && !atual && "Este é um modelo de partida, montado com a equipe cadastrada. "}
-              <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o organograma para a loja?")) salvar(org, true); }}>Liberar para a loja</button></>}
+              {aprova ? <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o organograma para a loja?")) salvar(org, true); }}>Liberar para a loja</button> : <small className="mudo"> Só a Camilla libera para a loja.</small>}</>}
         </div>
       )}
       {erro && <div className="aviso mb">{erro}</div>}

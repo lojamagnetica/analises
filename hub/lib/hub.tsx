@@ -45,6 +45,8 @@ export type Hub = {
   soCaixa: boolean;
   /** Pode aprovar e liberar o que vai para a loja (a Camilla). */
   aprova: boolean;
+  /** Monta diagnósticos, gestão, ações e gincanas das lojas (a Camilla e a CS). Liberar continua com quem aprova. */
+  monta: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -102,7 +104,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova, monta").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -135,6 +137,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       estudio: !!perfil?.estudio,
       soCaixa: !equipe && !!perfil?.so_caixa,
       aprova: equipe && !!perfil?.aprova,
+      monta: equipe && (!!perfil?.aprova || !!perfil?.monta),
       equipe,
       portal,
       pers,
@@ -185,14 +188,17 @@ export function useHub() {
 }
 
 /** Para páginas do portal. A casca do Hub (layout) só mostra essas páginas quando há portal aberto. */
-/** Páginas do portal em que montar e liberar é só da Camilla: o resto da equipe vê como a loja vê. */
+/** Páginas do portal que só quem monta (Camilla e CS) edita: o resto da equipe vê como a loja vê. Liberar é só da Camilla. */
 const SO_MENTORA_NO_PORTAL = ["/painel", "/estoque", "/consultoria/planner", "/consultoria/materiais", "/pessoas/organograma", "/planeje/mes",
-  "/clientes/campanhas", "/clientes/experiencia", "/clientes/tipos", "/acoes", "/conteudo/pautas"];
+  "/clientes/campanhas", "/clientes/experiencia", "/clientes/tipos", "/acoes"];
+/** Conteúdo (Análise do Instagram e pautas): só a Camilla edita. */
+const SO_CAMILLA_NO_PORTAL = ["/conteudo"];
 
 export function usePortal() {
   const hub = useHub() as Hub & { portal: Portal };
   const caminho = (usePathname() ?? "").replace(/\/$/, "");
-  const soMentora = hub.equipe && !hub.aprova && (caminho === "/conteudo" || SO_MENTORA_NO_PORTAL.some((p) => caminho === p || caminho.startsWith(p + "/")));
+  const em = (lista: string[]) => lista.some((p) => caminho === p || caminho.startsWith(p + "/"));
+  const soMentora = hub.equipe && ((!hub.monta && em(SO_MENTORA_NO_PORTAL)) || (!hub.aprova && em(SO_CAMILLA_NO_PORTAL)));
   return hub.comoLoja || soMentora ? { ...hub, equipe: false } : hub;
 }
 
@@ -202,15 +208,18 @@ export function useEquipe() {
 }
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean }) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean; monta?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
-  // Só da Camilla: a Área da mentora e o que aprova, monta e libera para as lojas.
-  if (hub.equipe && !hub.aprova && ["/equipe/aprovar", "/equipe/planos", "/equipe/analise", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas"].some((p) => caminho.startsWith(p))) return "/equipe/central";
-  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo") || caminho.startsWith("/empresa/minha-central") || caminho.startsWith("/empresa/agentes")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
+  // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
+  if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes"].some((p) => caminho.startsWith(p))) return "/equipe/central";
+  // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.
+  if (hub.equipe && !hub.aprova && caminho.startsWith("/equipe/analise")) return "/equipe/central";
+  if (caminho.startsWith("/empresa/minha-central/diagnostico") || caminho.startsWith("/empresa/agentes")) return hub.equipe ? null : "/inicio";
+  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo") || caminho.startsWith("/empresa/minha-central")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/equipe/central" : "/inicio";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.
   if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";

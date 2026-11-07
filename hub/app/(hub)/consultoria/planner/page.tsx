@@ -93,7 +93,7 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
 }
 
 export default function PlannerGestao() {
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
   const { dados } = useDados(async () => ({ salvo: await buscarPlanner(portal.id) }), [portal.id]);
   const [p, setP] = useState<Planner | null>(null);
   const [filtro, setFiltro] = useState<Frente | null>(null);
@@ -139,7 +139,7 @@ export default function PlannerGestao() {
         <div className={`aviso mb ${atual.liberado ? "ok" : ""}`}>
           {atual.liberado
             ? <>A loja já vê este planner. <button type="button" className="link-loja" onClick={() => salvar({ ...atual, liberado: false }, "Voltou para rascunho.")}>Voltar para rascunho</button></>
-            : <>Rascunho: só a equipe vê. Ajuste as demandas e os dias e libere quando estiver pronto. <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o planner para a loja?")) salvar({ ...atual, liberado: true }, "Liberado para a loja."); }}>Liberar para a loja</button></>}
+            : <>Rascunho: só a equipe vê. Ajuste as demandas e os dias e libere quando estiver pronto. {aprova ? <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o planner para a loja?")) salvar({ ...atual, liberado: true }, "Liberado para a loja."); }}>Liberar para a loja</button> : <small className="mudo">Só a Camilla libera para a loja.</small>}</>}
         </div>
       )}
       {erro && <div className="aviso mb">{erro}</div>}

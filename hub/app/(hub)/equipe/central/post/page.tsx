@@ -127,7 +127,7 @@ function Post() {
   if (!dados) return <Carregando />;
   if (!c) return <div className="card">Cliente não encontrada.</div>;
   const primeiro = (c.responsavel ?? "").trim().split(/\s+/)[0] || "[NOME]";
-  const mensagem = `${primeiro}, preparamos o seu crachá de boas-vindas à magnética! 🧡\n\nPosta nos seus stories e marca o @magnetica.hub: é o primeiro passo da ${c.loja} dentro do Método Loja Magnética.`;
+  const mensagem = `${primeiro}, preparamos o seu crachá de boas-vindas à Loja Magnética! 🧡\n\nPosta nos seus stories e marca o @magnetica.hub e a @camillaribeiromentora: é o primeiro passo da ${c.loja} dentro do Método Loja Magnética.`;
   const whats = c.whatsapp ? c.whatsapp.replace(/\D/g, "").replace(/^(?!55)/, "55") : "";
 
   const baixar = () => canvas.current?.toBlob((b) => {

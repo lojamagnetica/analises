@@ -169,6 +169,11 @@ function prioridade(nome: string) {
   return 3;
 }
 
+/** Tempo máximo de leitura de PDFs novos por chamada. O Supabase derruba a função quando passa do tempo de
+ *  processamento ("CPU Time exceeded"); por isso a leitura vai em partes e a função se chama de novo para continuar. */
+const MAX_LEITURA_MS = 400;
+class Continua extends Error { constructor(public faltam: number) { super(faltam ? `Lendo os arquivos: faltam ${faltam}` : "Arquivos lidos: montando o pedido"); } }
+
 /** Um arquivo pronto para entrar no pedido, com a estimativa de tokens (para escolher quem sai se não couber). */
 type Item = { nome: string; blocos: Bloco[]; est: number };
 
@@ -188,6 +193,32 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
   // Textos de PDF já lidos em outra etapa.
   const { data: guardados } = await admin.storage.from("relatorios").list(`${portalId}/_texto`, { limit: 1000 });
   const jaLidos = new Set((guardados ?? []).map((x) => x.name));
+  const guardar = (nome: string, conteudo: string) =>
+    admin.storage.from("relatorios").upload(`${portalId}/_texto/${nome}`, new Blob([conteudo], { type: "text/plain" }), { upsert: true });
+
+  // 1) Enquanto houver PDF novo, a chamada só lê PDFs (o pedido é montado na chamada seguinte, com tudo lido).
+  const novos = lista.filter((f) => f.name.toLowerCase().endsWith(".pdf") && prioridade(f.name) > 0
+    && !jaLidos.has(`${f.name}.txt`) && Number(f.metadata?.size ?? 0) <= MAX_ARQUIVO);
+  if (novos.length) {
+    let lendo = 0, feitos = 0;
+    for (const f of novos) {
+      if (lendo > MAX_LEITURA_MS) break;
+      const guardado = `${f.name}.txt`;
+      // Uma chamada anterior caiu lendo este PDF: ele vai como documento, sem tentar ler de novo.
+      if (jaLidos.has(`${guardado}.lendo`)) { await guardar(guardado, ""); feitos++; continue; }
+      await guardar(`${guardado}.lendo`, "1");
+      const { data: blob } = await admin.storage.from("relatorios").download(`${portalId}/${f.name}`);
+      const t0 = performance.now();
+      const txt = blob ? await textoPdf(new Uint8Array(await blob.arrayBuffer())) : null;
+      lendo += performance.now() - t0;
+      // Guarda mesmo quando não deu para ler, para não tentar de novo a cada chamada.
+      await guardar(guardado, txt ?? "");
+      feitos++;
+    }
+    return { itens, avisos, faltam: novos.length - feitos, leu: true };
+  }
+
+  // 2) Tudo lido: monta o pedido.
   for (const f of lista) {
     const nome = f.name;
     const ext = nome.split(".").pop()?.toLowerCase() ?? "";
@@ -211,10 +242,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
           const { data: b } = await admin.storage.from("relatorios").download(`${portalId}/_texto/${guardado}`);
           txt = b ? await b.text() : null;
         }
-        if (txt === null) {
-          txt = await textoPdf(buf);
-          if (txt !== null) await admin.storage.from("relatorios").upload(`${portalId}/_texto/${guardado}`, new Blob([txt], { type: "text/plain" }), { upsert: true });
-        }
+        if (txt === "") txt = null; // não deu para ler o texto: vai como documento
       }
       // As páginas vêm do texto já lido; sem ele, do leitor de PDF (que também acusa PDF com senha ou quebrado).
       const pg = txt ? Math.max(1, (txt.match(/^--- página \d+ ---$/gm) ?? []).length) : await paginasPdf(buf);
@@ -260,7 +288,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
       if (conteudo) itens.push({ nome, est: Math.ceil(conteudo.length / 3), blocos: [{ type: "text", text: `Arquivo: ${nome}\n${conteudo}` }] });
     } else avisos.push(`${nome}: formato .${ext} não é lido (use PDF, Word, planilha, CSV ou imagem)`);
   }
-  return { itens, avisos };
+  return { itens, avisos, faltam: 0, leu: false };
 }
 
 /** Conta o pedido de verdade e tira os arquivos menos importantes (os últimos da lista) até caber na janela do Claude. */
@@ -336,6 +364,7 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
     juntar(admin, portalId),
     arquivos(admin, portalId, parada === "mercado" ? /formul|diagnostico-da-sua-loja/i : undefined),
   ]);
+  if (docs.leu) throw new Continua(docs.faltam);
   const memoria = (mem?.dados ?? {}) as { instrucoes?: string; exemplo?: string };
   const tr = (prep?.transcricoes ?? {}) as Record<string, string>;
   const partes = [
@@ -404,16 +433,32 @@ async function entregar(parada: Parada, system: string, mensagens: Anthropic.Mes
 }
 
 /** Monta o pedido da parada e entrega ao Claude como lote. */
-async function rodar(admin: SupabaseClient, portalId: string, parada: Parada) {
-  const inicio = new Date().toISOString();
+async function rodar(admin: SupabaseClient, portalId: string, parada: Parada, inicio = new Date().toISOString()) {
   const marcar = (agente: Record<string, unknown>) => marcarEm(admin, portalId, { parada, inicio, ...agente });
   try {
     const pd = await pedido(admin, portalId, parada, inicio);
     const lote = await entregar(parada, pd.system, [{ role: "user", content: pd.conteudo as Anthropic.ContentBlockParam[] }]);
     await marcar({ estado: "trabalhando", lote, avisos: pd.avisos });
   } catch (e) {
+    if (e instanceof Continua) {
+      // Ainda há PDFs para ler: guarda o andamento e chama a função de novo para continuar.
+      await marcar({ estado: "trabalhando", lendo: e.message });
+      await chamarDeNovo(admin, portalId, parada);
+      return;
+    }
     await marcar({ estado: "erro", fim: new Date().toISOString(), msg: (e as Error).message.slice(0, 500) });
   }
+}
+
+/** A função chama a si mesma (com a chave interna) para seguir lendo os arquivos. */
+async function chamarDeNovo(admin: SupabaseClient, portalId: string, parada: Parada) {
+  const { data } = await admin.from("chaves_internas").select("valor").eq("nome", "diagnostico").maybeSingle();
+  if (!data?.valor) throw new Error("Falta a chave interna do Diagnóstico.");
+  await fetch(`${URL}/functions/v1/diagnostico-agente`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${ANON}`, "x-hub-interno": data.valor },
+    body: JSON.stringify({ portal_id: portalId, parada, continuar: true }),
+  });
 }
 
 /** Separa a resposta da pesquisa nos três blocos e junta as fontes que a busca citou. */
@@ -503,7 +548,7 @@ Deno.serve(async (req) => {
   }
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
-  const { portal_id, parada, conferir: so_conferir } = await req.json().catch(() => ({}));
+  const { portal_id, parada, conferir: so_conferir, continuar } = await req.json().catch(() => ({}));
   if (so_conferir) {
     if (!portal_id) return json({ erro: "Informe a loja." }, 400);
     const { data } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();
@@ -512,6 +557,15 @@ Deno.serve(async (req) => {
     return json({ estado: await conferir(admin, portal_id, a) });
   }
   if (!portal_id || !PARADAS.includes(parada)) return json({ erro: "Informe a loja e a parada." }, 400);
+  // Continuação da leitura em partes (só a própria função chama assim).
+  if (continuar && liberado) {
+    const { data: c } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();
+    const a = (c?.agente ?? {}) as { estado?: string; parada?: string; inicio?: string; lote?: string };
+    if (a.estado !== "trabalhando" || a.parada !== parada || a.lote) return json({ ok: false, motivo: "nada para continuar" });
+    // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
+    EdgeRuntime.waitUntil(rodar(admin, portal_id, parada as Parada, a.inicio));
+    return json({ ok: true }, 202);
+  }
   const { data: prep } = await admin.from("diagnostico_preparo").select("agente, raiox, escolha").eq("portal_id", portal_id).maybeSingle();
   const ag = (prep?.agente ?? {}) as { estado?: string; inicio?: string; lote?: string };
   // Com lote entregue, espera até 3 horas; sem lote (a entrega caiu no meio), libera depois de 5 minutos.

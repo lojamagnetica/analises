@@ -151,12 +151,11 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       ],
     },
     {
-      // O resultado do Diagnóstico: o resumo, as análises de estoque e a do Instagram.
+      // O resultado do Diagnóstico: o resumo e a análise de estoque (a do Instagram fica em Conteúdo).
       id: "diagnostico", rotulo: "Diagnóstico", icone: "chart",
       itens: [
         { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
         { href: "/estoque", rotulo: "Diagnóstico de estoque", icone: "box" },
-        { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
       ],
     },
     {
@@ -204,6 +203,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     {
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
+        { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
         { href: "/conteudo/pautas", rotulo: "Pautas quentes", icone: "spark" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },

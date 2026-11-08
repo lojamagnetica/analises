@@ -5,11 +5,12 @@ import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
 import { CampoReais } from "@/components/CampoReais";
 import { Excluir } from "@/components/Excluir";
+import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { linkWhats, semAcento } from "@/lib/clientes";
 import {
-  CATEGORIAS, FORMAS, LINHAS, buscarEstoque, buscarClientesSimples, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
+  CATEGORIAS, FORMAS, LINHAS, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
   type ClienteSimples, type Venda,
 } from "@/lib/loja-na-mao";
 import { fimDoMes, type Forma } from "@/lib/caixa";
@@ -32,16 +33,26 @@ export default function VendasDoDia() {
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
-  /** Link pronto para mandar o resumo da última venda à cliente. */
-  const [resumoWhats, setResumoWhats] = useState<string | null>(null);
+  /** O resumo da compra pronto para copiar e mandar no WhatsApp da cliente (logo depois de registrar, ou tocando em Resumo na lista). */
+  const [resumo, setResumo] = useState<{ texto: string; nome: string; whatsapp: string | null } | null>(null);
   const { dados, recarregar } = useDados(async () => {
-    const [vendas, clientes, mes, estoque] = await Promise.all([
+    const [vendas, clientes, mes, estoque, contas] = await Promise.all([
       buscarVendas(portal.id, diaVer, diaVer), buscarClientesSimples(portal.id), buscarVendas(portal.id, `${diaVer.slice(0, 7)}-01`, fimDoMes(diaVer.slice(0, 7))), buscarEstoque(portal.id),
+      buscarCrediario(portal.id),
     ]);
-    return { vendas, clientes, mes, estoque };
+    return { vendas, clientes, mes, estoque, contas };
   }, [portal.id, diaVer]);
   if (!dados) return <Carregando />;
-  const { vendas, clientes, mes, estoque } = dados;
+  const { vendas, clientes, mes, estoque, contas } = dados;
+  const quem = (portal.responsavel ?? "").trim().split(" ")[0] || portal.loja;
+  /** Monta o resumo de uma venda; no crediário, com as parcelas e o saldo de todas as contas da cliente. */
+  const montarResumo = (v: { dia: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; venda_id?: string },
+    c: ClienteSimples | null, parcelasNovas: ReturnType<typeof gerarParcelas> | null, saldoExtra = 0) => {
+    const daCliente = c ? contas.filter((x) => x.cliente_id === c.id) : [];
+    const parcelas = parcelasNovas ?? (v.venda_id ? contas.find((x) => x.venda_id === v.venda_id)?.parcelas ?? null : null);
+    const saldo = c ? daCliente.reduce((s, x) => s + emAberto(x.parcelas), 0) + saldoExtra : null;
+    setResumo({ texto: mensagemVenda({ nome: c?.nome ?? "", quem, loja: portal.loja, ...v, parcelas, saldo }), nome: c?.nome ?? "", whatsapp: c?.whatsapp ?? null });
+  };
   // Grupos do estoque do tipo escolhido (e da linha, se escolheu): tocar preenche o valor e baixa do estoque.
   const doTipo = estoque.filter((i) => i.categoria === f.categoria && (!f.linha || i.linha === f.linha));
   const mudar = (x: Partial<Form>) => setF((a) => ({ ...a, ...x }));
@@ -63,9 +74,9 @@ export default function VendasDoDia() {
       if (parcelas && f.cliente) {
         await salvarConta(portal.id, { cliente_id: f.cliente.id, nome: f.cliente.nome, whatsapp: f.cliente.whatsapp, venda_id: id, descricao: [f.categoria, f.produto].filter(Boolean).join(" · "), parcelas });
       }
-      // Venda nova com a cliente e o WhatsApp dela: o resumo da compra fica pronto para mandar.
-      const quem = (portal.responsavel ?? "").trim().split(" ")[0] || portal.loja;
-      setResumoWhats(!f.id && f.cliente?.whatsapp ? linkWhats(f.cliente.whatsapp, mensagemVenda({ nome: f.cliente.nome, quem, loja: portal.loja, categoria: f.categoria, linha: f.linha, produto: f.produto, pecas: f.pecas, valor: f.valor, forma: f.forma, parcelas, dia: f.dia })) : null);
+      // Venda nova com a cliente: o resumo da compra aparece na hora para copiar e mandar.
+      if (!f.id && f.cliente) montarResumo({ dia: f.dia, categoria: f.categoria, linha: f.linha, produto: f.produto, pecas: f.pecas, valor: f.valor, forma: f.forma }, f.cliente, parcelas, parcelas ? f.valor : 0);
+      else setResumo(null);
       setAviso(f.id ? "Venda corrigida ✓" : `Venda de ${moeda(f.valor)} registrada ✓${f.forma === "crediario" ? " · conta aberta no Crediário" : ""}`);
       setF(novo(f.dia)); setAntes(null); setBusca(""); setDiaVer(f.dia); recarregar();
     } catch (x) { setErro((x as Error).message); }
@@ -152,7 +163,7 @@ export default function VendasDoDia() {
           </div>
           {erro && <div className="aviso mt">{erro}</div>}
           {aviso && <div className="aviso ok mt">{aviso}</div>}
-          {resumoWhats && <a className="btn s mt" href={resumoWhats} target="_blank" rel="noopener" onClick={() => setResumoWhats(null)}>Mandar o resumo da compra no WhatsApp da cliente</a>}
+          {resumo && <ResumoCompra r={resumo} fechar={() => setResumo(null)} />}
           <div className="linha mt" style={{ gap: 8 }}>
             <button type="button" className="btn p" disabled={salvando} onClick={salvar} style={{ flex: 1 }}>{salvando ? "Salvando..." : f.id ? "Salvar correção" : "Registrar venda"}</button>
             {f.id && <button type="button" className="btn s" onClick={() => { setF(novo(f.dia)); setAntes(null); }}>Cancelar</button>}
@@ -185,6 +196,7 @@ export default function VendasDoDia() {
                     <div className="mudo" style={{ fontSize: 13 }}>{nomeForma(v.forma)}{v.maleta ? " · maleta" : ""}{c ? ` · ${c.nome}` : ""}</div>
                   </div>
                   <div className="linha" style={{ gap: 10 }}>
+                    {c && <button type="button" className="link-loja" onClick={() => { montarResumo({ ...v, venda_id: v.id }, c, null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Resumo</button>}
                     <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, categoria: v.categoria, produto: v.produto ?? "", valor: v.valor, pecas: v.pecas, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: v.linha ?? "", estoque_id: v.estoque_id }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
                     <Excluir pergunta={`Excluir a venda de ${moeda(v.valor)}?${v.forma === "crediario" ? " A conta dela no Crediário sai junto." : ""}`} fazer={() => removerVenda(portal.id, v)} aoFim={recarregar} />
                   </div>
@@ -195,5 +207,22 @@ export default function VendasDoDia() {
         </div>
       </div>
     </>
+  );
+}
+
+/** O resumo da compra na tela: o texto inteiro, Copiar e, se tiver o WhatsApp da cliente, abrir a conversa com ele pronto. */
+function ResumoCompra({ r, fechar }: { r: { texto: string; nome: string; whatsapp: string | null }; fechar: () => void }) {
+  const link = linkWhats(r.whatsapp, r.texto);
+  return (
+    <div className="card card-borda mt" style={{ ["--c" as string]: "var(--green)" }}>
+      <div className="linha entre"><b>Resumo da compra{r.nome ? ` · ${r.nome}` : ""}</b><button type="button" className="link-loja" onClick={fechar}>fechar</button></div>
+      <div className="card mt" style={{ whiteSpace: "pre-wrap", background: "var(--soft)", fontSize: 14.5 }}>{r.texto}</div>
+      <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+        <Copiar texto={r.texto} rotulo="Copiar o resumo" />
+        {link
+          ? <a className="btn p peq" href={link} target="_blank" rel="noopener">Abrir no WhatsApp da cliente</a>
+          : <span className="ajuda" style={{ margin: 0 }}>Sem WhatsApp no cadastro: copie e cole na conversa dela.</span>}
+      </div>
+    </div>
   );
 }

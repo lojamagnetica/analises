@@ -25,6 +25,10 @@ export const tituloMes = (m: number, titulos?: Record<string, string> | null) =>
   return t ? `Mês ${m} · ${t}` : `Mês ${m}`;
 };
 
+/** Opções de dia para a rotina de gestão (Planner de gestão). */
+export const DIAS_ROTINA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Ainda não tenho dia fixo"];
+const DIAS_MES = (de: number, ate: number) => Array.from({ length: ate - de + 1 }, (_, i) => `Dia ${de + i}`);
+
 export type Campo = {
   id: string;
   rotulo: string;
@@ -78,6 +82,18 @@ export const ETAPAS: Etapa[] = [
       { id: "processos", rotulo: "Vocês têm processos escritos na loja (metas, roteiro de venda, rotinas do time)?", tipo: "opcao", opcoes: ["Sim, temos e o time segue", "Temos algo, mas é informal", "Não temos nada escrito"], novo: true },
       { id: "vm", rotulo: "Vitrine e arrumação da loja: quem cuida e de quanto em quanto tempo vocês trocam?", tipo: "textarea", novo: true },
       { id: "sistema", rotulo: "Qual sistema vocês usam para vendas e estoque?", tipo: "texto", novo: true, ajuda: "Se não usam sistema, escreva \"não usamos\"." },
+      // Rotina de gestão: com estes dias o Planner de gestão já nasce montado.
+      { id: "rotina_semana", rotulo: "Como é a sua semana na loja hoje, dia a dia?", tipo: "textarea", novo: true, ajuda: "Ex.: segunda: pedidos e banco; terça: vitrine; sábado: loja cheia, só atendimento." },
+      { id: "rot_analise_mes", rotulo: "Rotina ideal · em que dia do começo do mês você analisa o mês que fechou e prepara a reunião do mês com o time?", tipo: "opcao", opcoes: [...DIAS_MES(1, 7), "Ainda não faço"], novo: true },
+      { id: "rot_planejamento", rotulo: "Rotina ideal · até que dia do mês você planeja o mês seguinte (meta, datas e ações)?", tipo: "opcao", opcoes: ["Dia 10", "Dia 12", "Dia 15", "Dia 18", "Dia 20", "Ainda não faço"], novo: true },
+      { id: "rot_feedback", rotulo: "Rotina ideal · em que dia do meio do mês você dá o feedback individual para cada pessoa do time (ainda dá para virar o mês)?", tipo: "opcao", opcoes: [...DIAS_MES(12, 18), "Não tenho equipe"], novo: true },
+      { id: "rot_analise", rotulo: "Rotina ideal · em que dia da semana você analisa os resultados: time, marcas e produtos, Instagram e vitrine?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
+      { id: "rot_reuniao", rotulo: "Rotina ideal · em que dia da semana é a conversa individual com cada pessoa do time?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
+      { id: "rot_vm", rotulo: "Rotina ideal · em que dia da semana é a troca geral de vitrine e a arrumação da loja?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
+      { id: "rot_conteudo", rotulo: "Rotina ideal · em que dia da semana você programa o conteúdo e grava os vídeos?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
+      { id: "rot_missao", rotulo: "Rotina ideal · em que dia da semana você combina com o time a missão da semana das clientes?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
+      { id: "rot_compras", rotulo: "Rotina ideal · em que dia da semana você recebe representantes e decide as compras?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
+      { id: "rot_conhecimento", rotulo: "Rotina ideal · em que dia da semana o time estuda e pratica um conhecimento (treinamento)?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
     ],
   },
   {

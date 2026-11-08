@@ -7,6 +7,7 @@ import { dataCurta, moeda } from "@/lib/formato";
 import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
+import { deHoje, salvarPlanner, type Planner } from "@/lib/planner";
 import {
   type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, meuDiaDaLoja, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
@@ -23,6 +24,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
   const setLoja = (l: string) => { setLojaEstado(l); try { localStorage.setItem(chaveLoja, l); } catch { /* sem armazenamento */ } };
   const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio]);
   const [rotina, setRotina] = useState<Rotina | null>(null);
+  const [plannerMarcado, setPlanner] = useState<Planner | null | undefined>(undefined);
   const [erro, setErro] = useState("");
   if (!dados) return <Carregando />;
   const { m } = dados;
@@ -43,6 +45,16 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
   const salvar = async (nova: Rotina) => {
     setRotina(nova); setErro("");
     try { await salvarRotina(portalId, nova); } catch (e) { setErro((e as Error).message); }
+  };
+  // As demandas de hoje do Planner de gestão (quando liberado): marcar aqui marca no planner.
+  const planner = plannerMarcado === undefined ? dados.d.planner : plannerMarcado;
+  const doPlanner = planner ? deHoje(planner, d.agora) : [];
+  const feitosPlanner = planner?.feitos[d.agora] ?? [];
+  const marcarPlanner = async (id: string, feito: boolean) => {
+    if (!planner) return;
+    const novo = { ...planner, feitos: { ...planner.feitos, [d.agora]: feito ? [...new Set([...feitosPlanner, id])] : feitosPlanner.filter((x) => x !== id) } };
+    setPlanner(novo); setErro("");
+    try { await salvarPlanner(portalId, novo); } catch (e) { setErro((e as Error).message); }
   };
   const marcar = (chave: string, feito: boolean) =>
     salvar({ ...r, feitos: { ...r.feitos, [d.agora]: feito ? [...new Set([...feitosHoje, chave])] : feitosHoje.filter((x) => x !== chave) } });
@@ -93,7 +105,18 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
 
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)" }}>
         <h3 style={{ marginTop: 0 }}>✅ Sua rotina de hoje</h3>
-        {!lista.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
+        {!lista.length && !doPlanner.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
+        {doPlanner.map((b) => {
+          const feito = feitosPlanner.includes(b.id);
+          return (
+            <div key={b.id} className="marcar" style={{ cursor: "default", gap: 10 }}>
+              <input type="checkbox" checked={feito} onChange={(e) => marcarPlanner(b.id, e.target.checked)} aria-label={b.titulo} />
+              <span style={feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
+                {b.titulo}{b.detalhe ? <span className="mudo"> · {b.detalhe}</span> : null}{!feito && <> · <Link className="link-loja" href="/consultoria/planner">como fazer</Link></>}
+              </span>
+            </div>
+          );
+        })}
         {lista.map((t) => {
           const feito = feitosHoje.includes(ch(t.chave));
           return (
@@ -177,6 +200,12 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
         ))}
       </div>
 
+      {planner ? (
+        <Link href="/consultoria/planner" className="card mb linha entre" style={{ textDecoration: "none", color: "inherit" }}>
+          <span><b>Minha rotina de gestão</b> <span className="mudo">· os dias fixos ficam no Planner de gestão</span></span>
+          <span className="btn s peq">Abrir o planner</span>
+        </Link>
+      ) : (
       <details className="card mb">
         <summary style={{ cursor: "pointer" }}><b>Minha rotina</b> <span className="mudo">· os dias fixos da sua gestão: o Hub te lembra e acompanha</span></summary>
         <div className="grade g3 mt" style={{ gap: 12 }}>
@@ -208,6 +237,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
         <p className="ajuda">No dia escolhido, a tarefa aparece em &quot;Sua rotina de hoje&quot;. Marque quando fizer: o Hub conta quantas vezes você cumpriu no mês.</p>
         <button type="button" className="btn s peq" onClick={recarregar}>Atualizar</button>
       </details>
+      )}
     </>
   );
 }

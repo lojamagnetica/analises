@@ -3,6 +3,7 @@
 // Meu dia: o norte de gestão da loja. Junta o Fechamento de caixa (por vendedora), a meta do PLANEJE AQUI,
 // o perfil de cada vendedora, a base de clientes e as ações do mês, e diz o que fazer hoje.
 // As regras e os textos ficam aqui em cima, num lugar só, para a Camilla revisar.
+import { buscarPlanner } from "@/lib/planner";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES } from "@/lib/conteudo";
 import { hoje } from "@/lib/formato";
@@ -120,6 +121,8 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
     sb().from("loja_clientes").select("aniversario, ultima_compra, loja").eq("portal_id", portalId).limit(5000),
     sb().from("datas_comerciais").select("mes, dia, titulo"),
   ]);
+  // Planner de gestão liberado: as demandas com dia fixo entram na rotina de hoje (e substituem os dias da "Minha rotina").
+  const planner = await buscarPlanner(portalId).catch(() => null);
   // Crediário (loja na mão): as parcelas em aberto para cobrar.
   const { data: cred } = modo.vendaDiaria ? await sb().from("loja_crediario").select("parcelas").eq("portal_id", portalId) : { data: [] };
   // O caixa de ontem pode ser do mês passado (dia 1).
@@ -134,6 +137,7 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
     datas: (datas ?? []) as { mes: number; dia: number | null; titulo: string }[],
     parcelas: ((cred ?? []) as { parcelas: { vence: string; valor: number; pago_em: string | null }[] }[]).flatMap((c) => c.parcelas ?? []).filter((x) => !x.pago_em),
     modo,
+    planner: planner?.liberado ? planner : null,
   };
 }
 export type DadosMeuDia = Awaited<ReturnType<typeof buscarMeuDia>>;
@@ -408,11 +412,13 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   } else if (p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
     t.push({ chave: "reta_final", texto: `Reunião de reta final (15 min): faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo`, href: "/pessoas/reunioes?m=reta_final" });
   }
-  if (cfg.reuniao === hojeDow && !solo) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora (15 min cada)", href: "/pessoas/reunioes?m=individual" });
-  if (cfg.conteudo === hojeDow) t.push({ chave: "conteudo", texto: apoio ? `Combinar com ${apoio} o conteúdo da semana e separar as peças` : "Montar o calendário de conteúdo da semana", href: "/conteudo/semana" });
+  // Com o Planner de gestão liberado, os dias fixos vêm dele (o componente mostra as demandas de hoje).
+  const comPlanner = !!d.planner;
+  if (!comPlanner && cfg.reuniao === hojeDow && !solo) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora (15 min cada)", href: "/pessoas/reunioes?m=individual" });
+  if (!comPlanner && cfg.conteudo === hojeDow) t.push({ chave: "conteudo", texto: apoio ? `Combinar com ${apoio} o conteúdo da semana e separar as peças` : "Montar o calendário de conteúdo da semana", href: "/conteudo/semana" });
   const planoEnviado = d.planoProx && d.planoProx.status !== "rascunho";
   const proximo = MESES[Number(somarMes(d.agora.slice(0, 7), 1).slice(5, 7)) - 1].toLowerCase();
-  if (cfg.planejamento && diaDoMes >= cfg.planejamento && diaDoMes <= 20 && !planoEnviado) {
+  if (!comPlanner && cfg.planejamento && diaDoMes >= cfg.planejamento && diaDoMes <= 20 && !planoEnviado) {
     t.push({ chave: "planejamento", texto: `Montar o plano de ${proximo} no PLANEJE AQUI (até dia 20)`, href: `/planeje/mes?m=${somarMes(d.agora.slice(0, 7), 1)}` });
   }
   for (const v of vs.filter((x) => x.problema === "pa" || x.problema === "pm" || x.problema === "volume")) {

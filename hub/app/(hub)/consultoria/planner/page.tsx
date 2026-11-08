@@ -6,7 +6,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
 import {
-  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, modeloPlanner, novoBloco, salvarPlanner,
+  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
   type Bloco, type Freq, type Frente, type Planner,
 } from "@/lib/planner";
 
@@ -93,14 +93,16 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
 }
 
 export default function PlannerGestao() {
-  const { portal, equipe, aprova } = usePortal();
+  const { portal, equipe, aprova, pers } = usePortal();
   const { dados } = useDados(async () => ({ salvo: await buscarPlanner(portal.id) }), [portal.id]);
   const [p, setP] = useState<Planner | null>(null);
   const [filtro, setFiltro] = useState<Frente | null>(null);
   const [erro, setErro] = useState("");
   const [salvo, setSalvo] = useState("");
   if (!dados) return <Carregando />;
-  const atual = p ?? dados.salvo ?? modeloPlanner();
+  // Mentoria: o modelo nasce com a rotina de gestão da Camilla e os dias que a loja respondeu em Dados da loja.
+  const modelo = () => (portal.tipo === "Consultoria" ? modeloPlanner() : modeloMentoria(pers.get(9)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
+  const atual = p ?? dados.salvo ?? modelo();
   if (!atual.liberado && !equipe) {
     return (
       <>

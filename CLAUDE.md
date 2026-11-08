@@ -47,6 +47,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
   - No mês: estratégia do mês seguinte (até o dia 20) e análise do mês que fechou + reunião do mês com o time; feedback individual no meio do mês.
   - Na semana: dia da análise de resultado (time, marcas e produtos, Instagram, vitrine e revisão do plano), conversa individual, VM geral, conteúdo e gravações, missão da semana, compras; dia do conhecimento só para quem tem equipe e passou dos 3 meses.
   - As demandas do dia aparecem em "Sua rotina de hoje" (Meu dia) quando o planner é liberado.
+- Reunião de entrega do Hub (individual extra, uma vez só): quando o portal fica "Entregue" no Painel dos portais, o roteiro sai em `/equipe/entrega?id=` com os dados da loja; foco na clareza do uso, tudo no celular dela, e os combinados saem dela.
 - Plano de Ação mês a mês (norteia a satisfação da cliente):
   - Os desejos vêm SEMPRE das palavras da própria cliente: loja que subimos do Drive = formulário "Diagnóstico da Sua Loja" (planilha de respostas no Drive); loja que entrou direto pelo portal = as respostas dela no Hub. Nunca do resumo do Comercial, do Raio-X ou de outro agente. Citar a pergunta e a resposta de onde saiu cada desejo.
   - Os desejos que ela listou primeiro (objetivos em ordem de prioridade e o que quer construir) entram nos 2 primeiros meses depois da entrega do portal.

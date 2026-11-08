@@ -7,9 +7,9 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 
-export const FRENTES = ["Varejo", "Atacado", "Gestão", "Equipe"] as const;
+export const FRENTES = ["Varejo", "Atacado", "Gestão", "Equipe", "Conteúdo"] as const;
 export type Frente = (typeof FRENTES)[number];
-export const COR_FRENTE: Record<Frente, string> = { Varejo: "var(--red)", Atacado: "var(--ink)", Gestão: "var(--green)", Equipe: "var(--blue)" };
+export const COR_FRENTE: Record<Frente, string> = { Varejo: "var(--red)", Atacado: "var(--ink)", Gestão: "var(--green)", Equipe: "var(--blue)", Conteúdo: "var(--purple)" };
 export const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
 export type Freq = "diaria" | "semanal" | "mensal";
@@ -59,6 +59,56 @@ export function modeloPlanner(): Planner {
       b("mensal", 0, "Gestão", "Fechamento do mês: varejo × atacado", "", ["Meta × realizado", "Margem e despesas do mês", "O que muda no mês seguinte"]),
     ],
   };
+}
+
+/** "Segunda" → 1 … "Sábado" → 6; o resto (sem dia fixo, sem equipe) → null. */
+const diaSemana = (v: unknown) => { const i = DIAS_SEMANA.indexOf(String(v ?? "")); return i >= 1 ? i : null; };
+/** "Dia 15" → 15; o resto → o padrão. */
+const diaMes = (v: unknown, padrao: number | null) => { const m = /^Dia (\d+)$/.exec(String(v ?? "")); return m ? Number(m[1]) : padrao; };
+const semEquipe = (v: unknown) => String(v ?? "") === "Não tenho equipe";
+
+/**
+ * Modelo da mentoria (rotina de gestão da Camilla): duas reuniões de gestão no mês (planejar o mês seguinte e analisar
+ * o mês que fechou para montar a reunião do mês com o time), o dia da análise da semana (time, marcas e produtos,
+ * Instagram e vitrine, e a revisão do plano), o feedback do meio do mês, a vitrine, o conteúdo, a missão da semana,
+ * as compras e o dia do conhecimento (só para quem tem equipe e já passou dos 3 meses).
+ * Os dias vêm do que a loja respondeu em Dados da loja › Gestão da loja; sem resposta, ficam "a definir".
+ */
+export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo?: boolean; inicio?: string | null; apoio?: string | null } = {}): Planner {
+  const resp = r ?? {};
+  const time = !o.solo && !semEquipe(resp.rot_reuniao);
+  const b = (freq: Freq, dia: number | null, frente: Frente, titulo: string, detalhe: string, como: string[], inicio?: string | null): Bloco =>
+    ({ id: id(), freq, dia, frente, titulo, detalhe, como: como.join("\n"), quem: "", inicio: inicio ?? null });
+  // Dia do conhecimento: a partir do 4º mês de mentoria.
+  const depois3 = o.inicio ? (() => { const [a, m] = o.inicio!.slice(0, 7).split("-").map(Number); const t = a * 12 + m - 1 + 3; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`; })() : null;
+  const blocos: Bloco[] = [
+    b("diaria", null, "Gestão", "Começo do dia: as 3 prioridades", "10 min antes de abrir", ["Abrir o Hub e ver o Meu dia", "Escolher as 3 coisas que precisam acontecer hoje", "O resto vai para o dia certo da semana"]),
+    // As duas reuniões de gestão do mês.
+    b("mensal", diaMes(resp.rot_planejamento, 15), "Gestão", "Estratégia do mês seguinte", "Até o dia 20, no PLANEJE AQUI", ["Meta: o mesmo mês do ano passado +20%", "Estoque e o que gira: o que comprar e o que girar", "Datas, calendário e as ações do mês", "Enviar o plano para a Camilla"]),
+    b("mensal", diaMes(resp.rot_analise_mes, 3), "Gestão", time ? "Análise do mês que fechou e a reunião do mês com o time" : "Análise do mês que fechou", "O que foi bom, o que precisa melhorar e onde redobrar a atenção", [
+      "Meta × realizado da loja" + (time ? " e de cada pessoa do time" : ""),
+      "Marcas e produtos: o que vendeu e o que parou",
+      "Revisar o plano: segue ou ajusta",
+      ...(time ? ["Montar a reunião do mês com o time (o que foi bom, o que melhorar, a meta e as ações)"] : ["Os 3 combinados do mês"]),
+    ]),
+    b("semanal", diaSemana(resp.rot_analise), "Gestão", "Dia da análise de resultado", "Time, marcas e produtos, Instagram e vitrine", [
+      ...(time ? ["Resultado de cada pessoa do time: venda, PA e ticket"] : ["Venda da semana × meta"]),
+      "Marcas e produtos: o que mais vendeu e o que está parado",
+      "Instagram: o que trouxe cliente e venda",
+      "Vitrine: o que saiu da vitrine vendeu?",
+      "Revisar o plano do mês: o que está em dia e o que atrasou",
+    ]),
+    b("semanal", diaSemana(resp.rot_vm), "Varejo", "VM geral: vitrine e arrumação da loja", "A loja inteira pronta para a semana", ["Trocar a vitrine com o que precisa vender", "Arrumar as araras por cor e ocasião", "Destacar o que está parado na frente"]),
+    b("semanal", diaSemana(resp.rot_conteudo), "Conteúdo", "Programação de conteúdo e gravações", o.apoio ? `Junto com ${o.apoio}` : "Tudo de uma vez, no dia e hora combinados", ["Programar os conteúdos da semana", "Separar as peças", "Gravar os vídeos"]),
+    b("semanal", diaSemana(resp.rot_compras), "Gestão", "Compras e representantes", "Só dentro do orçamento do mês", ["Ver o que falta do que mais vende", "Conferir o orçamento de compras do mês", "Nada de peça nova parecida com o que está parado"]),
+  ];
+  if (time) blocos.push(
+    b("semanal", diaSemana(resp.rot_reuniao), "Equipe", "Conversa individual com cada pessoa do time", "15 min cada", ["O número dela na semana", "O que ela já faz bem", "O combinado da semana sai dela"]),
+    b("semanal", diaSemana(resp.rot_missao), "Equipe", "Missão da semana das clientes", "Igual para o time, cada uma com a sua carteira", ["Escolher a missão da semana", "Cada pessoa chama as clientes da sua carteira", "Conferir quantas foram chamadas no fim da semana"]),
+    b("mensal", diaMes(resp.rot_feedback, 15), "Equipe", "Feedback individual do meio do mês", "Ainda dá para virar o mês", ["O número dela até aqui × a meta", "O que ela já faz bem e a força do perfil", "A solução na prática e o combinado que sai dela (o quê, quanto, até quando)"]),
+    b("semanal", diaSemana(resp.rot_conhecimento), "Equipe", "Dia do conhecimento implantado", "O time estuda e pratica um conhecimento", ["Escolher um conteúdo do curso", "Estudar junto com o time", "Praticar no atendimento da semana"], depois3),
+  );
+  return { liberado: false, feitos: {}, mensal: [], blocos };
 }
 
 /** Converte o formato antigo (sem frequência, datas do mês separadas) para a lista única de demandas. */

@@ -249,6 +249,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
   // Scripts de venda prontos saíram de todos os portais (não se encaixavam no tom e nos produtos de cada loja).
   if (!hub.equipe && caminho.startsWith("/scripts")) return "/inicio";
+  // A Bússola do gestor saiu: quem tiver o link cai no Planner de gestão.
+  if (!hub.equipe && caminho.startsWith("/bussola")) return "/consultoria/planner";
   // Loja sem equipe: as páginas de time não abrem nem pelo link.
   if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.

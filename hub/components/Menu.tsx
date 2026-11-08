@@ -351,10 +351,11 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/bussola") && (
+          {/* O Planner de gestão diário (no lugar da antiga Bússola do gestor): a rotina de gestão com dia fixo. */}
+          {props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/consultoria/planner") && (
             <div className="nav-linha">
-              <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
-                <Icone nome="compass" /> BÚSSOLA DO GESTOR{props.trava?.("/bussola") ? " 🔒" : ""}
+              <Link href="/consultoria/planner" className={`nav-item ${ativo("/consultoria/planner") ? "ativo" : ""}`}>
+                <Icone nome="cal" /> PLANNER DE GESTÃO{props.trava?.("/consultoria/planner") ? " 🔒" : ""}
               </Link>
             </div>
           )}

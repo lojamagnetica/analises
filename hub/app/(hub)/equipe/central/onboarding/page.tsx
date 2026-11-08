@@ -170,6 +170,26 @@ function PortalAoVivo({ portalId }: { portalId: string }) {
   );
 }
 
+/** Sem cliente escolhida: lista as lojas ativas para a Claudia abrir a apresentação da cliente da call. */
+function Escolher() {
+  const { dados } = useDados(() => buscarJornada(), []);
+  const [busca, setBusca] = useState("");
+  if (!dados) return <Carregando />;
+  const t = busca.trim().toLowerCase();
+  const lista = dados.filter((c) => !t || `${c.loja} ${c.responsavel ?? ""}`.toLowerCase().includes(t));
+  return (
+    <div className="card" style={{ maxWidth: 640, margin: "0 auto" }}>
+      <h2 style={{ marginTop: 0 }}>Onboarding · para quem é a call?</h2>
+      <p className="mudo">A apresentação é a mesma para todas as lojas. Escolha a cliente e, na tela, você ainda troca o nome na hora.</p>
+      <input type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar pela loja ou pelo nome" />
+      <div className="mt" style={{ display: "grid", gap: 6 }}>
+        {lista.map((c) => <Link key={c.id} className="btn s" href={`/equipe/central/onboarding?id=${c.id}`} style={{ justifyContent: "flex-start" }}>{c.loja}{c.responsavel ? ` · ${c.responsavel}` : ""}</Link>)}
+        {lista.length === 0 && <p className="mudo">Nenhuma loja encontrada.</p>}
+      </div>
+    </div>
+  );
+}
+
 function Apresentacao() {
   const id = useSearchParams().get("id") ?? "";
   const { nome } = useEquipe();
@@ -177,17 +197,27 @@ function Apresentacao() {
   const c = dados?.c ?? null;
   const [i, setI] = useState(0);
   const [roteiro, setRoteiro] = useState(false);
+  // Nomes que aparecem nos slides: vêm do cadastro, mas a Claudia troca na hora (quem está na call, nome da loja).
+  const [nomePessoa, setNomePessoa] = useState("");
+  const [nomeLoja, setNomeLoja] = useState("");
+  const cId = c?.id;
+  useEffect(() => {
+    if (!c) return;
+    setNomePessoa(primeiro(c.responsavel));
+    setNomeLoja(nomeDaLoja(c));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cId]);
   // Tela cheia só dos slides (sem o menu da equipe), para compartilhar na call.
   const palco = useRef<HTMLDivElement>(null);
 
   const telas: Tela[] = !c ? [] : [
     {
-      titulo: `Boas-vindas, ${primeiro(c.responsavel) || nomeDaLoja(c)}!`,
+      titulo: `Boas-vindas, ${nomePessoa.trim() || nomeLoja.trim()}!`,
       roteiro: "Apresente-se, conte que você é quem acompanha o dia a dia dela na mentoria e que hoje vocês vão deixar tudo pronto para o Diagnóstico com a Camilla.",
       corpo: (
         <div style={{ textAlign: "center", padding: "30px 0" }}>
           <div style={{ fontSize: 15, letterSpacing: 2, textTransform: "uppercase" }} className="mudo">Mentoria Loja Magnética{c.plano ? ` · Plano ${PLANOS[c.plano] ?? c.plano}` : ""}</div>
-          <h1 style={{ fontSize: 44, margin: "14px 0" }}>{nomeDaLoja(c)}</h1>
+          <h1 style={{ fontSize: 44, margin: "14px 0" }}>{nomeLoja}</h1>
           <p style={{ fontSize: 20 }}>Hoje a gente deixa o seu Hub pronto e combina os próximos passos até a reunião de Diagnóstico com a Camilla.</p>
           <p className="mudo" style={{ fontSize: 16, marginTop: 24 }}>ATRAIR. VENDER. MULTIPLICAR.</p>
         </div>
@@ -296,8 +326,9 @@ function Apresentacao() {
     return () => window.removeEventListener("keydown", tecla);
   }, [ir]);
 
+  if (!id) return <Escolher />;
   if (!dados) return <Carregando />;
-  if (!c) return <div className="card">Cliente não encontrada.</div>;
+  if (!c) return <div className="card">Cliente não encontrada. <Link href="/equipe/central/onboarding">Escolher outra</Link></div>;
   const tela = telas[i];
 
   return (
@@ -308,6 +339,14 @@ function Apresentacao() {
           <button type="button" className="btn s peq" onClick={() => setRoteiro((r) => !r)}>{roteiro ? "Esconder o roteiro" : "Ver o roteiro da Claudia"}</button>
           <button type="button" className="btn s peq" onClick={() => (document.fullscreenElement ? document.exitFullscreen() : palco.current?.requestFullscreen?.())?.catch?.(() => {})}>Tela cheia</button>
         </span>
+      </div>
+      <div className="card mb" style={{ padding: "10px 14px" }}>
+        <div className="linha" style={{ gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: "1 1 200px" }}><label className="rotulo" style={{ marginTop: 0 }}>Nome de quem está na call</label><input type="text" value={nomePessoa} onChange={(e) => setNomePessoa(e.target.value)} placeholder="Ex.: Camila" /></div>
+          <div style={{ flex: "1 1 200px" }}><label className="rotulo" style={{ marginTop: 0 }}>Nome da loja</label><input type="text" value={nomeLoja} onChange={(e) => setNomeLoja(e.target.value)} placeholder="Ex.: Boutique Rosa" /></div>
+          <Link href="/equipe/central/onboarding" className="link-loja">Trocar de cliente</Link>
+        </div>
+        <p className="ajuda" style={{ margin: "6px 0 0" }}>Os nomes vêm do cadastro. Pode trocar aqui na hora: muda só nos slides, não no cadastro.</p>
       </div>
       {roteiro && <div className="aviso mb" style={{ fontSize: 14 }}>🎙 <b>Roteiro:</b> {tela.roteiro} <small className="mudo">(esconda antes de compartilhar a tela)</small></div>}
       <div className="card" style={{ minHeight: 460, padding: "28px 32px" }}>

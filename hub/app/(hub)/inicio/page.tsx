@@ -228,6 +228,14 @@ export default function Inicio() {
           <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
+            {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}
+            {a.href.startsWith("/planeje/mes") && !trancado(a.href) && (
+              planoProx && planoProx.status !== "rascunho"
+                ? <small style={{ color: "var(--feito)", fontWeight: 700, fontSize: 11.5 }}>Enviado ✓</small>
+                : <small style={{ color: "var(--red)", fontWeight: 700, fontSize: 11.5, lineHeight: 1.25 }}>
+                    {Number(hoje().slice(8)) > 20 ? "Prazo passou: envie hoje" : `Planeje e envie para a Camilla até 20/${hoje().slice(5, 7)}`}
+                  </small>
+            )}
           </Link>
         ))}
       </div>

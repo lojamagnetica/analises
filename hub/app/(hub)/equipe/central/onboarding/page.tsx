@@ -286,6 +286,15 @@ function Apresentacao() {
         </div>
       ),
     },
+    {
+      titulo: "Como você é atendida",
+      roteiro: "Deixe bem claro, antes de ela começar a mandar mensagem: a Camilla responde duas vezes ao dia, conforme a agenda dela, e o suporte responde em horário comercial. Assim ela sabe quando esperar a resposta e nada fica sem retorno.",
+      corpo: <Passos itens={[
+        ["Camilla responde 2 vezes ao dia", "Ela responde as mensagens enviadas pelo Hub de acordo com a agenda dela, para garantir a excelência em cada resposta."],
+        ["O suporte responde no horário comercial", "A qualquer momento do dia, durante o horário comercial."],
+        ["E aos sábados até as 13h", "Mandou no sábado de manhã? O suporte responde até as 13h."],
+      ]} />,
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,

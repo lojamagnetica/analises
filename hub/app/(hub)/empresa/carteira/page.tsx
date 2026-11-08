@@ -118,7 +118,7 @@ export default function GestaoDeClientes() {
               return (
                 <tr key={l.id}>
                   <td><b>{l.loja}</b><div className="mudo" style={{ fontSize: 12.5 }}>{l.responsavel ?? l.tipo}</div></td>
-                  <td>{nomePlano(l.f?.plano_id ?? l.c?.plano_id) ?? <span className="mudo">{l.f?.programa_notion ?? "—"}</span>}</td>
+                  <td>{nomePlano(l.f?.plano_id ?? l.c?.plano_id) ?? <span className="mudo">—</span>}</td>
                   <td>{l.f?.situacao ?? "—"}</td>
                   <td>{l.f?.etapa ? `${l.f.etapa} · ${ETAPAS_JORNADA[l.f.etapa]}` : <span className="mudo">—</span>}</td>
                   <td><Termometro valor={l.f?.termometro} /></td>

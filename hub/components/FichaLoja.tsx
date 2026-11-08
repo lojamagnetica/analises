@@ -76,7 +76,6 @@ export function FichaLoja({ portalId }: { portalId: string }) {
               <option value="">—</option>
               {dados.planos.map((p) => <option key={p.id} value={p.id}>{p.nome}{p.vendendo ? "" : " (antigo)"}</option>)}
             </select>
-            {f?.programa_notion && <div className="ajuda">No Notion: {f.programa_notion}</div>}
           </div>
           <div>
             <label className="rotulo">Situação</label>
@@ -139,7 +138,6 @@ export function FichaLoja({ portalId }: { portalId: string }) {
         </details>
         <label className="rotulo">Observações</label>
         <textarea name="observacoes" defaultValue={f?.observacoes ?? ""} />
-        {f?.notion_url && <p className="ajuda"><a href={f.notion_url} target="_blank" rel="noreferrer">Portal antigo no Notion</a></p>}
         {avisoEm("ficha")}
         <div className="linha mt"><button className="btn p" type="submit">Salvar ficha</button></div>
       </form>

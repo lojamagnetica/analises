@@ -143,7 +143,6 @@ function Post() {
           <div className="linha" style={{ gap: 8 }}>
             {p.palavra_chave && <span className="chip">Palavra-chave: <b>{p.palavra_chave}</b></span>}
             {t != null && <span className="chip">Envios/alcance: <b>{t.toFixed(2).replace(".", ",")}%</b></span>}
-            {p.notion_url && <a className="btn s peq" href={p.notion_url} target="_blank" rel="noopener noreferrer">Abrir no Notion</a>}
           </div>
         </div>
         {p.gancho && <p className="mt" style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", margin: "14px 0 4px" }}>{p.gancho}</p>}

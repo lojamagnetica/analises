@@ -20,6 +20,7 @@ export const ETAPAS: Etapa[] = [
     { chave: "post_entrada", texto: "Post de entrada (crachá de boas-vindas) feito e enviado para a cliente", prazo: 1, acao: "post" },
     { chave: "onboarding_marcado", texto: "Contrato assinado e onboarding marcado (mensagens 3 e 4)", prazo: 0, data: true, acao: "boasvindas" },
     { chave: "clube", texto: "Cliente adicionada ao Clube da Loja Magnética (mensagens 5 e 6)", prazo: 1, acao: "boasvindas" },
+    { chave: "carteira_ativa", texto: "Acesso à Carteira Ativa liberado na Hubla (vale para todos os planos)", prazo: 1, data: true },
     { chave: "onboarding", texto: "Onboarding feito e acesso ao Hub enviado na call", prazo: 1, acao: "acesso" },
     { chave: "pendencias", texto: "Mensagem de Pendências enviada no grupo", prazo: 1, acao: "pendencias" },
     { chave: "lembrete", texto: "Lembrete do dia 3 (só o que falta)", prazo: 4, acao: "pendencias" },

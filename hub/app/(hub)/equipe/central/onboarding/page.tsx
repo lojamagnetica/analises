@@ -304,6 +304,15 @@ function Apresentacao() {
         ["Hub desatualizado na segunda?", "A devolutiva fica para a próxima segunda, se já estiver tudo em dia. Isso garante a excelência operacional da mentoria."],
       ]} />,
     },
+    {
+      titulo: "Seu acesso à Carteira Ativa",
+      roteiro: "Conte que todos os planos incluem o acesso à Carteira Ativa, que fica na plataforma Hubla. Combine com ela o e-mail que ela quer usar no acesso e libere na Hubla. Depois, marque no checklist da Central: \"Acesso à Carteira Ativa liberado\".",
+      corpo: <Passos itens={[
+        ["Está incluso no seu plano", "Todos os planos da mentoria têm o acesso à Carteira Ativa."],
+        ["Fica na plataforma Hubla", "É lá que você assiste e acompanha o conteúdo da Carteira Ativa."],
+        ["A Claudia libera o seu acesso", "Durante o onboarding, com o e-mail que você escolher."],
+      ]} />,
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,

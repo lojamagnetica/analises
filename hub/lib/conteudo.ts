@@ -212,6 +212,7 @@ export const ROTINA_GESTAO: Etapa = {
     ...demanda("s_parados", "Ação para as peças paradas", "Em que dia?", SEMANA),
     ...demanda("s_conhecimento", "Dia do conhecimento: o time estuda e pratica um conhecimento (treinamento)", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
     ...demanda("s_mural", "Atualizar o mural de resultados do time", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    { id: "s_mural_hoje", rotulo: "Sua loja já tem mural de resultados? O que consta nele hoje?", tipo: "textarea", ajuda: "Ex.: quadro na copa com a meta do mês e a venda de cada vendedora; ainda não temos." },
     ...demanda("s_crediario", "Conferir o crediário da semana: vendido, recebido e vencido", "Em que dia?", [...SEMANA, "Não vendo no crediário"]),
     { id: "como_semana", rotulo: "Conte como você faz hoje o que marcou acima (a semana)", tipo: "textarea" },
     // Todo mês
@@ -234,3 +235,12 @@ export const ROTINA_GESTAO: Etapa = {
     { id: "c_calendario", rotulo: "Como é o seu calendário de compras no ano?", tipo: "textarea", ajuda: "Ex.: verão comprado em junho na feira; inverno em janeiro; reposição toda semana com o representante; Natal fechado em setembro." },
   ],
 };
+
+/** Os blocos do formulário da rotina de gestão (no portal e no link sem login). */
+export const ROTINA_BLOCOS: { titulo: string; sub: string; de: (c: Campo) => boolean }[] = [
+  { titulo: "Você e a sua semana", sub: "Como é hoje, sem filtro: é daqui que sai a sua rotina ideal.", de: (c) => !/^(d|s|m|c)_|^como_/.test(c.id) },
+  { titulo: "Todo dia", sub: "O que acontece em cada dia de loja.", de: (c) => c.id.startsWith("d_") || c.id === "como_dia" },
+  { titulo: "Toda semana", sub: "O que tem (ou deveria ter) um dia fixo na semana.", de: (c) => (c.id.startsWith("s_") && !c.id.startsWith("s_compras")) || c.id === "como_semana" },
+  { titulo: "Todo mês", sub: "As datas fixas do mês.", de: (c) => c.id.startsWith("m_") || c.id === "como_mes" },
+  { titulo: "Compras e estoque", sub: "Como você compra, o que vem primeiro e como olha o estoque.", de: (c) => c.id.startsWith("c_") || c.id.startsWith("s_compras") },
+];

@@ -406,7 +406,8 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   }
   // Pós-venda: o carimbo de conexão, em até 24 horas e sem oferecer nada.
   if (solo) t.push({ chave: "pos_venda", texto: "Pós-venda das clientes de ontem: uma mensagem de carinho, sem oferecer nada, pedindo para salvar o seu número", href: "/clientes" });
-  if (hojeDow !== 0 && !solo) t.push({ chave: "abertura", texto: "Reunião de abertura com o time (10 min, antes de abrir)", href: "/pessoas/reunioes?m=abertura" });
+  // A reunião de abertura todo dia não se sustenta: no lugar, a mensagem de direção do dia no grupo (pronta abaixo).
+  if (hojeDow !== 0 && !solo) t.push({ chave: "direcao", texto: "Mandar a mensagem de direção do dia no grupo da loja (está pronta logo abaixo)" });
   if (solo && p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
     t.push({ chave: "reta_final", texto: `Reta final: faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo. Chame hoje as clientes que mais compram`, href: "/clientes" });
   } else if (p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {

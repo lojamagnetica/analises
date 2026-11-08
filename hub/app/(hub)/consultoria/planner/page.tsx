@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
 import {
-  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, frentesDa, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
+  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, SITUACAO_ROTULO, buscarPlanner, cumprimento, deHoje, frentesDa, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
   type Bloco, type Freq, type Frente, type Planner,
 } from "@/lib/planner";
 
@@ -75,6 +76,8 @@ function Cartao({ b, mudar, tirar, frentes }: { b: Bloco; mudar: (b: Bloco) => v
       <div className="linha entre">
         <small style={{ color: COR_FRENTE[b.frente], fontWeight: 700 }}>
           {b.frente}{!ativa(b) && b.inicio && <span className="selo espera" style={{ marginLeft: 6 }}>a partir de {mesCurto(b.inicio)}</span>}
+          {/* A situação de hoje, do formulário da rotina: o que a loja já faz vira manutenção; o resto, prioridade. */}
+          {b.situacao && <span className={`selo ${b.situacao === "certo" ? "feito" : b.situacao === "sem_constancia" ? "andamento" : "espera"}`} style={{ marginLeft: 6 }}>{SITUACAO_ROTULO[b.situacao]}</span>}
         </small>
         <button type="button" className="link-loja" style={{ fontSize: 12.5 }} onClick={() => setEditando(true)}>Editar</button>
       </div>
@@ -103,14 +106,20 @@ export default function PlannerGestao() {
   // Mentoria: o modelo nasce com a rotina de gestão da Camilla e os dias que a loja respondeu em Dados da loja.
   // Atacado só aparece para quem tem o canal atacado.
   const frentes = frentesDa(portal.canais, dados.salvo?.blocos);
-  const modelo = () => (portal.tipo === "Consultoria" ? (() => { const m = modeloPlanner(); return { ...m, blocos: m.blocos.filter((b) => frentes.includes(b.frente)) }; })() : modeloMentoria(pers.get(9)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
+  const modelo = () => (portal.tipo === "Consultoria" ? (() => { const m = modeloPlanner(); return { ...m, blocos: m.blocos.filter((b) => frentes.includes(b.frente)) }; })() : modeloMentoria(pers.get(20)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
   const atual = p ?? dados.salvo ?? modelo();
   if (!atual.liberado && !equipe) {
     return (
       <>
         <Titulo titulo="Planner de gestão" />
         <RascunhoComoLoja />
-        <div className="card">O seu planner de gestão está sendo montado pela Camilla. Ele aparece aqui assim que estiver pronto.</div>
+        <div className="card">
+          O seu planner de gestão está sendo montado pela Camilla. Ele aparece aqui assim que estiver pronto.
+          {/* O formulário da rotina: é com ele que o planner sai do jeito da loja. */}
+          <p style={{ margin: "10px 0 0" }}>{pers.get(20)?.concluida
+            ? <>✓ Você já contou a sua rotina. <Link className="link-loja" href="/consultoria/planner/rotina">Ver ou corrigir as respostas</Link></>
+            : <Link className="btn p peq" href="/consultoria/planner/rotina">Contar como é a sua rotina hoje</Link>}</p>
+        </div>
       </>
     );
   }
@@ -139,6 +148,16 @@ export default function PlannerGestao() {
     <>
       <Titulo titulo="Planner de gestão" sub="Todas as demandas da sua gestão, separadas em diárias, semanais e mensais, com o passo a passo de cada uma. Comece pelo foco de hoje e marque o que fizer." />
 
+      {equipe && portal.tipo !== "Consultoria" && (
+        <div className="card mb linha entre" style={{ gap: 10, flexWrap: "wrap" }}>
+          <span>{pers.get(20)?.concluida
+            ? <><b>A loja respondeu o formulário da rotina.</b> <Link className="link-loja" href="/consultoria/planner/rotina">Ver as respostas</Link></>
+            : <><b>A loja ainda não respondeu o formulário da rotina.</b> <span className="mudo">Mande o link: {`${typeof window !== "undefined" ? window.location.origin : ""}/analises/portal/consultoria/planner/rotina`}</span></>}</span>
+          {pers.get(20)?.concluida && <button type="button" className="btn s peq" onClick={() => {
+            if (confirm("Montar o planner de novo com as respostas da loja? As demandas atuais são trocadas pelas da sugestão.")) salvar({ ...modelo(), liberado: atual.liberado, feitos: atual.feitos }, "Planner montado com as respostas da loja.");
+          }}>Montar com as respostas da loja</button>}
+        </div>
+      )}
       {equipe && (
         <div className={`aviso mb ${atual.liberado ? "ok" : ""}`}>
           {atual.liberado

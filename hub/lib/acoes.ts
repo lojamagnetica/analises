@@ -5,7 +5,7 @@
 // e que só a equipe faz o que é da equipe.
 import { supabaseBrowser, erroDaFuncao } from "@/lib/supabase/client";
 import { BASE } from "@/lib/config";
-import { BLOCOS_PLANEJE, ETAPAS, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
+import { BLOCOS_PLANEJE, ETAPAS, ROTINA_GESTAO, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
 import { localParaIso } from "@/lib/formato";
 import { FUNDAMENTOS } from "@/lib/carteira";
 
@@ -18,7 +18,8 @@ const agora = () => new Date().toISOString();
 
 /** Salva a etapa. Dado marcado como "Ainda não tenho" vira tarefa no Plano; quando é preenchido depois, a tarefa se fecha. */
 export async function salvarEtapa(portalId: string, numero: number, form: FormData, extra?: { semRelatorio?: boolean }) {
-  const etapa = ETAPAS.find((e) => e.numero === numero);
+  // Os Dados da loja e o formulário da rotina de gestão (Planner) salvam do mesmo jeito.
+  const etapa = [...ETAPAS, ROTINA_GESTAO].find((e) => e.numero === numero);
   if (!etapa) return;
   const respostas: Respostas = {};
   const faltam: Record<string, string> = {};

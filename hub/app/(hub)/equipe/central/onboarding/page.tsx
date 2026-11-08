@@ -295,6 +295,15 @@ function Apresentacao() {
         ["E aos sábados até as 13h", "Mandou no sábado de manhã? O suporte responde até as 13h."],
       ]} />,
     },
+    {
+      titulo: "Segunda-feira é o dia da devolutiva",
+      roteiro: "Explique o combinado com calma: toda segunda a mentora analisa todas as lojas que estão com o Hub atualizado e dá o retorno sobre a estratégia da semana. Se o Hub não estiver atualizado na segunda, a loja só recebe a devolutiva na segunda seguinte, desde que já esteja em dia. É isso que garante a excelência operacional da mentoria.",
+      corpo: <Passos itens={[
+        ["Toda segunda, a análise", "A mentora analisa todas as lojas que estão com o Hub atualizado."],
+        ["Você recebe a estratégia da semana", "O retorno vem sobre a estratégia da semana da sua loja."],
+        ["Hub desatualizado na segunda?", "A devolutiva fica para a próxima segunda, se já estiver tudo em dia. Isso garante a excelência operacional da mentoria."],
+      ]} />,
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,

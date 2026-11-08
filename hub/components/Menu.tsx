@@ -119,8 +119,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         id: "consultoria", rotulo: "Minha consultoria", icone: "target",
         itens: [
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
-          { href: "/consultoria/rotina", rotulo: "Rotina da gestão", icone: "target" },
-          { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal" },
+          { href: "/consultoria/planner", rotulo: "Planner e rotina da gestão", icone: "cal" },
           { href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users" },
           { href: "/consultoria/materiais", rotulo: "Materiais", icone: "folder" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
@@ -144,6 +143,9 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "loja", rotulo: "Minha loja", icone: "folder",
       itens: [
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
+        // O resultado do Diagnóstico: o resumo e a análise de estoque (a do Instagram fica em Conteúdo).
+        { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
+        { href: "/estoque", rotulo: "Diagnóstico de estoque", icone: "box" },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
         { href: "/mural", rotulo: "Mural da loja", icone: "target" },
       ],
@@ -154,14 +156,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
         { href: "/guia-marcas", rotulo: "Guia das marcas", icone: "tag" },
-      ],
-    },
-    {
-      // O resultado do Diagnóstico: o resumo e a análise de estoque (a do Instagram fica em Conteúdo).
-      id: "diagnostico", rotulo: "Diagnóstico", icone: "chart",
-      itens: [
-        { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
-        { href: "/estoque", rotulo: "Diagnóstico de estoque", icone: "box" },
       ],
     },
     {

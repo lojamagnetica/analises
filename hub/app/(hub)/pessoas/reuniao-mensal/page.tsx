@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CampoNumero, lerNumero } from "@/components/Numero";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { MESES_ABREV, hoje, dia } from "@/lib/formato";
 import { buscarMetodo, buscarPessoas, metasSugeridas, pautaMensal, quemVende, reuniaoSalvar, type LinhaMes, reuniaoTimeExcluir } from "@/lib/pessoas";
 import { Excluir } from "@/components/Excluir";
@@ -15,12 +15,13 @@ const COLUNAS: [keyof Linha, string][] = [["venda", "Venda do mês"], ["meta", "
 
 export default function ReuniaoMensal() {
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const [mes, setMes] = useState(hoje().slice(0, 7));
   const [linhas, setLinhas] = useState<Record<string, Linha>>({});
   const [loja, setLoja] = useState({ meta: "", venda: "", ticket: "", pa: "", antVenda: "", antTicket: "", antPa: "", metaProxima: "" });
   const [t, setT] = useState({ funcionou: "", travou: "", foco: "" });
   const [salvo, setSalvo] = useState(false);
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id, lojaFoco)), m: await buscarMetodo() }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   // Só quem vende entra nos números do mês (administrativo e financeiro ficam de fora).
   const ativos = quemVende(dados.pessoas.filter((p) => p.ativo));

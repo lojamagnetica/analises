@@ -20,15 +20,15 @@ type DadosMissoes = { time: Pessoa[]; missoes: Missao[]; pessoas: MissaoPessoa[]
  *  Com mais de uma loja no portal, cada loja tem a sua missão, uma embaixo da outra. */
 export default function Missoes() {
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const { dados, recarregar } = useDados(async () => {
-    const [p, ms, d] = await Promise.all([buscarPessoas(portal.id), buscarMissoes(portal.id), buscarMeuDia(portal.id).catch(() => null)]);
+    const [p, ms, d] = await Promise.all([buscarPessoas(portal.id, lojaFoco), buscarMissoes(portal.id), buscarMeuDia(portal.id).catch(() => null)]);
     return { time: quemVende(p.pessoas.filter((x) => x.ativo)), ...ms, abaixo: d ? placar(d).abaixo : null } as DadosMissoes;
-  }, [portal.id]);
+  }, [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const lojas = portal.lojas ?? [];
   const varias = lojas.length > 1;
   // Loja em foco (seletor no topo): só a missão dela; com as lojas juntas, as duas.
-  const [lojaFoco] = useLojaFoco();
   return (
     <>
       <Titulo titulo="Missão da semana" sub="Uma força de venda unificada: toda semana, uma missão igual para o time todo, com o mesmo modelo de mensagem e a mesma meta por pessoa. A lista de clientes sai do sistema da loja. Cada pessoa marca pelo link dela o que mandou, quem respondeu e quem comprou, e você acompanha o retorno de cada uma." />

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { buscarPessoas } from "@/lib/pessoas";
 import { ETAPAS_CONTRATACAO, buscarContratacao, novoOnboarding, salvarVaga, totalItensOnb } from "@/lib/contratacao";
@@ -12,11 +12,12 @@ import { ETAPAS_CONTRATACAO, buscarContratacao, novoOnboarding, salvarVaga, tota
 /** Contratação: as 7 etapas, as vagas e quem está no onboarding. */
 export default function Contratacao() {
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const router = useRouter();
   const [erro, setErro] = useState("");
   const [titulo, setTitulo] = useState("");
   const [pessoaOnb, setPessoaOnb] = useState("");
-  const { dados } = useDados(async () => ({ ...(await buscarContratacao(portal.id)), equipe: (await buscarPessoas(portal.id)).pessoas.filter((p) => p.ativo) }), [portal.id]);
+  const { dados } = useDados(async () => ({ ...(await buscarContratacao(portal.id)), equipe: (await buscarPessoas(portal.id, lojaFoco)).pessoas.filter((p) => p.ativo) }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const abertas = dados.vagas.filter((v) => v.situacao === "aberta");
   const fechadas = dados.vagas.filter((v) => v.situacao !== "aberta");

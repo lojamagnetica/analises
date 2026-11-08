@@ -248,16 +248,21 @@ export function pautaMensal(m: Metodo, d: { mes: string; metaLoja: number; venda
 
 const sb = () => supabaseBrowser();
 
-export async function buscarPessoas(portalId: string) {
+/** Da loja em foco: quem não tem loja (sócios, caixa, marketing) aparece em todas; as lojas juntas ("") mostram todo mundo. */
+export const daLoja = <T extends { loja?: string | null }>(lista: T[], loja: string) => (!loja ? lista : lista.filter((p) => !p.loja || p.loja === loja));
+
+export async function buscarPessoas(portalId: string, loja = "") {
   const [e, f, d, r] = await Promise.all([
     sb().from("loja_equipe").select("*").eq("portal_id", portalId).order("nome"),
     sb().from("loja_feedbacks").select("*").eq("portal_id", portalId).order("created_at", { ascending: false }),
     sb().from("loja_pdi").select("*").eq("portal_id", portalId).order("created_at", { ascending: false }),
     sb().from("loja_reunioes").select("*").eq("portal_id", portalId).order("data", { ascending: false }),
   ]);
+  const pessoas = daLoja((e.data ?? []) as Pessoa[], loja);
+  const ids = new Set(pessoas.map((x) => x.id));
   return {
-    pessoas: (e.data ?? []) as Pessoa[], retornos: (f.data ?? []) as Retorno[],
-    fichas: (d.data ?? []) as Ficha[], reunioes: (r.data ?? []) as Reuniao[],
+    pessoas, retornos: ((f.data ?? []) as Retorno[]).filter((x) => ids.has(x.pessoa_id)),
+    fichas: ((d.data ?? []) as Ficha[]).filter((x) => ids.has((x as { pessoa_id: string }).pessoa_id)), reunioes: (r.data ?? []) as Reuniao[],
   };
 }
 

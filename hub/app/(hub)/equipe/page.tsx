@@ -4,22 +4,28 @@ import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { dataHora, diasDesde, haQuanto } from "@/lib/formato";
+import { dataCurta, dataHora, diasDesde, haQuanto, hoje } from "@/lib/formato";
+import { buscarEncontro, proximoEncontro } from "@/lib/encontro";
+import { NOME_PLANO, proximaPeloPlano } from "@/lib/reunioes-plano";
 
 export default function Painel() {
   const hub = useEquipe();
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
     const agora = new Date().toISOString();
-    const [{ data: portais }, { data: plano }, { data: reunioes }, { data: perfis }, { data: duvidas }, { data: passos }] = await Promise.all([
+    const [{ data: portais }, { data: plano }, { data: reunioes }, { data: perfis }, { data: duvidas }, { data: passos }, { data: todas }, { data: contratos }, grupo] = await Promise.all([
       sb.from("portais").select("id, loja, tipo, passo_atual, ativo, acesso_liberado, entrega, prioridade").order("loja"),
       sb.from("plano_itens").select("portal_id, feito"),
       sb.from("reunioes").select("portal_id, data, titulo, selecionar").gte("data", agora).order("data"),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
       sb.from("solicitacoes").select("portal_id").in("status", ["Recebida", "Em andamento"]),
       sb.from("jornada_passos").select("numero, titulo"),
+      // Para a previsão pelo plano: todas as reuniões (feitas e marcadas) e o contrato de cada loja.
+      sb.from("reunioes").select("portal_id, data, titulo, selecionar"),
+      sb.from("contratos").select("portal_id, plano_id, inicio, status").order("inicio", { ascending: false }),
+      buscarEncontro().catch(() => null),
     ]);
-    return { portais: portais ?? [], plano: plano ?? [], reunioes: (reunioes ?? []).filter((r) => r.selecionar !== "Adiado"), perfis: perfis ?? [], duvidas: duvidas ?? [], passos: passos ?? [] };
+    return { portais: portais ?? [], plano: plano ?? [], reunioes: (reunioes ?? []).filter((r) => r.selecionar !== "Adiado"), perfis: perfis ?? [], duvidas: duvidas ?? [], passos: passos ?? [], todas: todas ?? [], contratos: contratos ?? [], grupo };
   }, []);
   if (!dados) return <Carregando />;
   const mudar = async (id: string, campos: Record<string, unknown>) => {
@@ -34,7 +40,10 @@ export default function Painel() {
     const prox = dados.reunioes.find((r) => r.portal_id === p.id);
     const acessos = dados.perfis.filter((x) => x.portal_id === p.id && x.ultimo_acesso).map((x) => x.ultimo_acesso as string).sort().reverse();
     const pendentes = dados.duvidas.filter((d) => d.portal_id === p.id).length;
-    return { ...p, pct, prox, acesso: acessos[0] ?? null, pendentes };
+    // A próxima reunião pelo plano (contrato mais recente da loja).
+    const ct = dados.contratos.find((c) => c.portal_id === p.id && c.status === "Ativo") ?? dados.contratos.find((c) => c.portal_id === p.id);
+    const peloPlano = p.tipo === "Mentoria" ? proximaPeloPlano(ct?.plano_id, ct?.inicio, dados.todas.filter((r) => r.portal_id === p.id), hoje()) : null;
+    return { ...p, pct, prox, acesso: acessos[0] ?? null, pendentes, plano: ct?.plano_id ?? null, peloPlano };
   });
   // Primeiro as lojas que já têm acesso (acompanhamento), na ordem de prioridade; depois as que ainda não têm,
   // pela próxima reunião marcada (a mais perto primeiro).
@@ -44,6 +53,7 @@ export default function Painel() {
   const comAcesso = ativos.filter((l) => l.acesso_liberado).sort((a, b) => (a.prioridade ?? 999) - (b.prioridade ?? 999) || porReuniao(a, b));
   const semAcesso = ativos.filter((l) => !l.acesso_liberado).sort(porReuniao);
   const parados = ativos.filter((l) => l.acesso_liberado && diasDesde(l.acesso) >= 7).length;
+  const grupoProx = dados.grupo ? proximoEncontro(dados.grupo) : null;
   const naSemana = dados.reunioes.filter((r) => r.data <= semana).length;
   // Quem já encerrou a mentoria fica numa aba fechada embaixo, para não misturar com as atuais.
   const encerradas = linhas.filter((l) => !l.ativo);
@@ -74,7 +84,17 @@ export default function Painel() {
                 </select>
               </td>
               <td style={{ minWidth: 130 }}><div className="barra"><i style={{ width: `${l.pct}%` }} /></div><small className="mudo">{l.pct}%</small></td>
-              <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data</span>}</td>
+              <td style={{ minWidth: 170 }}>
+                <span style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data marcada</span>}</span>
+                {l.peloPlano && (
+                  <div className="mudo" style={{ fontSize: 12.5, marginTop: 2 }}>
+                    Pelo plano{l.plano ? ` ${NOME_PLANO[l.plano] ?? l.plano}` : ""}:{" "}
+                    {l.peloPlano === "nenhuma"
+                      ? <>sem encontro individual previsto{grupoProx ? ` · grupo ${dataCurta(grupoProx.iso.slice(0, 10))}` : ""}</>
+                      : <b style={{ color: l.peloPlano.data < hoje() ? "var(--red)" : undefined }}>{l.peloPlano.titulo} ~{dataCurta(l.peloPlano.data)}{l.peloPlano.data < hoje() ? " (já passou: marcar)" : ""}</b>}
+                  </div>
+                )}
+              </td>
               <td>{l.ativo && diasDesde(l.acesso) >= 7 ? <span className="selo erro">{haQuanto(l.acesso)}</span> : haQuanto(l.acesso)}</td>
               <td>
                 <div className="linha" style={{ flexWrap: "nowrap" }}>

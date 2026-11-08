@@ -1,11 +1,12 @@
 "use client";
 
+import { Termometro } from "@/components/Termometro";
 import { useState } from "react";
 import { useDados } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { contratoApagar, contratoSalvar, fichaSalvar } from "@/lib/acoes";
 import {
-  ETAPAS_JORNADA, FUNDAMENTOS, SITUACOES, TERMOMETROS, corTermometro,
+  ETAPAS_JORNADA, FUNDAMENTOS, SITUACOES, TERMOMETROS,
   type Contrato, type Ficha, type PessoaEquipe, type Plano,
 } from "@/lib/carteira";
 import { dia, moeda } from "@/lib/formato";
@@ -95,7 +96,7 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div>
             <label className="rotulo">Termômetro</label>
             <select name="termometro" defaultValue={f?.termometro ?? ""}><option value="">—</option>{TERMOMETROS.map((t) => <option key={t}>{t}</option>)}</select>
-            {f?.termometro && <div className="ajuda"><span className={`selo ${corTermometro(f.termometro)}`}>{f.termometro}</span> desde {dia(f.termometro_em)}</div>}
+            <div className="ajuda"><Termometro valor={f?.termometro} desde={f?.termometro_em ? dia(f.termometro_em) : null} /></div>
           </div>
           <div>
             <label className="rotulo">Responsável (CS)</label>
@@ -107,7 +108,7 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div><label className="rotulo">Data do diagnóstico</label><input type="date" name="data_diagnostico" defaultValue={f?.data_diagnostico ?? ""} /></div>
           <div><label className="rotulo">Instagram</label><input type="text" name="instagram" defaultValue={f?.instagram ?? ""} /></div>
         </div>
-        <label className="rotulo">Resultado Nº 1 (Contrato de Foco)</label>
+        <label className="rotulo">Resultado Nº 1 (Contrato de Foco) · a loja vê no Diagnóstico e dá o de acordo</label>
         <input type="text" name="resultado_n1" defaultValue={f?.resultado_n1 ?? ""} />
         <label className="rotulo">Indicador (início · hoje · meta)</label>
         <input type="text" name="indicador" defaultValue={f?.indicador ?? ""} placeholder="Ex.: R$ 80 mil · R$ 95 mil · R$ 120 mil" />

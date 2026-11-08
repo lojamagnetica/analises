@@ -1,5 +1,6 @@
 "use client";
 
+import { ContratoFoco } from "@/components/ContratoFoco";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -442,6 +443,7 @@ function DiagnosticoDaLoja() {
         </div>
       )}
       {msg && <div className={`aviso mb ${/salvo|Liberado|rascunho|criado/.test(msg) ? "ok" : ""}`}>{msg}</div>}
+      {!ed && <ContratoFoco />}
       <Corpo d={d} ed={ed} muda={mudaSalvo} caixa={caixa ?? new Map()} equipeHub={equipe} />
       {!ed && (
         <div className="linha mt" style={{ marginTop: 24 }}>

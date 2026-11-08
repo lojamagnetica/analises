@@ -1,10 +1,11 @@
 "use client";
 
+import { Termometro } from "@/components/Termometro";
 import Link from "next/link";
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
-import { ETAPAS_JORNADA, SITUACOES, contratoAtual, corTermometro } from "@/lib/carteira";
+import { ETAPAS_JORNADA, SITUACOES, contratoAtual } from "@/lib/carteira";
 import { PERIODOS, buscarGestao, numeros, precisaAtencao, resumoPorLoja, type Periodo } from "@/lib/gestao-clientes";
 import { dataHora, dia, diasAte, diasDesde, haQuanto, moeda } from "@/lib/formato";
 
@@ -120,7 +121,7 @@ export default function GestaoDeClientes() {
                   <td>{nomePlano(l.f?.plano_id ?? l.c?.plano_id) ?? <span className="mudo">{l.f?.programa_notion ?? "—"}</span>}</td>
                   <td>{l.f?.situacao ?? "—"}</td>
                   <td>{l.f?.etapa ? `${l.f.etapa} · ${ETAPAS_JORNADA[l.f.etapa]}` : <span className="mudo">—</span>}</td>
-                  <td>{l.f?.termometro ? <span className={`selo ${corTermometro(l.f.termometro)}`}>{l.f.termometro}</span> : <span className="mudo">—</span>}</td>
+                  <td><Termometro valor={l.f?.termometro} /></td>
                   <td>{l.f?.fundamentos.length ?? 0}/16</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {dia(l.c?.fim)}

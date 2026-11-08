@@ -60,13 +60,18 @@ export default function Painel() {
   const tabela = (lista: typeof linhas, vazio: string) => (
     <div className="card tabela-wrap">
       <table className="tabela">
-        <thead><tr><th>Loja</th><th>Fase</th><th>Status</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th /></tr></thead>
+        <thead><tr><th>Loja</th><th>Fase</th><th>Status</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th></tr></thead>
         <tbody>
-          {lista.length === 0 && <tr><td colSpan={7} className="mudo">{vazio}</td></tr>}
+          {lista.length === 0 && <tr><td colSpan={6} className="mudo">{vazio}</td></tr>}
           {lista.map((l) => (
             <tr key={l.id}>
-              <td>
-                <b>{l.loja}</b>
+              <td style={{ minWidth: 190 }}>
+                {/* Abrir e editar junto do nome: não precisa rolar a tabela para o lado. */}
+                <button type="button" className="link-loja" style={{ fontWeight: 700, textAlign: "left", textDecoration: "none" }} title="Abrir o portal" onClick={() => hub.abrirPortal(l.id)}>{l.loja} ↗</button>
+                <div className="linha" style={{ gap: 8, margin: "4px 0 2px" }}>
+                  <button className="btn p peq" type="button" onClick={() => hub.abrirPortal(l.id)}>Abrir</button>
+                  <Link className="btn s peq" href={`/equipe/portal?id=${l.id}`}>Editar</Link>
+                </div>
                 <div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}{l.pendentes ? <> · <span className="selo alerta">{l.pendentes} {l.pendentes === 1 ? "dúvida" : "dúvidas"}</span></> : null}</div>
               </td>
               <td>
@@ -85,7 +90,7 @@ export default function Painel() {
               </td>
               <td style={{ minWidth: 130 }}><div className="barra"><i style={{ width: `${l.pct}%` }} /></div><small className="mudo">{l.pct}%</small></td>
               <td style={{ minWidth: 170 }}>
-                <span style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data marcada</span>}</span>
+                {l.prox ? <span style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{dataHora(l.prox.data)}</span> : <span className="mudo">sem data marcada</span>}
                 {l.peloPlano && (
                   <div className="mudo" style={{ fontSize: 12.5, marginTop: 2 }}>
                     Pelo plano{l.plano ? ` ${NOME_PLANO[l.plano] ?? l.plano}` : ""}:{" "}
@@ -96,12 +101,6 @@ export default function Painel() {
                 )}
               </td>
               <td>{l.ativo && diasDesde(l.acesso) >= 7 ? <span className="selo erro">{haQuanto(l.acesso)}</span> : haQuanto(l.acesso)}</td>
-              <td>
-                <div className="linha" style={{ flexWrap: "nowrap" }}>
-                  <button className="btn p peq" type="button" onClick={() => hub.abrirPortal(l.id)}>Abrir portal</button>
-                  <Link className="btn s peq" href={`/equipe/portal?id=${l.id}`}>Editar</Link>
-                </div>
-              </td>
             </tr>
           ))}
         </tbody>

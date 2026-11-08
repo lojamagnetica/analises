@@ -13,6 +13,7 @@ const NA_MAO: Item[] = [
   { href: "/gestao/vendas", rotulo: "Vendas do dia", icone: "bag" },
   { href: "/gestao/crediario", rotulo: "Crediário", icone: "calc" },
   { href: "/gestao/minhas-compras", rotulo: "Compras", icone: "box" },
+  { href: "/gestao/estoque-loja", rotulo: "Estoque", icone: "tag" },
 ];
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };

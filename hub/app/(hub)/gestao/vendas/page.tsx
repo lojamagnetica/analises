@@ -9,16 +9,16 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { semAcento } from "@/lib/clientes";
 import {
-  CATEGORIAS, FORMAS, buscarClientesSimples, buscarVendas, gerarParcelas, nomeForma, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
+  CATEGORIAS, FORMAS, LINHAS, buscarEstoque, buscarClientesSimples, buscarVendas, gerarParcelas, nomeForma, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
   type ClienteSimples, type Venda,
 } from "@/lib/loja-na-mao";
 import { fimDoMes, type Forma } from "@/lib/caixa";
 
 type Form = {
   id?: string; dia: string; categoria: string; produto: string; valor: number; pecas: number; forma: Forma; maleta: boolean;
-  cliente: ClienteSimples | null; parcelas: number; primeira: string;
+  cliente: ClienteSimples | null; parcelas: number; primeira: string; linha: string; estoque_id: string | null;
 };
-const novo = (d = hoje()): Form => ({ dia: d, categoria: "", produto: "", valor: 0, pecas: 1, forma: "pix", maleta: false, cliente: null, parcelas: 1, primeira: somarMeses(hoje(), 1) });
+const novo = (d = hoje()): Form => ({ dia: d, categoria: "", produto: "", valor: 0, pecas: 1, forma: "pix", maleta: false, cliente: null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: "", estoque_id: null });
 const passarDia = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 export default function VendasDoDia() {
@@ -33,13 +33,15 @@ export default function VendasDoDia() {
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
   const { dados, recarregar } = useDados(async () => {
-    const [vendas, clientes, mes] = await Promise.all([
-      buscarVendas(portal.id, diaVer, diaVer), buscarClientesSimples(portal.id), buscarVendas(portal.id, `${diaVer.slice(0, 7)}-01`, fimDoMes(diaVer.slice(0, 7))),
+    const [vendas, clientes, mes, estoque] = await Promise.all([
+      buscarVendas(portal.id, diaVer, diaVer), buscarClientesSimples(portal.id), buscarVendas(portal.id, `${diaVer.slice(0, 7)}-01`, fimDoMes(diaVer.slice(0, 7))), buscarEstoque(portal.id),
     ]);
-    return { vendas, clientes, mes };
+    return { vendas, clientes, mes, estoque };
   }, [portal.id, diaVer]);
   if (!dados) return <Carregando />;
-  const { vendas, clientes, mes } = dados;
+  const { vendas, clientes, mes, estoque } = dados;
+  // Grupos do estoque do tipo escolhido (e da linha, se escolheu): tocar preenche o valor e baixa do estoque.
+  const doTipo = estoque.filter((i) => i.categoria === f.categoria && (!f.linha || i.linha === f.linha));
   const mudar = (x: Partial<Form>) => setF((a) => ({ ...a, ...x }));
   const porId = new Map(clientes.map((c) => [c.id, c]));
   const achadas = busca.trim().length >= 2 ? clientes.filter((c) => semAcento(c.nome).includes(semAcento(busca)) || (c.whatsapp ?? "").replace(/\D/g, "").includes(busca.replace(/\D/g, "") || "§")).slice(0, 6) : [];
@@ -53,7 +55,7 @@ export default function VendasDoDia() {
     if (f.forma === "crediario" && !f.cliente) { setErro("No crediário, escolha ou cadastre a cliente."); return; }
     setSalvando(true);
     try {
-      const id = await salvarVenda(portal.id, { id: f.id, dia: f.dia, categoria: f.categoria, produto: f.produto, valor: f.valor, pecas: f.pecas, forma: f.forma, maleta: f.maleta, cliente_id: f.cliente?.id ?? null }, antes);
+      const id = await salvarVenda(portal.id, { id: f.id, dia: f.dia, categoria: f.categoria, produto: f.produto, valor: f.valor, pecas: f.pecas, forma: f.forma, maleta: f.maleta, cliente_id: f.cliente?.id ?? null, linha: f.linha || null, estoque_id: f.estoque_id }, antes);
       // Venda nova no crediário: abre a conta da cliente com as parcelas.
       if (!f.id && f.forma === "crediario" && f.cliente) {
         await salvarConta(portal.id, { cliente_id: f.cliente.id, nome: f.cliente.nome, whatsapp: f.cliente.whatsapp, venda_id: id, descricao: [f.categoria, f.produto].filter(Boolean).join(" · "), parcelas: gerarParcelas(f.valor, f.parcelas, f.primeira) });
@@ -80,11 +82,28 @@ export default function VendasDoDia() {
           <h2 style={{ marginTop: 0 }}>{f.id ? "Corrigir venda" : "Nova venda"}</h2>
           <label className="rotulo">O que vendeu</label>
           <div className="chips">
-            {CATEGORIAS.map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c })}>{c}</button>)}
+            {CATEGORIAS.map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c, estoque_id: null })}>{c}</button>)}
           </div>
+          <label className="rotulo">Linha</label>
+          <div className="chips">
+            {LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l, estoque_id: null })}>{l}</button>)}
+          </div>
+          {doTipo.length > 0 && (
+            <>
+              <label className="rotulo">Do estoque (toque no preço)</label>
+              <div className="chips">
+                {doTipo.map((i) => (
+                  <button key={i.id} type="button" className={`chip ${f.estoque_id === i.id ? "escolhido" : ""}`}
+                    onClick={() => mudar(f.estoque_id === i.id ? { estoque_id: null } : { estoque_id: i.id, linha: i.linha ?? f.linha, valor: i.preco * (f.pecas || 1) })}>
+                    {moeda(i.preco)}{i.linha && !f.linha ? ` · ${i.linha}` : ""} <span className="mudo">({i.atual})</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <input type="text" className="mt" placeholder="Qual peça (opcional). Ex.: anel solitário prata" value={f.produto} onChange={(e) => mudar({ produto: e.target.value })} />
           <div className="grade" style={{ gridTemplateColumns: "1fr 110px", gap: 10 }}>
-            <CampoReais rotulo="Valor total" valor={f.valor} mudar={(v) => mudar({ valor: v })} vazio />
+            <CampoReais key={f.estoque_id ?? "livre"} rotulo="Valor total" valor={f.valor} mudar={(v) => mudar({ valor: v })} vazio />
             <div><label className="rotulo">Peças</label><input type="number" inputMode="numeric" min={1} value={f.pecas} onChange={(e) => mudar({ pecas: Number(e.target.value) || 1 })} /></div>
           </div>
           <label className="rotulo">Como pagou</label>
@@ -155,11 +174,11 @@ export default function VendasDoDia() {
               return (
                 <div key={v.id} className="linha entre" style={{ padding: "10px 0", borderBottom: "1px solid var(--line)", gap: 10 }}>
                   <div>
-                    <b>{moeda(v.valor)}</b> · {v.categoria}{v.pecas > 1 ? ` (${v.pecas})` : ""}{v.produto ? <span className="mudo"> · {v.produto}</span> : null}
+                    <b>{moeda(v.valor)}</b> · {v.categoria}{v.linha ? ` ${v.linha.toLowerCase()}` : ""}{v.pecas > 1 ? ` (${v.pecas})` : ""}{v.produto ? <span className="mudo"> · {v.produto}</span> : null}
                     <div className="mudo" style={{ fontSize: 13 }}>{nomeForma(v.forma)}{v.maleta ? " · maleta" : ""}{c ? ` · ${c.nome}` : ""}</div>
                   </div>
                   <div className="linha" style={{ gap: 10 }}>
-                    <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, categoria: v.categoria, produto: v.produto ?? "", valor: v.valor, pecas: v.pecas, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1) }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
+                    <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, categoria: v.categoria, produto: v.produto ?? "", valor: v.valor, pecas: v.pecas, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: v.linha ?? "", estoque_id: v.estoque_id }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
                     <Excluir pergunta={`Excluir a venda de ${moeda(v.valor)}?${v.forma === "crediario" ? " A conta dela no Crediário sai junto." : ""}`} fazer={() => removerVenda(portal.id, v)} aoFim={recarregar} />
                   </div>
                 </div>

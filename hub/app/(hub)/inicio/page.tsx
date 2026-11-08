@@ -112,6 +112,7 @@ export default function Inicio() {
           <Link className="btn p" href="/gestao/vendas">+ Registrar venda</Link>
           <Link className="btn s" href="/gestao/crediario">Crediário</Link>
           <Link className="btn s" href="/gestao/minhas-compras">Compras</Link>
+          <Link className="btn s" href="/gestao/estoque-loja">Estoque</Link>
           <Link className="btn s" href="/clientes">Minhas clientes</Link>
         </div>
       )}

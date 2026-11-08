@@ -114,14 +114,26 @@ export async function removerVenda(portalId: string, v: Venda) {
 }
 
 /** Resumo da compra para a cliente (sem oferecer nada: é o registro do que ela levou). */
-export function mensagemVenda(v: { nome: string; quem: string; loja: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; parcelas?: Parcela[] | null; dia: string }) {
+/** Registro da compra no crediário para a cliente guardar: o que levou, o valor e as parcelas combinadas. */
+export function mensagemVenda(v: { nome: string; quem: string; loja: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; parcelas?: Parcela[] | null; dia: string; saldo?: number | null }) {
   const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-  const d = (x: string) => `${x.slice(8, 10)}/${x.slice(5, 7)}`;
+  const d = (x: string) => `${x.slice(8, 10)}/${x.slice(5, 7)}/${x.slice(0, 4)}`;
   const peca = [v.pecas > 1 ? `${v.pecas} ${v.categoria.toLowerCase()}` : v.categoria, v.linha?.toLowerCase(), v.produto].filter(Boolean).join(" · ");
-  const pag = v.forma === "crediario" && v.parcelas?.length
-    ? `no crediário, em ${v.parcelas.length}x (${v.parcelas.map((p) => `${d(p.vence)}: ${brl(p.valor)}`).join(", ")})`
-    : nomeForma(v.forma);
-  return `Oi, ${arrumarNome(v.nome).split(" ")[0]}! Aqui é ${v.quem}, da ${v.loja}. Obrigada pela sua compra 💛\n\nResumo de ${d(v.dia)}:\n${peca}\nValor: ${brl(v.valor)}\nPagamento: ${pag}\n\nQualquer coisa sobre a sua peça, é só me chamar por aqui.`;
+  const ps = v.parcelas ?? [];
+  const primeiro = arrumarNome(v.nome).split(" ")[0];
+  const linhas = [
+    `Oi, ${primeiro.charAt(0).toUpperCase() + primeiro.slice(1)}! Aqui é ${v.quem}, da ${v.loja}.`,
+    "Segue o registro das suas escolhas e das informações de pagamento que combinamos, para o seu controle:",
+    "",
+    `Compra de ${d(v.dia)}`,
+    `• ${peca || "Peça"}`,
+    `• Valor: ${brl(v.valor)}`,
+    `• Pagamento: crediário${ps.length ? ` em ${ps.length}x` : ""}`,
+  ];
+  if (ps.length) linhas.push("", "Parcelas:", ...ps.map((p, i) => `${i + 1}ª · ${d(p.vence)} · ${brl(p.valor)}${p.pago_em ? " (paga ✓)" : ""}`));
+  if (v.saldo != null && v.saldo > 0) linhas.push("", `Total em aberto no seu crediário com a gente: ${brl(v.saldo)}`);
+  linhas.push("", "Qualquer dúvida, é só me chamar por aqui. 💛");
+  return linhas.join("\n");
 }
 
 // ───── Parcelas (crediário e compras) ─────

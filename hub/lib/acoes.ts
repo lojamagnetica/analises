@@ -300,6 +300,7 @@ export async function fichaSalvar(portalId: string, form: FormData) {
     ...(termometro !== (antes?.termometro ?? null) ? { termometro_em: termometro ? new Date().toISOString().slice(0, 10) : null } : {}),
     resultado_n1: txt(form, "resultado_n1", 1000) || null,
     indicador: txt(form, "indicador", 300) || null,
+    foco_curto: txt(form, "foco_curto", 90) || null,
     // Cada fundamento: "nao", "trabalhando" ou "implantado" (o placar conta só os implantados).
     fundamentos: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "implantado"),
     fundamentos_trabalhando: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "trabalhando"),

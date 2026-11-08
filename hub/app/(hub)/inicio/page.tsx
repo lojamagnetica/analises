@@ -56,12 +56,11 @@ export default function Inicio() {
       sb.rpc("contrato_foco", { p: portal.id }),
     ]);
     // Contrato de Foco vigente: fica no topo para lembrar o resultado nº 1 sempre que entrar.
-    const foco = ((focoR.data ?? []) as { resultado: string | null; indicador: string | null; de_acordo_em: string | null }[])[0] ?? null;
+    const foco = ((focoR.data ?? []) as { resultado: string | null; indicador: string | null; de_acordo_em: string | null; curto: string | null }[])[0] ?? null;
     return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo, foco };
   }, [portal.id]);
   if (!dados) return <Carregando />;
   const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo, foco } = dados;
-  const metaFoco = foco?.indicador?.split("·")[2]?.trim();
   // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
   const pg = grupo ? proximoEncontro(grupo) : null;
   const usaGrupo = !!grupo && !!pg && (!prox || pg.iso < new Date(prox.data).toISOString());
@@ -127,17 +126,6 @@ export default function Inicio() {
             ? `Este é o Hub da ${portal.lojas.join(" e ")}. Tudo das suas lojas em um lugar só.`
             : `Este é o Hub da ${portal.loja}. Tudo da sua loja em um lugar só.`}</p>
         </div>
-        <div className="heroi-lado">
-        {!onboarding && foco?.resultado && (
-          <Link href="/painel" className="meet foco" style={{ color: "inherit", textDecoration: "none" }}>
-            <small>🎯 Contrato de Foco · o resultado nº 1</small>
-            <b style={{ display: "block", marginTop: 2, lineHeight: 1.35 }}>{foco.resultado}</b>
-            <div className="foco-linha">
-              {metaFoco && <span>Meta: <b>{metaFoco}</b></span>}
-              <span>{foco.de_acordo_em ? `✓ De acordo em ${dataCurta(foco.de_acordo_em.slice(0, 10))}` : equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo · toque para ver"}</span>
-            </div>
-          </Link>
-        )}
         <div className="meet">
           <small>Próximo encontro no Meet</small>
           {proxEncontro ? (
@@ -155,7 +143,19 @@ export default function Inicio() {
             </div>
           )}
         </div>
-        </div>
+        {/* Contrato de Foco: faixa larga e baixa logo abaixo do nome (o resultado à esquerda, a meta e o de acordo à direita). */}
+        {!onboarding && foco?.resultado && (
+          <Link href="/painel" className="meet foco" style={{ color: "inherit", textDecoration: "none" }}>
+            <div className="foco-texto">
+              <small>🎯 Contrato de Foco · o resultado nº 1</small>
+              {/* No Início vai a versão curta; o contrato completo fica no Diagnóstico. */}
+              <b style={{ display: "block", marginTop: 2, lineHeight: 1.35 }}>{foco.curto?.trim() || foco.resultado}</b>
+            </div>
+            <div className="foco-linha">
+              <span>{foco.de_acordo_em ? `✓ De acordo em ${dataCurta(foco.de_acordo_em.slice(0, 10))} · ver o contrato` : equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo · toque para ver"}</span>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}

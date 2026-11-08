@@ -109,6 +109,8 @@ export function FichaLoja({ portalId }: { portalId: string }) {
         </div>
         <label className="rotulo">Resultado Nº 1 (Contrato de Foco) · a loja vê no Diagnóstico e dá o de acordo</label>
         <input type="text" name="resultado_n1" defaultValue={f?.resultado_n1 ?? ""} />
+        <label className="rotulo">Resumo do foco para o Início (uma linha)</label>
+        <input type="text" name="foco_curto" maxLength={90} defaultValue={f?.foco_curto ?? ""} placeholder="Ex.: Faturar R$ 30 mil por mês com as vendas no Hub" />
         <label className="rotulo">Indicador (início · hoje · meta)</label>
         <input type="text" name="indicador" defaultValue={f?.indicador ?? ""} placeholder="Ex.: R$ 80 mil · R$ 95 mil · R$ 120 mil" />
         <label className="rotulo">Condição especial</label>

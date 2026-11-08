@@ -102,12 +102,12 @@ const AREAS: { area: string; vem: string; itens: string[] }[] = [
   { area: "Vendas", vem: "Mix, preços e o que mais vende", itens: ["Ações do Mês", "Planeje aqui: o planejamento do mês"] },
   { area: "De cliente a fã", vem: "O cadastro de clientes", itens: ["Minhas clientes, com a carteira de cada vendedora", "Missão da semana e resgate de clientes", "Campanhas e experiência da cliente"] },
   { area: "Conteúdo", vem: "Instagram, cliente ideal e inspirações", itens: ["Programação da semana e pautas quentes", "Criar roteiro e Link da Bio", "Resultados do Instagram"] },
-  { area: "E mais", vem: "Tudo o que você contar", itens: ["Bússola do gestor", "Curso", "Mural e Nossa história da loja"] },
+  { area: "E mais", vem: "Tudo o que você contar", itens: ["Planner de gestão, com a rotina da sua loja", "Curso", "Mural e Nossa marca (abre na semana depois do Diagnóstico)"] },
 ];
 function Ferramentas() {
   return (
     <>
-      <p style={{ fontSize: 17, marginTop: 0 }}>Cada resposta que você dá vira uma ferramenta pronta para a sua loja. Elas abrem quando o seu Diagnóstico ficar pronto.</p>
+      <p style={{ fontSize: 17, marginTop: 0 }}>Cada resposta que você dá vira uma ferramenta pronta para a sua loja. As principais abrem quando o seu Diagnóstico ficar pronto. Conteúdo e Nossa marca a Camilla libera aos poucos, a cada 15 dias, quando fizerem sentido para a etapa da sua loja.</p>
       <div className="grade g4" style={{ gap: 10 }}>
         {AREAS.map((a) => (
           <div key={a.area} className="card card-borda" style={{ ["--c" as string]: "var(--red)", margin: 0, padding: 14 }}>

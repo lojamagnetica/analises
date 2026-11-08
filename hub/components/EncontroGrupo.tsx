@@ -1,7 +1,7 @@
 "use client";
 
 import { useDados } from "@/lib/hub";
-import { dataHora } from "@/lib/formato";
+import { dataCurta, dataHora, hoje } from "@/lib/formato";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 
 /** O encontro em grupo da mentoria: quando é o próximo, entrar na sala e colocar na agenda. */
@@ -19,6 +19,9 @@ export function EncontroGrupo() {
         <div style={{ textTransform: "capitalize" }}>
           {p.agora ? <b style={{ color: "var(--red)" }}>Acontecendo agora</b> : p.hoje ? <b style={{ color: "var(--red)" }}>Hoje · {dataHora(p.iso)}</b> : <>Próximo: <b>{dataHora(p.iso)}</b></>}
         </div>
+        {(e.recessos ?? []).filter((r) => r.de && r.ate && r.ate >= hoje()).map((r) => (
+          <div key={r.de} className="mudo" style={{ fontSize: 13 }}>Recesso: sem encontro de {dataCurta(r.de)} a {dataCurta(r.ate)}.</div>
+        ))}
       </span>
       <span className="linha" style={{ gap: 6 }}>
         <a className="btn s peq" href={linkAgenda(e)} target="_blank" rel="noopener">📅 Colocar na agenda</a>

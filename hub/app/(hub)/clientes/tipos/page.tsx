@@ -5,7 +5,7 @@ import { RascunhoClientes } from "@/components/RascunhoClientes";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Icone } from "@/components/Icone";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   CLASSE_TIPO, MENSAGEM_SIMPLES, REGRAS, TIPOS, buscarClientes, buscarMetodoClientes, classificar, contarTipos, estadoConteudo,
@@ -21,7 +21,7 @@ export default function AcoesPorTipo() {
     return { cs, m };
   }, [portal.id]);
   const [tipo, setTipo] = useState<Tipo>("Nova");
-  const [loja, setLoja] = useState("");
+  const [loja, setLoja] = useLojaFoco();
   const [mostrar, setMostrar] = useState(PASSO);
   const ref = hoje();
   const leituras = useMemo(() => classificar(dados?.cs ?? [], ref), [dados, ref]);
@@ -101,7 +101,7 @@ export default function AcoesPorTipo() {
       ) : (
         <div className="card" style={{ padding: "6px 20px" }}>
           {doTipo.slice(0, mostrar).map((c) => {
-            const texto = mensagemDoTipo(m, equipe, tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora });
+            const texto = mensagemDoTipo(m, equipe, tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora || (portal.sem_equipe ? (portal.responsavel ?? "").trim().split(" ")[0] || null : null) });
             const link = linkWhats(c.whatsapp, texto);
             const l = leituras.get(c.id);
             return (

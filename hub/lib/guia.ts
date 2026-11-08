@@ -25,6 +25,7 @@ export const GUIA: Record<string, TextoGuia> = {
   "/bussola": { novo: true, oque: "A sua bússola de gestora: conte quando você está disponível e o Hub monta a rotina da semana. Todo dia mostra o que fazer agora e o que os números pedem (vendedora em queda, estoque parado, boletos).", passos: ["Em Minha rotina, marque os dias em que você está na loja e o melhor horário de cada tarefa.", "Lance o caixa por vendedora, o estoque parado e os boletos.", "Abra a Bússola toda manhã e marque o que fez.", "Resolva primeiro os alertas vermelhos."] },
   "/gestao/caixa": { oque: "O fechamento do dia: faturamento, vendas e peças.", passos: ["Todo dia, ao fechar a loja, lance os números.", "Edite ou exclua um lançamento se errar."] },
   "/gestao/resultado": { oque: "PA, ticket médio e preço médio do mês, calculados do fechamento de caixa.", passos: ["Veja como o mês está indo.", "Compare com o mês anterior."] },
+  "/gestao/canais": { oque: "Quanto cada canal (loja, stories, grupo, live, evento) vende e quanto tempo ele toma, durante a medição em andamento.", passos: ["Mande o link para a equipe lançar pelo celular, na hora ou no fim do dia.", "No fim, veja quanto cada canal vende por hora de trabalho."] },
   "/metas": { oque: "Da meta do mês para o que precisa acontecer todo dia.", passos: ["Coloque a meta do mês.", "Veja quantas vendas e peças por dia ela pede."] },
   // Varejo, atacado e site (só nas lojas que têm esses canais)
   "/varejo/rotina": { novo: true, oque: "O checklist do time na loja: abertura, durante o dia, fechamento, a semana e o mês, com quem faz cada item.", passos: ["Comece pela rotina sugerida.", "Ajuste os itens e quem faz.", "Marque cada item quando fizer."] },
@@ -65,7 +66,6 @@ export const GUIA: Record<string, TextoGuia> = {
   "/pessoas/gincanas": { oque: "Gincanas prontas para animar o time e vender mais.", passos: ["Escolha uma gincana.", "Combine as regras com o time e acompanhe o placar."] },
   // Vendas
   "/acoes": { oque: "Ações de venda prontas para a sua loja, com cronograma, mensagens, conteúdo e placar.", passos: ["Escolha a ação do mês.", "Siga o cronograma dia a dia.", "Lance os resultados no placar."] },
-  "/scripts": { oque: "Scripts de venda para o time usar no atendimento e no WhatsApp.", passos: ["Escolha a situação.", "Copie e adapte com o jeito da loja."] },
   "/planeje": { oque: "O plano de ação de cada mês, no jeito da Camilla planejar: meta, meta de cada vendedor, premiação, ações, datas especiais, produtos em destaque e as 4 semanas.", passos: ["Abra o próximo mês até o dia 20.", "Responda os 5 passos: a meta (com a meta de cada vendedor e a premiação), o que fez no ano passado, as datas, os produtos e as semanas.", "Clique em Enviar para a Camilla e espere o retorno dela."] },
   // De cliente a fã
   "/clientes": { oque: "As suas clientes: quando compraram e quanto gastaram, separadas por tipo.", passos: ["Cadastre ou importe as clientes.", "Edite ou exclua quando precisar.", "Veja com quem falar hoje."] },

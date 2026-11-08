@@ -1,10 +1,12 @@
 "use client";
 
+import { NovaTarefaPlano } from "@/components/NovaTarefaPlano";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AnotacoesDaCliente } from "@/components/Anotacoes";
 import { CamposPortal } from "@/components/CamposPortal";
 import { FichaLoja } from "@/components/FichaLoja";
+import { FocoPorLoja } from "@/components/FocoPorLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
@@ -14,11 +16,12 @@ import { periodoDoMes } from "@/lib/periodo-plano";
 import { Titulo } from "@/components/Titulo";
 import { CHAVE_RESULTADO, Carregando, useDados, useEquipe, type Portal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { ETAPAS, MESES_PLANO, type Respostas } from "@/lib/conteudo";
+import { ETAPAS, tituloMes, type Respostas } from "@/lib/conteudo";
+import { TituloMesPlano } from "@/components/TituloMesPlano";
 import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
 import { liberarTudo } from "@/lib/entrada";
 import {
-  atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoAdicionar, planoApagar, reuniaoApagar, reuniaoSalvar,
+  atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoApagar, reuniaoApagar, reuniaoSalvar,
 } from "@/lib/acoes";
 
 
@@ -164,6 +167,35 @@ function EditarPortal() {
       })()}
 
       <div className="card mb">
+        <h2 style={{ marginTop: 0 }}>Loja sem equipe</h2>
+        <label className="marcar">
+          <input type="checkbox" checked={!!p.sem_equipe} onChange={async (e) => {
+            const { error } = await supabaseBrowser().from("portais").update({ sem_equipe: e.target.checked }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: e.target.checked ? "Pronto: as áreas de time saíram do portal da loja." : "As áreas de time voltaram para o portal da loja." });
+            recarregar();
+          }} />
+          <span>A dona vende sozinha (sem Gestão de pessoas, mural e missão do time; o passo &quot;cadastrar a equipe&quot; não trava)</span>
+        </label>
+        <label className="marcar">
+          <input type="checkbox" checked={!!p.venda_diaria} onChange={async (e) => {
+            const { error } = await supabaseBrowser().from("portais").update({ venda_diaria: e.target.checked }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: e.target.checked ? "Vendas do dia, Crediário e Compras entraram no portal da loja." : "Vendas do dia, Crediário e Compras saíram do portal da loja." });
+            recarregar();
+          }} />
+          <span>Loja na mão: Vendas do dia (cada venda pelo celular, o caixa soma sozinho), Crediário e Compras</span>
+        </label>
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Quem ajuda no conteúdo</b> (aparece no menu Conteúdo)
+          <input key={p.apoio_conteudo ?? ""} defaultValue={p.apoio_conteudo ?? ""} placeholder="Ex.: as filhas, uma social media" style={{ display: "block", marginTop: 4, maxWidth: 360 }} onBlur={async (e) => {
+            const v = e.target.value.trim() || null;
+            if (v === (p.apoio_conteudo ?? null)) return;
+            const { error } = await supabaseBrowser().from("portais").update({ apoio_conteudo: v }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: "Apoio de conteúdo salvo." });
+            recarregar();
+          }} />
+        </label>
+      </div>
+
+      <div className="card mb">
         <h2 style={{ marginTop: 0 }}>Áreas que esta loja vê</h2>
         <p className="ajuda" style={{ marginTop: -4 }}>Para personalizar consultorias: desmarque o que não faz sentido para esta loja. Some do menu e dos atalhos dela (você continua vendo tudo).</p>
         <div className="chips">
@@ -206,7 +238,7 @@ function EditarPortal() {
       </div>
 
       <div className="grade g2">
-        <form className="card" action={async (f) => { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); }}>
+        <form className="card" action={async (f) => { setSalvo(false); try { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); } catch (e) { alert(`Não salvou: ${(e as Error).message}`); } }}>
           <h2>Dados do portal</h2>
           <CamposPortal p={p} />
           <div className="grade g2" style={{ gap: 12 }}>
@@ -282,25 +314,22 @@ function EditarPortal() {
       </div>
 
       <FichaLoja portalId={p.id} />
+      {(p.lojas?.length ?? 0) > 1 && <FocoPorLoja portalId={p.id} lojas={p.lojas ?? []} />}
 
       <div className="card mt">
         <h2>Plano de Ação</h2>
         <div className="grade g3">
-          {[1, 2, 3, 4].map((m) => (
+          {Array.from({ length: Math.max(p.plano_meses ?? 4, ...dados.plano.map((i) => i.mes)) }, (_, k) => k + 1).map((m) => (
             <div key={m}>
-              <h3 style={{ marginBottom: 2 }}>{MESES_PLANO[m]}</h3>
+              <TituloMesPlano portalId={p.id} mes={m} titulos={p.plano_titulos} editar aoSalvar={recarregar} />
               {periodoDoMes(m, p.plano_inicio, p.inicio) && <div className="mudo mb" style={{ fontSize: 13.5, fontWeight: 600 }}>{periodoDoMes(m, p.plano_inicio, p.inicio)}</div>}
               {dados.plano.filter((i) => i.mes === m).map((i) => (
                 <div key={i.id} className="linha entre marcar" style={{ cursor: "default", flexWrap: "nowrap" }}>
                   <span style={{ textDecoration: i.feito ? "line-through" : undefined }}>{i.feito ? "✓ " : ""}{i.texto}</span>
-                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; await planoApagar(i.id); recarregar(); }}>✕</button>
+                  <button className="btn s peq" type="button" aria-label="Apagar" onClick={async () => { if (!confirm("Apagar esta tarefa do plano?")) return; try { await planoApagar(i.id); recarregar(); } catch (e) { alert((e as Error).message); } }}>✕</button>
                 </div>
               ))}
-              <form action={async (f) => { await planoAdicionar(p.id, f); recarregar(); }} className="linha mt" style={{ flexWrap: "nowrap" }}>
-                <input type="hidden" name="mes" value={m} />
-                <input type="text" name="texto" placeholder="Nova tarefa…" />
-                <button className="btn p peq" type="submit">+</button>
-              </form>
+              <NovaTarefaPlano portalId={p.id} mes={m} rotuloMes={tituloMes(m, p.plano_titulos)} aoIncluir={recarregar} />
             </div>
           ))}
         </div>
@@ -342,7 +371,7 @@ function EditarPortal() {
 }
 
 const AREAS_MENU: [string, string][] = [
-  ["loja", "Minha loja"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
+  ["loja", "Minha loja"], ["marca", "Nossa marca"], ["diagnostico", "Diagnóstico"], ["gestao", "Gestão estratégica"], ["pessoas", "Gestão de pessoas"],
   ["vendas", "Vendas"], ["clientes", "De cliente a fã"], ["conteudo", "Conteúdo"],
   // Páginas soltas que dá para esconder sem tirar a área inteira.
 ];

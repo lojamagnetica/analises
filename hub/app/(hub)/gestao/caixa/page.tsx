@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
@@ -53,8 +53,8 @@ function FechamentoCaixa() {
   const lojas = portal.lojas ?? [];
   const varias = lojas.length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
-  const [filtro, setFiltro] = useState(varias ? lojas[0] : "");
-  const [f, setF] = useState<Form>(() => novo(varias ? lojas[0] : ""));
+  const [filtro, setFiltro] = useLojaFoco();
+  const [f, setF] = useState<Form>(() => novo(varias ? filtro || lojas[0] : ""));
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);

@@ -10,7 +10,7 @@ export type Bloco = { tempo: string; titulo: string; itens: string[] };
 export type Modelo = { id: "abertura" | "reta_final" | "individual"; nome: string; duracao: string; quando: string; objetivo: string; blocos: Bloco[] };
 
 const FOCO: Record<string, { foco: string; como: string }> = {
-  pa: { foco: "Venda adicional: toda cliente sai com uma segunda peça ou acessório", como: "Depois que a cliente escolher, mostre uma peça que completa o look antes de ir para o caixa." },
+  pa: { foco: "Venda adicional: toda cliente sai com uma segunda peça ou acessório", como: "Depois que a cliente escolher, mostre uma peça que combina com a escolhida antes de ir para o caixa." },
   pm: { foco: "Mostrar primeiro as peças de maior valor", como: "Comece o atendimento pelas peças novas e de maior valor; a promoção fica para o fim." },
   volume: { foco: "Mais atendimentos: chamar a carteira e abordar toda cliente em até 1 minuto", como: "Cada vendedora chama 5 clientes da carteira antes do almoço." },
   ok: { foco: "Manter o ritmo e reconhecer o que está dando certo", como: "Peça para quem está melhor contar o que está fazendo." },

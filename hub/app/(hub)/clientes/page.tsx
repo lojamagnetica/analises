@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
 import {
@@ -18,7 +18,7 @@ export default function MinhasClientes() {
   const { portal } = usePortal();
   const { dados, recarregar } = useDados(() => buscarClientes(portal.id), [portal.id]);
   const [busca, setBusca] = useState("");
-  const [loja, setLoja] = useState(() => ((portal.lojas ?? []).length > 1 ? (portal.lojas ?? [])[0] : ""));
+  const [loja, setLoja] = useLojaFoco();
   const [aniv, setAniv] = useState(false);
   const [tipo, setTipo] = useState<TipoOuSem | "">("");
   const [editando, setEditando] = useState<Cliente | "nova" | null>(null);
@@ -114,7 +114,7 @@ export default function MinhasClientes() {
           aoTerminar={() => { setImportando(false); recarregar(); }} />
       )}
       {editando && (
-        <FormCliente key={editando === "nova" ? "nova" : editando.id} c={editando === "nova" ? null : editando} lojas={lojas} lojaInicial={loja || lojas[0] || ""}
+        <FormCliente solo={!!portal.sem_equipe} key={editando === "nova" ? "nova" : editando.id} c={editando === "nova" ? null : editando} lojas={lojas} lojaInicial={loja || lojas[0] || ""}
           salvar={async (f) => { await clienteSalvar(portal.id, editando === "nova" ? null : editando.id, f); setEditando(null); recarregar(); }}
           cancelar={() => setEditando(null)} />
       )}
@@ -132,7 +132,7 @@ export default function MinhasClientes() {
         <div className="card tabela-wrap" style={{ padding: 8 }}>
           <table className="tabela">
             <thead>
-              <tr><th>Cliente</th><th>Tipo</th><th>Última compra</th><th>Compras</th><th>Total</th><th>Vendedora</th><th /></tr>
+              <tr><th>Cliente</th><th>Tipo</th><th>Última compra</th><th>Compras</th><th>Total</th>{!portal.sem_equipe && <th>Vendedora</th>}<th /></tr>
             </thead>
             <tbody>
               {lista.slice(0, mostrar).map((c) => {
@@ -150,7 +150,7 @@ export default function MinhasClientes() {
                     <td style={{ whiteSpace: "nowrap" }}>{dia(c.ultima_compra)}{l?.dias != null && <div className="mudo" style={{ fontSize: 12.5 }}>{l.dias <= 0 ? "hoje" : `há ${l.dias} dias`}</div>}</td>
                     <td>{c.n_compras}</td>
                     <td style={{ whiteSpace: "nowrap" }}>{moeda(Number(c.total))}</td>
-                    <td>{c.vendedora ?? "—"}</td>
+                    {!portal.sem_equipe && <td>{c.vendedora ?? "—"}</td>}
                     <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                       <button type="button" className="btn s peq" onClick={() => { setEditando(c); setImportando(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>{" "}
                       <button type="button" className="btn s peq" aria-label={`Remover ${c.nome}`}
@@ -172,8 +172,8 @@ export default function MinhasClientes() {
   );
 }
 
-function FormCliente({ c, lojas, lojaInicial, salvar, cancelar }: {
-  c: Cliente | null; lojas: string[]; lojaInicial: string; salvar: (f: FormData) => Promise<void>; cancelar: () => void;
+function FormCliente({ c, lojas, lojaInicial, salvar, cancelar, solo }: {
+  c: Cliente | null; lojas: string[]; lojaInicial: string; salvar: (f: FormData) => Promise<void>; cancelar: () => void; solo?: boolean;
 }) {
   const [erro, setErro] = useState("");
   return (
@@ -187,10 +187,17 @@ function FormCliente({ c, lojas, lojaInicial, salvar, cancelar }: {
         <div><label className="rotulo" htmlFor="c-nome">Nome</label><input id="c-nome" name="nome" type="text" defaultValue={c?.nome ?? ""} required /></div>
         <div><label className="rotulo" htmlFor="c-whats">WhatsApp</label><input id="c-whats" name="whatsapp" type="text" inputMode="tel" placeholder="(81) 99999-0000" defaultValue={c?.whatsapp ?? ""} /></div>
         <div><label className="rotulo" htmlFor="c-aniv">Aniversário (opcional)</label><input id="c-aniv" name="aniversario" type="text" placeholder="dd/mm" defaultValue={c?.aniversario ? diaMes(c.aniversario) : ""} /></div>
-        <div><label className="rotulo" htmlFor="c-ultima">Data da última compra</label><input id="c-ultima" name="ultima_compra" type="date" defaultValue={c?.ultima_compra ?? ""} /></div>
-        <div><label className="rotulo" htmlFor="c-n">Número de compras</label><input id="c-n" name="n_compras" type="number" min={0} defaultValue={c?.n_compras ?? 1} /></div>
-        <div><label className="rotulo" htmlFor="c-total">Total gasto (R$)</label><input id="c-total" name="total" type="text" inputMode="decimal" placeholder="0,00" defaultValue={c ? String(c.total).replace(".", ",") : ""} /></div>
-        <div><label className="rotulo" htmlFor="c-vend">Vendedora</label><input id="c-vend" name="vendedora" type="text" defaultValue={c?.vendedora ?? ""} /></div>
+        {/* Loja sem equipe: só nome, WhatsApp e aniversário; as compras vêm das Vendas do dia (o resto fica em "mais detalhes"). */}
+        <details open={!solo} style={{ gridColumn: "1 / -1" }}>
+          {solo && <summary className="mudo" style={{ cursor: "pointer", marginTop: 10 }}>Mais detalhes (opcional): última compra, número de compras e total</summary>}
+          <div className="grade g3" style={{ gap: "0 16px" }}>
+            <div><label className="rotulo" htmlFor="c-ultima">Data da última compra</label><input id="c-ultima" name="ultima_compra" type="date" defaultValue={c?.ultima_compra ?? ""} /></div>
+            <div><label className="rotulo" htmlFor="c-n">Número de compras</label><input id="c-n" name="n_compras" type="number" min={0} defaultValue={c?.n_compras ?? (solo ? 0 : 1)} /></div>
+            <div><label className="rotulo" htmlFor="c-total">Total gasto (R$)</label><input id="c-total" name="total" type="text" inputMode="decimal" placeholder="0,00" defaultValue={c ? String(c.total).replace(".", ",") : ""} /></div>
+          </div>
+        </details>
+        {solo ? <input type="hidden" name="vendedora" defaultValue={c?.vendedora ?? ""} />
+          : <div><label className="rotulo" htmlFor="c-vend">Vendedora</label><input id="c-vend" name="vendedora" type="text" defaultValue={c?.vendedora ?? ""} /></div>}
         {lojas.length > 1 && (
           <div>
             <label className="rotulo" htmlFor="c-loja">Loja</label>

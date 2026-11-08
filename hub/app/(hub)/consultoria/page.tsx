@@ -6,7 +6,7 @@ import { ConsultoriaEvolucao } from "@/components/ConsultoriaEvolucao";
 import { EditarAcao, EditarEntrega, EstruturaEditor, NovaAcao, NovaEntrega } from "@/components/ConsultoriaEquipe";
 import { Titulo } from "@/components/Titulo";
 import { VisitaPresencial } from "@/components/VisitaPresencial";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, diasAte, hoje } from "@/lib/formato";
 import {
   STATUS_ACAO, STATUS_ENTREGA, acaoStatus, buscarConsultoria, classeStatus, daLoja, entregaRemover, entregaStatus, estruturaPadrao, mesDaConsultoria, mudarLoja,
@@ -18,7 +18,7 @@ const doisDigitos = (n: number) => String(n).padStart(2, "0");
 export default function Consultoria() {
   const { portal, equipe } = usePortal();
   const { dados, recarregar } = useDados(() => buscarConsultoria(portal.id), [portal.id]);
-  const [filtro, setFiltro] = useState("");
+  const [filtro, setFiltro] = useLojaFoco();
   if (!dados) return <Carregando />;
   const c = dados.dados;
   const lojas = portal.lojas ?? [];

@@ -35,10 +35,30 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Textos em português do Brasil, simples e diretos (a usuária principal não é técnica).
 - Tudo o que a loja cadastra no Hub (pessoas, clientes, lançamentos, notas, arquivos) precisa ter **editar e excluir/remover**:
   a lojista pode errar ou precisar tirar alguém. Excluir sempre com confirmação.
+- Todo pedido de arquivo para a loja tem também um espaço para responder à mão (pode ser estimativa) ou marcar "Ainda não tenho". Nada trava por falta de arquivo.
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
-- Notion é só leitura.
+- Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
+- Áreas do portal liberadas por etapa: as áreas novas nascem com cadeado (`portais.menu_trancado`; hoje `conteudo` e `marca`) e a Camilla libera uma área coerente com a etapa da loja a cada 15 dias, sempre bem feita antes de abrir.
+  - "Nossa marca" (Nossa história + Guia das marcas) abre na semana depois do Diagnóstico.
+- Rotina de gestão = Planner de gestão (`/consultoria/planner`, no lugar da antiga Bússola), montado com o formulário da rotina de gestão (`/consultoria/planner/rotina`, etapa 20, fora dos Dados da loja): o que a loja já faz, quando e como, compras e estoque. Cada demanda leva a situação (já faz, sem constância, começar):
+  - Todo dia: começar o dia pela meta, ontem e as prioridades; mensagem de direção do dia no grupo (inegociável, mesmo fora da loja; o Meu dia deixa pronta); loja pronta; conteúdos e atração do dia; pagamentos, recebimentos e cobrança. Não há reunião de abertura diária.
+  - No mês: estratégia do mês seguinte (até o dia 20) e análise do mês que fechou + reunião do mês com o time; feedback individual no meio do mês.
+  - Na semana: dia da análise de resultado (time, marcas e produtos, Instagram, vitrine e revisão do plano), conversa individual, VM geral, conteúdo e gravações, missão da semana, compras; dia do conhecimento só para quem tem equipe e passou dos 3 meses.
+  - As demandas do dia aparecem em "Sua rotina de hoje" (Meu dia) quando o planner é liberado.
+- Reunião de entrega do Hub (individual extra, uma vez só): quando o portal fica "Entregue" no Painel dos portais, o roteiro sai em `/equipe/entrega?id=` com os dados da loja; foco na clareza do uso, tudo no celular dela, e os combinados saem dela.
+- Plano de Ação mês a mês (norteia a satisfação da cliente):
+  - Os desejos vêm SEMPRE das palavras da própria cliente: loja que subimos do Drive = formulário "Diagnóstico da Sua Loja" (planilha de respostas no Drive); loja que entrou direto pelo portal = as respostas dela no Hub. Nunca do resumo do Comercial, do Raio-X ou de outro agente. Citar a pergunta e a resposta de onde saiu cada desejo.
+  - Os desejos que ela listou primeiro (objetivos em ordem de prioridade e o que quer construir) entram nos 2 primeiros meses depois da entrega do portal.
+  - Todo mês tem uma correção de gestão e processos e pelo menos um impulsionador de resultado. O título do mês segue "Correção: … · Impulsionador: …".
+  - Meta do mês pela regra do método (mesmo mês do ano anterior +20%), salvo número que a própria cliente deu.
+- Contrato de Foco (padrão da Luciana, vale para toda loja com Diagnóstico liberado), na ficha da loja:
+  - `foco_curto`: uma linha (até 90 caracteres) para o Início, logo abaixo do nome. Ex.: "Faturar R$ 30 mil por mês com as vendas registradas no Hub".
+  - `resultado_n1`: uma frase completa (até ~175 caracteres) com o resultado e o prazo de 90 dias, tirada do foco do Diagnóstico.
+  - `indicador`: "início · hoje · meta", com os números do Diagnóstico.
+  - `fundamentos_trabalhando`: os 4 fundamentos ligados ao foco. "Implantado" só o que a loja de fato já faz.
+  - O Início mostra só o resumo e o "de acordo"; o Diagnóstico mostra o contrato completo. Mudar o resultado ou o indicador pede o de acordo de novo.
 - Retorno do teste de perfil para a equipe: Relatório de Perfil Comportamental (página com a marca, tom profissional, link curto no WhatsApp).
   Os pontos de desenvolvimento falam do jeito do perfil, nunca da pessoa, para ela refletir sem se sentir apontada. Textos em `hub/lib/perfil-pessoa.ts`.
 - Fuso: America/Recife.

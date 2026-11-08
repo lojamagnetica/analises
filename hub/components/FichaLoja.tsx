@@ -1,11 +1,12 @@
 "use client";
 
+import { Termometro } from "@/components/Termometro";
 import { useState } from "react";
 import { useDados } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { contratoAnexar, contratoApagar, contratoRemoverAnexo, contratoSalvar, fichaSalvar } from "@/lib/acoes";
 import {
-  ETAPAS_JORNADA, FUNDAMENTOS, SITUACOES, TERMOMETROS, corTermometro,
+  ETAPAS_JORNADA, FUNDAMENTOS, SITUACOES, TERMOMETROS,
   type Contrato, type Ficha, type PessoaEquipe, type Plano,
 } from "@/lib/carteira";
 import { dia, moeda } from "@/lib/formato";
@@ -76,7 +77,6 @@ export function FichaLoja({ portalId }: { portalId: string }) {
               <option value="">—</option>
               {dados.planos.map((p) => <option key={p.id} value={p.id}>{p.nome}{p.vendendo ? "" : " (antigo)"}</option>)}
             </select>
-            {f?.programa_notion && <div className="ajuda">No Notion: {f.programa_notion}</div>}
           </div>
           <div>
             <label className="rotulo">Situação</label>
@@ -96,7 +96,7 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div>
             <label className="rotulo">Termômetro</label>
             <select name="termometro" defaultValue={f?.termometro ?? ""}><option value="">—</option>{TERMOMETROS.map((t) => <option key={t}>{t}</option>)}</select>
-            {f?.termometro && <div className="ajuda"><span className={`selo ${corTermometro(f.termometro)}`}>{f.termometro}</span> desde {dia(f.termometro_em)}</div>}
+            <div className="ajuda"><Termometro valor={f?.termometro} desde={f?.termometro_em ? dia(f.termometro_em) : null} /></div>
           </div>
           <div>
             <label className="rotulo">Responsável (CS)</label>
@@ -108,8 +108,10 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div><label className="rotulo">Data do diagnóstico</label><input type="date" name="data_diagnostico" defaultValue={f?.data_diagnostico ?? ""} /></div>
           <div><label className="rotulo">Instagram</label><input type="text" name="instagram" defaultValue={f?.instagram ?? ""} /></div>
         </div>
-        <label className="rotulo">Resultado Nº 1 (Contrato de Foco)</label>
+        <label className="rotulo">Resultado Nº 1 (Contrato de Foco) · a loja vê no Diagnóstico e dá o de acordo</label>
         <input type="text" name="resultado_n1" defaultValue={f?.resultado_n1 ?? ""} />
+        <label className="rotulo">Resumo do foco para o Início (uma linha)</label>
+        <input type="text" name="foco_curto" maxLength={90} defaultValue={f?.foco_curto ?? ""} placeholder="Ex.: Faturar R$ 30 mil por mês com as vendas no Hub" />
         <label className="rotulo">Indicador (início · hoje · meta)</label>
         <input type="text" name="indicador" defaultValue={f?.indicador ?? ""} placeholder="Ex.: R$ 80 mil · R$ 95 mil · R$ 120 mil" />
         <label className="rotulo">Condição especial</label>
@@ -119,16 +121,26 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div><label className="rotulo">Pasta interna</label><input type="url" name="pasta_interna" defaultValue={f?.pasta_interna ?? ""} /></div>
         </div>
         <details className="mt">
-          <summary style={{ cursor: "pointer" }}><b>Fundamentos implantados</b> · {f?.fundamentos.length ?? 0} de 16</summary>
-          <div className="grade g2 mt" style={{ gap: 4 }}>
-            {FUNDAMENTOS.map((x) => (
-              <label key={x} className="marcar"><input type="checkbox" name="fundamentos" value={x} defaultChecked={f?.fundamentos.includes(x)} /><span>{x}</span></label>
-            ))}
+          <summary style={{ cursor: "pointer" }}><b>Fundamentos do Método</b> · {f?.fundamentos.length ?? 0} de 16 implantados{f?.fundamentos_trabalhando?.length ? ` · ${f.fundamentos_trabalhando.length} trabalhando agora` : ""}</summary>
+          <p className="ajuda" style={{ margin: "6px 0" }}>⚪ Ainda não · 🟡 Trabalhando agora (o que está no Contrato de Foco e no Plano do mês) · 🟢 Implantado (virou rotina na loja). O placar conta só os implantados.</p>
+          <div className="grade g2 mt" style={{ gap: "4px 16px" }}>
+            {FUNDAMENTOS.map((x) => {
+              const v = f?.fundamentos.includes(x) ? "implantado" : f?.fundamentos_trabalhando?.includes(x) ? "trabalhando" : "nao";
+              return (
+                <label key={x} className="linha entre" style={{ gap: 8, padding: "4px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span>{x}</span>
+                  <select name={`fund:${x}`} defaultValue={v} style={{ maxWidth: 190 }}>
+                    <option value="nao">⚪ Ainda não</option>
+                    <option value="trabalhando">🟡 Trabalhando agora</option>
+                    <option value="implantado">🟢 Implantado</option>
+                  </select>
+                </label>
+              );
+            })}
           </div>
         </details>
         <label className="rotulo">Observações</label>
         <textarea name="observacoes" defaultValue={f?.observacoes ?? ""} />
-        {f?.notion_url && <p className="ajuda"><a href={f.notion_url} target="_blank" rel="noreferrer">Portal antigo no Notion</a></p>}
         {avisoEm("ficha")}
         <div className="linha mt"><button className="btn p" type="submit">Salvar ficha</button></div>
       </form>

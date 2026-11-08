@@ -1,12 +1,12 @@
 "use client";
 
+import { Termometro } from "@/components/Termometro";
 import Link from "next/link";
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataCurta, dataHora, moeda } from "@/lib/formato";
 import { ETAPAS, buscarJornada, receberPassagem, situacao, type ClienteJornada } from "@/lib/jornada";
-import { corTermometro } from "@/lib/carteira";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { prazoDiagnostico } from "@/lib/entrada";
 
@@ -18,7 +18,7 @@ function Card({ c }: { c: ClienteJornada }) {
     <Link href={`/equipe/central/cliente?id=${c.id}`} className={`card jornada-card ${s.alerta ? "atrasada" : ""}`}>
       <div className="linha entre" style={{ gap: 6 }}>
         <b style={{ minWidth: 0, overflowWrap: "anywhere" }}>{c.loja}</b>
-        {c.termometro && <span className={`selo ${corTermometro(c.termometro)}`}>{c.termometro}</span>}
+        {c.termometro && <Termometro valor={c.termometro} />}
       </div>
       <small className="mudo">{c.plano ? NOME_PLANO[c.plano] ?? c.plano : c.tipo}{c.dia != null ? ` · dia ${c.dia}` : ""}</small>
       {s.proximo && <small style={{ display: "block", marginTop: 6 }}>Próximo: {s.proximo.texto}</small>}

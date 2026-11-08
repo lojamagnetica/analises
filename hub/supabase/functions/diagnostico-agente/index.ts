@@ -25,8 +25,8 @@ const cors = {
 };
 const json = (corpo: unknown, status = 200) => new Response(JSON.stringify(corpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-type Parada = "raiox" | "mercado" | "perguntas" | "solucao" | "hub";
-const PARADAS: Parada[] = ["raiox", "mercado", "perguntas", "solucao", "hub"];
+type Parada = "raiox" | "mercado" | "perguntas" | "solucao" | "hub" | "plano";
+const PARADAS: Parada[] = ["raiox", "mercado", "perguntas", "solucao", "hub", "plano"];
 type Bloco = Anthropic.Beta.BetaContentBlockParam;
 
 // ───── Esquemas da resposta de cada parada ─────
@@ -38,6 +38,10 @@ const obj = (props: Record<string, unknown>) => ({ type: "object", additionalPro
 const PILARES = ["Gestão Analítica", "Gestão Pessoas", "Processos Comerciais", "MKT Conteúdo"];
 const NIVEL = { type: "string", enum: ["ok", "atencao", "critico"] };
 
+// Os campos de Dados da loja (cópia de hub/lib/conteudo.ts, ETAPAS; atualizar junto quando mudar).
+const CAMPOS_TEXTO = "1 A loja hoje: tempo_loja (Há quanto tempo a loja existe?); segmento (Segmento; uma de: Multimarca feminina | Multimarca masculina | Moda praia | Infantil | Plus size | Marca própria | Outro); faturamento_medio (Faturamento médio mensal (R$); número); maior_desafio (Hoje, qual é o maior desafio da loja?); o_que_funciona (O que já funciona bem?); onde_quer_chegar (Onde você quer que a loja esteja daqui a 12 meses?); o_que_movimenta (O que hoje você acredita que mais movimenta a loja?); objetivos (Quais são os seus objetivos com a mentoria? Liste em ordem de prioridade, do mais importante para o menos importante.); faturamento_12m (Faturamento e peças vendidas em cada um dos últimos 12 meses)\n9 Gestão da loja: freq_reuniao (Com que frequência você faz reunião com o time?; uma de: Toda semana | A cada 15 dias | Uma vez por mês | Só quando precisa | Não faço reunião); reconhece (Quando você faz as reuniões, costuma mostrar o resultado de todos e reconhecer publicamente?); rotina_dona (Me descreva a sua rotina hoje na loja); ultimo_treinamento (Qual foi a última vez que foi feito um treinamento com o seu time? Conte um pouco sobre o resultado.); processos (Vocês têm processos escritos na loja (metas, roteiro de venda, rotinas do time)?; uma de: Sim, temos e o time segue | Temos algo, mas é informal | Não temos nada escrito); vm (Vitrine e arrumação da loja: quem cuida e de quanto em quanto tempo vocês trocam?); sistema (Qual sistema vocês usam para vendas e estoque?)\n10 Ações e resultados: acao_sucesso (Qual a ação de maior sucesso da loja até hoje? Me descreva como foi feita e qual resultado teve.); acao_sem_retorno (Em qual ação você fez um grande investimento de energia ou dinheiro e não teve o retorno esperado? Descreva com detalhes.)\n5 Time de vendas: tamanho_time (Quantas pessoas atendem?; número); comissao (Como funciona a comissão?); equipe_detalhe (Para cada pessoa: horário, salário fixo, comissão e benefícios); desafio_time (Qual é o maior desafio do time no atendimento hoje?)\n3 Cliente ideal: idade (Faixa de idade); perfil (Como ela é? (profissão, rotina, estilo)); valoriza (O que ela mais valoriza na sua loja?); objecoes (Objeções que mais aparecem); pos_venda (Como é o depois da compra? Vocês fazem pós-venda, reativação ou acompanhamento? Como?); carteira (Você trabalha a sua carteira de clientes (reativação, relacionamento, recompra)?; uma de: Sim, tenho um processo para isso | Faço de vez em quando | Ainda não faço); malinha (Vocês trabalham com malinha (condicional)? Como funciona?)\n4 Mix de produtos e preços: marcas (Principais marcas); categorias (Categorias que mais vendem); faixa_preco (Faixa de preço (da peça mais barata à mais cara)); markup (Markup médio; número); estoque (Como está o estoque hoje?; uma de: Equilibrado | Muita peça parada | Falta peça boa | Não sei)\n8 Estoque e relatórios: valor_estoque (Quanto você tem em estoque, a preço de venda (R$)?; número); pecas_estoque (Quantas peças tem em estoque?; número); pm_estoque (Preço médio das peças do estoque (R$); número); linhas (Principais linhas e quanto cada uma representa); fornecedores (Principais fornecedores (até 5) e quanto cada um representa); compra_mes (Quanto você compra por mês, em média (R$)?; número); parado (Que parte do estoque está parada há mais de 3 meses?; uma de: Quase nada (até 10%) | Um pouco (10% a 30%) | Bastante (30% a 50%) | Mais da metade); receber_manual (Sem o relatório de contas a receber? Escreva quanto você tem a receber no crediário e quanto está atrasado.); crediario_pct (Quanto do faturamento é vendido no crediário ou fiado (boleto, nota, carnê)? (%); número); crediario_como (Como funciona o crediário: em quantas vezes, quem libera e como vocês cobram?)\n7 Canais e conteúdo: canais (Onde você vende hoje?; várias de: Loja física | WhatsApp | Instagram (Direct) | Site / e-commerce | Malinha / condicional); principal (Qual canal traz mais faturamento?); base_clientes (Quantas clientes tem na base (com WhatsApp)?; número); freq_posts (Com que frequência você posta os conteúdos da loja hoje?; uma de: Todo dia | 3 a 5 vezes por semana | 1 a 2 vezes por semana | Menos de 1 vez por semana | Quase nunca); como_pensa (Como você pensa nos conteúdos hoje?); dificuldade_conteudo (O que você acha mais difícil na hora de produzir os conteúdos da loja?); resultado_conteudo (O quanto você acha que postar conteúdo hoje traz resultado para a loja?; uma de: Traz muito resultado | Traz algum resultado | Traz pouco resultado | Não traz resultado | Não sei dizer); instagram (Qual é o @ do Instagram da loja?); quem_posta (Quem cria e quem posta os conteúdos?); inspiracoes (Quais perfis te inspiram? Coloque o @ de cada um.); concorrentes (Quais são os @ dos seus principais concorrentes?); trafego (Vocês investem em anúncio pago (tráfego)? Quanto por mês e como sabem se deu resultado?); insta_numeros (Sem os prints do Instagram? Escreva os números do Painel Profissional dos últimos 30 dias.); loja_descricao (Sem vídeo ou fotos da loja? Descreva como ela é.)";
+const CAMPOS: Record<number, Record<string, string>> = {"1":{"tempo_loja":"texto","segmento":"opcao","faturamento_medio":"numero","maior_desafio":"textarea","o_que_funciona":"textarea","onde_quer_chegar":"textarea","o_que_movimenta":"textarea","objetivos":"textarea","faturamento_12m":"textarea"},"3":{"idade":"texto","perfil":"textarea","valoriza":"textarea","objecoes":"textarea","pos_venda":"textarea","carteira":"opcao","malinha":"textarea"},"4":{"marcas":"textarea","categorias":"textarea","faixa_preco":"texto","markup":"numero","estoque":"opcao"},"5":{"tamanho_time":"numero","comissao":"textarea","equipe_detalhe":"textarea","desafio_time":"textarea"},"7":{"canais":"multi","principal":"texto","base_clientes":"numero","freq_posts":"opcao","como_pensa":"textarea","dificuldade_conteudo":"textarea","resultado_conteudo":"opcao","instagram":"texto","quem_posta":"texto","inspiracoes":"textarea","concorrentes":"textarea","trafego":"textarea","insta_numeros":"textarea","loja_descricao":"textarea"},"8":{"valor_estoque":"numero","pecas_estoque":"numero","pm_estoque":"numero","linhas":"textarea","fornecedores":"textarea","compra_mes":"numero","parado":"opcao","receber_manual":"textarea","crediario_pct":"numero","crediario_como":"textarea"},"9":{"freq_reuniao":"opcao","reconhece":"textarea","rotina_dona":"textarea","ultimo_treinamento":"textarea","processos":"opcao","vm":"textarea","sistema":"texto"},"10":{"acao_sucesso":"textarea","acao_sem_retorno":"textarea"}};
+
 // A pesquisa de mercado responde em texto (com as fontes da busca), sem esquema.
 const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
   raiox: obj({
@@ -48,6 +52,10 @@ const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
     gargalo: obj({ pilar: { type: "string", enum: PILARES }, tema: t, porque: t, alternativa: t }),
     alavanca: obj({ tipo: { type: "string", enum: ["Base de clientes", "Instagram"] }, porque: t }),
     faltando: lista(obj({ item: t, para_que: t })),
+    // O que já foi informado vai direto para as áreas do portal (só nos campos vazios).
+    dados_da_loja: lista(obj({ etapa: n, campo: t, valor: t, situacao: { type: "string", enum: ["tenho", "estimado", "nao_tenho"] }, fonte: t })),
+    equipe: lista(obj({ nome: t, funcao: t })),
+    contato: obj({ whatsapp: t, cidade: t, instagram: t, email: t }),
   }),
   perguntas: obj({ perguntas: lista(t) }),
   solucao: obj({
@@ -73,10 +81,23 @@ const ESQUEMAS: Record<Exclude<Parada, "mercado">, unknown> = {
     linhas: lista(obj({ nome: t, parado: t, nivel: NIVEL, leitura: t, desejo: t })),
     equipe: obj({ leitura: t, pessoas: lista(obj({ nome: t, funcao: t, nota: t })) }),
   }),
+  // O Plano de Ação: tema e tarefas de cada mês e, para cada pedido da cliente, em que mês ele é atendido.
+  plano: obj({
+    resumo: t,
+    meses: lista(obj({ mes: n, tema: t, porque: t, tarefas: lista(t) })),
+    pedidos: lista(obj({ pedido: t, fonte: t, mes: n, como: t })),
+    fora: lista(obj({ pedido: t, porque: t })),
+  }),
 };
 
 const TAREFA: Record<Parada, string> = {
-  raiox: "Faça a PARADA 1 (Raio-X e proposta de gargalo e alavanca). Em \"faltando\", liste o que falta e para que serve.",
+  raiox: [
+    "Faça a PARADA 1 (Raio-X e proposta de gargalo e alavanca). Em \"faltando\", liste o que falta e para que serve.",
+    "SEJA EXTREMAMENTE MINUCIOSO: leia todo o material (formulário, planilhas de respostas, contrato, pedidos de fornecedor, relatórios, transcrições, anotações, Análise do Instagram) antes de dizer que algo falta. Nunca liste em \"faltando\" o que já está no material, nem em parte: diga o que já tem e peça só o resto.",
+    "Em \"dados_da_loja\", preencha TODOS os campos dos Dados da loja que estão vazios no Hub (veja dados_da_loja em \"Dados que estão no Hub\") e cuja resposta está no material, um item por campo, com a etapa e o id do campo exatamente como na lista abaixo, o valor em linguagem simples (número sem R$ nem pontos nos campos de número; nas opções, exatamente uma das opções; em \"várias de\", as opções separadas por \" | \") e a fonte. situacao: \"tenho\" quando o dado está escrito no material; \"estimado\" quando você calculou ou montou (ex.: a cliente ideal pela Análise do Instagram, pelas marcas, pelo ticket e pela forma de pagamento; o tempo de loja pela data do CNPJ); \"nao_tenho\" quando o material mostra que a loja não tem esse dado (ex.: não controla a base de clientes) e não vale pedir de novo. Não repita campo já preenchido no Hub.",
+    "Em \"equipe\", cada pessoa que trabalha na loja (nome e função), se o material trouxer. Em \"contato\", o WhatsApp da dona, a cidade (cidade-UF), o @ e o e-mail que aparecem no material (contrato, pedidos, formulário); vazio quando não tiver.",
+    `Campos dos Dados da loja (etapa título: id (pergunta; tipo)):\n${CAMPOS_TEXTO}`,
+  ].join("\n"),
   mercado: [
     "Faça a PESQUISA DE CONCORRENTES E MERCADO desta loja, pesquisando na internet. É material para a Camilla revisar; depois pode ir para a loja ler. Escreva para a dona ler: linguagem simples, do dia a dia.",
     "ORDEM OBRIGATÓRIA:",
@@ -89,6 +110,13 @@ const TAREFA: Record<Parada, string> = {
   ].join("\n"),
   perguntas: "Faça a PARADA 2: as perguntas do gargalo que a Camilla escolheu (veja a escolha dela abaixo). Antes de escrever cada pergunta, procure a resposta no formulário, nas transcrições de áudio e de reunião, nas anotações, no planner e nos arquivos. Se já está respondida, não pergunte. Se está em parte, a pergunta começa pelo que ela já contou e pede só o que falta (ex.: \"Você contou que fotografa as peças e manda o preço no grupo para a Su. Quanto tempo leva, em média, da sacola chegar até a peça estar na arara?\"). Poucas perguntas e certeiras valem mais que muitas.",
   solucao: "Faça a PARADA 3 (rascunho da solução, roteiro de 1h30, as 2 missões, o filtro anti-excesso, a frase do que ela faz amanhã, o estacionamento e o conteúdo do PDF), usando o gargalo e a alavanca escolhidos e as respostas da loja.",
+  plano: [
+    "Monte o PLANO DE AÇÃO desta loja, mês a mês, do jeito da Camilla (veja os planos de outras lojas abaixo: o tamanho das tarefas, o tom e a ordem). É o que a dona vai ver e marcar no Hub.",
+    "1) PRIMEIRO, LISTE OS DESEJOS DA CLIENTE COM AS PALAVRAS DELA: loja que veio do Drive = as respostas do formulário \"Diagnóstico da Sua Loja\" (objetivos na ordem de prioridade que ela deu, o que quer ter construído ao fim da mentoria, os desafios que marcou); loja que entrou direto pelo portal = as respostas dela no Hub. NUNCA tire desejo do resumo do Comercial, do Raio-X ou de outro agente (no máximo como apoio, e nunca um número que ela não disse). Cada desejo vira uma linha em \"pedidos\", com a fonte (a pergunta do formulário ou do Hub) e o mês em que o plano entrega. O que não couber vai em \"fora\" com o motivo (e só se não couber mesmo).",
+    "2) A ORDEM DOS MESES: OS DOIS PRIMEIROS MESES DEPOIS DA ENTREGA DO PORTAL TÊM DE ENTREGAR OS DESEJOS QUE ELA LISTOU PRIMEIRO: é isso que define a satisfação dela com o plano. O gargalo e a alavanca do Diagnóstico entram junto, como o caminho para esses desejos. Depois vêm os desejos seguintes, em ordem lógica (um mês prepara o outro).",
+    "3) CADA MÊS tem UMA CORREÇÃO de gestão e processos e PELO MENOS UM IMPULSIONADOR de resultado (venda, cliente, faturamento). O tema do mês segue \"Correção: … · Impulsionador: …\", na linguagem da cliente, com o porquê em uma frase e de 4 a 7 tarefas (primeiro as da correção, depois as do impulsionador). Meta do mês = mesmo mês do ano anterior +20%, salvo número que a própria cliente deu. Tarefa começa com verbo, é concreta (o quê, quem, com que número ou ferramenta do Hub) e cabe no mês. Use os números do Diagnóstico e o nome das pessoas do time quando ajudar.",
+    "4) NÃO REPITA o que já está no plano atual da loja (lista abaixo): complete. Siga as regras do método (pós-venda em 24 h sem oferecer nada, aniversariantes, mensagem que diz quem fala, CTA que conduz, carteira por vendedora e missão da semana igual para o time) e a linha de gestão (a responsabilidade com a pessoa, o combinado sai dela). Nunca use \"balcão\".",
+  ].join("\n"),
   hub: "Monte o Diagnóstico da loja no Hub (o que a lojista vai ver), no formato e no padrão dos exemplos liberados, com o que foi preparado e decidido. Valores em reais como número (sem R$) nos campos numéricos; mês como AAAA-MM.",
 };
 
@@ -121,10 +149,10 @@ function textoWord(buf: Uint8Array) {
 // e os menos importantes saem até caber. O que sai é avisado.
 const MAX_TEXTO_PDF = 1_600_000; // letras de PDFs lidos como texto, somadas
 const MAX_PAGINAS = 550;
-const MAX_BYTES = 20 * 1024 * 1024;
+const MAX_BYTES = 14 * 1024 * 1024; // em base64 vira uns 19 MB; o pedido todo tem de ficar abaixo de 32 MB
 const MAX_IMAGENS = 20;
 const MAX_IMAGEM = 5 * 1024 * 1024;
-const MAX_TOKENS_ENTRADA = 700_000; // folga para a resposta e para não pesar no custo de cada parada
+const MAX_TOKENS_ENTRADA = 850_000; // a janela é de 1 milhão; o resto fica para a resposta
 
 /** Páginas de um PDF lidas por um leitor de PDF de verdade (conta certo também nos PDFs com páginas comprimidas).
  *  Devolve null quando o PDF tem senha ou está quebrado: o Claude também não conseguiria ler. */
@@ -148,6 +176,35 @@ async function textoPdf(buf: Uint8Array): Promise<string | null> {
   }
 }
 
+/** Deixa o texto de um relatório mais leve sem perder dado: junta espaços repetidos e tira as linhas que se
+ *  repetem em quase todas as páginas (cabeçalho e rodapé do sistema), mantendo a primeira vez que aparecem. */
+function compactar(txt: string) {
+  if (!txt) return txt;
+  const paginas = txt.split(/^(?=--- página \d+ ---$)/m).map((p) => p.split("\n").map((l) => l.replace(/[ \t\u00a0]+/g, " ").trim()).filter(Boolean));
+  if (paginas.length >= 3) {
+    // Só conta como cabeçalho a linha comprida que aparece uma vez por página (dado de tabela, como "UN", fica).
+    const vezes = new Map<string, number>(), total = new Map<string, number>();
+    for (const p of paginas) {
+      for (const l of p) total.set(l, (total.get(l) ?? 0) + 1);
+      for (const l of new Set(p)) vezes.set(l, (vezes.get(l) ?? 0) + 1);
+    }
+    const repetidas = new Set([...vezes].filter(([l, v]) => l.length >= 12 && !/^--- página/.test(l)
+      && v >= paginas.length * 0.5 && (total.get(l) ?? 0) <= v * 1.2).map(([l]) => l));
+    // Só sai do topo e do pé de cada página (até 8 linhas de cada lado); o meio da página, onde ficam os dados, fica inteiro.
+    const vistas = new Set<string>();
+    for (let k = 0; k < paginas.length; k++) {
+      const p = paginas[k], n = p.length;
+      paginas[k] = p.filter((l, i) => {
+        if (!repetidas.has(l) || (i > 8 && i < n - 8)) return true;
+        if (vistas.has(l)) return false;
+        vistas.add(l);
+        return true;
+      });
+    }
+  }
+  return paginas.map((p) => p.join("\n")).join("\n");
+}
+
 /** Tipo real da imagem pelos primeiros bytes (a extensão do arquivo pode mentir, ex.: foto HEIC salva como .jpg). */
 function tipoImagem(b: Uint8Array) {
   if (b[0] === 0xff && b[1] === 0xd8) return "image/jpeg";
@@ -162,7 +219,7 @@ function prioridade(nome: string) {
   const n = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   const ano = new Date().getFullYear();
   if (/formul|diagnostico/.test(n)) return 0;
-  if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque/.test(n) && !n.includes(String(ano - 1))) return 1;
+  if (/adobe-scan|relatorio|tiket|ticket|ultimos|estoque|fechamento|caixa|faturamento|analise/.test(n) && !n.includes(String(ano - 1))) return 1;
   if (n.includes(String(ano))) return 2;
   if (/pedido|contrato|guia|photo|\.jpe?g$|\.png$/.test(n)) return 5;
   if (n.includes(String(ano - 1))) return 4;
@@ -240,7 +297,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
         const guardado = `${nome}.txt`;
         if (jaLidos.has(guardado)) {
           const { data: b } = await admin.storage.from("relatorios").download(`${portalId}/_texto/${guardado}`);
-          txt = b ? await b.text() : null;
+          txt = b ? compactar(await b.text()) : null;
         }
         if (txt === "") txt = null; // não deu para ler o texto: vai como documento
       }
@@ -248,7 +305,7 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
       const pg = txt ? Math.max(1, (txt.match(/^--- página \d+ ---$/gm) ?? []).length) : await paginasPdf(buf);
       if (pg === null) { avisos.push(`${nome}: PDF com senha ou danificado, não foi lido (salve de novo como PDF, sem senha, e suba)`); continue; }
       // Com texto de verdade (não escaneado), vai como texto.
-      if (txt && txt.length / pg >= 800) {
+      if (txt && txt.length / pg >= 400) {
         if (textoPdfs + txt.length > MAX_TEXTO_PDF) { avisos.push(`${nome}: ficou de fora (o limite de texto dos relatórios já estava cheio)`); continue; }
         textoPdfs += txt.length;
         itens.push({ nome, est: Math.ceil(txt.length / 3), blocos: [{ type: "text", text: `Arquivo: ${nome} (texto do PDF)\n${txt}` }] });
@@ -294,7 +351,8 @@ async function arquivos(admin: SupabaseClient, portalId: string, filtro?: RegExp
 /** Conta o pedido de verdade e tira os arquivos menos importantes (os últimos da lista) até caber na janela do Claude. */
 async function caber(system: string, itens: Item[], fim: () => string, avisos: string[]) {
   const client = new Anthropic({ apiKey: CHAVE });
-  for (let volta = 0; volta < 5; volta++) {
+  const contagens: (number | string)[] = [];
+  for (let volta = 0; volta < 8; volta++) {
     const conteudo: Bloco[] = [...itens.flatMap((i) => i.blocos), { type: "text", text: fim() }];
     let total: number;
     try {
@@ -304,15 +362,37 @@ async function caber(system: string, itens: Item[], fim: () => string, avisos: s
       const msg = (e as Error).message;
       // Erro que não é de tamanho (ex.: um PDF que o Claude não consegue abrir): diz qual foi, sem enviar o lote.
       if (!/too long|too large|maximum|exceed/i.test(msg)) throw new Error(`O Claude não aceitou o material: ${msg.slice(0, 300)}`);
-      total = Number.MAX_SAFE_INTEGER;
+      contagens.push(msg.slice(0, 200));
+      // "prompt is too long: 1229074 tokens > 1000000": o número de verdade vem no erro.
+      const m = msg.match(/(\d{6,})\s*tokens/);
+      if (m) total = Number(m[1]);
+      else {
+        // Passou de páginas de PDF ou de tamanho do pedido (não de tokens): saem só PDFs escaneados e imagens,
+        // do menos importante para o mais, até tirar um quarto deles. Os relatórios lidos como texto ficam.
+        const pesados = itens.filter((i) => i.blocos.some((b) => b.type === "document" || b.type === "image"));
+        let tirar = Math.ceil(pesados.reduce((s, i) => s + i.est, 0) * 0.25);
+        for (let k = itens.length - 1; k >= 0 && tirar > 0; k--) {
+          const i = itens[k];
+          if (!pesados.includes(i) || k === 0) continue;
+          itens.splice(k, 1);
+          tirar -= i.est;
+          avisos.push(`${i.nome}: ficou de fora (o pedido passou do tamanho de arquivos que o Claude aceita de uma vez)`);
+        }
+        if (!pesados.length) break;
+        continue;
+      }
     }
-    if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total };
-    // Tira do fim (menos importante) até a estimativa cobrir o excesso, com folga.
-    let falta = total === Number.MAX_SAFE_INTEGER ? Math.ceil(itens.reduce((s, i) => s + i.est, 0) * 0.15) : Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.1);
+    contagens.push(total);
+    if (total <= MAX_TOKENS_ENTRADA) return { conteudo, total, contagens };
+    // A estimativa por arquivo é acertada pela contagem de verdade (tabela de números pesa mais que texto corrido),
+    // para não tirar arquivo a mais. Tira do fim (menos importante) até cobrir o excesso, com 5% de folga.
+    const estimado = itens.reduce((s, i) => s + i.est, 0) + Math.ceil(fim().length / 3);
+    const fator = Math.max(0.5, total / Math.max(1, estimado));
+    let falta = Math.ceil((total - MAX_TOKENS_ENTRADA) * 1.05);
     if (!itens.length) break;
     while (falta > 0 && itens.length) {
       const i = itens.pop()!;
-      falta -= i.est;
+      falta -= i.est * fator;
       avisos.push(`${i.nome}: ficou de fora (o material todo passou do tamanho que o Claude lê de uma vez)`);
     }
   }
@@ -322,7 +402,7 @@ async function caber(system: string, itens: Item[], fim: () => string, avisos: s
 async function juntar(admin: SupabaseClient, portalId: string) {
   const desde = new Date(Date.now() - 400 * 86_400_000).toISOString().slice(0, 10);
   const [{ data: portal }, { data: ficha }, { data: contratos }, { data: passagem }, { data: pers }, { data: caixa }, { data: semanas }, { data: equipe }, { data: insta }] = await Promise.all([
-    admin.from("portais").select("loja, responsavel, tipo, inicio, canais, lojas").eq("id", portalId).single(),
+    admin.from("portais").select("loja, responsavel, tipo, inicio, canais, lojas, plano_meses").eq("id", portalId).single(),
     admin.from("fichas").select("plano_id, etapa, termometro, situacao, instagram, resultado_n1, indicador, observacoes, data_diagnostico").eq("portal_id", portalId).maybeSingle(),
     admin.from("contratos").select("plano_id, inicio, fim, status").eq("portal_id", portalId),
     admin.from("passagens").select("plano_id, valor, pagamento_em, resultado_90, origem, observacoes, lojas_mentoradas, bonus, garantia").eq("portal_id", portalId).maybeSingle(),
@@ -379,6 +459,29 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
   if (parada === "mercado") partes.push(`Concorrentes, referências e cidade que a Camilla anotou: ${prep?.concorrentes || "(não anotou; procure no formulário de diagnóstico e nas transcrições)"}`);
   if (parada !== "raiox") partes.push(`Raio-X já preparado: ${JSON.stringify(prep?.raiox ?? null)}`, `Escolha da Camilla: ${JSON.stringify(prep?.escolha ?? null)}`);
   if (parada === "solucao" || parada === "hub") partes.push(`Perguntas do gargalo: ${JSON.stringify(prep?.perguntas ?? [])}`, `Respostas da loja:\n${prep?.respostas || "(ainda não chegaram)"}`);
+  if (parada === "plano") {
+    const [{ data: diag }, { data: itens }, { data: portalP }, { data: outros }] = await Promise.all([
+      admin.from("loja_diagnostico").select("status, dados").eq("portal_id", portalId).eq("loja", "").maybeSingle(),
+      admin.from("plano_itens").select("mes, texto, feito").eq("portal_id", portalId).order("mes").order("ordem"),
+      admin.from("portais").select("plano_titulos").eq("id", portalId).single(),
+      admin.from("plano_itens").select("portal_id, mes, texto").neq("portal_id", portalId).order("portal_id").order("mes").order("ordem").limit(400),
+    ]);
+    const plano = (base.dados.passagem_do_comercial as { plano_id?: string } | null)?.plano_id ?? (base.dados.ficha as { plano_id?: string } | null)?.plano_id ?? "";
+    // Meses do plano: o da loja quando foi ajustado (ex.: Start estendido para 5); senão, Start 4 e os outros 3.
+    const meses = Number((base.dados.loja as { plano_meses?: number | null } | null)?.plano_meses) || (plano === "start" ? 4 : 3);
+    // Até 3 planos de outras lojas, como exemplo do jeito da Camilla montar.
+    const exemplos = new Map<string, string[]>();
+    for (const x of outros ?? []) { const l = exemplos.get(x.portal_id) ?? []; if (exemplos.size < 3 || exemplos.has(x.portal_id)) { l.push(`Mês ${x.mes}: ${x.texto}`); exemplos.set(x.portal_id, l); } }
+    partes.push(
+      `Solução e missões preparadas para a reunião: ${JSON.stringify(prep?.solucao ?? null)}`,
+      `Perguntas do gargalo e respostas da loja: ${JSON.stringify(prep?.perguntas ?? [])}\n${prep?.respostas || "(sem respostas ainda)"}`,
+      `Diagnóstico da loja no Hub (${diag?.status ?? "não existe"}): ${JSON.stringify(diag?.dados ?? prep?.hub ?? null)}`,
+      `Plano: ${plano || "não informado"}. Monte ${meses} meses (mes de 1 a ${meses}).`,
+      `Temas que a Camilla já escreveu para esta loja: ${JSON.stringify(portalP?.plano_titulos ?? {})} (mantenha se fizer sentido).`,
+      `Plano atual da loja (não repita, complete): ${(itens ?? []).map((i) => `Mês ${i.mes}: ${i.texto}${i.feito ? " (feito)" : ""}`).join(" | ") || "vazio"}`,
+      `Planos de outras lojas feitos pela Camilla (só o jeito de montar; não copie): ${[...exemplos.values()].map((l, i) => `Loja ${i + 1}: ${l.join(" | ")}`).join("\n") || "nenhum"}`,
+    );
+  }
   if (parada === "hub") {
     partes.push(`Preparação da reunião (solução, missões e estacionamento): ${JSON.stringify(prep?.solucao ?? null)}`);
     const { data: ex } = await admin.from("loja_diagnostico").select("dados").eq("status", "liberada").neq("portal_id", portalId).order("liberada_em", { ascending: false }).limit(2);
@@ -395,8 +498,8 @@ async function pedido(admin: SupabaseClient, portalId: string, parada: Parada, h
     docs.itens.length ? `Arquivos lidos: ${docs.itens.map((i) => i.nome).join(", ")}.` : "Nenhum relatório foi subido no Hub para esta loja.",
     docs.avisos.length ? `Avisos sobre os arquivos (conte isso nas pendências): ${docs.avisos.join("; ")}.` : "",
   ].filter(Boolean).join("\n\n"));
-  const { conteudo } = await caber(system, docs.itens, fim, docs.avisos);
-  return { system, conteudo, avisos: docs.avisos };
+  const { conteudo, total, contagens } = await caber(system, docs.itens, fim, docs.avisos);
+  return { system, conteudo, avisos: docs.avisos, tokens: total, lidos: docs.itens.length, contagens };
 }
 
 /** Os parâmetros do pedido ao Claude. A pesquisa de mercado usa a busca na internet; as outras paradas respondem em JSON. */
@@ -438,7 +541,7 @@ async function rodar(admin: SupabaseClient, portalId: string, parada: Parada, in
   try {
     const pd = await pedido(admin, portalId, parada, inicio);
     const lote = await entregar(parada, pd.system, [{ role: "user", content: pd.conteudo as Anthropic.ContentBlockParam[] }]);
-    await marcar({ estado: "trabalhando", lote, avisos: pd.avisos });
+    await marcar({ estado: "trabalhando", lote, avisos: pd.avisos, tokens: pd.tokens, lidos: pd.lidos, contagens: pd.contagens });
   } catch (e) {
     if (e instanceof Continua) {
       // Ainda há PDFs para ler: guarda o andamento e chama a função de novo para continuar.
@@ -481,6 +584,53 @@ function lerMercado(m: Anthropic.Message) {
   return { resumo: parte("=== RESUMO ===", "=== PESQUISA ==="), texto: pesquisa || texto.trim(), fontes: fontes.trim(), em: new Date().toISOString() };
 }
 
+/** Leva para o portal o que o Raio-X achou no material: só campos vazios dos Dados da loja (nunca troca resposta da loja),
+ *  conclui a etapa que ficou completa, cadastra a equipe se ainda não tem ninguém e completa o contato da loja. */
+async function preencher(admin: SupabaseClient, portalId: string, saida: Record<string, unknown>) {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const vazio = (v: unknown) => v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length);
+  const itens = (saida.dados_da_loja ?? []) as { etapa: number; campo: string; valor: string; situacao: string; fonte: string }[];
+  const { data: pers } = await admin.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", portalId);
+  const porEtapa = new Map((pers ?? []).map((p) => [p.etapa as number, { respostas: (p.respostas ?? {}) as Record<string, unknown>, concluida: !!p.concluida, mudou: false, fontes: new Set<string>() }]));
+  for (const i of itens) {
+    const tipo = CAMPOS[i.etapa]?.[i.campo];
+    if (!tipo) continue;
+    const e = porEtapa.get(i.etapa) ?? { respostas: {}, concluida: false, mudou: false, fontes: new Set<string>() };
+    porEtapa.set(i.etapa, e);
+    const r = e.respostas;
+    if (!vazio(r[i.campo]) || r[`${i.campo}__st`] === "nao_tenho") continue;
+    if (i.situacao === "nao_tenho") { r[`${i.campo}__st`] = "nao_tenho"; if (i.valor) r[`${i.campo}_obs`] = i.valor; }
+    else {
+      const v = String(i.valor ?? "").trim();
+      if (!v) continue;
+      r[i.campo] = tipo === "multi" ? v.split("|").map((x) => x.trim()).filter(Boolean) : tipo === "numero" ? v.replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "") : v;
+      if (vazio(r[i.campo])) continue;
+      r[`${i.campo}__st`] = i.situacao === "estimado" ? "estimado" : "tenho";
+    }
+    e.mudou = true;
+    if (i.fonte) e.fontes.add(i.fonte);
+  }
+  for (const [etapa, e] of porEtapa) {
+    if (!e.mudou) continue;
+    const r = e.respostas;
+    r._origem = [r._origem, `Preenchido pelo agente do Diagnóstico em ${hoje}: ${[...e.fontes].join("; ")}`].filter(Boolean).join(" · ");
+    const completa = Object.keys(CAMPOS[etapa] ?? {}).every((c) => !vazio(r[c]) || r[`${c}__st`] === "nao_tenho");
+    await admin.from("personalizacao").upsert({ portal_id: portalId, etapa, respostas: r, concluida: e.concluida || completa, updated_at: new Date().toISOString() }, { onConflict: "portal_id,etapa" });
+  }
+  const equipe = ((saida.equipe ?? []) as { nome: string; funcao: string }[]).filter((p) => p.nome?.trim());
+  if (equipe.length) {
+    const { count } = await admin.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId);
+    if (!count) await admin.from("loja_equipe").insert(equipe.map((p) => ({ portal_id: portalId, nome: p.nome.trim(), funcao: p.funcao?.trim() || null, ativo: true })));
+  }
+  const c = (saida.contato ?? {}) as { whatsapp?: string; instagram?: string; email?: string };
+  const { data: portal } = await admin.from("portais").select("whatsapp, email").eq("id", portalId).single();
+  const novo: Record<string, string> = {};
+  if (!portal?.whatsapp && c.whatsapp?.trim()) novo.whatsapp = c.whatsapp.trim();
+  if (!portal?.email && c.email?.trim()) novo.email = c.email.trim();
+  if (Object.keys(novo).length) await admin.from("portais").update(novo).eq("id", portalId);
+  if (c.instagram?.trim()) await admin.from("fichas").update({ instagram: c.instagram.trim() }).eq("portal_id", portalId).is("instagram", null);
+}
+
 /** Confere o lote da parada; quando terminou, guarda a resposta. Devolve o estado do agente. */
 async function conferir(admin: SupabaseClient, portalId: string, ag: Record<string, unknown>) {
   const parada = ag.parada as Parada;
@@ -519,7 +669,8 @@ async function conferir(admin: SupabaseClient, portalId: string, ag: Record<stri
       const bloco = msg.content.find((b) => b.type === "text");
       if (!bloco || bloco.type !== "text") throw new Error("O Claude não devolveu a resposta.");
       const saida = lerJson(bloco.text);
-      campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : { hub: saida };
+      if (parada === "raiox") await preencher(admin, portalId, saida).catch(() => {});
+      campo = parada === "raiox" ? { raiox: saida } : parada === "perguntas" ? { perguntas: saida.perguntas } : parada === "solucao" ? { solucao: saida } : parada === "plano" ? { plano: saida } : { hub: saida };
     }
     await admin.from("diagnostico_preparo").update({ ...campo, agente, updated_at: new Date().toISOString() }).eq("portal_id", portalId);
     return "pronto";
@@ -548,7 +699,16 @@ Deno.serve(async (req) => {
   }
   if (!CHAVE) return json({ erro: "Falta a chave do Claude no Supabase." }, 412);
 
-  const { portal_id, parada, conferir: so_conferir, continuar } = await req.json().catch(() => ({}));
+  const { portal_id, parada, conferir: so_conferir, continuar, medir } = await req.json().catch(() => ({}));
+  // Conferência sem custo (só a chave interna): monta o pedido da parada, conta e devolve o que coube, sem enviar ao Claude.
+  if (medir && liberado && portal_id && PARADAS.includes(parada)) {
+    try {
+      const pd = await pedido(admin, portal_id, parada as Parada, new Date().toISOString());
+      return json({ tokens: pd.tokens, lidos: pd.lidos, fora: pd.avisos.length, contagens: pd.contagens, avisos: pd.avisos });
+    } catch (e) {
+      return json({ erro: (e as Error).message });
+    }
+  }
   if (so_conferir) {
     if (!portal_id) return json({ erro: "Informe a loja." }, 400);
     const { data } = await admin.from("diagnostico_preparo").select("agente").eq("portal_id", portal_id).maybeSingle();

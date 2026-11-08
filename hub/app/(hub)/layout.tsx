@@ -6,11 +6,12 @@ import { useEffect, useState } from "react";
 import { Bloqueado } from "@/components/Bloqueado";
 import { Menu, grupoDaPagina, grupos } from "@/components/Menu";
 import { Ferramentas } from "@/components/Ferramentas";
-import { Carregando, HubProvider, desvio, useHub } from "@/lib/hub";
+import { NovaVersao } from "@/components/NovaVersao";
+import { Carregando, HubProvider, desvio, emDemonstracao, useHub } from "@/lib/hub";
 import { ETAPAS } from "@/lib/conteudo";
-import { liberado, requisito } from "@/lib/entrada";
+import { emOnboarding, podeAbrir, requisito } from "@/lib/entrada";
 import { buscarCursoAberto } from "@/lib/curso";
-import { bussolaFechada } from "@/lib/bussola";
+import { areaFechada } from "@/lib/bussola";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 /** Páginas que abrem mesmo antes do vídeo de boas-vindas. */
@@ -25,10 +26,15 @@ function Casca({ children }: { children: React.ReactNode }) {
   const equipe = hub.equipe && (!hub.comoLoja || areaEquipe);
   const destino = desvio(caminho, { ...hub, equipe });
   // A loja (ou a equipe vendo como a loja) passa pela entrada; a equipe vê tudo.
-  const ent = !equipe && hub.portal && !hub.soCaixa ? hub.entrada : null;
-  const req = requisito(caminho);
+  const entReal = !equipe && hub.portal && !hub.soCaixa ? hub.entrada : null;
+  // Demonstração do onboarding: o vídeo de boas-vindas não trava as telas (a Claudia mostra cada etapa).
+  const demo = emDemonstracao();
+  const ent = entReal && demo ? { ...entReal, video: true } : entReal;
+  // Fora do onboarding a página fechada mostra o caminho até o Diagnóstico.
+  const req = requisito(caminho) ?? (ent && !podeAbrir(caminho, ent) ? "diagnostico" : null);
   const semVideo = !!ent && !ent.video && !ent.livre && !ANTES_DO_VIDEO.some((b) => caminho.startsWith(b));
-  const travado = !!ent && !!req && !liberado(req, ent);
+  const travado = !!ent && !podeAbrir(caminho, ent);
+  const onboarding = emOnboarding(ent);
   const completa = !ent || ent.livre || (ent.video && ent.loja && ent.equipe);
 
   useEffect(() => { if (destino) router.replace(destino); }, [destino, router]);
@@ -53,14 +59,13 @@ function Casca({ children }: { children: React.ReactNode }) {
   const area = !equipe && hub.portal?.menu_trancado?.length
     ? grupoDaPagina(grupos(false, true, hub.persFaltam, hub.portal.tipo === "Consultoria", hub.estudio, hub.portal.tipo === "Curso", hub.portal.canais ?? []), caminho)
     : undefined;
-  const areaTrancada = !equipe && hub.portal && bussolaFechada(caminho) ? { rotulo: "A Bússola do gestor" }
+  const areaTrancada = !equipe && hub.portal && areaFechada(caminho) ? { rotulo: areaFechada(caminho)! }
     : area && hub.portal?.menu_trancado?.includes(area.id) ? area : null;
 
   const trava = (href: string) => {
-    if (!equipe && hub.portal && bussolaFechada(href)) return true;
+    if (!equipe && hub.portal && areaFechada(href)) return true;
     if (!ent) return false;
-    const r = requisito(href.split("?")[0]);
-    return !!r && !liberado(r, ent);
+    return !podeAbrir(href.split("?")[0], ent);
   };
 
   // Acesso só do caixa: sem menu, só o Fechamento de caixa da loja.
@@ -78,10 +83,10 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={hub.portal?.menu_oculto ?? []} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent}
+      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding} semEquipe={!!hub.portal?.sem_equipe} apoioConteudo={hub.portal?.apoio_conteudo} vendaDiaria={!!hub.portal?.venda_diaria}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
-        {hub.apresentacao ? (
+        {demo ? null : hub.apresentacao ? (
           <button type="button" className="sair-apresentacao" onClick={() => hub.modoApresentacao(false)} title="Sair do modo apresentação (Esc)">✕</button>
         ) : hub.comoLoja && hub.portal ? (
           <div className="faixa equipe">
@@ -105,11 +110,22 @@ function Casca({ children }: { children: React.ReactNode }) {
         ) : null}
         <Ferramentas temPortal={!!hub.portal} equipe={equipe} />
         <main className="conteudo">
+          {/* Portal com mais de uma loja: a loja escolhida aqui vale para o portal inteiro (planner, foco, caixa, clientes…). */}
+          {(hub.portal?.lojas ?? []).length > 1 && (
+            <div className="loja-foco" role="group" aria-label="Ver o portal de qual loja">
+              <small className="mudo">Vendo:</small>
+              {["", ...(hub.portal?.lojas ?? [])].map((l) => (
+                <button key={l || "todas"} type="button" className={`chip ${hub.lojaFoco === l ? "escolhido" : ""}`} aria-pressed={hub.lojaFoco === l} onClick={() => hub.escolherLoja(l)}>
+                  {l || ((hub.portal?.lojas ?? []).length === 2 ? "As duas lojas" : "Todas as lojas")}
+                </button>
+              ))}
+            </div>
+          )}
           {destino || semVideo ? <Carregando /> : travado && ent && req ? <Bloqueado req={req} entrada={ent} faltamEtapas={hub.persFaltam} /> : areaTrancada ? (
             <div className="card" style={{ textAlign: "center", padding: 40, marginTop: 24 }}>
               <div style={{ fontSize: 40 }}>🔒</div>
               <h2 style={{ margin: "8px 0" }}>{areaTrancada.rotulo} abre em breve</h2>
-              <p className="mudo" style={{ margin: 0 }}>A Camilla libera esta parte no momento certo da sua consultoria.</p>
+              <p className="mudo" style={{ margin: 0 }}>A Camilla libera esta parte no momento certo da sua jornada.</p>
             </div>
           ) : children}
         </main>
@@ -122,6 +138,7 @@ export default function HubLayout({ children }: { children: React.ReactNode }) {
   return (
     <HubProvider>
       <Casca>{children}</Casca>
+      <NovaVersao />
     </HubProvider>
   );
 }

@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { moeda } from "@/lib/formato";
 import {
   PA_IDEAL, arredondarGanho, buscarCaixa, daLoja, diagnosticar, fmtPa, fraseFoco, indicadores, mesDeHoje, mesValido, nomeMes, numeroDe,
@@ -21,8 +21,7 @@ const FOCOS: Record<Foco["tipo"], { titulo: string; resumo: string; acoes: Acao[
     titulo: "Vender mais peças em cada venda",
     resumo: "O PA está abaixo de 2,5: quem compra leva uma peça e vai embora. O foco é a venda adicional, o leva junto.",
     acoes: [
-      { texto: "Em todo atendimento, ofereça a peça que leva junto: a que completa o look que já foi escolhido." },
-      { texto: "Treine o time com os scripts de venda adicional e use todos os dias.", link: { href: "/scripts", rotulo: "Abrir os scripts" } },
+      { texto: "Em todo atendimento, ofereça a peça que leva junto: a que combina com o que ela já escolheu." },
       { texto: "Rode uma gincana de PA por uma semana, com o prêmio anunciado antes.", link: { href: gincanas("Peças por atendimento"), rotulo: "Ver gincanas de PA" } },
       { texto: "Olhe o PA do fechamento de cada dia e comente com o time na manhã seguinte." },
     ],
@@ -77,7 +76,8 @@ function Resultado() {
   const varias = lojas.length > 1;
   const todas = lojas.length === 2 ? "As duas lojas" : "Todas as lojas";
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) && m <= mesDeHoje() ? m : mesDeHoje(); });
-  const [loja, setLoja] = useState(() => { const l = params.get("loja"); return l && lojas.includes(l) ? l : varias ? lojas[0] : ""; });
+  // A loja em foco vale para o portal inteiro (seletor no topo).
+  const [loja, setLoja] = useLojaFoco();
   const { dados } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
   if (!dados) return <Carregando />;
 
@@ -240,7 +240,7 @@ function Resultado() {
                 <p className="mudo" style={{ marginTop: 0 }}>{FOCOS[f.tipo].resumo}</p>
                 <p style={NUM}>{fraseFoco(f, mesFechado)}</p>
                 <ol style={{ paddingLeft: 18, margin: 0 }}>
-                  {FOCOS[f.tipo].acoes.map((a) => (
+                  {FOCOS[f.tipo].acoes.filter((a) => !portal.sem_equipe || !/time|gincana/i.test(a.texto)).map((a) => (
                     <li key={a.texto} style={{ marginBottom: 6 }}>
                       {a.texto}{a.link && <> <Link href={a.link.href}>{a.link.rotulo} →</Link></>}
                     </li>

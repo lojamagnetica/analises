@@ -20,7 +20,9 @@ export type Entrada = {
 export type VideoBoasVindas = { url: string; segundos: number };
 
 /** Páginas que nunca travam. */
-const SEMPRE = ["/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
+/** Loja na mão (Vendas do dia, Crediário, Compras): a loja registra desde o primeiro dia. */
+export const LOJA_NA_MAO = ["/gestao/vendas", "/gestao/crediario", "/gestao/minhas-compras", "/gestao/estoque-loja"];
+const SEMPRE = [...LOJA_NA_MAO, "/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
 /** Só a página exata (as subpáginas seguem as regras). */
 const SEMPRE_EXATA = ["/conteudo"];
 /** Do mais específico para o mais geral: a primeira regra que casa decide. O que não está aqui espera o Diagnóstico. */
@@ -35,6 +37,17 @@ const casa = (caminho: string, base: string) => caminho === base || caminho.star
 export function requisito(caminho: string): Requisito | null {
   if (SEMPRE.some((b) => casa(caminho, b)) || SEMPRE_EXATA.includes(caminho)) return null;
   return REGRAS.find(([b]) => casa(caminho, b))?.[1] ?? "diagnostico";
+}
+
+/** Onboarding: enquanto o Diagnóstico não sai, a loja vê só a boas-vindas e as áreas onde manda arquivos e informações. */
+const ABERTAS_NO_ONBOARDING = [...LOJA_NA_MAO, "/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/assistente", "/duvidas", "/personalizacao", "/pessoas/teste"];
+export const emOnboarding = (e: Entrada | null | undefined) => !!e && !e.livre && !e.diagnostico;
+export const abertaNoOnboarding = (caminho: string) => ABERTAS_NO_ONBOARDING.some((b) => casa(caminho, b));
+
+/** A página abre para esta loja agora? Junta o onboarding com as regras de cada área. */
+export function podeAbrir(caminho: string, e: Entrada) {
+  if (emOnboarding(e) && !abertaNoOnboarding(caminho)) return false;
+  return liberado(requisito(caminho), e);
 }
 
 /** A página pode abrir? Equipe e lojas liberadas pela equipe veem tudo. */
@@ -74,7 +87,7 @@ export function videoVistoNaAba(portalId: string) {
   try { return sessionStorage.getItem(chaveVideo(portalId)) === "1"; } catch { return false; }
 }
 
-export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean): Promise<Entrada> {
+export async function buscarEntrada(portalId: string, etapasFeitas: boolean, comoLoja: boolean, semEquipe = false): Promise<Entrada> {
   const sb = supabaseBrowser();
   const [{ data: e }, { count }, { data: diag }] = await Promise.all([
     sb.from("portal_entrada").select("video_visto_em, livre, dados_enviados_em").eq("portal_id", portalId).maybeSingle(),
@@ -85,7 +98,8 @@ export async function buscarEntrada(portalId: string, etapasFeitas: boolean, com
   return {
     video: !!e?.video_visto_em || (comoLoja && videoVistoNaAba(portalId)),
     loja: etapasFeitas,
-    equipe: pessoas > 0,
+    // Loja sem equipe: o passo de cadastrar o time não existe para ela.
+    equipe: semEquipe || pessoas > 0,
     diagnostico: (diag ?? []).length > 0,
     diagnosticoEm: (diag ?? []).map((d) => d.liberada_em as string | null).filter(Boolean).sort()[0] ?? null,
     livre: !!e?.livre,

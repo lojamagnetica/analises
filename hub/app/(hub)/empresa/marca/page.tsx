@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Copiar } from "@/components/Copiar";
 import { GeradorCracha } from "@/components/GeradorCracha";
 import { Titulo } from "@/components/Titulo";
@@ -72,7 +73,8 @@ export default function Marca() {
 
       <div className="card mb">
         <h2>Crachá de boas-vindas</h2>
-        <p className="mudo" style={{ fontSize: 14 }}>Para cada cliente nova: escolha o plano (Premium, Gold, Start ou Consultoria), coloque o nome, a turma ou a loja e a foto, e baixe o story pronto para postar e mandar no WhatsApp.</p>
+        <div className="aviso mb" style={{ fontSize: 14 }}><b>Cliente nova?</b> Faça o post de entrada pela <Link href="/equipe/central">Central do Cliente</Link> (ficha da cliente › Post de entrada): ele já vem com o nome, a foto e o plano dela e marca o passo no checklist.</div>
+        <p className="mudo" style={{ fontSize: 14 }}>Aqui fica o crachá para a casa: sócios, educadores, turma e bastidores. Escolha o plano, coloque o nome e a foto e baixe o story.</p>
         <GeradorCracha />
       </div>
 

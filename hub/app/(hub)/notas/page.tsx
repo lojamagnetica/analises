@@ -17,7 +17,7 @@ export default function Notas() {
   if (!dados) return <Carregando />;
   return (
     <>
-      <Titulo titulo="Notas" sub="Seu caderno dentro do Hub, no lugar das páginas soltas do Notion." />
+      <Titulo titulo="Notas" sub="Seu caderno dentro do Hub: anote, edite e encontre tudo num lugar só." />
       <form ref={form} className="card mb" action={async (f) => { await notaCriar(portal.id, userId, f); form.current?.reset(); recarregar(); }}>
         <input type="text" name="titulo" placeholder="Título" />
         <textarea name="conteudo" className="mt" placeholder="Escreva sua nota…" />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataCurta, diasAte, hoje } from "@/lib/formato";
 import { fimDoMes, mesDeHoje, nomeMes, somarMes, buscarCaixa } from "@/lib/caixa";
 import { buscarPessoas } from "@/lib/pessoas";
@@ -14,15 +14,17 @@ const ddmm = (iso: string) => `${iso.slice(8)}/${iso.slice(5, 7)}`;
 /** A rotina da gestão numa tela só: o que vence hoje, o caixa, os relatórios, as reuniões e as conversas individuais. */
 export default function RotinaGestao() {
   const { portal } = usePortal();
-  const lojas = portal.lojas?.length ? portal.lojas : [""];
+  const [lojaFoco] = useLojaFoco();
+  // Loja em foco (seletor no topo): só a rotina dela; com as lojas juntas, todas.
+  const lojas = portal.lojas?.length ? (lojaFoco ? [lojaFoco] : portal.lojas) : [""];
   const h = hoje(), mes = mesDeHoje(), seg = segundaDa(h), fechado = somarMes(mes, -1);
   const { dados } = useDados(async () => {
     const [planner, caixa, pessoas, envios] = await Promise.all([
-      buscarPlanner(portal.id), buscarCaixa(portal.id, mes), buscarPessoas(portal.id),
+      buscarPlanner(portal.id, lojaFoco), buscarCaixa(portal.id, mes), buscarPessoas(portal.id),
       Promise.all(lojas.map(async (l) => ({ l, sem: await listarEnvios(portal.id, l, seg), mes: await listarEnvios(portal.id, l, fechado) }))),
     ]);
     return { planner, caixa, pessoas, envios };
-  }, [portal.id]);
+  }, [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
 
   const { planner, caixa, pessoas, envios } = dados;

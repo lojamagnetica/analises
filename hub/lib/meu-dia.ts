@@ -3,6 +3,7 @@
 // Meu dia: o norte de gestão da loja. Junta o Fechamento de caixa (por vendedora), a meta do PLANEJE AQUI,
 // o perfil de cada vendedora, a base de clientes e as ações do mês, e diz o que fazer hoje.
 // As regras e os textos ficam aqui em cima, num lugar só, para a Camilla revisar.
+import { buscarPlanner } from "@/lib/planner";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES } from "@/lib/conteudo";
 import { hoje } from "@/lib/formato";
@@ -35,7 +36,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
     titulo: "PA baixo",
     fala: "você está vendendo, mas a cliente sai quase sempre com uma peça só.",
     acoes: [
-      "Oferecer o look completo em todo atendimento: a peça e o que combina",
+      "Oferecer a peça que combina em todo atendimento: a escolhida e o que combina",
       "Meta de PA 2 até o fim da semana, conferida no fim de cada dia",
       "Treino de 10 minutos com o script da peça complementar",
     ],
@@ -86,6 +87,8 @@ export const JEITO: Record<Letra, { abre: string; fecha: string }> = {
 
 export type Config = { reuniao?: number; conteudo?: number; planejamento?: number };
 export type Rotina = { config: Config; feitos: Record<string, string[]> };
+/** Marcado no dia, na visão de todas as lojas ou de uma loja (chave "Loja:tarefa"). */
+const temFeito = (l: string[], k: string) => l.some((x) => x === k || x.endsWith(`:${k}`));
 export type Vendedora = {
   id: string; nome: string; letra: Letra | null;
   faturamento: number; vendas: number; pecas: number; meta: number | null;
@@ -96,6 +99,9 @@ export type Vendedora = {
 export type Tarefa = { chave: string; texto: string; href?: string };
 export type Atitude = { tipo: "CRM" | "Conteúdo" | "Ação"; titulo: string; texto: string; href: string; botao: string };
 
+/** Como a loja trabalha: sozinha (sem equipe), com Vendas do dia e Crediário, e quem ajuda no conteúdo. */
+export type Modo = { solo?: boolean; vendaDiaria?: boolean; apoio?: string | null };
+
 export const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 const dow = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
 
@@ -103,31 +109,55 @@ const dow = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
 
 const sb = () => supabaseBrowser();
 
-export async function buscarMeuDia(portalId: string) {
+export async function buscarMeuDia(portalId: string, modo: Modo = {}, lojaPlanner: string | null = "") {
   const agora = hoje();
   const mes = agora.slice(0, 7);
   const [caixa, plano, planoProx, { data: equipe }, { data: rot }, { data: clientes }, { data: datas }] = await Promise.all([
     buscarCaixa(portalId, mes),
     buscarPlano(portalId, mes).catch(() => null),
     buscarPlano(portalId, somarMes(mes, 1)).catch(() => null),
-    sb().from("loja_equipe").select("id, nome, perfil, funcao").eq("portal_id", portalId).eq("ativo", true).order("nome"),
+    sb().from("loja_equipe").select("id, nome, perfil, funcao, loja").eq("portal_id", portalId).eq("ativo", true).order("nome"),
     sb().from("loja_rotina").select("config, feitos").eq("portal_id", portalId).maybeSingle(),
-    sb().from("loja_clientes").select("aniversario, ultima_compra").eq("portal_id", portalId).limit(5000),
+    sb().from("loja_clientes").select("aniversario, ultima_compra, loja").eq("portal_id", portalId).limit(5000),
     sb().from("datas_comerciais").select("mes, dia, titulo"),
   ]);
+  // Planner de gestão liberado: as demandas com dia fixo entram na rotina de hoje (e substituem os dias da "Minha rotina").
+  // lojaPlanner null: várias lojas vistas juntas, sem planner (cada loja tem o seu).
+  const planner = lojaPlanner === null ? null : await buscarPlanner(portalId, lojaPlanner).catch(() => null);
+  // Crediário (loja na mão): as parcelas em aberto para cobrar.
+  const { data: cred } = modo.vendaDiaria ? await sb().from("loja_crediario").select("parcelas").eq("portal_id", portalId) : { data: [] };
   // O caixa de ontem pode ser do mês passado (dia 1).
   const ontem = somarDias(agora, -1);
   const caixaOntem = ontem.slice(0, 7) === mes ? caixa.filter((c) => c.dia === ontem) : await buscarCaixa(portalId, ontem.slice(0, 7)).then((l) => l.filter((c) => c.dia === ontem));
   return {
     agora, caixa, caixaOntem, plano, planoProx,
     // Só quem vende entra na meta e no placar da semana (administrativo e financeiro ficam de fora).
-    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null }[]),
+    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null; loja?: string | null }[]),
     rotina: { config: (rot?.config ?? {}) as Config, feitos: (rot?.feitos ?? {}) as Record<string, string[]> },
-    clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null }[],
+    clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null; loja?: string | null }[],
     datas: (datas ?? []) as { mes: number; dia: number | null; titulo: string }[],
+    parcelas: ((cred ?? []) as { parcelas: { vence: string; valor: number; pago_em: string | null }[] }[]).flatMap((c) => c.parcelas ?? []).filter((x) => !x.pago_em),
+    modo,
+    planner: planner?.liberado ? planner : null,
   };
 }
 export type DadosMeuDia = Awaited<ReturnType<typeof buscarMeuDia>>;
+
+/** Portal com mais de uma loja: o Meu dia de uma loja só (caixa dela, meta do canal com o nome dela no PLANEJE AQUI).
+ *  Pessoas e clientes sem loja marcada contam em todas. */
+export function meuDiaDaLoja(d: DadosMeuDia, loja: string): DadosMeuDia {
+  if (!loja) return d;
+  const daLojaOuSem = (x: { loja?: string | null }) => !x.loja || x.loja === loja;
+  const meta = d.plano?.dados.canais?.find((c) => c.canal === loja)?.faixas[0]?.valor ?? null;
+  const plano = d.plano && { ...d.plano, dados: { ...d.plano.dados, base: null, canais: meta ? [{ canal: "Loja", base: null, faixas: [{ valor: meta, comissao: 0, gerente: 0 }] }] : [] } };
+  return {
+    ...d, plano,
+    caixa: d.caixa.filter((c) => c.loja === loja),
+    caixaOntem: d.caixaOntem.filter((c) => c.loja === loja),
+    equipe: d.equipe.filter(daLojaOuSem),
+    clientes: d.clientes.filter(daLojaOuSem),
+  };
+}
 
 export async function salvarRotina(portalId: string, r: Rotina) {
   // Guarda só os últimos 60 dias de marcações.
@@ -211,7 +241,7 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
 
 const USO: Record<string, string> = {
   pm: "Use essa força para apresentar primeiro as peças de valor mais alto em todo atendimento.",
-  pa: "Use essa força para conduzir a cliente para o look completo.",
+  pa: "Use essa força para conduzir a cliente para levar a peça que combina.",
   volume: "Use essa força para chamar a sua carteira e trazer a cliente para a loja.",
   ok: "Use essa força para ensinar o time o que está dando certo.",
 };
@@ -256,7 +286,7 @@ export function feedback(v: Vendedora) {
         : `"O seu atendimento está funcionando: ${v.vendas} vendas, PA ${pa} e ticket ${tkm}."`;
   const solucao: Record<string, PassoFeedback> = {
     pm: { titulo: "3. A solução, mostrada na prática", dica: "Pegue uma peça que ela vende muito e mostre qual seria a opção com um valor um pouco maior que ela poderia ter oferecido, e como argumentaria (tecido, caimento, ocasião).", fala: `"Em todo atendimento, você começa pelas peças de maior valor e fala do benefício antes do preço."` },
-    pa: { titulo: "3. A solução, mostrada na prática", dica: "Pegue a peça que ela mais vende e monte com ela o look completo na frente dela: o que ofereceria junto e como falaria antes de ir para o caixa.", fala: `"Depois que a cliente escolhe, você mostra a peça que completa o look antes de ir para o caixa."` },
+    pa: { titulo: "3. A solução, mostrada na prática", dica: "Pegue a peça que ela mais vende e mostre com ela a combinação completa na frente dela: o que ofereceria junto e como falaria antes de ir para o caixa.", fala: `"Depois que a cliente escolhe, você mostra a peça que combina com a escolhida antes de ir para o caixa."` },
     volume: { titulo: "3. A solução, mostrada na prática", dica: "Escolham juntas, agora, 5 clientes da carteira dela, e ela escreve a primeira mensagem na sua frente.", fala: `"Você chama 5 clientes da sua carteira por dia e aborda toda cliente que entra em até 1 minuto."` },
     ok: { titulo: "3. O próximo desafio", dica: "Peça para ela contar o que está fazendo de diferente: é isso que vai para o time.", fala: `"O que você está fazendo de diferente? Quero que você ensine isso para o time."` },
   };
@@ -289,6 +319,7 @@ export function carteira(d: DadosMeuDia) {
 /** As 3 atitudes de atração do dia: uma de CRM, uma de conteúdo e uma de ação. */
 export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras = 0): Atitude[] {
   const c = carteira(d);
+  const solo = !!d.modo.solo;
   const out: Atitude[] = [];
   const pl = placar(d);
   const produtosPlano = (d.plano?.dados.produtos ?? []).filter(Boolean);
@@ -301,7 +332,15 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
   // Uma venda a cada 3 contatos, dividido entre quem vende: de 5 a 20 contatos por pessoa (mais que isso perde qualidade).
   const precisa = Math.ceil((vendasDia * 3) / Math.max(1, nVendedoras));
   const contatos = Math.min(20, Math.max(5, precisa));
-  out.push(atras
+  out.push(atras && solo
+    ? {
+        tipo: "CRM", titulo: `Abaixo do ritmo: chame ${contatos} clientes hoje`,
+        texto: `A loja está ${Math.round(pl.abaixo! * 100)}% abaixo do ritmo e precisa de ${vendasDia} ${vendasDia === 1 ? "venda" : "vendas"} por dia para bater a meta. Hoje você chama ${contatos} das clientes que mais compram, com ${peca}.${c.sumidas ? ` Tem também ${c.sumidas} ${c.sumidas === 1 ? "cliente sumida" : "clientes sumidas"} para resgatar.` : ""}`,
+        href: "/clientes", botao: "Abrir minhas clientes",
+      }
+    : solo && c.total === 0
+    ? { tipo: "CRM", titulo: "Comece a sua base de clientes", texto: "Toda cliente que comprar entra no cadastro, com nome e WhatsApp. É dessa lista que saem o pós-venda, as aniversariantes e as mensagens de novidade.", href: d.modo.vendaDiaria ? "/gestao/vendas" : "/clientes", botao: d.modo.vendaDiaria ? "Registrar venda com a cliente" : "Cadastrar clientes" }
+    : atras
     ? {
         tipo: "CRM", titulo: `Abaixo do ritmo: ${contatos} clientes por vendedora hoje`,
         texto: `A loja está ${Math.round(pl.abaixo! * 100)}% abaixo do ritmo e precisa de ${vendasDia} ${vendasDia === 1 ? "venda" : "vendas"} por dia para bater a meta. Dê a missão para o time: cada vendedora chama hoje ${contatos} clientes da carteira (as que mais compram, puxadas no sistema), com ${peca}.${precisa > 20 ? " Só a carteira não fecha a conta: combine também uma ação para trazer gente para a loja nesta semana." : ""}${c.sumidas ? ` Tem também ${c.sumidas} ${c.sumidas === 1 ? "cliente sumida" : "clientes sumidas"} para resgatar.` : ""}`,
@@ -321,11 +360,12 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
   const produto = produtos.length ? produtos[semanaDoDia(Number(d.agora.slice(8))) % produtos.length] : null;
   const alvo = produto ?? "as peças campeãs";
   const conteudo = problemaDaLoja === "pa"
-    ? { titulo: `Reels: 3 looks completos com ${alvo}`, texto: "Mostra a peça e o que combina: ensina a cliente a levar o look, não só a peça." }
+    ? { titulo: `Reels: 3 combinações com ${alvo}`, texto: "Mostra a peça e o que combina: ensina a cliente a levar a combinação, não só uma peça." }
     : problemaDaLoja === "pm"
       ? { titulo: `Reels: por que ${alvo} vale cada centavo`, texto: "Caimento, tecido e ocasião antes do preço. Valoriza as peças de maior valor." }
       : { titulo: `Stories de novidade com ${alvo}`, texto: "Caixinha \"quero ver\" no último story: quem responder vira atendimento no WhatsApp." };
-  out.push({ tipo: "Conteúdo", ...conteudo, texto: `${conteudo.texto}${produto ? " Produto em destaque do seu plano do mês." : ""}`, href: "/conteudo/semana", botao: "Abrir a programação" });
+  const apoio = d.modo.apoio?.trim();
+  out.push({ tipo: "Conteúdo", ...conteudo, texto: `${conteudo.texto}${produto ? " Produto em destaque do seu plano do mês." : ""}${apoio ? ` Passe para ${apoio} produzir e postar: você só separa as peças.` : ""}`, href: "/conteudo/semana", botao: apoio ? "Ver a programação" : "Abrir a programação" });
 
   // Ação: lançamento do plano chegando, data comercial chegando ou o foco da semana.
   const lanc = (d.plano?.dados.acoes ?? []).filter((a) => a.titulo && a.inicio >= d.agora && a.inicio <= somarDias(d.agora, 10)).sort((a, b) => a.inicio.localeCompare(b.inicio))[0];
@@ -337,7 +377,7 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
   out.push(lanc
     ? { tipo: "Ação", titulo: dias(lanc.inicio) ? `${lanc.titulo} em ${dias(lanc.inicio)} ${dias(lanc.inicio) === 1 ? "dia" : "dias"}` : `${lanc.titulo} começa hoje`, texto: dias(lanc.inicio) <= 3 ? "Hoje é dia de stories de espera: mostre um pedaço e diga quando abre." : "Avise a carteira e comece o desejo nos stories, sem preço ainda.", href: "/planeje", botao: "Ver o plano do mês" }
     : data
-      ? { tipo: "Ação", titulo: `${data.titulo} em ${dias(data.iso)} dias`, texto: "A campanha começa antes da data: looks para a ocasião nos stories e na vitrine a partir de hoje.", href: "/acoes", botao: "Ver as Ações do Mês" }
+      ? { tipo: "Ação", titulo: `${data.titulo} em ${dias(data.iso)} dias`, texto: "A campanha começa antes da data: peças para a ocasião nos stories e na vitrine a partir de hoje.", href: "/acoes", botao: "Ver as Ações do Mês" }
       : foco
         ? { tipo: "Ação", titulo: "Foco da semana", texto: foco, href: "/planeje", botao: "Ver o plano do mês" }
         : { tipo: "Ação", titulo: "Monte a ação do mês", texto: "Sem ação planejada para os próximos dias. Escolha uma no PLANEJE AQUI ou nas Ações do Mês.", href: "/planeje", botao: "Abrir o PLANEJE AQUI" });
@@ -347,19 +387,40 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
 /** O checklist do dia: a rotina que ela escolheu e o que os números pedem. */
 export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vendedora[]): Tarefa[] {
   const t: Tarefa[] = [];
+  const solo = !!d.modo.solo;
+  const apoio = d.modo.apoio?.trim();
   const cfg = d.rotina.config;
   const hojeDow = dow(d.agora);
   const diaDoMes = Number(d.agora.slice(8));
-  if (!d.caixaOntem.length) t.push({ chave: "caixa_ontem", texto: "Lançar o caixa de ontem", href: "/gestao/caixa" });
-  if (hojeDow !== 0) t.push({ chave: "abertura", texto: "Reunião de abertura com o time (10 min, antes de abrir)", href: "/pessoas/reunioes?m=abertura" });
-  if (p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
+  if (!d.caixaOntem.length) t.push(d.modo.vendaDiaria
+    ? { chave: "caixa_ontem", texto: "Registrar as vendas de ontem em Vendas do dia (se faltou alguma)", href: "/gestao/vendas" }
+    : { chave: "caixa_ontem", texto: "Lançar o caixa de ontem", href: "/gestao/caixa" });
+  if (d.modo.vendaDiaria) {
+    const atr = d.parcelas.filter((x) => x.vence < d.agora);
+    const deHoje = d.parcelas.filter((x) => x.vence === d.agora);
+    if (atr.length) t.push({ chave: "cred_atraso", texto: `Cobrar ${atr.length} ${atr.length === 1 ? "parcela atrasada" : "parcelas atrasadas"} do crediário (${moeda(atr.reduce((s, x) => s + Number(x.valor), 0))}): a mensagem está pronta`, href: "/gestao/crediario" });
+    if (deHoje.length) t.push({ chave: "cred_hoje", texto: `${deHoje.length} ${deHoje.length === 1 ? "parcela vence" : "parcelas vencem"} hoje: lembrar a cliente`, href: "/gestao/crediario" });
+    // Lembrete 2 dias antes do vencimento (combinado com a loja): a mensagem está pronta no Crediário.
+    const daqui2 = somarDias(d.agora, 2);
+    const em2 = d.parcelas.filter((x) => x.vence === daqui2);
+    if (em2.length) t.push({ chave: "cred_2dias", texto: `${em2.length} ${em2.length === 1 ? "parcela vence" : "parcelas vencem"} em 2 dias: mandar o lembrete (${moeda(em2.reduce((s, x) => s + Number(x.valor), 0))})`, href: "/gestao/crediario" });
+  }
+  // Pós-venda: o carimbo de conexão, em até 24 horas e sem oferecer nada.
+  if (solo) t.push({ chave: "pos_venda", texto: "Pós-venda das clientes de ontem: uma mensagem de carinho, sem oferecer nada, pedindo para salvar o seu número", href: "/clientes" });
+  // A reunião de abertura todo dia não se sustenta: no lugar, a mensagem de direção do dia no grupo (pronta abaixo).
+  if (hojeDow !== 0 && !solo) t.push({ chave: "direcao", texto: "Mandar a mensagem de direção do dia no grupo da loja (está pronta logo abaixo)" });
+  if (solo && p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
+    t.push({ chave: "reta_final", texto: `Reta final: faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo. Chame hoje as clientes que mais compram`, href: "/clientes" });
+  } else if (p.abaixo != null && p.restantes <= DIAS_RETA_FINAL && p.abaixo > 0.1) {
     t.push({ chave: "reta_final", texto: `Reunião de reta final (15 min): faltam ${p.restantes} dias e a loja está ${Math.round(p.abaixo * 100)}% abaixo do ritmo`, href: "/pessoas/reunioes?m=reta_final" });
   }
-  if (cfg.reuniao === hojeDow) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora (15 min cada)", href: "/pessoas/reunioes?m=individual" });
-  if (cfg.conteudo === hojeDow) t.push({ chave: "conteudo", texto: "Montar o calendário de conteúdo da semana", href: "/conteudo/semana" });
+  // Com o Planner de gestão liberado, os dias fixos vêm dele (o componente mostra as demandas de hoje).
+  const comPlanner = !!d.planner;
+  if (!comPlanner && cfg.reuniao === hojeDow && !solo) t.push({ chave: "reuniao", texto: "Reunião semanal individual com cada vendedora (15 min cada)", href: "/pessoas/reunioes?m=individual" });
+  if (!comPlanner && cfg.conteudo === hojeDow) t.push({ chave: "conteudo", texto: apoio ? `Combinar com ${apoio} o conteúdo da semana e separar as peças` : "Montar o calendário de conteúdo da semana", href: "/conteudo/semana" });
   const planoEnviado = d.planoProx && d.planoProx.status !== "rascunho";
   const proximo = MESES[Number(somarMes(d.agora.slice(0, 7), 1).slice(5, 7)) - 1].toLowerCase();
-  if (cfg.planejamento && diaDoMes >= cfg.planejamento && diaDoMes <= 20 && !planoEnviado) {
+  if (!comPlanner && cfg.planejamento && diaDoMes >= cfg.planejamento && diaDoMes <= 20 && !planoEnviado) {
     t.push({ chave: "planejamento", texto: `Montar o plano de ${proximo} no PLANEJE AQUI (até dia 20)`, href: `/planeje/mes?m=${somarMes(d.agora.slice(0, 7), 1)}` });
   }
   for (const v of vs.filter((x) => x.problema === "pa" || x.problema === "pm" || x.problema === "volume")) {
@@ -369,11 +430,11 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   // Aniversariantes do mês: convite no dia 1 e lembrete 5 dias antes do fim (a lista sai do sistema da loja).
   // Convite na primeira semana: aparece do dia 1 ao 7 até ser marcado em algum dia do mês.
   const mesAtual = d.agora.slice(0, 7);
-  const conviteFeito = Object.entries(d.rotina.feitos).some(([dia, l]) => dia.startsWith(mesAtual) && dia !== d.agora && l.includes("aniv_convite"));
-  if (diaDoMes <= 7 && !conviteFeito) t.push({ chave: "aniv_convite", texto: "Primeira semana: o time manda o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)", href: "/clientes/missoes" });
+  const conviteFeito = Object.entries(d.rotina.feitos).some(([dia, l]) => dia.startsWith(mesAtual) && dia !== d.agora && temFeito(l, "aniv_convite"));
+  if (diaDoMes <= 7 && !conviteFeito) t.push({ chave: "aniv_convite", texto: solo ? "Primeira semana: mandar o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)" : "Primeira semana: o time manda o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)", href: solo ? "/clientes" : "/clientes/missoes" });
   const fimMes = Number(fimDoMes(d.agora.slice(0, 7)).slice(8));
-  if (diaDoMes === fimMes - 5) t.push({ chave: "aniv_lembrete", texto: "Lembrete para as aniversariantes do mês que ainda não usaram o presente (faltam 5 dias para expirar)", href: "/clientes/missoes" });
-  if (diaDoMes === 25) t.push({ chave: "aniv_lista", texto: "Puxar no sistema os aniversariantes do mês seguinte e dividir pela carteira de cada vendedora" });
+  if (diaDoMes === fimMes - 5) t.push({ chave: "aniv_lembrete", texto: "Lembrete para as aniversariantes do mês que ainda não usaram o presente (faltam 5 dias para expirar)", href: solo ? "/clientes" : "/clientes/missoes" });
+  if (diaDoMes === 25) t.push({ chave: "aniv_lista", texto: solo ? "Separar as aniversariantes do mês seguinte em Minhas clientes" : "Puxar no sistema os aniversariantes do mês seguinte e dividir pela carteira de cada vendedora", href: solo ? "/clientes" : undefined });
   if (c.aniversarioHoje) t.push({ chave: "aniversario", texto: `Mandar só o parabéns (sem falar do presente) para ${c.aniversarioHoje} ${c.aniversarioHoje === 1 ? "aniversariante" : "aniversariantes"} de hoje`, href: "/clientes" });
   return t;
 }
@@ -386,7 +447,7 @@ export function acompanhamento(d: DadosMeuDia) {
     if (diaSemana == null) return null;
     let previstos = 0;
     for (let i = 1; i <= Number(d.agora.slice(8)); i++) if (dow(`${mes}-${String(i).padStart(2, "0")}`) === diaSemana) previstos++;
-    const feitos = Object.entries(d.rotina.feitos).filter(([dia, l]) => dia.startsWith(mes) && l.includes(chave)).length;
+    const feitos = Object.entries(d.rotina.feitos).filter(([dia, l]) => dia.startsWith(mes) && temFeito(l, chave)).length;
     return { feitos, previstos };
   };
   return { reuniao: conta("reuniao", cfg.reuniao), conteudo: conta("conteudo", cfg.conteudo) };

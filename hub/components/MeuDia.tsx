@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Carregando, useDados } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco } from "@/lib/hub";
 import { dataCurta, moeda } from "@/lib/formato";
+import { Copiar } from "@/components/Copiar";
 import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
+import { deHoje, frentesDa, salvarPlanner, type Planner } from "@/lib/planner";
 import {
-  DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
+  type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, meuDiaDaLoja, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
 } from "@/lib/meu-dia";
 
@@ -16,25 +18,54 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respostas | undefined }) {
-  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId), m: await buscarMetodo().catch(() => null) }), [portalId]);
+export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
+  // Mais de uma loja: vale a loja em foco do portal inteiro (seletor no topo).
+  const [loja] = useLojaFoco();
+  // O planner é de cada loja: com as lojas juntas, ele não aparece aqui.
+  const lojaPlanner = lojas.length > 1 ? (loja || null) : "";
+  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo, lojaPlanner), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio, lojaPlanner]);
   const [rotina, setRotina] = useState<Rotina | null>(null);
+  const [plannerMarcado, setPlanner] = useState<Planner | null | undefined>(undefined);
   const [erro, setErro] = useState("");
   if (!dados) return <Carregando />;
-  const { d, m } = dados;
+  const { m } = dados;
+  const d = meuDiaDaLoja(dados.d, loja);
   const r = rotina ?? d.rotina;
+  // A rotina marcada de cada loja fica separada.
+  const ch = (k: string) => (loja ? `${loja}:${k}` : k);
   const p = placar(d);
-  const vs = vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
-  const padrao = padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
+  // Loja sem equipe: a dona não recebe feedback de vendedora sobre ela mesma.
+  const vs = modo.solo ? [] : vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
+  const padrao = modo.solo ? null : padraoPm(d, pmDoEstoque(estoque)?.valor ?? null);
   const lista = tarefas(d, p, vs);
   const feitosHoje = r.feitos[d.agora] ?? [];
   const at = atitudes(d, problemaDaLoja(vs, d.caixa), vs.filter((v) => v.vendas > 0).length);
   const ac = acompanhamento({ ...d, rotina: r });
+  // Mensagem de direção do dia: os números da loja já preenchidos; o resto a gestora completa.
+  const direcao = [
+    "Bom dia, time! ☀️",
+    p.ontem != null ? `Ontem: ${moeda(p.ontem)}${p.metaOntem ? ` de ${moeda(p.metaOntem)} da meta` : ""}.` : "Ontem: [venda de ontem].",
+    "Destaque: [nome], que [o que fez]. 👏",
+    p.meta ? `Hoje a meta é ${moeda(p.metaHoje ?? 0)}. Faltam ${moeda(Math.max(0, p.meta - p.vendido))} para a meta do mês, em ${p.restantes} ${p.restantes === 1 ? "dia" : "dias"}.` : "Hoje a meta é [meta de hoje].",
+    "Foco de hoje: [uma ação concreta].",
+    "Missão das clientes: [x] contatos da sua carteira até as [hora].",
+    "Conto com vocês! 💪",
+  ].join("\n");
   const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d.agora}T12:00:00Z`));
 
   const salvar = async (nova: Rotina) => {
     setRotina(nova); setErro("");
     try { await salvarRotina(portalId, nova); } catch (e) { setErro((e as Error).message); }
+  };
+  // As demandas de hoje do Planner de gestão (quando liberado): marcar aqui marca no planner.
+  const planner = plannerMarcado === undefined ? dados.d.planner : plannerMarcado;
+  const doPlanner = planner ? deHoje(planner, d.agora).filter((b) => frentesDa(canais, planner.blocos).includes(b.frente)) : [];
+  const feitosPlanner = planner?.feitos[d.agora] ?? [];
+  const marcarPlanner = async (id: string, feito: boolean) => {
+    if (!planner) return;
+    const novo = { ...planner, feitos: { ...planner.feitos, [d.agora]: feito ? [...new Set([...feitosPlanner, id])] : feitosPlanner.filter((x) => x !== id) } };
+    setPlanner(novo); setErro("");
+    try { await salvarPlanner(portalId, novo, lojaPlanner ?? ""); } catch (e) { setErro((e as Error).message); }
   };
   const marcar = (chave: string, feito: boolean) =>
     salvar({ ...r, feitos: { ...r.feitos, [d.agora]: feito ? [...new Set([...feitosHoje, chave])] : feitosHoje.filter((x) => x !== chave) } });
@@ -42,7 +73,8 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
 
   return (
     <>
-      <div className="secao">Meu dia · {semana}, {dataCurta(d.agora)}</div>
+      <div className="secao">Meu dia · {semana}, {dataCurta(d.agora)}{loja ? ` · ${loja}` : ""}</div>
+      {lojaPlanner === null && <p className="ajuda mb">Cada loja tem o seu planner de gestão: escolha a loja no topo para ver as demandas de hoje dela.</p>}
       {erro && <div className="aviso mb">{erro}</div>}
 
       {!p.meta ? (
@@ -58,7 +90,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
             {p.deHoje > 0 && <small>Parcial lançada: {moeda(p.deHoje)} · faltam {moeda(Math.max(0, (p.metaHoje ?? 0) - p.deHoje))}</small>}
             {p.ontem != null
               ? <div><small>Ontem: <b>{moeda(p.ontem)}</b>{p.metaOntem ? (p.ontem >= p.metaOntem ? " ✓ bateu a meta" : <span style={{ color: "var(--red)" }}> · {moeda(p.metaOntem - p.ontem)} abaixo</span>) : ""}</small></div>
-              : <div><small style={{ color: "var(--red)" }}>O caixa de ontem não foi lançado</small></div>}
+              : <div><small style={{ color: "var(--red)" }}>{modo.vendaDiaria ? "Nenhuma venda registrada ontem" : "O caixa de ontem não foi lançado"}</small></div>}
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
             <small className="mudo">No mês · meta {moeda(p.meta)}</small>
@@ -76,12 +108,31 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
 
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)" }}>
         <h3 style={{ marginTop: 0 }}>✅ Sua rotina de hoje</h3>
-        {!lista.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
+        {!lista.length && !doPlanner.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
+        {!modo.solo && new Date(`${d.agora}T12:00:00Z`).getUTCDay() !== 0 && (
+          <details className="mt" style={{ marginBottom: 6 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 600 }}>Mensagem de direção de hoje, pronta para o grupo</summary>
+            <div className="card mt" style={{ whiteSpace: "pre-wrap", background: "var(--soft)", fontSize: 14 }}>{direcao}</div>
+            <Copiar texto={direcao} rotulo="Copiar a mensagem" />
+            <p className="ajuda" style={{ margin: "6px 0 0" }}>Troque o que está entre colchetes. Reconheça alguém pelo nome e diga uma ação concreta: a direção vale mesmo quando você está fora da loja.</p>
+          </details>
+        )}
+        {doPlanner.map((b) => {
+          const feito = feitosPlanner.includes(b.id);
+          return (
+            <div key={b.id} className="marcar" style={{ cursor: "default", gap: 10 }}>
+              <input type="checkbox" checked={feito} onChange={(e) => marcarPlanner(b.id, e.target.checked)} aria-label={b.titulo} />
+              <span style={feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
+                {b.titulo}{b.detalhe ? <span className="mudo"> · {b.detalhe}</span> : null}{!feito && <> · <Link className="link-loja" href="/consultoria/planner">como fazer</Link></>}
+              </span>
+            </div>
+          );
+        })}
         {lista.map((t) => {
-          const feito = feitosHoje.includes(t.chave);
+          const feito = feitosHoje.includes(ch(t.chave));
           return (
             <div key={t.chave} className="marcar" style={{ cursor: "default", gap: 10 }}>
-              <input type="checkbox" checked={feito} onChange={(e) => marcar(t.chave, e.target.checked)} aria-label={t.texto} />
+              <input type="checkbox" checked={feito} onChange={(e) => marcar(ch(t.chave), e.target.checked)} aria-label={t.texto} />
               <span style={feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
                 {t.texto}{t.href && !feito && <> · <Link className="link-loja" href={t.href}>abrir</Link></>}
               </span>
@@ -141,7 +192,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
           </div>
         </>
       )}
-      {vs.length === 0 && (
+      {vs.length === 0 && !modo.solo && (
         <Link href="/pessoas" className="card mb linha entre" style={{ textDecoration: "none", color: "inherit" }}>
           <span>Cadastre o seu time em <b>Minha equipe</b> e lance o caixa por vendedora para ver o feedback de cada uma aqui.</span>
           <span className="btn s peq">Cadastrar</span>
@@ -160,19 +211,25 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
         ))}
       </div>
 
+      {planner ? (
+        <Link href="/consultoria/planner" className="card mb linha entre" style={{ textDecoration: "none", color: "inherit" }}>
+          <span><b>Minha rotina de gestão</b> <span className="mudo">· os dias fixos ficam no Planner de gestão</span></span>
+          <span className="btn s peq">Abrir o planner</span>
+        </Link>
+      ) : (
       <details className="card mb">
         <summary style={{ cursor: "pointer" }}><b>Minha rotina</b> <span className="mudo">· os dias fixos da sua gestão: o Hub te lembra e acompanha</span></summary>
         <div className="grade g3 mt" style={{ gap: 12 }}>
-          <div>
+          {!modo.solo && <div>
             <label className="rotulo" htmlFor="rot-reuniao">Reunião semanal individual</label>
             <select id="rot-reuniao" value={r.config.reuniao ?? ""} onChange={(e) => mudarConfig({ ...r.config, reuniao: e.target.value === "" ? undefined : Number(e.target.value) })}>
               <option value="">Escolha o dia</option>
               {[1, 2, 3, 4, 5, 6, 0].map((x) => <option key={x} value={x}>Toda {DIAS[x]}</option>)}
             </select>
             {ac.reuniao && <small className="mudo">Este mês: {ac.reuniao.feitos} de {ac.reuniao.previstos} feitas</small>}
-          </div>
+          </div>}
           <div>
-            <label className="rotulo" htmlFor="rot-conteudo">Calendário de conteúdo da semana</label>
+            <label className="rotulo" htmlFor="rot-conteudo">{modo.apoio ? `Combinar o conteúdo com ${modo.apoio}` : "Calendário de conteúdo da semana"}</label>
             <select id="rot-conteudo" value={r.config.conteudo ?? ""} onChange={(e) => mudarConfig({ ...r.config, conteudo: e.target.value === "" ? undefined : Number(e.target.value) })}>
               <option value="">Escolha o dia</option>
               {[1, 2, 3, 4, 5, 6, 0].map((x) => <option key={x} value={x}>Toda {DIAS[x]}</option>)}
@@ -191,6 +248,7 @@ export function MeuDia({ portalId, estoque }: { portalId: string; estoque: Respo
         <p className="ajuda">No dia escolhido, a tarefa aparece em &quot;Sua rotina de hoje&quot;. Marque quando fizer: o Hub conta quantas vezes você cumpriu no mês.</p>
         <button type="button" className="btn s peq" onClick={recarregar}>Atualizar</button>
       </details>
+      )}
     </>
   );
 }

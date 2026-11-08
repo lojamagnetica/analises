@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Excluir } from "@/components/Excluir";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { MESES_ABREV, dataHora, moeda } from "@/lib/formato";
 import { nomeMes, numeroDe } from "@/lib/caixa";
 import { MESES_PLANO, calcularOtb, mesesComVenda, resumoOtb, type PlanoOtb } from "@/lib/otb-conta";
@@ -26,7 +26,7 @@ function Valor({ valor, mudar, rotulo }: { valor: number; mudar: (n: number) => 
 export function GuiaCompras() {
   const { portal, pers, nome } = usePortal();
   const lojas = (portal.lojas ?? []).length > 1 ? portal.lojas : [""];
-  const [loja, setLoja] = useState(lojas[0]);
+  const [loja, setLoja] = useLojaFoco(true);
   const { dados, recarregar } = useDados(() => buscarOtb(portal.id, loja, pers), [portal.id, loja]);
   const [p, setP] = useState<PlanoOtb | null>(null);
   const [sujo, setSujo] = useState(false);

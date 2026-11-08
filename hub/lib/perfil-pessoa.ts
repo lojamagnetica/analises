@@ -38,7 +38,7 @@ export const RELATORIO_PERFIL: Record<Letra, TextoPerfil> = {
     venda: {
       diferenciais: ["Facilidade para criar vínculo e fidelizar clientes", "Comunicação envolvente, inclusive em conteúdo para as redes", "Contribuição para o clima e a energia da equipe"],
       atencao: ["Conduzir o atendimento até a oferta de peças complementares", "Organização de registros e combinados", "Constância nas tarefas de rotina"],
-      potencializar: ["Use a confiança da cliente para apresentar o look completo", "Registre combinados e cadastros no momento do atendimento", "Participe da produção de conteúdo: a sua comunicação é um diferencial da loja"],
+      potencializar: ["Use a confiança da cliente para apresentar a combinação completa", "Registre combinados e cadastros no momento do atendimento", "Participe da produção de conteúdo: a sua comunicação é um diferencial da loja"],
     },
     apoio: {
       diferenciais: ["Facilidade de relacionamento com a equipe e com parceiros", "Comunicação clara e motivadora", "Abertura para novas ideias"],

@@ -12,7 +12,8 @@ import { buscarCaixa, fimDoMes, mesDeHoje, numeroDe, somarMes, type Caixa } from
 export const BUSSOLA_FECHADA = true;
 export const bussolaFechada = (href: string) => BUSSOLA_FECHADA && href.startsWith("/bussola");
 /** Outras áreas com cadeado para todas as lojas (a equipe continua vendo). */
-const FECHADAS: { href: string; rotulo: string }[] = [{ href: "/guia-marcas", rotulo: "O Guia das marcas" }];
+// O Guia das marcas saiu daqui: agora segue o cadeado da área "Nossa marca", liberada loja por loja.
+const FECHADAS: { href: string; rotulo: string }[] = [];
 export const areaFechada = (href: string) => (bussolaFechada(href) ? "A Bússola do gestor" : FECHADAS.find((f) => href.startsWith(f.href))?.rotulo ?? null);
 
 // ───── Regras (para revisar) ─────

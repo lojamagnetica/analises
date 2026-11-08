@@ -114,7 +114,7 @@ function Casca({ children }: { children: React.ReactNode }) {
             <div className="card" style={{ textAlign: "center", padding: 40, marginTop: 24 }}>
               <div style={{ fontSize: 40 }}>🔒</div>
               <h2 style={{ margin: "8px 0" }}>{areaTrancada.rotulo} abre em breve</h2>
-              <p className="mudo" style={{ margin: 0 }}>A Camilla libera esta parte no momento certo da sua consultoria.</p>
+              <p className="mudo" style={{ margin: 0 }}>A Camilla libera esta parte no momento certo da sua jornada.</p>
             </div>
           ) : children}
         </main>

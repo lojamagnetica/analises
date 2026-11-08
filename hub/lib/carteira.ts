@@ -18,7 +18,7 @@ export const FUNDAMENTOS = [
 export type Plano = { id: string; nome: string; tipo: string; meses: number | null; valor: number | null; vendendo: boolean; ordem: number };
 export type Contrato = {
   id: string; portal_id: string; plano_id: string | null; inicio: string | null; fim: string | null;
-  valor: number | null; condicao: string | null; status: "Ativo" | "Encerrado" | "Renovado";
+  valor: number | null; condicao: string | null; status: "Ativo" | "Encerrado" | "Renovado"; arquivo?: string | null;
 };
 export type Ficha = {
   portal_id: string; plano_id: string | null; programa_notion: string | null; jornada: string | null;

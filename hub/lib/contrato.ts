@@ -4,7 +4,7 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { diasAte, hoje } from "@/lib/formato";
 
-export type MeuContrato = { id: string; plano: string; tipo: string; meses: number | null; inicio: string | null; fim: string | null; status: string; renovacao_pedida: boolean };
+export type MeuContrato = { id: string; plano: string; tipo: string; meses: number | null; inicio: string | null; fim: string | null; status: string; renovacao_pedida: boolean; arquivo: string | null };
 
 /** Quantos dias antes do fim aparece o aviso de renovação. */
 export const AVISO_RENOVACAO = 45;
@@ -43,3 +43,9 @@ export function tempoDoContrato(c: Pick<MeuContrato, "inicio" | "fim" | "meses">
 
 /** Mostra o aviso de renovação: contrato ativo a 45 dias ou menos do fim. */
 export const pertoDoFim = (c: MeuContrato | null) => !!c?.fim && diasAte(c.fim) <= AVISO_RENOVACAO && diasAte(c.fim) >= 0;
+
+/** Abre o contrato assinado (link que vale 5 minutos). */
+export async function abrirContratoAssinado(caminho: string) {
+  const { data } = await supabaseBrowser().storage.from("relatorios").createSignedUrl(caminho, 300);
+  if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener");
+}

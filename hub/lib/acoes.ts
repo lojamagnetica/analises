@@ -318,6 +318,24 @@ export async function contratoApagar(id: string) {
   await sb().from("contratos").delete().eq("id", id);
 }
 
+/** Anexa o contrato assinado (PDF ou foto). A cliente vê em "Contrato e renovação". Troca o anterior, se houver. */
+export async function contratoAnexar(portalId: string, id: string, arquivo: File, anterior?: string | null) {
+  if (!arquivo.size) throw new Error("Escolha o arquivo do contrato assinado.");
+  if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo passa de 25 MB.");
+  const limpo = arquivo.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
+  const caminho = `${portalId}/contrato/${Date.now()}__${limpo}`;
+  const { error } = await sb().storage.from("relatorios").upload(caminho, arquivo, { upsert: false });
+  if (error) throw new Error("Não deu para subir o arquivo. Confira a internet e tente de novo.");
+  const { error: e2 } = await sb().from("contratos").update({ arquivo: caminho }).eq("id", id);
+  if (e2) { await sb().storage.from("relatorios").remove([caminho]); throw new Error(e2.message); }
+  if (anterior) await sb().storage.from("relatorios").remove([anterior]);
+}
+export async function contratoRemoverAnexo(id: string, caminho: string) {
+  const { error } = await sb().from("contratos").update({ arquivo: null }).eq("id", id);
+  if (error) throw new Error(error.message);
+  await sb().storage.from("relatorios").remove([caminho]);
+}
+
 /** Link de acesso para uma pessoa nova da equipe; a função "acesso" já dá a ela o papel de equipe. */
 export async function convidarEquipe(form: FormData) {
   const email = txt(form, "email", 200).toLowerCase();

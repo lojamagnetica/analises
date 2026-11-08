@@ -4,7 +4,7 @@ import { Renovacao } from "@/components/Renovacao";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
-import { buscarMeuContrato, pertoDoFim, tempoDoContrato, type MeuContrato } from "@/lib/contrato";
+import { abrirContratoAssinado, buscarMeuContrato, pertoDoFim, tempoDoContrato, type MeuContrato } from "@/lib/contrato";
 
 const SELO: Record<string, string> = { Ativo: "andamento", Renovado: "feito", Encerrado: "espera" };
 
@@ -44,6 +44,7 @@ export default function Contrato() {
             <div className="kpi"><small>Termina em</small><b style={{ fontSize: 22 }}>{dia(atual.fim)}</b></div>
             <div className="kpi"><small>Faltam</small><b style={{ fontSize: 22 }}>{t ? `${t.faltam} dia${t.faltam === 1 ? "" : "s"}` : "—"}</b></div>
           </div>
+          {atual.arquivo && <div className="mt"><button className="btn p peq" type="button" onClick={() => abrirContratoAssinado(atual.arquivo!)}>Abrir meu contrato assinado</button></div>}
           {t && (
             <div className="mt">
               <div className="linha entre" style={{ fontSize: 14, marginBottom: 6 }}>
@@ -63,10 +64,10 @@ export default function Contrato() {
           <div className="secao">Contratos anteriores</div>
           <div className="card tabela-wrap" style={{ maxWidth: 760 }}>
             <table className="tabela">
-              <thead><tr><th>Plano</th><th>Início</th><th>Fim</th><th>Situação</th></tr></thead>
+              <thead><tr><th>Plano</th><th>Início</th><th>Fim</th><th>Situação</th><th>Contrato</th></tr></thead>
               <tbody>
                 {anteriores.map((c) => (
-                  <tr key={c.id}><td><b>{c.plano}</b></td><td>{dia(c.inicio)}</td><td>{dia(c.fim)}</td><td><Situacao c={c} /></td></tr>
+                  <tr key={c.id}><td><b>{c.plano}</b></td><td>{dia(c.inicio)}</td><td>{dia(c.fim)}</td><td><Situacao c={c} /></td><td>{c.arquivo ? <button className="btn s peq" type="button" onClick={() => abrirContratoAssinado(c.arquivo!)}>Abrir</button> : "—"}</td></tr>
                 ))}
               </tbody>
             </table>

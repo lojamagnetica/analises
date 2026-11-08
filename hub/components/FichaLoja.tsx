@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useDados } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { contratoApagar, contratoSalvar, fichaSalvar } from "@/lib/acoes";
+import { contratoAnexar, contratoApagar, contratoRemoverAnexo, contratoSalvar, fichaSalvar } from "@/lib/acoes";
 import {
   ETAPAS_JORNADA, FUNDAMENTOS, SITUACOES, TERMOMETROS, corTermometro,
   type Contrato, type Ficha, type PessoaEquipe, type Plano,
 } from "@/lib/carteira";
 import { dia, moeda } from "@/lib/formato";
+import { abrirContratoAssinado } from "@/lib/contrato";
 
 function CamposContrato({ c, planos }: { c?: Contrato; planos: Plano[] }) {
   return (
@@ -140,7 +141,19 @@ export function FichaLoja({ portalId }: { portalId: string }) {
             <summary style={{ cursor: "pointer" }}>
               <span className={`selo ${c.status === "Ativo" ? "feito" : "espera"}`} style={{ marginRight: 8 }}>{c.status}</span>
               <b>{nomePlano(c.plano_id)}</b> · {dia(c.inicio)} a {dia(c.fim)}{c.valor ? ` · ${moeda(Number(c.valor))}` : ""}
+              {c.arquivo ? <span className="selo feito" style={{ marginLeft: 8 }}>Assinado anexado</span> : <span className="selo alerta" style={{ marginLeft: 8 }}>Falta o assinado</span>}
             </summary>
+            <div className="mt">
+              <label className="rotulo">Contrato assinado (a cliente vê no portal dela)</label>
+              {c.arquivo && (
+                <div className="linha" style={{ gap: 8, marginBottom: 8 }}>
+                  <button className="btn s peq" type="button" onClick={() => abrirContratoAssinado(c.arquivo!)}>Abrir o anexado</button>
+                  <button className="btn s peq" type="button" onClick={() => { if (confirm("Remover o contrato assinado? A cliente deixa de ver.")) fazer(() => contratoRemoverAnexo(c.id, c.arquivo!), "Contrato assinado removido."); }}>Remover</button>
+                </div>
+              )}
+              <input type="file" accept=".pdf,image/*" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) fazer(() => contratoAnexar(portalId, c.id, f, c.arquivo), c.arquivo ? "Contrato assinado trocado." : "Contrato assinado anexado. A cliente já vê."); }} />
+              <p className="ajuda">PDF ou foto, até 25 MB. Subir outro arquivo troca o anterior.</p>
+            </div>
             <form className="mt" action={(form) => fazer(() => contratoSalvar(portalId, c.id, form), "Contrato salvo.")}>
               <CamposContrato c={c} planos={dados.planos} />
               <div className="linha mt">

@@ -61,6 +61,13 @@ export default function Inicio() {
   const [lojaFoco] = useLojaFoco();
   const { dados: focoD } = useDados(() => buscarContratoFoco(portal.id, lojaFoco), [portal.id, lojaFoco]);
   const foco = focoD ?? null;
+  // Loja em foco: o nome no topo é só o de quem cuida dela; com as lojas juntas, o nome geral.
+  const { dados: donos } = useDados(async () => {
+    if ((portal.lojas?.length ?? 0) < 2) return [] as { loja: string; nome: string }[];
+    const { data } = await supabaseBrowser().rpc("responsaveis_das_lojas", { p: portal.id });
+    return (data ?? []) as { loja: string; nome: string }[];
+  }, [portal.id]);
+  const donoDaLoja = lojaFoco ? donos?.find((x) => x.loja === lojaFoco)?.nome : undefined;
   if (!dados) return <Carregando />;
   const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
   // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
@@ -77,7 +84,7 @@ export default function Inicio() {
   const pct = total ? Math.round((feitos / total) * 100) : 0;
   const passosEntrada = PASSOS_ENTRADA.filter((p) => !(portal.sem_equipe && p.chave === "equipe"));
   const etapa2 = pers.get(2)?.respostas;
-  const quem = (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
+  const quem = donoDaLoja || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
   const c = consult?.dados;
   const nMes = c ? mesDaConsultoria(c.inicio) : 0;
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;

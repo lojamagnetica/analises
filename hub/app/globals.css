@@ -16,6 +16,8 @@
   --purple-soft: #EFECE8;
   --green: #6B645E;
   --green-soft: #EFECE8;
+  --feito: #3B7A4F;         /* verde só para o que está feito ou concluído */
+  --feito-soft: #E4F1E7;
   --blue: #3A3633;
   --blue-soft: #EFECE8;
   --orange: #B7400E;
@@ -53,6 +55,8 @@
   --purple-soft: #24211E;
   --green: #A39C95;
   --green-soft: #24211E;
+  --feito: #6CC08B;
+  --feito-soft: #17271C;
   --blue: #D9D3CC;
   --blue-soft: #24211E;
   --orange: #D9622C;
@@ -208,7 +212,7 @@ button.chip { cursor: pointer; font-family: inherit; }
 
 /* Diagnóstico da loja */
 .barra-equipe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--orange-soft); }
-.barra-equipe.ok { background: var(--green-soft); }
+.barra-equipe.ok { background: var(--feito-soft); }
 .grade-alerta { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
 .acao-alerta { border-left: 1px solid var(--line); padding-left: 18px; }
 @media (max-width: 720px) { .grade-alerta { grid-template-columns: 1fr; } .acao-alerta { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 12px; } }
@@ -228,7 +232,7 @@ button.chip { cursor: pointer; font-family: inherit; }
 .jornada-card.atrasada { border-left-color: var(--red); }
 .check-jornada { padding: 10px 0; border-bottom: 1px solid var(--line); }
 .check-jornada:last-child { border-bottom: 0; }
-.check-jornada.feito b { color: var(--muted); text-decoration: line-through; }
+.check-jornada.feito b { color: var(--feito); text-decoration: line-through; }
 .check-jornada.atrasado b { color: var(--red); }
 
 /* Pendências por cliente */
@@ -237,7 +241,7 @@ button.chip { cursor: pointer; font-family: inherit; }
 @media (max-width: 640px) { .pend { grid-template-columns: 1fr; } }
 .pend-loja > summary { cursor: pointer; list-style: none; }
 .pend-loja > summary::-webkit-details-marker { display: none; }
-.sel-feito { border-color: var(--green); }
+.sel-feito { border-color: var(--feito); }
 .sel-alerta { border-color: var(--orange); }
 .sel-andamento { border-color: var(--red); }
 
@@ -288,13 +292,13 @@ button.chip { cursor: pointer; font-family: inherit; }
 
 /* Selos e barras */
 .selo { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 99px; }
-.selo.feito { background: var(--green-soft); color: var(--green); }
+.selo.feito { background: var(--feito-soft); color: var(--feito); }
 .selo.andamento { background: var(--red-soft); color: var(--red); }
 .selo.espera { background: var(--soft); color: var(--muted); }
 .selo.alerta { background: var(--orange-soft); color: var(--orange); }
 .selo.erro { background: var(--red-soft); color: var(--red); }
 .barra { height: 9px; background: var(--soft); border-radius: 99px; overflow: hidden; }
-.barra i { display: block; height: 100%; background: var(--red); border-radius: 99px; }
+.barra i { display: block; height: 100%; background: var(--feito); border-radius: 99px; }
 
 /* Botões */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 12px; padding: 10px 18px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 14px; }
@@ -318,10 +322,13 @@ input:focus, textarea:focus, select:focus { border-color: var(--red); }
 textarea { min-height: 90px; resize: vertical; }
 .marcar { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
 .marcar:last-child { border-bottom: 0; }
-.marcar input { margin-top: 4px; width: 17px; height: 17px; accent-color: var(--red); flex-shrink: 0; }
-.marcar.feito span { text-decoration: line-through; color: var(--muted); }
+.marcar input { margin-top: 4px; width: 17px; height: 17px; accent-color: var(--feito); flex-shrink: 0; }
+.marcar.feito span { text-decoration: line-through; color: var(--feito); }
+/* Tudo o que está marcado fica verde: sensação de etapa executada. */
+input[type=checkbox] { accent-color: var(--feito); }
+.marcar:has(> input[type=checkbox]:checked) > span { color: var(--feito); }
 .aviso { padding: 12px 14px; border-radius: 12px; background: var(--red-soft); color: var(--red); font-size: 14px; }
-.aviso.ok { background: var(--green-soft); color: var(--green); }
+.aviso.ok { background: var(--feito-soft); color: var(--feito); }
 
 /* Tabelas */
 .tabela-wrap { overflow-x: auto; }
@@ -334,7 +341,7 @@ textarea { min-height: 90px; resize: vertical; }
 /* Script */
 .script pre { white-space: pre-wrap; font-family: var(--font); background: var(--soft); border-radius: 14px; padding: 16px; margin: 0 0 14px; color: var(--ink); font-size: 14.5px; }
 .var { background: var(--red-soft); color: var(--red); border-radius: 5px; padding: 0 2px; font-weight: 600; }
-.var.ok { background: var(--green-soft); color: var(--green); }
+.var.ok { background: var(--feito-soft); color: var(--feito); }
 
 /* Kanban */
 .kanban { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 14px; overflow-x: auto; padding-bottom: 8px; }

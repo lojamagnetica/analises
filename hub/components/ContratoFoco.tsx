@@ -35,7 +35,7 @@ export function ContratoFoco() {
   }
   const [inicio, hojeV, meta] = (dados.indicador ?? "").split("·").map((x) => x.trim());
   return (
-    <div className="card card-borda mb" style={{ ["--c" as string]: dados.de_acordo_em ? "var(--green)" : "var(--red)" }}>
+    <div className="card card-borda mb" style={{ ["--c" as string]: dados.de_acordo_em ? "var(--feito)" : "var(--red)" }}>
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap" }}>
         <small className="mudo">Contrato de Foco · o resultado nº 1 dos próximos 90 dias</small>
         {dados.de_acordo_em

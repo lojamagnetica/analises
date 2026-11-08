@@ -131,9 +131,11 @@ export default function Inicio() {
         {!onboarding && foco?.resultado && (
           <Link href="/painel" className="meet foco" style={{ color: "inherit", textDecoration: "none" }}>
             <small>🎯 Contrato de Foco · o resultado nº 1</small>
-            <b style={{ display: "block", marginTop: 2 }}>{foco.resultado}</b>
-            {metaFoco && <div style={{ opacity: 0.9, marginTop: 4 }}>Meta: {metaFoco}</div>}
-            <div style={{ opacity: 0.9, marginTop: 6, fontSize: 13 }}>{foco.de_acordo_em ? `✓ De acordo em ${dataCurta(foco.de_acordo_em.slice(0, 10))}` : equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo · toque para ver"}</div>
+            <b style={{ display: "block", marginTop: 2, lineHeight: 1.35 }}>{foco.resultado}</b>
+            <div className="foco-linha">
+              {metaFoco && <span>Meta: <b>{metaFoco}</b></span>}
+              <span>{foco.de_acordo_em ? `✓ De acordo em ${dataCurta(foco.de_acordo_em.slice(0, 10))}` : equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo · toque para ver"}</span>
+            </div>
           </Link>
         )}
         <div className="meet">
@@ -229,7 +231,7 @@ export default function Inicio() {
 
       {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} /></div>
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} /></div>
       ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>

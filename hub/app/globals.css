@@ -280,10 +280,11 @@ button.chip { cursor: pointer; font-family: inherit; }
 .heroi .meet { margin-left: auto; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.3); border-radius: 16px; padding: 14px 18px; min-width: 240px; }
 .heroi .meet small { display: block; opacity: .85; }
 /* Contrato de Foco e Próximo encontro lado a lado, à direita da boas-vindas. */
-.heroi > div:first-child { flex: 1 1 260px; }
-.heroi-lado { margin-left: auto; display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
+.heroi > div:first-child { flex: 0 1 300px; }
+.heroi-lado { margin-left: auto; flex: 1 1 560px; display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; justify-content: flex-end; }
 .heroi-lado .meet { margin-left: 0; }
-.heroi .meet.foco { max-width: 340px; }
+.heroi .meet.foco { flex: 1 1 300px; padding: 12px 18px; }
+.heroi .meet.foco .foco-linha { display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: baseline; margin-top: 4px; font-size: 13.5px; opacity: .92; }
 
 /* Selos e barras */
 .selo { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 11px; border-radius: 99px; }

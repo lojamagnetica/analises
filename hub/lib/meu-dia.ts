@@ -86,6 +86,8 @@ export const JEITO: Record<Letra, { abre: string; fecha: string }> = {
 
 export type Config = { reuniao?: number; conteudo?: number; planejamento?: number };
 export type Rotina = { config: Config; feitos: Record<string, string[]> };
+/** Marcado no dia, na visão de todas as lojas ou de uma loja (chave "Loja:tarefa"). */
+const temFeito = (l: string[], k: string) => l.some((x) => x === k || x.endsWith(`:${k}`));
 export type Vendedora = {
   id: string; nome: string; letra: Letra | null;
   faturamento: number; vendas: number; pecas: number; meta: number | null;
@@ -113,9 +115,9 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
     buscarCaixa(portalId, mes),
     buscarPlano(portalId, mes).catch(() => null),
     buscarPlano(portalId, somarMes(mes, 1)).catch(() => null),
-    sb().from("loja_equipe").select("id, nome, perfil, funcao").eq("portal_id", portalId).eq("ativo", true).order("nome"),
+    sb().from("loja_equipe").select("id, nome, perfil, funcao, loja").eq("portal_id", portalId).eq("ativo", true).order("nome"),
     sb().from("loja_rotina").select("config, feitos").eq("portal_id", portalId).maybeSingle(),
-    sb().from("loja_clientes").select("aniversario, ultima_compra").eq("portal_id", portalId).limit(5000),
+    sb().from("loja_clientes").select("aniversario, ultima_compra, loja").eq("portal_id", portalId).limit(5000),
     sb().from("datas_comerciais").select("mes, dia, titulo"),
   ]);
   // Crediário (loja na mão): as parcelas em aberto para cobrar.
@@ -126,15 +128,31 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
   return {
     agora, caixa, caixaOntem, plano, planoProx,
     // Só quem vende entra na meta e no placar da semana (administrativo e financeiro ficam de fora).
-    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null }[]),
+    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null; loja?: string | null }[]),
     rotina: { config: (rot?.config ?? {}) as Config, feitos: (rot?.feitos ?? {}) as Record<string, string[]> },
-    clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null }[],
+    clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null; loja?: string | null }[],
     datas: (datas ?? []) as { mes: number; dia: number | null; titulo: string }[],
     parcelas: ((cred ?? []) as { parcelas: { vence: string; valor: number; pago_em: string | null }[] }[]).flatMap((c) => c.parcelas ?? []).filter((x) => !x.pago_em),
     modo,
   };
 }
 export type DadosMeuDia = Awaited<ReturnType<typeof buscarMeuDia>>;
+
+/** Portal com mais de uma loja: o Meu dia de uma loja só (caixa dela, meta do canal com o nome dela no PLANEJE AQUI).
+ *  Pessoas e clientes sem loja marcada contam em todas. */
+export function meuDiaDaLoja(d: DadosMeuDia, loja: string): DadosMeuDia {
+  if (!loja) return d;
+  const daLojaOuSem = (x: { loja?: string | null }) => !x.loja || x.loja === loja;
+  const meta = d.plano?.dados.canais?.find((c) => c.canal === loja)?.faixas[0]?.valor ?? null;
+  const plano = d.plano && { ...d.plano, dados: { ...d.plano.dados, base: null, canais: meta ? [{ canal: "Loja", base: null, faixas: [{ valor: meta, comissao: 0, gerente: 0 }] }] : [] } };
+  return {
+    ...d, plano,
+    caixa: d.caixa.filter((c) => c.loja === loja),
+    caixaOntem: d.caixaOntem.filter((c) => c.loja === loja),
+    equipe: d.equipe.filter(daLojaOuSem),
+    clientes: d.clientes.filter(daLojaOuSem),
+  };
+}
 
 export async function salvarRotina(portalId: string, r: Rotina) {
   // Guarda só os últimos 60 dias de marcações.
@@ -404,7 +422,7 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   // Aniversariantes do mês: convite no dia 1 e lembrete 5 dias antes do fim (a lista sai do sistema da loja).
   // Convite na primeira semana: aparece do dia 1 ao 7 até ser marcado em algum dia do mês.
   const mesAtual = d.agora.slice(0, 7);
-  const conviteFeito = Object.entries(d.rotina.feitos).some(([dia, l]) => dia.startsWith(mesAtual) && dia !== d.agora && l.includes("aniv_convite"));
+  const conviteFeito = Object.entries(d.rotina.feitos).some(([dia, l]) => dia.startsWith(mesAtual) && dia !== d.agora && temFeito(l, "aniv_convite"));
   if (diaDoMes <= 7 && !conviteFeito) t.push({ chave: "aniv_convite", texto: solo ? "Primeira semana: mandar o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)" : "Primeira semana: o time manda o convite para todas as aniversariantes do mês (o presente vale o mês inteiro)", href: solo ? "/clientes" : "/clientes/missoes" });
   const fimMes = Number(fimDoMes(d.agora.slice(0, 7)).slice(8));
   if (diaDoMes === fimMes - 5) t.push({ chave: "aniv_lembrete", texto: "Lembrete para as aniversariantes do mês que ainda não usaram o presente (faltam 5 dias para expirar)", href: solo ? "/clientes" : "/clientes/missoes" });
@@ -421,7 +439,7 @@ export function acompanhamento(d: DadosMeuDia) {
     if (diaSemana == null) return null;
     let previstos = 0;
     for (let i = 1; i <= Number(d.agora.slice(8)); i++) if (dow(`${mes}-${String(i).padStart(2, "0")}`) === diaSemana) previstos++;
-    const feitos = Object.entries(d.rotina.feitos).filter(([dia, l]) => dia.startsWith(mes) && l.includes(chave)).length;
+    const feitos = Object.entries(d.rotina.feitos).filter(([dia, l]) => dia.startsWith(mes) && temFeito(l, chave)).length;
     return { feitos, previstos };
   };
   return { reuniao: conta("reuniao", cfg.reuniao), conteudo: conta("conteudo", cfg.conteudo) };

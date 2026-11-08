@@ -7,6 +7,7 @@ import { supabaseBrowser, erroDaFuncao } from "@/lib/supabase/client";
 import { BASE } from "@/lib/config";
 import { BLOCOS_PLANEJE, ETAPAS, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
 import { localParaIso } from "@/lib/formato";
+import { FUNDAMENTOS } from "@/lib/carteira";
 
 const sb = () => supabaseBrowser();
 const txt = (f: FormData, k: string, max = 4000) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -299,7 +300,9 @@ export async function fichaSalvar(portalId: string, form: FormData) {
     ...(termometro !== (antes?.termometro ?? null) ? { termometro_em: termometro ? new Date().toISOString().slice(0, 10) : null } : {}),
     resultado_n1: txt(form, "resultado_n1", 1000) || null,
     indicador: txt(form, "indicador", 300) || null,
-    fundamentos: form.getAll("fundamentos").map(String),
+    // Cada fundamento: "nao", "trabalhando" ou "implantado" (o placar conta só os implantados).
+    fundamentos: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "implantado"),
+    fundamentos_trabalhando: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "trabalhando"),
     condicao_especial: txt(form, "condicao_especial", 500) || null,
     instagram: txt(form, "instagram", 300) || null,
     grupo_whatsapp: txt(form, "grupo_whatsapp", 500) || null,

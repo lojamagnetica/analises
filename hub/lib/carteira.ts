@@ -23,7 +23,7 @@ export type Contrato = {
 export type Ficha = {
   portal_id: string; plano_id: string | null; programa_notion: string | null; jornada: string | null;
   situacao: (typeof SITUACOES)[number]; etapa: number | null; termometro: (typeof TERMOMETROS)[number] | null;
-  termometro_em: string | null; resultado_n1: string | null; indicador: string | null; fundamentos: string[];
+  termometro_em: string | null; resultado_n1: string | null; indicador: string | null; fundamentos: string[]; fundamentos_trabalhando?: string[];
   condicao_especial: string | null; instagram: string | null; grupo_whatsapp: string | null; pasta_interna: string | null;
   notion_url: string | null; data_diagnostico: string | null; responsavel_cs: string | null; observacoes: string | null;
   updated_at: string;

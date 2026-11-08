@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Carregando, useDados } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco } from "@/lib/hub";
 import { dataCurta, moeda } from "@/lib/formato";
 import { Copiar } from "@/components/Copiar";
 import { fmtPa, pmDoEstoque } from "@/lib/caixa";
@@ -19,11 +19,11 @@ const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--ora
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
 export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
-  // Mais de uma loja: a dona escolhe ver todas juntas ou uma loja (a escolha fica guardada neste aparelho).
-  const chaveLoja = `meu-dia-loja:${portalId}`;
-  const [loja, setLojaEstado] = useState(() => { try { const l = localStorage.getItem(chaveLoja) ?? ""; return lojas.includes(l) ? l : ""; } catch { return ""; } });
-  const setLoja = (l: string) => { setLojaEstado(l); try { localStorage.setItem(chaveLoja, l); } catch { /* sem armazenamento */ } };
-  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio]);
+  // Mais de uma loja: vale a loja em foco do portal inteiro (seletor no topo).
+  const [loja] = useLojaFoco();
+  // O planner é de cada loja: com as lojas juntas, ele não aparece aqui.
+  const lojaPlanner = lojas.length > 1 ? (loja || null) : "";
+  const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo, lojaPlanner), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio, lojaPlanner]);
   const [rotina, setRotina] = useState<Rotina | null>(null);
   const [plannerMarcado, setPlanner] = useState<Planner | null | undefined>(undefined);
   const [erro, setErro] = useState("");
@@ -65,7 +65,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
     if (!planner) return;
     const novo = { ...planner, feitos: { ...planner.feitos, [d.agora]: feito ? [...new Set([...feitosPlanner, id])] : feitosPlanner.filter((x) => x !== id) } };
     setPlanner(novo); setErro("");
-    try { await salvarPlanner(portalId, novo); } catch (e) { setErro((e as Error).message); }
+    try { await salvarPlanner(portalId, novo, lojaPlanner ?? ""); } catch (e) { setErro((e as Error).message); }
   };
   const marcar = (chave: string, feito: boolean) =>
     salvar({ ...r, feitos: { ...r.feitos, [d.agora]: feito ? [...new Set([...feitosHoje, chave])] : feitosHoje.filter((x) => x !== chave) } });
@@ -74,15 +74,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
   return (
     <>
       <div className="secao">Meu dia · {semana}, {dataCurta(d.agora)}{loja ? ` · ${loja}` : ""}</div>
-      {lojas.length > 1 && (
-        <div className="chips mb" role="group" aria-label="Ver o Meu dia por loja">
-          {["", ...lojas].map((l) => (
-            <button key={l || "todas"} type="button" className={`chip ${loja === l ? "escolhido" : ""}`} aria-pressed={loja === l} onClick={() => setLoja(l)}>
-              {l || (lojas.length === 2 ? "As duas lojas" : "Todas as lojas")}
-            </button>
-          ))}
-        </div>
-      )}
+      {lojaPlanner === null && <p className="ajuda mb">Cada loja tem o seu planner de gestão: escolha a loja no topo para ver as demandas de hoje dela.</p>}
       {erro && <div className="aviso mb">{erro}</div>}
 
       {!p.meta ? (

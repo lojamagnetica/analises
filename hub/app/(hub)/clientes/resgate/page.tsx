@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Icone } from "@/components/Icone";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   CLASSE_TIPO, REGRAS, buscarClientes, buscarMetodoClientes, classificar, contatada, estadoConteudo, lerValor, linkWhats,
@@ -23,7 +23,7 @@ export default function Resgate() {
   }, [portal.id]);
   // Alterações feitas aqui entram na hora, sem buscar a base inteira de novo.
   const [ajustes, setAjustes] = useState<Record<string, Partial<Cliente>>>({});
-  const [loja, setLoja] = useState("");
+  const [loja, setLoja] = useLojaFoco();
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [mostrar, setMostrar] = useState(PASSO);
   const [compra, setCompra] = useState<string | null>(null);

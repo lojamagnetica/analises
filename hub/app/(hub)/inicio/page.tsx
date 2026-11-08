@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Icone } from "@/components/Icone";
-import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { Carregando, primeiroNome, useDados, useLojaFoco, usePortal } from "@/lib/hub";
+import { buscarContratoFoco } from "@/lib/foco";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta, dataHora, dia, hoje, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { buscarPlanos, mesDoPlano, mesesDoInicio, semanaDoDia } from "@/lib/plano-mes";
@@ -43,7 +44,7 @@ export default function Inicio() {
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo, focoR] = await Promise.all([
+    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
@@ -53,14 +54,15 @@ export default function Inicio() {
       buscarMeuContrato(portal.id).catch(() => null),
       buscarPlanos(portal.id).catch(() => []),
       portal.tipo === "Mentoria" ? buscarEncontro().catch(() => null) : Promise.resolve(null),
-      sb.rpc("contrato_foco", { p: portal.id }),
     ]);
-    // Contrato de Foco vigente: fica no topo para lembrar o resultado nº 1 sempre que entrar.
-    const foco = ((focoR.data ?? []) as { resultado: string | null; indicador: string | null; de_acordo_em: string | null; curto: string | null }[])[0] ?? null;
-    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo, foco };
+    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo };
   }, [portal.id]);
+  // Contrato de Foco vigente: fica no topo para lembrar o resultado nº 1 sempre que entrar (o da loja em foco, quando há várias).
+  const [lojaFoco] = useLojaFoco();
+  const { dados: focoD } = useDados(() => buscarContratoFoco(portal.id, lojaFoco), [portal.id, lojaFoco]);
+  const foco = focoD ?? null;
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo, foco } = dados;
+  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
   // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
   const pg = grupo ? proximoEncontro(grupo) : null;
   const usaGrupo = !!grupo && !!pg && (!prox || pg.iso < new Date(prox.data).toISOString());

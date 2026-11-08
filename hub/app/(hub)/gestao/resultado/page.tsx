@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { moeda } from "@/lib/formato";
 import {
   PA_IDEAL, arredondarGanho, buscarCaixa, daLoja, diagnosticar, fmtPa, fraseFoco, indicadores, mesDeHoje, mesValido, nomeMes, numeroDe,
@@ -76,7 +76,8 @@ function Resultado() {
   const varias = lojas.length > 1;
   const todas = lojas.length === 2 ? "As duas lojas" : "Todas as lojas";
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) && m <= mesDeHoje() ? m : mesDeHoje(); });
-  const [loja, setLoja] = useState(() => { const l = params.get("loja"); return l && lojas.includes(l) ? l : varias ? lojas[0] : ""; });
+  // A loja em foco vale para o portal inteiro (seletor no topo).
+  const [loja, setLoja] = useLojaFoco();
   const { dados } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
   if (!dados) return <Carregando />;
 

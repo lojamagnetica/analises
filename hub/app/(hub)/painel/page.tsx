@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataHora, hoje, moeda } from "@/lib/formato";
 import {
   NIVEIS, buscarDiagnosticos, caixaPorMes, classeNivel, completo, corNivel, criarDiagnostico, liberarDiagnostico, mesCurto,
@@ -349,7 +349,7 @@ function DiagnosticoDaLoja() {
   const params = useSearchParams();
   const { portal, equipe, aprova } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
-  const [escolhida, setEscolhida] = useState<string | null>(params.get("loja"));
+  const [escolhida, setEscolhida] = useLojaFoco();
   const [ed, setEd] = useState(false);
   const [d, setD] = useState<Diagnostico | null>(null);
   const [salvo, setSalvo] = useState(true);

@@ -110,6 +110,17 @@ function Casca({ children }: { children: React.ReactNode }) {
         ) : null}
         <Ferramentas temPortal={!!hub.portal} equipe={equipe} />
         <main className="conteudo">
+          {/* Portal com mais de uma loja: a loja escolhida aqui vale para o portal inteiro (planner, foco, caixa, clientes…). */}
+          {(hub.portal?.lojas ?? []).length > 1 && (
+            <div className="loja-foco" role="group" aria-label="Ver o portal de qual loja">
+              <small className="mudo">Vendo:</small>
+              {["", ...(hub.portal?.lojas ?? [])].map((l) => (
+                <button key={l || "todas"} type="button" className={`chip ${hub.lojaFoco === l ? "escolhido" : ""}`} aria-pressed={hub.lojaFoco === l} onClick={() => hub.escolherLoja(l)}>
+                  {l || ((hub.portal?.lojas ?? []).length === 2 ? "As duas lojas" : "Todas as lojas")}
+                </button>
+              ))}
+            </div>
+          )}
           {destino || semVideo ? <Carregando /> : travado && ent && req ? <Bloqueado req={req} entrada={ent} faltamEtapas={hub.persFaltam} /> : areaTrancada ? (
             <div className="card" style={{ textAlign: "center", padding: 40, marginTop: 24 }}>
               <div style={{ fontSize: 40 }}>🔒</div>

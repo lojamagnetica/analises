@@ -109,7 +109,7 @@ const dow = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
 
 const sb = () => supabaseBrowser();
 
-export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
+export async function buscarMeuDia(portalId: string, modo: Modo = {}, lojaPlanner: string | null = "") {
   const agora = hoje();
   const mes = agora.slice(0, 7);
   const [caixa, plano, planoProx, { data: equipe }, { data: rot }, { data: clientes }, { data: datas }] = await Promise.all([
@@ -122,7 +122,8 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}) {
     sb().from("datas_comerciais").select("mes, dia, titulo"),
   ]);
   // Planner de gestão liberado: as demandas com dia fixo entram na rotina de hoje (e substituem os dias da "Minha rotina").
-  const planner = await buscarPlanner(portalId).catch(() => null);
+  // lojaPlanner null: várias lojas vistas juntas, sem planner (cada loja tem o seu).
+  const planner = lojaPlanner === null ? null : await buscarPlanner(portalId, lojaPlanner).catch(() => null);
   // Crediário (loja na mão): as parcelas em aberto para cobrar.
   const { data: cred } = modo.vendaDiaria ? await sb().from("loja_crediario").select("parcelas").eq("portal_id", portalId) : { data: [] };
   // O caixa de ontem pode ser do mês passado (dia 1).

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Copiar } from "@/components/Copiar";
 import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
 import {
   COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, SITUACAO_ROTULO, buscarPlanner, cumprimento, deHoje, frentesDa, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
@@ -98,8 +98,11 @@ function Cartao({ b, mudar, tirar, frentes }: { b: Bloco; mudar: (b: Bloco) => v
 
 export default function PlannerGestao() {
   const { portal, equipe, aprova, pers } = usePortal();
-  const { dados } = useDados(async () => ({ salvo: await buscarPlanner(portal.id) }), [portal.id]);
-  const [p, setP] = useState<Planner | null>(null);
+  // Portal com mais de uma loja: cada loja tem o seu planner (a loja em foco no topo).
+  const [loja] = useLojaFoco(true);
+  const { dados } = useDados(async () => ({ salvo: await buscarPlanner(portal.id, loja) }), [portal.id, loja]);
+  const [pEditado, setP] = useState<{ loja: string; p: Planner } | null>(null);
+  const p = pEditado?.loja === loja ? pEditado.p : null;
   const [filtro, setFiltro] = useState<Frente | null>(null);
   const [erro, setErro] = useState("");
   const [salvo, setSalvo] = useState("");
@@ -126,8 +129,8 @@ export default function PlannerGestao() {
   }
 
   const salvar = async (novo: Planner, aviso = "") => {
-    setP(novo); setErro(""); setSalvo("");
-    try { await salvarPlanner(portal.id, novo); if (aviso) setSalvo(aviso); } catch (e) { setErro((e as Error).message); }
+    setP({ loja, p: novo }); setErro(""); setSalvo("");
+    try { await salvarPlanner(portal.id, novo, loja); if (aviso) setSalvo(aviso); } catch (e) { setErro((e as Error).message); }
   };
   const d = hoje();
   const lista = deHoje(atual, d).filter((b) => frentes.includes(b.frente));
@@ -147,7 +150,7 @@ export default function PlannerGestao() {
 
   return (
     <>
-      <Titulo titulo="Planner de gestão" sub="Todas as demandas da sua gestão, separadas em diárias, semanais e mensais, com o passo a passo de cada uma. Comece pelo foco de hoje e marque o que fizer." />
+      <Titulo titulo={`Planner de gestão${(portal.lojas?.length ?? 0) > 1 ? ` · ${loja}` : ""}`} sub="Todas as demandas da sua gestão, separadas em diárias, semanais e mensais, com o passo a passo de cada uma. Comece pelo foco de hoje e marque o que fizer." />
 
       {equipe && portal.tipo !== "Consultoria" && (
         <div className="card mb linha entre" style={{ gap: 10, flexWrap: "wrap" }}>

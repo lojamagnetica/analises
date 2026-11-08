@@ -223,7 +223,8 @@ export default function Inicio() {
       {!onboarding && <>
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
-        {atalhos.map((a) => (
+        {/* Atalhos com cadeado (liberados em outra etapa) ficam no fim. */}
+        {[...atalhos.filter((a) => !trancado(a.href)), ...atalhos.filter((a) => trancado(a.href))].map((a) => (
           <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}

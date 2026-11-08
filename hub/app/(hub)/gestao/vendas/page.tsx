@@ -33,7 +33,7 @@ export default function VendasDoDia() {
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
-  /** O resumo da compra pronto para copiar e mandar no WhatsApp da cliente (logo depois de registrar, ou tocando em Resumo na lista). */
+  /** Crediário: o registro da compra pronto para copiar e mandar no WhatsApp da cliente (logo depois de registrar, ou tocando em Registro na lista). */
   const [resumo, setResumo] = useState<{ texto: string; nome: string; whatsapp: string | null } | null>(null);
   const { dados, recarregar } = useDados(async () => {
     const [vendas, clientes, mes, estoque, contas] = await Promise.all([
@@ -74,8 +74,8 @@ export default function VendasDoDia() {
       if (parcelas && f.cliente) {
         await salvarConta(portal.id, { cliente_id: f.cliente.id, nome: f.cliente.nome, whatsapp: f.cliente.whatsapp, venda_id: id, descricao: [f.categoria, f.produto].filter(Boolean).join(" · "), parcelas });
       }
-      // Venda nova com a cliente: o resumo da compra aparece na hora para copiar e mandar.
-      if (!f.id && f.cliente) montarResumo({ dia: f.dia, categoria: f.categoria, linha: f.linha, produto: f.produto, pecas: f.pecas, valor: f.valor, forma: f.forma }, f.cliente, parcelas, parcelas ? f.valor : 0);
+      // Venda nova no crediário: o registro da compra aparece na hora para copiar e mandar à cliente.
+      if (!f.id && f.cliente && parcelas) montarResumo({ dia: f.dia, categoria: f.categoria, linha: f.linha, produto: f.produto, pecas: f.pecas, valor: f.valor, forma: f.forma }, f.cliente, parcelas, parcelas ? f.valor : 0);
       else setResumo(null);
       setAviso(f.id ? "Venda corrigida ✓" : `Venda de ${moeda(f.valor)} registrada ✓${f.forma === "crediario" ? " · conta aberta no Crediário" : ""}`);
       setF(novo(f.dia)); setAntes(null); setBusca(""); setDiaVer(f.dia); recarregar();
@@ -196,7 +196,7 @@ export default function VendasDoDia() {
                     <div className="mudo" style={{ fontSize: 13 }}>{nomeForma(v.forma)}{v.maleta ? " · maleta" : ""}{c ? ` · ${c.nome}` : ""}</div>
                   </div>
                   <div className="linha" style={{ gap: 10 }}>
-                    {c && <button type="button" className="link-loja" onClick={() => { montarResumo({ ...v, venda_id: v.id }, c, null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Resumo</button>}
+                    {c && v.forma === "crediario" && <button type="button" className="link-loja" onClick={() => { montarResumo({ ...v, venda_id: v.id }, c, null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Registro</button>}
                     <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, categoria: v.categoria, produto: v.produto ?? "", valor: v.valor, pecas: v.pecas, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: v.linha ?? "", estoque_id: v.estoque_id }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
                     <Excluir pergunta={`Excluir a venda de ${moeda(v.valor)}?${v.forma === "crediario" ? " A conta dela no Crediário sai junto." : ""}`} fazer={() => removerVenda(portal.id, v)} aoFim={recarregar} />
                   </div>
@@ -215,10 +215,10 @@ function ResumoCompra({ r, fechar }: { r: { texto: string; nome: string; whatsap
   const link = linkWhats(r.whatsapp, r.texto);
   return (
     <div className="card card-borda mt" style={{ ["--c" as string]: "var(--green)" }}>
-      <div className="linha entre"><b>Resumo da compra{r.nome ? ` · ${r.nome}` : ""}</b><button type="button" className="link-loja" onClick={fechar}>fechar</button></div>
+      <div className="linha entre"><b>Registro do crediário{r.nome ? ` · ${r.nome}` : ""}</b><button type="button" className="link-loja" onClick={fechar}>fechar</button></div>
       <div className="card mt" style={{ whiteSpace: "pre-wrap", background: "var(--soft)", fontSize: 14.5 }}>{r.texto}</div>
       <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
-        <Copiar texto={r.texto} rotulo="Copiar o resumo" />
+        <Copiar texto={r.texto} rotulo="Copiar o registro" />
         {link
           ? <a className="btn p peq" href={link} target="_blank" rel="noopener">Abrir no WhatsApp da cliente</a>
           : <span className="ajuda" style={{ margin: 0 }}>Sem WhatsApp no cadastro: copie e cole na conversa dela.</span>}

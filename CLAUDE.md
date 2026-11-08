@@ -40,6 +40,8 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
 - Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
+- Áreas do portal liberadas por etapa: as áreas novas nascem com cadeado (`portais.menu_trancado`; hoje `conteudo` e `marca`) e a Camilla libera uma área coerente com a etapa da loja a cada 15 dias, sempre bem feita antes de abrir.
+  - "Nossa marca" (Nossa história + Guia das marcas) abre na semana depois do Diagnóstico.
 - Plano de Ação mês a mês (norteia a satisfação da cliente):
   - Os desejos vêm SEMPRE das palavras da própria cliente: loja que subimos do Drive = formulário "Diagnóstico da Sua Loja" (planilha de respostas no Drive); loja que entrou direto pelo portal = as respostas dela no Hub. Nunca do resumo do Comercial, do Raio-X ou de outro agente. Citar a pergunta e a resposta de onde saiu cada desejo.
   - Os desejos que ela listou primeiro (objetivos em ordem de prioridade e o que quer construir) entram nos 2 primeiros meses depois da entrega do portal.

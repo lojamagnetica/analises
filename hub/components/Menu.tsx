@@ -145,8 +145,14 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
-        { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
         { href: "/mural", rotulo: "Mural da loja", icone: "target" },
+      ],
+    },
+    {
+      // A marca da loja: entregue com cadeado aberto na semana depois do Diagnóstico.
+      id: "marca", rotulo: "Nossa marca", icone: "book",
+      itens: [
+        { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
         { href: "/guia-marcas", rotulo: "Guia das marcas", icone: "tag" },
       ],
     },

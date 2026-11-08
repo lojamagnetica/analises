@@ -105,6 +105,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
         { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
+        { href: "/equipe/guias", rotulo: "Guias em vídeo", icone: "play" },
       ],
     });
   }

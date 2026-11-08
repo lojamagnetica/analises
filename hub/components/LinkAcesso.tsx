@@ -1,8 +1,9 @@
 import { Copiar } from "@/components/Copiar";
+import { guia, linkGuia } from "@/lib/guias";
 
 /** Mostra o link de acesso recém-gerado, com botões para copiar e mandar pelo WhatsApp. */
 export function LinkAcesso({ link, nome, whatsapp }: { link: string; nome: string; whatsapp: string | null }) {
-  const mensagem = `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! O Hub da sua loja na Loja Magnética está pronto.\n\nEntre por este link para criar a sua senha:\n${link}`;
+  const mensagem = `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! O Hub da sua loja na Loja Magnética está pronto.\n\nEntre por este link para criar a sua senha:\n${link}\n\nPasso a passo em vídeo (senha e app no celular):\niPhone: ${linkGuia(guia("primeiro-acesso-iphone"))}\nAndroid: ${linkGuia(guia("primeiro-acesso-android"))}`;
   let numero = (whatsapp ?? "").replace(/\D/g, "");
   if (numero && numero.length <= 11) numero = "55" + numero;
   const wa = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;

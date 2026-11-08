@@ -312,6 +312,7 @@ function Apresentacao() {
           <p className="mudo" style={{ marginTop: 0, fontSize: 17 }}>Método Carteira Ativa, na plataforma Hubla. Está incluso em todos os planos.</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`${BASE}/hubla/carteira-ativa-modulos.jpg`} alt="Módulos do Método Carteira Ativa na Hubla" style={{ width: "100%", borderRadius: 14, border: "1px solid var(--line)" }} />
+          <p className="mt" style={{ fontSize: 20, fontWeight: 700, textAlign: "center", marginBottom: 0 }}>Seu time treinado e com consciência da importância de construir relacionamento com os clientes e cuidar da carteira.</p>
         </>
       ),
     },

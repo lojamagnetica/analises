@@ -127,7 +127,7 @@ export default function ReuniaoSemanal() {
           </select>
           {t.destaqueId && (
             <div className="grade g2" style={{ gap: 12 }}>
-              <div><label className="rotulo">O que fez</label><input type="text" value={t.fez} onChange={muda("fez")} placeholder="ofereceu o cinto e a cliente levou o look" /></div>
+              <div><label className="rotulo">O que fez</label><input type="text" value={t.fez} onChange={muda("fez")} placeholder="ofereceu a peça que combinava e a cliente levou as duas" /></div>
               <div><label className="rotulo">O que importou</label><input type="text" value={t.importou} onChange={muda("importou")} placeholder="O ticket dela subiu" /></div>
             </div>
           )}

@@ -292,7 +292,7 @@ function Plano({ mes }: { mes: string }) {
                 <label className="rotulo">Foco da semana</label>
                 <textarea rows={2} value={sem.foco} onChange={(e) => troca({ foco: e.target.value })} placeholder="Ex.: Esquenta Black: lista VIP e pré-venda" />
                 <label className="rotulo">Conteúdo</label>
-                <textarea rows={3} value={sem.conteudo} onChange={(e) => troca({ conteudo: e.target.value })} placeholder="Ex.: reels de looks com vestidos, stories de espera" />
+                <textarea rows={3} value={sem.conteudo} onChange={(e) => troca({ conteudo: e.target.value })} placeholder="Ex.: reels mostrando as novidades, stories de espera" />
                 <label className="rotulo">Exposição e vitrine</label>
                 <textarea rows={2} value={sem.exposicao} onChange={(e) => troca({ exposicao: e.target.value })} placeholder="Ex.: vitrine com vestidos de festa" />
               </div>

@@ -99,7 +99,7 @@ const AREAS: { area: string; vem: string; itens: string[] }[] = [
   { area: "Minha mentoria", vem: "O Diagnóstico e os seus objetivos", itens: ["Plano de Ação 90 dias, mês a mês", "Os 7 passos da mentoria", "Reuniões, gravações e notas"] },
   { area: "Gestão estratégica", vem: "Faturamento, estoque e crediário", itens: ["Fechamento de caixa do dia", "Resultado do mês", "Metas e calculadora"] },
   { area: "Gestão de pessoas", vem: "O time e o teste de perfil", itens: ["Minha equipe e o perfil de cada pessoa", "Reuniões prontas (semanal e do mês) e Dar retorno", "Desenvolvimento, gincanas, contratação e organograma"] },
-  { area: "Vendas", vem: "Mix, preços e o que mais vende", itens: ["Ações do Mês", "Scripts de venda", "Planeje aqui: o planejamento do mês"] },
+  { area: "Vendas", vem: "Mix, preços e o que mais vende", itens: ["Ações do Mês", "Planeje aqui: o planejamento do mês"] },
   { area: "De cliente a fã", vem: "O cadastro de clientes", itens: ["Minhas clientes, com a carteira de cada vendedora", "Missão da semana e resgate de clientes", "Campanhas e experiência da cliente"] },
   { area: "Conteúdo", vem: "Instagram, cliente ideal e inspirações", itens: ["Programação da semana e pautas quentes", "Criar roteiro e Link da Bio", "Resultados do Instagram"] },
   { area: "E mais", vem: "Tudo o que você contar", itens: ["Bússola do gestor", "Curso", "Mural e Nossa história da loja"] },

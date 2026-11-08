@@ -37,7 +37,7 @@ export const PERGUNTAS: { id: Campo; pergunta: string; sub: string; ex: string; 
   { id: "sentir", titulo: "Como ela sai daqui", pergunta: "Como a cliente se sente quando sai da sua loja?", sub: "",
     ex: "Mais bonita e mais confiante. Muitas dizem: \"eu vim só olhar e saí me sentindo outra\"." },
   { id: "jeito", titulo: "O jeito da casa", pergunta: "O jeito da casa: como a gente atende?", sub: "O que nunca fazemos com uma cliente?",
-    ex: "Chamamos pelo nome, oferecemos um café e montamos o look completo. Nunca dizemos \"isso não é para você\" e nunca deixamos ninguém sem resposta no WhatsApp." },
+    ex: "Chamamos pelo nome, oferecemos um café e ajudamos a escolher com calma. Nunca dizemos \"isso não é para você\" e nunca deixamos ninguém sem resposta no WhatsApp." },
   { id: "futuro", titulo: "Para onde vamos", pergunta: "Para onde vamos?", sub: "Qual é o seu sonho para a loja nos próximos anos?",
     ex: "Ser a loja da cidade em que a mulher pensa primeiro quando quer se sentir bonita, e ter uma equipe que atende como eu atenderia." },
 ];

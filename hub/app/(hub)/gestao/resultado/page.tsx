@@ -21,8 +21,7 @@ const FOCOS: Record<Foco["tipo"], { titulo: string; resumo: string; acoes: Acao[
     titulo: "Vender mais peças em cada venda",
     resumo: "O PA está abaixo de 2,5: quem compra leva uma peça e vai embora. O foco é a venda adicional, o leva junto.",
     acoes: [
-      { texto: "Em todo atendimento, ofereça a peça que leva junto: a que completa o look que já foi escolhido." },
-      { texto: "Treine o time com os scripts de venda adicional e use todos os dias.", link: { href: "/scripts", rotulo: "Abrir os scripts" } },
+      { texto: "Em todo atendimento, ofereça a peça que leva junto: a que combina com o que ela já escolheu." },
       { texto: "Rode uma gincana de PA por uma semana, com o prêmio anunciado antes.", link: { href: gincanas("Peças por atendimento"), rotulo: "Ver gincanas de PA" } },
       { texto: "Olhe o PA do fechamento de cada dia e comente com o time na manhã seguinte." },
     ],

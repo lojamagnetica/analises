@@ -134,7 +134,7 @@ export default function Comece() {
           {v ? <Video v={v} aoTerminar={() => setTerminou(true)} /> : (
             <p>Este é o Hub da sua loja: tudo da sua jornada em um lugar só. Antes de qualquer coisa, entenda a ordem. Cada etapa prepara a próxima, e o Hub só funciona bem quando conhece a sua loja de verdade.</p>
           )}
-          <p className="mudo"><b>Não pule etapas.</b> Você já consegue ver tudo o que existe no menu, mas cada área abre quando a etapa anterior estiver feita. É assim que o Plano, os scripts e os números ficam certos para a sua loja.</p>
+          <p className="mudo"><b>Não pule etapas.</b> Você já consegue ver tudo o que existe no menu, mas cada área abre quando a etapa anterior estiver feita. É assim que o Plano e os números ficam certos para a sua loja.</p>
           <button className="btn p mt" type="button" disabled={!pode || indo} onClick={comecar}>
             {indo ? "Abrindo…" : visto ? "Ir para os Dados da loja" : pode ? "Assisti, quero começar" : "Assista até o fim para seguir"}
           </button>

@@ -35,7 +35,7 @@ export const SITUACOES: Record<Problema, { titulo: string; fala: string; acoes: 
     titulo: "PA baixo",
     fala: "você está vendendo, mas a cliente sai quase sempre com uma peça só.",
     acoes: [
-      "Oferecer o look completo em todo atendimento: a peça e o que combina",
+      "Oferecer a peça que combina em todo atendimento: a escolhida e o que combina",
       "Meta de PA 2 até o fim da semana, conferida no fim de cada dia",
       "Treino de 10 minutos com o script da peça complementar",
     ],
@@ -236,7 +236,7 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
 
 const USO: Record<string, string> = {
   pm: "Use essa força para apresentar primeiro as peças de valor mais alto em todo atendimento.",
-  pa: "Use essa força para conduzir a cliente para o look completo.",
+  pa: "Use essa força para conduzir a cliente para levar a peça que combina.",
   volume: "Use essa força para chamar a sua carteira e trazer a cliente para a loja.",
   ok: "Use essa força para ensinar o time o que está dando certo.",
 };
@@ -281,7 +281,7 @@ export function feedback(v: Vendedora) {
         : `"O seu atendimento está funcionando: ${v.vendas} vendas, PA ${pa} e ticket ${tkm}."`;
   const solucao: Record<string, PassoFeedback> = {
     pm: { titulo: "3. A solução, mostrada na prática", dica: "Pegue uma peça que ela vende muito e mostre qual seria a opção com um valor um pouco maior que ela poderia ter oferecido, e como argumentaria (tecido, caimento, ocasião).", fala: `"Em todo atendimento, você começa pelas peças de maior valor e fala do benefício antes do preço."` },
-    pa: { titulo: "3. A solução, mostrada na prática", dica: "Pegue a peça que ela mais vende e monte com ela o look completo na frente dela: o que ofereceria junto e como falaria antes de ir para o caixa.", fala: `"Depois que a cliente escolhe, você mostra a peça que completa o look antes de ir para o caixa."` },
+    pa: { titulo: "3. A solução, mostrada na prática", dica: "Pegue a peça que ela mais vende e mostre com ela a combinação completa na frente dela: o que ofereceria junto e como falaria antes de ir para o caixa.", fala: `"Depois que a cliente escolhe, você mostra a peça que combina com a escolhida antes de ir para o caixa."` },
     volume: { titulo: "3. A solução, mostrada na prática", dica: "Escolham juntas, agora, 5 clientes da carteira dela, e ela escreve a primeira mensagem na sua frente.", fala: `"Você chama 5 clientes da sua carteira por dia e aborda toda cliente que entra em até 1 minuto."` },
     ok: { titulo: "3. O próximo desafio", dica: "Peça para ela contar o que está fazendo de diferente: é isso que vai para o time.", fala: `"O que você está fazendo de diferente? Quero que você ensine isso para o time."` },
   };
@@ -355,7 +355,7 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
   const produto = produtos.length ? produtos[semanaDoDia(Number(d.agora.slice(8))) % produtos.length] : null;
   const alvo = produto ?? "as peças campeãs";
   const conteudo = problemaDaLoja === "pa"
-    ? { titulo: `Reels: 3 looks completos com ${alvo}`, texto: "Mostra a peça e o que combina: ensina a cliente a levar o look, não só a peça." }
+    ? { titulo: `Reels: 3 combinações com ${alvo}`, texto: "Mostra a peça e o que combina: ensina a cliente a levar a combinação, não só uma peça." }
     : problemaDaLoja === "pm"
       ? { titulo: `Reels: por que ${alvo} vale cada centavo`, texto: "Caimento, tecido e ocasião antes do preço. Valoriza as peças de maior valor." }
       : { titulo: `Stories de novidade com ${alvo}`, texto: "Caixinha \"quero ver\" no último story: quem responder vira atendimento no WhatsApp." };
@@ -372,7 +372,7 @@ export function atitudes(d: DadosMeuDia, problemaDaLoja: Problema, nVendedoras =
   out.push(lanc
     ? { tipo: "Ação", titulo: dias(lanc.inicio) ? `${lanc.titulo} em ${dias(lanc.inicio)} ${dias(lanc.inicio) === 1 ? "dia" : "dias"}` : `${lanc.titulo} começa hoje`, texto: dias(lanc.inicio) <= 3 ? "Hoje é dia de stories de espera: mostre um pedaço e diga quando abre." : "Avise a carteira e comece o desejo nos stories, sem preço ainda.", href: "/planeje", botao: "Ver o plano do mês" }
     : data
-      ? { tipo: "Ação", titulo: `${data.titulo} em ${dias(data.iso)} dias`, texto: "A campanha começa antes da data: looks para a ocasião nos stories e na vitrine a partir de hoje.", href: "/acoes", botao: "Ver as Ações do Mês" }
+      ? { tipo: "Ação", titulo: `${data.titulo} em ${dias(data.iso)} dias`, texto: "A campanha começa antes da data: peças para a ocasião nos stories e na vitrine a partir de hoje.", href: "/acoes", botao: "Ver as Ações do Mês" }
       : foco
         ? { tipo: "Ação", titulo: "Foco da semana", texto: foco, href: "/planeje", botao: "Ver o plano do mês" }
         : { tipo: "Ação", titulo: "Monte a ação do mês", texto: "Sem ação planejada para os próximos dias. Escolha uma no PLANEJE AQUI ou nas Ações do Mês.", href: "/planeje", botao: "Abrir o PLANEJE AQUI" });

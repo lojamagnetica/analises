@@ -127,6 +127,7 @@ export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo
   if (time) blocos.push(
     b("s_reuniao", "semanal", sem("s_reuniao"), "Equipe", "Reunião semanal de resultados com o time", "30 minutos", ["O número de cada uma", "Reconhecimento público", "Os 3 focos da semana"]),
     b("s_individual", "semanal", sem("s_individual"), "Equipe", "Conversa individual com cada pessoa do time", "15 min cada", ["O número dela na semana", "O que ela já faz bem", "O combinado da semana sai dela"]),
+    b("s_mural", "semanal", sem("s_mural"), "Equipe", "Atualizar o mural de resultados", "O placar do time à vista de todas", ["Venda da semana de cada pessoa × a meta", "Quem foi destaque e por quê", "Quanto falta para a meta do mês"]),
     b("s_missao", "semanal", sem("s_missao"), "Equipe", "Missão da semana das clientes", "Igual para o time, cada uma com a sua carteira", ["Escolher a missão da semana", "Cada pessoa chama as clientes da sua carteira", "Conferir no fim da semana"]),
     b("s_conhecimento", "semanal", sem("s_conhecimento"), "Equipe", "Dia do conhecimento implantado", "O time estuda e pratica um conhecimento", ["Escolher um conteúdo do curso", "Estudar junto com o time", "Praticar no atendimento da semana"], depois3),
     b("m_reuniao", "mensal", mes("m_reuniao", 5), "Equipe", "Reunião do mês com o time", "Logo depois da análise do mês", ["O que foi bom e o que precisa melhorar", "A meta do mês e a de cada pessoa", "A premiação e as ações"]),

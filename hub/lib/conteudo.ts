@@ -207,7 +207,8 @@ export const ROTINA_GESTAO: Etapa = {
     ...demanda("s_conteudo", "Planejar os conteúdos da semana", "Existe dia fixo? Qual?", SEMANA),
     ...demanda("s_gravacao", "Gravar os vídeos", "Existe dia fixo ou um melhor dia para gravar?", SEMANA),
     ...demanda("s_parados", "Ação para as peças paradas", "Em que dia?", SEMANA),
-    ...demanda("s_conhecimento", "Treinamento do time (estudar e praticar um conhecimento)", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_conhecimento", "Dia do conhecimento: o time estuda e pratica um conhecimento (treinamento)", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_mural", "Atualizar o mural de resultados do time", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
     ...demanda("s_crediario", "Conferir o crediário da semana: vendido, recebido e vencido", "Em que dia?", [...SEMANA, "Não vendo no crediário"]),
     { id: "como_semana", rotulo: "Conte como você faz hoje o que marcou acima (a semana)", tipo: "textarea" },
     // Todo mês

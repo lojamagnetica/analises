@@ -122,7 +122,7 @@ export default function GestaoDeClientes() {
                   <td>{l.f?.situacao ?? "—"}</td>
                   <td>{l.f?.etapa ? `${l.f.etapa} · ${ETAPAS_JORNADA[l.f.etapa]}` : <span className="mudo">—</span>}</td>
                   <td><Termometro valor={l.f?.termometro} /></td>
-                  <td>{l.f?.fundamentos.length ?? 0}/16</td>
+                  <td style={{ whiteSpace: "nowrap" }}>{l.f?.fundamentos.length ?? 0}/16{l.f?.fundamentos_trabalhando?.length ? <small className="mudo"> · 🟡 {l.f.fundamentos_trabalhando.length}</small> : null}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     {dia(l.c?.fim)}
                     {faltam >= 0 && faltam <= 60 && <div><span className="selo alerta">em {faltam} dias</span></div>}

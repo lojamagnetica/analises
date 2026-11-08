@@ -119,11 +119,22 @@ export function FichaLoja({ portalId }: { portalId: string }) {
           <div><label className="rotulo">Pasta interna</label><input type="url" name="pasta_interna" defaultValue={f?.pasta_interna ?? ""} /></div>
         </div>
         <details className="mt">
-          <summary style={{ cursor: "pointer" }}><b>Fundamentos implantados</b> · {f?.fundamentos.length ?? 0} de 16</summary>
-          <div className="grade g2 mt" style={{ gap: 4 }}>
-            {FUNDAMENTOS.map((x) => (
-              <label key={x} className="marcar"><input type="checkbox" name="fundamentos" value={x} defaultChecked={f?.fundamentos.includes(x)} /><span>{x}</span></label>
-            ))}
+          <summary style={{ cursor: "pointer" }}><b>Fundamentos do Método</b> · {f?.fundamentos.length ?? 0} de 16 implantados{f?.fundamentos_trabalhando?.length ? ` · ${f.fundamentos_trabalhando.length} trabalhando agora` : ""}</summary>
+          <p className="ajuda" style={{ margin: "6px 0" }}>⚪ Ainda não · 🟡 Trabalhando agora (o que está no Contrato de Foco e no Plano do mês) · 🟢 Implantado (virou rotina na loja). O placar conta só os implantados.</p>
+          <div className="grade g2 mt" style={{ gap: "4px 16px" }}>
+            {FUNDAMENTOS.map((x) => {
+              const v = f?.fundamentos.includes(x) ? "implantado" : f?.fundamentos_trabalhando?.includes(x) ? "trabalhando" : "nao";
+              return (
+                <label key={x} className="linha entre" style={{ gap: 8, padding: "4px 0", borderBottom: "1px solid var(--line)" }}>
+                  <span>{x}</span>
+                  <select name={`fund:${x}`} defaultValue={v} style={{ maxWidth: 190 }}>
+                    <option value="nao">⚪ Ainda não</option>
+                    <option value="trabalhando">🟡 Trabalhando agora</option>
+                    <option value="implantado">🟢 Implantado</option>
+                  </select>
+                </label>
+              );
+            })}
           </div>
         </details>
         <label className="rotulo">Observações</label>

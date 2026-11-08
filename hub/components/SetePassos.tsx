@@ -13,7 +13,7 @@ export function SetePassos({ passos, atual }: { passos: Passo[]; atual: number }
       {passos.map((p) => {
         const feito = p.numero < atual;
         const agora = p.numero === atual;
-        const cor = feito ? "var(--green)" : CORES[p.numero - 1];
+        const cor = feito ? "var(--feito)" : CORES[p.numero - 1];
         return (
           <div key={p.numero} className="card card-borda etapa" style={{ ["--c" as string]: cor }}>
             <span className={`selo ${feito ? "feito" : agora ? "andamento" : "espera"}`}>{feito ? "feito" : agora ? "agora" : "a seguir"}</span>

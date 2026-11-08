@@ -286,6 +286,24 @@ function Apresentacao() {
         </div>
       ),
     },
+    {
+      titulo: "Como você é atendida",
+      roteiro: "Deixe bem claro, antes de ela começar a mandar mensagem: a Camilla responde duas vezes ao dia, conforme a agenda dela, e o suporte responde em horário comercial. Assim ela sabe quando esperar a resposta e nada fica sem retorno.",
+      corpo: <Passos itens={[
+        ["Camilla responde 2 vezes ao dia", "Ela responde as mensagens enviadas pelo Hub de acordo com a agenda dela, para garantir a excelência em cada resposta."],
+        ["O suporte responde no horário comercial", "A qualquer momento do dia, durante o horário comercial."],
+        ["E aos sábados até as 13h", "Mandou no sábado de manhã? O suporte responde até as 13h."],
+      ]} />,
+    },
+    {
+      titulo: "Segunda-feira é o dia da devolutiva",
+      roteiro: "Explique o combinado com calma: toda segunda a mentora analisa todas as lojas que estão com o Hub atualizado e dá o retorno sobre a estratégia da semana. Se o Hub não estiver atualizado na segunda, a loja só recebe a devolutiva na segunda seguinte, desde que já esteja em dia. É isso que garante a excelência operacional da mentoria.",
+      corpo: <Passos itens={[
+        ["Toda segunda, a análise", "A mentora analisa todas as lojas que estão com o Hub atualizado."],
+        ["Você recebe a estratégia da semana", "O retorno vem sobre a estratégia da semana da sua loja."],
+        ["Hub desatualizado na segunda?", "A devolutiva fica para a próxima segunda, se já estiver tudo em dia. Isso garante a excelência operacional da mentoria."],
+      ]} />,
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,

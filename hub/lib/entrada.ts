@@ -21,7 +21,7 @@ export type VideoBoasVindas = { url: string; segundos: number };
 
 /** Páginas que nunca travam. */
 /** Loja na mão (Vendas do dia, Crediário, Compras): a loja registra desde o primeiro dia. */
-export const LOJA_NA_MAO = ["/gestao/vendas", "/gestao/crediario", "/gestao/minhas-compras"];
+export const LOJA_NA_MAO = ["/gestao/vendas", "/gestao/crediario", "/gestao/minhas-compras", "/gestao/estoque-loja"];
 const SEMPRE = [...LOJA_NA_MAO, "/inicio", "/comece", "/guia", "/conta", "/sem-portal", "/jornada", "/reunioes", "/cursos", "/duvidas", "/assistente", "/consultoria", "/contrato"];
 /** Só a página exata (as subpáginas seguem as regras). */
 const SEMPRE_EXATA = ["/conteudo"];

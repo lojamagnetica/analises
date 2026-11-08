@@ -15,6 +15,8 @@ async function ok<T>(p: PromiseLike<{ data: T; error: { message: string } | null
   return data;
 }
 
+/** A linha da peça (o material): é por ela que o Diagnóstico lê o que mais vende. */
+export const LINHAS = ["Ouro", "Prata 925", "Semijoia", "Acessório"];
 export const CATEGORIAS = ["Anel", "Brinco", "Colar", "Pulseira", "Conjunto", "Pingente", "Tornozeleira", "Relógio", "Outro"];
 export { FORMAS };
 export const nomeForma = (f: string) => FORMAS.find((x) => x.chave === f)?.nome ?? f;
@@ -57,12 +59,12 @@ async function ajustarCliente(id: string | null, compras: number, valor: number,
 
 export type Venda = {
   id: string; dia: string; categoria: string; produto: string | null; valor: number; pecas: number; forma: Forma;
-  cliente_id: string | null; maleta: boolean; created_at: string;
+  cliente_id: string | null; maleta: boolean; created_at: string; linha: string | null; estoque_id: string | null;
 };
 export type NovaVenda = Omit<Venda, "id" | "created_at"> & { id?: string };
 
 export async function buscarVendas(portalId: string, de: string, ate: string) {
-  const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at")
+  const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at, linha, estoque_id")
     .eq("portal_id", portalId).gte("dia", de).lte("dia", ate).order("dia", { ascending: false }).order("created_at", { ascending: false });
   return (data ?? []).map((v) => ({ ...v, valor: Number(v.valor), pecas: Number(v.pecas) })) as Venda[];
 }
@@ -90,6 +92,7 @@ export async function salvarVenda(portalId: string, v: NovaVenda, antes?: Venda 
   const linha = {
     portal_id: portalId, dia: v.dia || hoje(), categoria: v.categoria, produto: v.produto?.trim().slice(0, 200) || null,
     valor: r2(v.valor), pecas: Math.max(1, Math.round(v.pecas || 1)), forma: v.forma, cliente_id: v.cliente_id, maleta: v.maleta,
+    linha: v.linha || null, estoque_id: v.estoque_id || null,
   };
   const salva = v.id
     ? await ok(sb().from("loja_vendas").update(linha).eq("id", v.id).select("id").single())
@@ -194,3 +197,38 @@ export async function salvarCompra(portalId: string, c: Omit<Compra, "id" | "cre
 }
 export const removerCompra = (id: string) => ok(sb().from("loja_compras").delete().eq("id", id));
 export const marcarParcelasCompra = (id: string, parcelas: Parcela[]) => ok(sb().from("loja_compras").update({ parcelas }).eq("id", id));
+
+// ───── Estoque (por tipo, linha e preço) ─────
+
+export type ItemEstoque = {
+  id: string; categoria: string; linha: string | null; preco: number; qtd: number; entradas: number; contado_em: string; obs: string | null;
+  /** Calculados: peças vendidas depois da contagem e o que tem hoje. */
+  vendidas: number; atual: number;
+};
+
+export async function buscarEstoque(portalId: string): Promise<ItemEstoque[]> {
+  const [{ data: itens }, { data: vendas }] = await Promise.all([
+    sb().from("loja_estoque").select("id, categoria, linha, preco, qtd, entradas, contado_em, obs").eq("portal_id", portalId).order("categoria").order("preco"),
+    sb().from("loja_vendas").select("estoque_id, dia, pecas").eq("portal_id", portalId).not("estoque_id", "is", null).limit(20000),
+  ]);
+  return (itens ?? []).map((i) => {
+    const vendidas = (vendas ?? []).filter((v) => v.estoque_id === i.id && v.dia >= i.contado_em).reduce((s, v) => s + Number(v.pecas), 0);
+    const qtd = Number(i.qtd), entradas = Number(i.entradas);
+    return { ...i, preco: Number(i.preco), qtd, entradas, vendidas, atual: qtd + entradas - vendidas } as ItemEstoque;
+  });
+}
+
+/** Novo grupo ou correção. Contar de novo zera as entradas e começa a conta a partir de hoje. */
+export async function salvarItemEstoque(portalId: string, i: { id?: string; categoria: string; linha: string | null; preco: number; qtd: number; obs?: string | null; recontar?: boolean }) {
+  if (!i.categoria) throw new Error("Escolha o tipo de peça.");
+  if (!(i.preco > 0)) throw new Error("Escreva o preço de venda.");
+  if (!(i.qtd >= 0)) throw new Error("Escreva quantas peças tem.");
+  const linha: Record<string, unknown> = { portal_id: portalId, categoria: i.categoria, linha: i.linha || null, preco: r2(i.preco), qtd: Math.round(i.qtd), obs: i.obs?.trim().slice(0, 200) || null };
+  if (!i.id || i.recontar) Object.assign(linha, { contado_em: hoje(), entradas: 0 });
+  await ok(i.id ? sb().from("loja_estoque").update(linha).eq("id", i.id) : sb().from("loja_estoque").insert(linha));
+}
+export const entradaEstoque = async (i: ItemEstoque, n: number) => {
+  if (!(n > 0)) throw new Error("Escreva quantas peças chegaram.");
+  await ok(sb().from("loja_estoque").update({ entradas: i.entradas + Math.round(n) }).eq("id", i.id));
+};
+export const removerItemEstoque = (id: string) => ok(sb().from("loja_estoque").delete().eq("id", id));

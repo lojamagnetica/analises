@@ -66,7 +66,6 @@ export const GUIA: Record<string, TextoGuia> = {
   "/pessoas/gincanas": { oque: "Gincanas prontas para animar o time e vender mais.", passos: ["Escolha uma gincana.", "Combine as regras com o time e acompanhe o placar."] },
   // Vendas
   "/acoes": { oque: "Ações de venda prontas para a sua loja, com cronograma, mensagens, conteúdo e placar.", passos: ["Escolha a ação do mês.", "Siga o cronograma dia a dia.", "Lance os resultados no placar."] },
-  "/scripts": { oque: "Scripts de venda para o time usar no atendimento e no WhatsApp.", passos: ["Escolha a situação.", "Copie e adapte com o jeito da loja."] },
   "/planeje": { oque: "O plano de ação de cada mês, no jeito da Camilla planejar: meta, meta de cada vendedor, premiação, ações, datas especiais, produtos em destaque e as 4 semanas.", passos: ["Abra o próximo mês até o dia 20.", "Responda os 5 passos: a meta (com a meta de cada vendedor e a premiação), o que fez no ano passado, as datas, os produtos e as semanas.", "Clique em Enviar para a Camilla e espere o retorno dela."] },
   // De cliente a fã
   "/clientes": { oque: "As suas clientes: quando compraram e quanto gastaram, separadas por tipo.", passos: ["Cadastre ou importe as clientes.", "Edite ou exclua quando precisar.", "Veja com quem falar hoje."] },

@@ -337,7 +337,7 @@ export function sugestoesDeConteudo(d: DadosHoje): Sugestao[] {
     .sort((a, b) => peso(b) - peso(a)).slice(0, 3)
     .map((i) => ({
       chave: `e-${i.id}`, origem: "estoque", titulo: `Mostrar: ${i.produto}`, href: "/conteudo/roteiro",
-      texto: `${i.qtd} peça(s) paradas há ${i.dias_parado} dias${data ? `. ${data.titulo} é ${data.faltam === 0 ? "hoje" : `em ${data.faltam} dias`}: monte um look para essa data` : ": monte um look e mostre como usar"}, e chame a cliente certa no direct.`,
+      texto: `${i.qtd} peça(s) paradas há ${i.dias_parado} dias${data ? `. ${data.titulo} é ${data.faltam === 0 ? "hoje" : `em ${data.faltam} dias`}: monte uma combinação para essa data` : ": mostre como usar com outras peças"}, e chame a cliente certa no direct.`,
     }));
   for (const p of d.pautas.slice(0, 2)) lista.push({ chave: `p-${p.titulo}`, origem: "pauta", titulo: `Em alta: ${p.titulo}`, texto: p.angulo, href: "/conteudo/pautas" });
   if (data && !lista.some((s) => s.origem === "estoque")) lista.push({ chave: `d-${data.titulo}`, origem: "data", titulo: `${data.titulo} se aproxima`, texto: `Faltam ${data.faltam} dias. Planeje o conteúdo e as ações dessa data.`, href: "/conteudo/semana" });

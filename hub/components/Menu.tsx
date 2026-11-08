@@ -187,7 +187,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "vendas", rotulo: "Vendas", icone: "funnel",
       itens: [
         { href: "/acoes", rotulo: "Ações do Mês", icone: "bolt" },
-        { href: "/scripts", rotulo: "Scripts de venda", icone: "chat" },
         { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "kanban" },
       ],
     },

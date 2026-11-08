@@ -247,6 +247,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
+  // Scripts de venda prontos saíram de todos os portais (não se encaixavam no tom e nos produtos de cada loja).
+  if (!hub.equipe && caminho.startsWith("/scripts")) return "/inicio";
   // Loja sem equipe: as páginas de time não abrem nem pelo link.
   if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.

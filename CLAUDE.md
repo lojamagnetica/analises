@@ -40,6 +40,11 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
 - Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
+- Plano de Ação mês a mês (norteia a satisfação da cliente):
+  - Os desejos vêm SEMPRE das palavras da própria cliente: loja que subimos do Drive = formulário "Diagnóstico da Sua Loja" (planilha de respostas no Drive); loja que entrou direto pelo portal = as respostas dela no Hub. Nunca do resumo do Comercial, do Raio-X ou de outro agente. Citar a pergunta e a resposta de onde saiu cada desejo.
+  - Os desejos que ela listou primeiro (objetivos em ordem de prioridade e o que quer construir) entram nos 2 primeiros meses depois da entrega do portal.
+  - Todo mês tem uma correção de gestão e processos e pelo menos um impulsionador de resultado. O título do mês segue "Correção: … · Impulsionador: …".
+  - Meta do mês pela regra do método (mesmo mês do ano anterior +20%), salvo número que a própria cliente deu.
 - Contrato de Foco (padrão da Luciana, vale para toda loja com Diagnóstico liberado), na ficha da loja:
   - `foco_curto`: uma linha (até 90 caracteres) para o Início, logo abaixo do nome. Ex.: "Faturar R$ 30 mil por mês com as vendas registradas no Hub".
   - `resultado_n1`: uma frase completa (até ~175 caracteres) com o resultado e o prazo de 90 dias, tirada do foco do Diagnóstico.

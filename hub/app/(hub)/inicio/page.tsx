@@ -212,6 +212,16 @@ export default function Inicio() {
           </Link>
         ))}
       </div>
+
+      {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
+      {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} /></div>
+      ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
+        <>
+          <div className="secao">Os 7 passos da sua mentoria</div>
+          <SetePassos passos={passos} atual={portal.passo_atual} />
+        </>
+      )}
       </>}
       {ent && (ent.livre || (ent.video && ent.loja && ent.equipe)) && (
         <p className="ajuda"><Link className="link-loja" href="/comece">▶ Rever o vídeo de boas-vindas e o passo a passo</Link></p>
@@ -268,16 +278,6 @@ export default function Inicio() {
           <Link className="btn s peq" href={`/planeje/mes?m=${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
         </div>
       </div>
-
-      {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
-      {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} /></div>
-      ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
-        <>
-          <div className="secao">Os 7 passos da sua mentoria</div>
-          <SetePassos passos={passos} atual={portal.passo_atual} />
-        </>
-      )}
       </>}
     </>
   );

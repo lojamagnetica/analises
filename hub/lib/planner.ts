@@ -108,6 +108,18 @@ export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo
     ...(time ? [b("d_pos_venda", "diaria", null, "Equipe", "Pós-venda em até 24 horas, sem oferecer nada", momento("d_pos_venda"), ["Cada pessoa manda para as clientes que atendeu", "Começa com \"Aqui é [nome], da [loja]\"", "O objetivo é ela responder e salvar o número"])] : []),
     // Toda semana
     b("s_analise", "semanal", sem("s_analise"), "Gestão", "Dia da análise de resultado", "Time, marcas e produtos, Instagram e vitrine", [...(time ? ["Resultado de cada pessoa: venda, PA e ticket"] : ["Venda da semana × meta"]), "Marcas e produtos: o que mais vendeu e o que parou", "Instagram: o que trouxe cliente e venda", "Vitrine: o que saiu dela vendeu?", "Revisar o plano do mês"]),
+    b("s_carteira", "semanal", sem("s_carteira"), "Varejo", "Carteira e ativação da base", `Clientes sem comprar há mais de ${/^\d+/.test(String(resp.s_carteira_dias ?? "")) ? resp.s_carteira_dias : "60 dias"}`, [
+      "Ver o resultado das ações da carteira da semana: quantas chamadas, respostas e vendas",
+      `Puxar as clientes que não compram há mais de ${/^\d+/.test(String(resp.s_carteira_dias ?? "")) ? resp.s_carteira_dias : "60 dias"} (Minhas clientes › Resgate)`,
+      "Montar o plano de CRM de ativação: quem chama cada uma, a mensagem e até quando",
+      "A mensagem diz quem fala e conduz para o próximo passo, sem perguntar \"posso?\"",
+    ]),
+    b("s_experiencia", "semanal", sem("s_experiencia"), "Varejo", "Pós-venda e check da experiência das clientes", "O carimbo de conexão de cada venda", [
+      "Conferir se toda venda da semana recebeu o pós-venda em até 24 horas, sem oferecer nada",
+      "Ver quem respondeu e salvou o número",
+      "Fazer o check da experiência: o que as clientes elogiaram e o que reclamaram",
+      "Ajustar com o time o que apareceu no check",
+    ]),
     b("s_vm", "semanal", sem("s_vm"), "Varejo", "VM geral: vitrine e arrumação da loja", "", ["Trocar a vitrine com o que precisa vender", "Arrumar as araras por cor e ocasião", "Destacar o que está parado na frente"]),
     b("s_conteudo", "semanal", sem("s_conteudo"), "Conteúdo", "Planejar os conteúdos da semana", o.apoio ? `Junto com ${o.apoio}` : "", ["Ver as datas e o que precisa vender", "Programar os conteúdos da semana", "Separar as peças"]),
     b("s_gravacao", "semanal", sem("s_gravacao"), "Conteúdo", "Gravar os vídeos", "Tudo de uma vez", ["Peças separadas e roteiro na mão", "Gravar todos os vídeos da semana"]),

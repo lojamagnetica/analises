@@ -6,7 +6,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-type Contrato = { resultado: string | null; indicador: string | null; de_acordo_em: string | null };
+type Contrato = { resultado: string | null; indicador: string | null; de_acordo_em: string | null; curto: string | null; trabalhando: string[] | null };
 
 /** Contrato de Foco: o resultado nº 1 dos próximos 90 dias. A loja lê e dá o "de acordo"; a equipe preenche na ficha da loja. */
 export function ContratoFoco() {
@@ -42,12 +42,19 @@ export function ContratoFoco() {
           ? <span className="selo feito">De acordo em {dataHora(dados.de_acordo_em)}</span>
           : <span className="selo espera">{equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo"}</span>}
       </div>
-      <h3 style={{ margin: "8px 0" }}>{dados.resultado}</h3>
+      {dados.curto && <div style={{ fontSize: 13, fontWeight: 700, color: "var(--red)", marginTop: 8 }}>{dados.curto}</div>}
+      <h3 style={{ margin: "6px 0 8px" }}>{dados.resultado}</h3>
       {dados.indicador && (
         <div className="grade g3" style={{ gap: 10, textAlign: "center" }}>
           <div><small className="mudo">Início</small><div><b>{inicio || "—"}</b></div></div>
           <div><small className="mudo">Hoje</small><div><b>{hojeV || "—"}</b></div></div>
           <div><small className="mudo">Meta</small><div><b>{meta || "—"}</b></div></div>
+        </div>
+      )}
+      {(dados.trabalhando ?? []).length > 0 && (
+        <div className="mt">
+          <small className="mudo">Os fundamentos que vamos trabalhar para chegar lá</small>
+          <div className="chips" style={{ marginTop: 4 }}>{(dados.trabalhando ?? []).map((x) => <span key={x} className="chip">{x.replace(/^\d+\.\d+ /, "")}</span>)}</div>
         </div>
       )}
       {!dados.de_acordo_em && !equipe && (

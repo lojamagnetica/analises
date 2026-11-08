@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { buscarPessoas } from "@/lib/pessoas";
 import {
   buscarOrganograma, modeloOrganograma, novaArea, salvarOrganograma,
@@ -108,10 +108,11 @@ function CaixaArea({ a, org, nivel, paraTime, mudar, tirar, criar }: {
 
 export default function OrganogramaPagina() {
   const { portal, equipe, aprova } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const { dados } = useDados(async () => ({
     salvo: await buscarOrganograma(portal.id),
-    pessoas: (await buscarPessoas(portal.id)).pessoas.filter((p) => p.ativo),
-  }), [portal.id]);
+    pessoas: (await buscarPessoas(portal.id, lojaFoco)).pessoas.filter((p) => p.ativo),
+  }), [portal.id, lojaFoco]);
   const [atual, setAtual] = useState<{ org: Organograma; liberado: boolean } | null>(null);
   const [erro, setErro] = useState("");
   const [paraTime, setParaTime] = useState(false);

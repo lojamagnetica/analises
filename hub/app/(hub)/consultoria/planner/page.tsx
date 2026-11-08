@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Copiar } from "@/components/Copiar";
 import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
+import { RotinaDaGestao } from "@/components/RotinaDaGestao";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
@@ -151,6 +152,9 @@ export default function PlannerGestao() {
   return (
     <>
       <Titulo titulo={`Planner de gestão${(portal.lojas?.length ?? 0) > 1 ? ` · ${loja}` : ""}`} sub="Todas as demandas da sua gestão, separadas em diárias, semanais e mensais, com o passo a passo de cada uma. Comece pelo foco de hoje e marque o que fizer." />
+
+      {/* A rotina da gestão (caixa, relatórios, reuniões e 1:1) fica aqui, no topo do Planner. */}
+      {portal.tipo === "Consultoria" && <RotinaDaGestao />}
 
       {equipe && portal.tipo !== "Consultoria" && (
         <div className="card mb linha entre" style={{ gap: 10, flexWrap: "wrap" }}>

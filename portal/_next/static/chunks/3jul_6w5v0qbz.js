@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,63991,e=>{"use strict";var t=e.i(43476),r=e.i(71645),o=e.i(18566),u=e.i(61175);e.s(["default",0,function(){let e=(0,o.useRouter)();return(0,r.useEffect)(()=>{e.replace("/consultoria/planner")},[e]),(0,t.jsx)(u.Carregando,{})}])}]);

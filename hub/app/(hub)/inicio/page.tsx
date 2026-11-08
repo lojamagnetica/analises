@@ -233,7 +233,7 @@ export default function Inicio() {
 
       {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} /></div>
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} /></div>
       ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>

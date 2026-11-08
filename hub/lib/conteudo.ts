@@ -25,10 +25,6 @@ export const tituloMes = (m: number, titulos?: Record<string, string> | null) =>
   return t ? `Mês ${m} · ${t}` : `Mês ${m}`;
 };
 
-/** Opções de dia para a rotina de gestão (Planner de gestão). */
-export const DIAS_ROTINA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Ainda não tenho dia fixo"];
-const DIAS_MES = (de: number, ate: number) => Array.from({ length: ate - de + 1 }, (_, i) => `Dia ${de + i}`);
-
 export type Campo = {
   id: string;
   rotulo: string;
@@ -82,18 +78,6 @@ export const ETAPAS: Etapa[] = [
       { id: "processos", rotulo: "Vocês têm processos escritos na loja (metas, roteiro de venda, rotinas do time)?", tipo: "opcao", opcoes: ["Sim, temos e o time segue", "Temos algo, mas é informal", "Não temos nada escrito"], novo: true },
       { id: "vm", rotulo: "Vitrine e arrumação da loja: quem cuida e de quanto em quanto tempo vocês trocam?", tipo: "textarea", novo: true },
       { id: "sistema", rotulo: "Qual sistema vocês usam para vendas e estoque?", tipo: "texto", novo: true, ajuda: "Se não usam sistema, escreva \"não usamos\"." },
-      // Rotina de gestão: com estes dias o Planner de gestão já nasce montado.
-      { id: "rotina_semana", rotulo: "Como é a sua semana na loja hoje, dia a dia?", tipo: "textarea", novo: true, ajuda: "Ex.: segunda: pedidos e banco; terça: vitrine; sábado: loja cheia, só atendimento." },
-      { id: "rot_analise_mes", rotulo: "Rotina ideal · em que dia do começo do mês você analisa o mês que fechou e prepara a reunião do mês com o time?", tipo: "opcao", opcoes: [...DIAS_MES(1, 7), "Ainda não faço"], novo: true },
-      { id: "rot_planejamento", rotulo: "Rotina ideal · até que dia do mês você planeja o mês seguinte (meta, datas e ações)?", tipo: "opcao", opcoes: ["Dia 10", "Dia 12", "Dia 15", "Dia 18", "Dia 20", "Ainda não faço"], novo: true },
-      { id: "rot_feedback", rotulo: "Rotina ideal · em que dia do meio do mês você dá o feedback individual para cada pessoa do time (ainda dá para virar o mês)?", tipo: "opcao", opcoes: [...DIAS_MES(12, 18), "Não tenho equipe"], novo: true },
-      { id: "rot_analise", rotulo: "Rotina ideal · em que dia da semana você analisa os resultados: time, marcas e produtos, Instagram e vitrine?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
-      { id: "rot_reuniao", rotulo: "Rotina ideal · em que dia da semana é a conversa individual com cada pessoa do time?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
-      { id: "rot_vm", rotulo: "Rotina ideal · em que dia da semana é a troca geral de vitrine e a arrumação da loja?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
-      { id: "rot_conteudo", rotulo: "Rotina ideal · em que dia da semana você programa o conteúdo e grava os vídeos?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
-      { id: "rot_missao", rotulo: "Rotina ideal · em que dia da semana você combina com o time a missão da semana das clientes?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
-      { id: "rot_compras", rotulo: "Rotina ideal · em que dia da semana você recebe representantes e decide as compras?", tipo: "opcao", opcoes: DIAS_ROTINA, novo: true },
-      { id: "rot_conhecimento", rotulo: "Rotina ideal · em que dia da semana o time estuda e pratica um conhecimento (treinamento)?", tipo: "opcao", opcoes: [...DIAS_ROTINA, "Não tenho equipe"], novo: true },
     ],
   },
   {
@@ -183,3 +167,66 @@ export const ETAPAS: Etapa[] = [
 ];
 
 export type Respostas = Record<string, string | string[]>;
+
+// ───── Formulário da rotina de gestão (Planner de gestão) ─────
+// Fica fora de ETAPAS: não conta nos Dados da loja nem trava áreas. As respostas montam a sugestão do Planner.
+export const FAZ = ["Faço e funciona", "Faço, mas sem constância", "Não faço"];
+const MOMENTOS = ["Antes de abrir a loja", "Assim que abre", "No meio do dia", "No fim do dia", "Não tenho momento fixo"];
+const SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Não tenho dia fixo"];
+const MES = (de: number, ate: number) => [...Array.from({ length: ate - de + 1 }, (_, i) => `Dia ${de + i}`), "Não tenho dia fixo"];
+/** Uma demanda vira duas perguntas: se faz hoje e quando. */
+const demanda = (id: string, oque: string, quando: string, opcoes: string[]): Campo[] => [
+  { id, rotulo: `${oque} · você faz hoje?`, tipo: "opcao", opcoes: FAZ },
+  { id: `${id}_quando`, rotulo: quando, tipo: "opcao", opcoes },
+];
+export const ROTINA_GESTAO: Etapa = {
+  numero: 20,
+  titulo: "Rotina de gestão",
+  descricao: "Conte o que você já faz hoje na gestão da loja e quando. Com as suas respostas a Camilla monta o seu Planner de gestão, na ordem de prioridade.",
+  campos: [
+    { id: "rotina_semana", rotulo: "Como é a sua semana na loja hoje, dia a dia?", tipo: "textarea", ajuda: "Ex.: segunda: pedidos e banco; terça: vitrine; sábado: loja cheia, só atendimento." },
+    { id: "fora_loja", rotulo: "Em que dias e horários você não pode estar na loja por causa da sua vida pessoal? Ou gostaria de começar a ter?", tipo: "textarea", ajuda: "Ex.: terça à tarde, levo meu filho na escola; queria ter o sábado de folga uma vez por mês." },
+    { id: "meta_momentos", rotulo: "Em quais momentos você olha a meta do mês da loja e a de cada pessoa para tomar decisões e dar direção? Como você faz isso hoje?", tipo: "textarea", ajuda: "Ex.: olho todo dia de manhã no sistema; uma vez por semana mando no grupo quanto falta; ainda não acompanho." },
+    // Todo dia
+    ...demanda("d_comeco", "Começar o dia olhando a meta, como foi ontem e definindo as prioridades", "Em que momento você faz isso?", MOMENTOS),
+    ...demanda("d_direcao", "Mensagem de direção do dia no grupo da loja (mesmo quando você está fora)", "Em que momento você manda?", [...MOMENTOS, "Não tenho equipe"]),
+    ...demanda("d_loja_pronta", "Loja pronta: campeões repostos, araras e vitrine em ordem", "Em que momento isso é feito?", MOMENTOS),
+    ...demanda("d_conteudo", "Verificar os conteúdos e a estratégia de atração do dia", "Em que momento você olha isso?", MOMENTOS),
+    ...demanda("d_pagamentos", "Mapear os pagamentos do dia (boletos), os recebimentos e a situação da cobrança", "Em que momento você paga os boletos do dia e confere o que recebeu?", MOMENTOS),
+    ...demanda("d_cadastro", "Cadastrar a cliente em toda venda (nome, WhatsApp e aniversário)", "Quem cadastra?", ["Quem vendeu", "Eu", "A pessoa do caixa", "Ninguém ainda"]),
+    ...demanda("d_pos_venda", "Pós-venda em até 24 horas, sem oferecer nada", "Em que momento é feito?", ["Logo cedo, das vendas de ontem", "No fim do dia, das vendas do dia", "Não tenho momento fixo"]),
+    ...demanda("d_carteira", "Contatos do dia com as clientes da carteira", "Em que momento é feito?", MOMENTOS),
+    ...demanda("d_caixa", "Fechamento do caixa do dia (venda, atendimentos e peças)", "Quando você fecha o caixa?", ["No fim do dia", "No dia seguinte cedo", "Uma vez por semana", "Não tenho momento fixo"]),
+    { id: "como_dia", rotulo: "Conte como você faz hoje o que marcou acima (o dia a dia)", tipo: "textarea" },
+    // Toda semana
+    ...demanda("s_analise", "Analisar os resultados da semana: time, marcas e produtos, Instagram e vitrine, e revisar o plano", "Existe um dia fixo? Qual?", SEMANA),
+    ...demanda("s_reuniao", "Reunião semanal de resultados com o time", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_individual", "Conversa individual com cada pessoa do time", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_missao", "Definir a missão da semana das clientes para o time", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_vm", "Troca geral de vitrine e arrumação da loja", "Em que dia?", SEMANA),
+    ...demanda("s_conteudo", "Planejar os conteúdos da semana", "Existe dia fixo? Qual?", SEMANA),
+    ...demanda("s_gravacao", "Gravar os vídeos", "Existe dia fixo ou um melhor dia para gravar?", SEMANA),
+    ...demanda("s_parados", "Ação para as peças paradas", "Em que dia?", SEMANA),
+    ...demanda("s_conhecimento", "Treinamento do time (estudar e praticar um conhecimento)", "Em que dia?", [...SEMANA, "Não tenho equipe"]),
+    ...demanda("s_crediario", "Conferir o crediário da semana: vendido, recebido e vencido", "Em que dia?", [...SEMANA, "Não vendo no crediário"]),
+    { id: "como_semana", rotulo: "Conte como você faz hoje o que marcou acima (a semana)", tipo: "textarea" },
+    // Todo mês
+    ...demanda("m_analise", "Analisar o mês que fechou (meta × realizado, marcas, estoque e Instagram)", "Em que dia do mês?", MES(1, 7)),
+    ...demanda("m_reuniao", "Reunião do mês com o time (o que foi bom, o que melhorar, meta e ações)", "Em que dia do mês?", [...MES(1, 10), "Não tenho equipe"]),
+    ...demanda("m_feedback", "Feedback individual no meio do mês, quando ainda dá para virar o mês", "Em que dia do mês?", [...MES(10, 20), "Não tenho equipe"]),
+    ...demanda("m_planejamento", "Planejar o mês seguinte: meta, datas, produtos e ações", "Até que dia do mês?", MES(5, 25)),
+    ...demanda("m_aniversariantes", "Puxar as aniversariantes do mês seguinte e dividir pela carteira", "Em que dia do mês?", MES(20, 28)),
+    ...demanda("m_acao", "Ação do mês (campanha) com placar", "Quando começa?", ["Na primeira semana", "Na segunda semana", "Depende da data", "Não faço"]),
+    ...demanda("m_relatorios", "Tirar os relatórios do sistema (vendas, estoque e clientes)", "Em que dia do mês?", MES(1, 10)),
+    { id: "como_mes", rotulo: "Conte como você faz hoje o que marcou acima (o mês)", tipo: "textarea" },
+    // Compras e estoque
+    ...demanda("s_compras", "Compras da semana (reposição e representantes)", "Existe um dia fixo? Qual?", SEMANA),
+    { id: "c_como", rotulo: "Como funcionam as suas compras hoje? (reposição, representantes, feiras, coleções, pedidos antecipados)", tipo: "textarea" },
+    { id: "c_prioridade", rotulo: "Quando você compra, o que vem primeiro?", tipo: "opcao", opcoes: ["Repor o que mais vende", "As novidades e os lançamentos", "O que o representante oferece", "Não tenho uma regra"] },
+    { id: "c_orcamento", rotulo: "Você tem um orçamento (um teto) de compra por mês?", tipo: "opcao", opcoes: ["Tenho e respeito", "Tenho, mas acabo passando", "Não tenho"] },
+    ...demanda("c_estoque", "Análise do estoque: o que mais vende, o que está parado e há quanto tempo", "De quanto em quanto tempo?", ["Toda semana", "Todo mês", "Na troca de coleção", "Não tenho frequência"]),
+    { id: "c_estoque_como", rotulo: "Como você analisa o estoque hoje? (sistema, planilha, de olho na arara)", tipo: "textarea" },
+    { id: "c_calendario_tem", rotulo: "Você tem um calendário de compras no ano?", tipo: "opcao", opcoes: ["Tenho um calendário de compras", "Compro conforme aparece", "Não sei dizer"] },
+    { id: "c_calendario", rotulo: "Como é o seu calendário de compras no ano?", tipo: "textarea", ajuda: "Ex.: verão comprado em junho na feira; inverno em janeiro; reposição toda semana com o representante; Natal fechado em setembro." },
+  ],
+};

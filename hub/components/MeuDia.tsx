@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Carregando, useDados } from "@/lib/hub";
 import { dataCurta, moeda } from "@/lib/formato";
+import { Copiar } from "@/components/Copiar";
 import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
@@ -40,6 +41,16 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
   const feitosHoje = r.feitos[d.agora] ?? [];
   const at = atitudes(d, problemaDaLoja(vs, d.caixa), vs.filter((v) => v.vendas > 0).length);
   const ac = acompanhamento({ ...d, rotina: r });
+  // Mensagem de direção do dia: os números da loja já preenchidos; o resto a gestora completa.
+  const direcao = [
+    "Bom dia, time! ☀️",
+    p.ontem != null ? `Ontem: ${moeda(p.ontem)}${p.metaOntem ? ` de ${moeda(p.metaOntem)} da meta` : ""}.` : "Ontem: [venda de ontem].",
+    "Destaque: [nome], que [o que fez]. 👏",
+    p.meta ? `Hoje a meta é ${moeda(p.metaHoje ?? 0)}. Faltam ${moeda(Math.max(0, p.meta - p.vendido))} para a meta do mês, em ${p.restantes} ${p.restantes === 1 ? "dia" : "dias"}.` : "Hoje a meta é [meta de hoje].",
+    "Foco de hoje: [uma ação concreta].",
+    "Missão das clientes: [x] contatos da sua carteira até as [hora].",
+    "Conto com vocês! 💪",
+  ].join("\n");
   const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d.agora}T12:00:00Z`));
 
   const salvar = async (nova: Rotina) => {
@@ -106,6 +117,14 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)" }}>
         <h3 style={{ marginTop: 0 }}>✅ Sua rotina de hoje</h3>
         {!lista.length && !doPlanner.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
+        {!modo.solo && new Date(`${d.agora}T12:00:00Z`).getUTCDay() !== 0 && (
+          <details className="mt" style={{ marginBottom: 6 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13.5, fontWeight: 600 }}>Mensagem de direção de hoje, pronta para o grupo</summary>
+            <div className="card mt" style={{ whiteSpace: "pre-wrap", background: "var(--soft)", fontSize: 14 }}>{direcao}</div>
+            <Copiar texto={direcao} rotulo="Copiar a mensagem" />
+            <p className="ajuda" style={{ margin: "6px 0 0" }}>Troque o que está entre colchetes. Reconheça alguém pelo nome e diga uma ação concreta: a direção vale mesmo quando você está fora da loja.</p>
+          </details>
+        )}
         {doPlanner.map((b) => {
           const feito = feitosPlanner.includes(b.id);
           return (

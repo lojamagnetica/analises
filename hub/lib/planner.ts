@@ -24,7 +24,7 @@ export const FREQS: { id: Freq; titulo: string; sub: string }[] = [
 
 /** Uma demanda da gestão. dia: semanal 1 (seg) a 6 (sáb); mensal 1 a 28 ou 0 (último dia); null = a definir.
  * como: o passo a passo, um passo por linha. inicio: AAAA-MM em que a demanda começa a valer (vazio = já vale). */
-export type Bloco = { id: string; freq: Freq; dia: number | null; frente: Frente; titulo: string; detalhe: string; como: string; quem: string; inicio?: string | null };
+export type Bloco = { id: string; freq: Freq; dia: number | null; frente: Frente; titulo: string; detalhe: string; como: string; quem: string; inicio?: string | null; situacao?: "certo" | "sem_constancia" | "nao_faz" };
 
 /** A demanda já vale no mês da data (as que começam depois ficam fora do Hoje e da semana). */
 export const ativa = (b: Bloco, d = hoje()) => !b.inicio || b.inicio <= d.slice(0, 7);
@@ -68,48 +68,69 @@ export function modeloPlanner(): Planner {
 const diaSemana = (v: unknown) => { const i = DIAS_SEMANA.indexOf(String(v ?? "")); return i >= 1 ? i : null; };
 /** "Dia 15" → 15; o resto → o padrão. */
 const diaMes = (v: unknown, padrao: number | null) => { const m = /^Dia (\d+)$/.exec(String(v ?? "")); return m ? Number(m[1]) : padrao; };
-const semEquipe = (v: unknown) => String(v ?? "") === "Não tenho equipe";
+/** A situação de hoje, do formulário da rotina: já faz, faz sem constância ou não faz. */
+export type Situacao = "certo" | "sem_constancia" | "nao_faz";
+export const SITUACAO_ROTULO: Record<Situacao, string> = { certo: "Já faz", sem_constancia: "Sem constância", nao_faz: "Começar" };
+const situacao = (v: unknown): Situacao | undefined =>
+  v === "Faço e funciona" ? "certo" : v === "Faço, mas sem constância" ? "sem_constancia" : v === "Não faço" ? "nao_faz" : undefined;
+
+/** O padrão da mensagem de direção do dia no grupo da loja (o Meu dia preenche com os números). */
+export const DIRECAO_PADRAO = [
+  "Bom dia, time! Ontem: R$ [venda de ontem] de R$ [meta de ontem].",
+  "Destaque: [nome], que [o que fez]. 👏",
+  "Hoje a meta é R$ [meta de hoje]. Faltam R$ [falta no mês] em [dias] dias.",
+  "Foco de hoje: [uma ação concreta].",
+  "Missão das clientes: [x] contatos da sua carteira até as [hora].",
+];
 
 /**
- * Modelo da mentoria (rotina de gestão da Camilla): duas reuniões de gestão no mês (planejar o mês seguinte e analisar
- * o mês que fechou para montar a reunião do mês com o time), o dia da análise da semana (time, marcas e produtos,
- * Instagram e vitrine, e a revisão do plano), o feedback do meio do mês, a vitrine, o conteúdo, a missão da semana,
- * as compras e o dia do conhecimento (só para quem tem equipe e já passou dos 3 meses).
- * Os dias vêm do que a loja respondeu em Dados da loja › Gestão da loja; sem resposta, ficam "a definir".
+ * Modelo da mentoria (rotina de gestão da Camilla), montado com o formulário da rotina de gestão (etapa 20):
+ * cada demanda com o dia ou o momento que a loja respondeu e a situação de hoje. Sem equipe, saem as demandas de time;
+ * o dia do conhecimento só vale a partir do 4º mês. Sem resposta, o dia fica "a definir".
  */
 export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo?: boolean; inicio?: string | null; apoio?: string | null } = {}): Planner {
   const resp = r ?? {};
-  const time = !o.solo && !semEquipe(resp.rot_reuniao);
-  const b = (freq: Freq, dia: number | null, frente: Frente, titulo: string, detalhe: string, como: string[], inicio?: string | null): Bloco =>
-    ({ id: id(), freq, dia, frente, titulo, detalhe, como: como.join("\n"), quem: "", inicio: inicio ?? null });
-  // Dia do conhecimento: a partir do 4º mês de mentoria.
+  const time = !o.solo && resp.s_reuniao_quando !== "Não tenho equipe" && resp.d_direcao_quando !== "Não tenho equipe";
+  const momento = (id: string) => { const v = String(resp[`${id}_quando`] ?? ""); return v && !/^Não /.test(v) ? v : ""; };
+  const b = (id: string, freq: Freq, dia: number | null, frente: Frente, titulo: string, detalhe: string, como: string[], inicio?: string | null): Bloco =>
+    ({ id: `${id}-${crypto.randomUUID().slice(0, 4)}`, freq, dia, frente, titulo, detalhe, como: como.join("\n"), quem: "", inicio: inicio ?? null, situacao: situacao(resp[id]) });
+  const sem = (id: string) => diaSemana(resp[`${id}_quando`]);
+  const mes = (id: string, padrao: number) => diaMes(resp[`${id}_quando`], padrao);
   const depois3 = o.inicio ? (() => { const [a, m] = o.inicio!.slice(0, 7).split("-").map(Number); const t = a * 12 + m - 1 + 3; return `${Math.floor(t / 12)}-${String((t % 12) + 1).padStart(2, "0")}`; })() : null;
+  const crediario = resp.s_crediario_quando !== "Não vendo no crediário";
   const blocos: Bloco[] = [
-    b("diaria", null, "Gestão", "Começo do dia: as 3 prioridades", "10 min antes de abrir", ["Abrir o Hub e ver o Meu dia", "Escolher as 3 coisas que precisam acontecer hoje", "O resto vai para o dia certo da semana"]),
-    // As duas reuniões de gestão do mês.
-    b("mensal", diaMes(resp.rot_planejamento, 15), "Gestão", "Estratégia do mês seguinte", "Até o dia 20, no PLANEJE AQUI", ["Meta: o mesmo mês do ano passado +20%", "Estoque e o que gira: o que comprar e o que girar", "Datas, calendário e as ações do mês", "Enviar o plano para a Camilla"]),
-    b("mensal", diaMes(resp.rot_analise_mes, 3), "Gestão", time ? "Análise do mês que fechou e a reunião do mês com o time" : "Análise do mês que fechou", "O que foi bom, o que precisa melhorar e onde redobrar a atenção", [
-      "Meta × realizado da loja" + (time ? " e de cada pessoa do time" : ""),
-      "Marcas e produtos: o que vendeu e o que parou",
-      "Revisar o plano: segue ou ajusta",
-      ...(time ? ["Montar a reunião do mês com o time (o que foi bom, o que melhorar, a meta e as ações)"] : ["Os 3 combinados do mês"]),
-    ]),
-    b("semanal", diaSemana(resp.rot_analise), "Gestão", "Dia da análise de resultado", "Time, marcas e produtos, Instagram e vitrine", [
-      ...(time ? ["Resultado de cada pessoa do time: venda, PA e ticket"] : ["Venda da semana × meta"]),
-      "Marcas e produtos: o que mais vendeu e o que está parado",
-      "Instagram: o que trouxe cliente e venda",
-      "Vitrine: o que saiu da vitrine vendeu?",
-      "Revisar o plano do mês: o que está em dia e o que atrasou",
-    ]),
-    b("semanal", diaSemana(resp.rot_vm), "Varejo", "VM geral: vitrine e arrumação da loja", "A loja inteira pronta para a semana", ["Trocar a vitrine com o que precisa vender", "Arrumar as araras por cor e ocasião", "Destacar o que está parado na frente"]),
-    b("semanal", diaSemana(resp.rot_conteudo), "Conteúdo", "Programação de conteúdo e gravações", o.apoio ? `Junto com ${o.apoio}` : "Tudo de uma vez, no dia e hora combinados", ["Programar os conteúdos da semana", "Separar as peças", "Gravar os vídeos"]),
-    b("semanal", diaSemana(resp.rot_compras), "Gestão", "Compras e representantes", "Só dentro do orçamento do mês", ["Ver o que falta do que mais vende", "Conferir o orçamento de compras do mês", "Nada de peça nova parecida com o que está parado"]),
+    // Todo dia
+    b("d_comeco", "diaria", null, "Gestão", "Começar o dia: a meta, como foi ontem e as prioridades", momento("d_comeco") || "Antes de abrir", ["Ver no Meu dia a meta de hoje e quanto falta no mês", "Ver como foi ontem (da loja e de cada pessoa)", "Escolher as 3 prioridades do dia"]),
+    ...(time ? [b("d_direcao", "diaria", null, "Equipe", "Mensagem de direção do dia no grupo da loja", "Inegociável, mesmo quando você está fora", ["O Meu dia deixa a mensagem pronta com os números", ...DIRECAO_PADRAO])] : []),
+    b("d_loja_pronta", "diaria", null, "Varejo", "Loja pronta: campeões repostos, araras e vitrine em ordem", momento("d_loja_pronta"), ["Repor o que mais vende", "Araras e vitrine em ordem", "Preços visíveis"]),
+    b("d_conteudo", "diaria", null, "Conteúdo", "Conteúdos e estratégia de atração do dia", momento("d_conteudo"), ["Conferir o que vai ao ar hoje (stories e post)", "Ver a estratégia de atração do dia: novidade, data, peça parada", "Responder quem chamou no Instagram e no WhatsApp"]),
+    b("d_pagamentos", "diaria", null, "Gestão", "Pagamentos do dia, recebimentos e cobrança", momento("d_pagamentos"), ["Pagar os boletos do dia", "Conferir o que entrou (cartão, Pix e parcelas)", ...(crediario ? ["Ver quem atrasou e mandar a cobrança"] : [])]),
+    ...(time ? [b("d_pos_venda", "diaria", null, "Equipe", "Pós-venda em até 24 horas, sem oferecer nada", momento("d_pos_venda"), ["Cada pessoa manda para as clientes que atendeu", "Começa com \"Aqui é [nome], da [loja]\"", "O objetivo é ela responder e salvar o número"])] : []),
+    // Toda semana
+    b("s_analise", "semanal", sem("s_analise"), "Gestão", "Dia da análise de resultado", "Time, marcas e produtos, Instagram e vitrine", [...(time ? ["Resultado de cada pessoa: venda, PA e ticket"] : ["Venda da semana × meta"]), "Marcas e produtos: o que mais vendeu e o que parou", "Instagram: o que trouxe cliente e venda", "Vitrine: o que saiu dela vendeu?", "Revisar o plano do mês"]),
+    b("s_vm", "semanal", sem("s_vm"), "Varejo", "VM geral: vitrine e arrumação da loja", "", ["Trocar a vitrine com o que precisa vender", "Arrumar as araras por cor e ocasião", "Destacar o que está parado na frente"]),
+    b("s_conteudo", "semanal", sem("s_conteudo"), "Conteúdo", "Planejar os conteúdos da semana", o.apoio ? `Junto com ${o.apoio}` : "", ["Ver as datas e o que precisa vender", "Programar os conteúdos da semana", "Separar as peças"]),
+    b("s_gravacao", "semanal", sem("s_gravacao"), "Conteúdo", "Gravar os vídeos", "Tudo de uma vez", ["Peças separadas e roteiro na mão", "Gravar todos os vídeos da semana"]),
+    b("s_compras", "semanal", sem("s_compras"), "Gestão", "Compras da semana", resp.c_orcamento === "Tenho e respeito" ? "Dentro do orçamento do mês" : "Com um teto de compra por mês", ["Primeiro repor o que mais vende", "Conferir quanto ainda cabe no orçamento do mês", "Nada parecido com o que está parado"]),
+    // Análise do estoque: na frequência que a loja respondeu (toda semana, junto com as compras; senão, uma vez por mês).
+    resp.c_estoque_quando === "Toda semana"
+      ? b("c_estoque", "semanal", sem("s_compras"), "Gestão", "Análise do estoque", "Antes das compras da semana", ["O que mais vende (curva ABC)", "O que está parado e há quanto tempo", "O que não comprar mais"])
+      : b("c_estoque", "mensal", 10, "Gestão", "Análise do estoque", "", ["O que mais vende (curva ABC)", "O que está parado e há quanto tempo", "O que não comprar mais"]),
+    b("s_parados", "semanal", sem("s_parados"), "Varejo", "Ação para as peças paradas", "", ["Separar as peças paradas há mais de 60 dias", "Levar primeiro para a carteira", "Vitrine, combo ou ação"]),
+    ...(crediario ? [b("s_crediario", "semanal", sem("s_crediario"), "Gestão", "Crediário da semana: vendido, recebido e vencido", "", ["Quanto foi vendido no crediário", "Quanto foi recebido de parcelas", "Quem passou de 30 dias e a cobrança de cada uma"])] : []),
+    // Todo mês
+    b("m_planejamento", "mensal", mes("m_planejamento", 15), "Gestão", "Estratégia do mês seguinte", "Até o dia 20, no PLANEJE AQUI", ["Meta: o mesmo mês do ano passado +20%", "Estoque: o que comprar e o que girar", "Datas, calendário e as ações do mês", "Enviar o plano para a Camilla"]),
+    b("m_analise", "mensal", mes("m_analise", 3), "Gestão", "Análise do mês que fechou", "O que foi bom, o que precisa melhorar e onde redobrar a atenção", ["Meta × realizado" + (time ? " da loja e de cada pessoa" : ""), "Marcas e produtos: o que vendeu e o que parou", "Revisar o plano: segue ou ajusta", "Os 3 combinados do mês"]),
+    b("c_calendario", "mensal", mes("m_planejamento", 15), "Gestão", "Calendário de compras", "Junto com a estratégia do mês seguinte", ["Ver os pedidos de coleção já feitos e quando chegam", "Quanto ainda cabe no orçamento dos próximos meses", "Marcar as próximas feiras e coleções"]),
+    b("m_relatorios", "mensal", mes("m_relatorios", 1), "Gestão", "Relatórios do sistema no Hub", "Vendas, estoque e clientes", ["Tirar os relatórios do mês que fechou", "Subir em Estoque e relatórios"]),
   ];
   if (time) blocos.push(
-    b("semanal", diaSemana(resp.rot_reuniao), "Equipe", "Conversa individual com cada pessoa do time", "15 min cada", ["O número dela na semana", "O que ela já faz bem", "O combinado da semana sai dela"]),
-    b("semanal", diaSemana(resp.rot_missao), "Equipe", "Missão da semana das clientes", "Igual para o time, cada uma com a sua carteira", ["Escolher a missão da semana", "Cada pessoa chama as clientes da sua carteira", "Conferir quantas foram chamadas no fim da semana"]),
-    b("mensal", diaMes(resp.rot_feedback, 15), "Equipe", "Feedback individual do meio do mês", "Ainda dá para virar o mês", ["O número dela até aqui × a meta", "O que ela já faz bem e a força do perfil", "A solução na prática e o combinado que sai dela (o quê, quanto, até quando)"]),
-    b("semanal", diaSemana(resp.rot_conhecimento), "Equipe", "Dia do conhecimento implantado", "O time estuda e pratica um conhecimento", ["Escolher um conteúdo do curso", "Estudar junto com o time", "Praticar no atendimento da semana"], depois3),
+    b("s_reuniao", "semanal", sem("s_reuniao"), "Equipe", "Reunião semanal de resultados com o time", "30 minutos", ["O número de cada uma", "Reconhecimento público", "Os 3 focos da semana"]),
+    b("s_individual", "semanal", sem("s_individual"), "Equipe", "Conversa individual com cada pessoa do time", "15 min cada", ["O número dela na semana", "O que ela já faz bem", "O combinado da semana sai dela"]),
+    b("s_missao", "semanal", sem("s_missao"), "Equipe", "Missão da semana das clientes", "Igual para o time, cada uma com a sua carteira", ["Escolher a missão da semana", "Cada pessoa chama as clientes da sua carteira", "Conferir no fim da semana"]),
+    b("s_conhecimento", "semanal", sem("s_conhecimento"), "Equipe", "Dia do conhecimento implantado", "O time estuda e pratica um conhecimento", ["Escolher um conteúdo do curso", "Estudar junto com o time", "Praticar no atendimento da semana"], depois3),
+    b("m_reuniao", "mensal", mes("m_reuniao", 5), "Equipe", "Reunião do mês com o time", "Logo depois da análise do mês", ["O que foi bom e o que precisa melhorar", "A meta do mês e a de cada pessoa", "A premiação e as ações"]),
+    b("m_feedback", "mensal", mes("m_feedback", 15), "Equipe", "Feedback individual do meio do mês", "Ainda dá para virar o mês", ["O número dela até aqui × a meta", "O que ela já faz bem e a força do perfil", "A solução na prática e o combinado que sai dela (o quê, quanto, até quando)"]),
   );
   return { liberado: false, feitos: {}, mensal: [], blocos };
 }

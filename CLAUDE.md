@@ -42,7 +42,8 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
 - Áreas do portal liberadas por etapa: as áreas novas nascem com cadeado (`portais.menu_trancado`; hoje `conteudo` e `marca`) e a Camilla libera uma área coerente com a etapa da loja a cada 15 dias, sempre bem feita antes de abrir.
   - "Nossa marca" (Nossa história + Guia das marcas) abre na semana depois do Diagnóstico.
-- Rotina de gestão = Planner de gestão (`/consultoria/planner`, no lugar da antiga Bússola), montado com os dias que a loja responde em Dados da loja › Gestão da loja:
+- Rotina de gestão = Planner de gestão (`/consultoria/planner`, no lugar da antiga Bússola), montado com o formulário da rotina de gestão (`/consultoria/planner/rotina`, etapa 20, fora dos Dados da loja): o que a loja já faz, quando e como, compras e estoque. Cada demanda leva a situação (já faz, sem constância, começar):
+  - Todo dia: começar o dia pela meta, ontem e as prioridades; mensagem de direção do dia no grupo (inegociável, mesmo fora da loja; o Meu dia deixa pronta); loja pronta; conteúdos e atração do dia; pagamentos, recebimentos e cobrança. Não há reunião de abertura diária.
   - No mês: estratégia do mês seguinte (até o dia 20) e análise do mês que fechou + reunião do mês com o time; feedback individual no meio do mês.
   - Na semana: dia da análise de resultado (time, marcas e produtos, Instagram, vitrine e revisão do plano), conversa individual, VM geral, conteúdo e gravações, missão da semana, compras; dia do conhecimento só para quem tem equipe e passou dos 3 meses.
   - As demandas do dia aparecem em "Sua rotina de hoje" (Meu dia) quando o planner é liberado.

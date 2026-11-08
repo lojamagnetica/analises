@@ -93,7 +93,9 @@ export default function Inicio() {
     .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
-  const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
+  const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true;
+    // Área Conteúdo com cadeado nesta loja (Equipe › portal): o atalho da Análise do Instagram mostra o cadeado.
+    if (!equipe && href.startsWith("/conteudo") && (portal.menu_trancado ?? []).includes("conteudo")) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
   const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
   // Onboarding: o Início mostra só a boas-vindas e o passo a passo de envio.
   const onboarding = emOnboarding(ent);

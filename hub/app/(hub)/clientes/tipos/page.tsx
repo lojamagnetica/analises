@@ -5,7 +5,7 @@ import { RascunhoClientes } from "@/components/RascunhoClientes";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Icone } from "@/components/Icone";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   CLASSE_TIPO, MENSAGEM_SIMPLES, REGRAS, TIPOS, buscarClientes, buscarMetodoClientes, classificar, contarTipos, estadoConteudo,
@@ -21,7 +21,7 @@ export default function AcoesPorTipo() {
     return { cs, m };
   }, [portal.id]);
   const [tipo, setTipo] = useState<Tipo>("Nova");
-  const [loja, setLoja] = useState("");
+  const [loja, setLoja] = useLojaFoco();
   const [mostrar, setMostrar] = useState(PASSO);
   const ref = hoje();
   const leituras = useMemo(() => classificar(dados?.cs ?? [], ref), [dados, ref]);

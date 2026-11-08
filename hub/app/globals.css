@@ -209,6 +209,8 @@ p { margin: 0 0 .8em; }
 .chip:hover { border-color: var(--red); color: var(--red); }
 button.chip { cursor: pointer; font-family: inherit; }
 .chip.escolhido { background: var(--ink); color: var(--card); border-color: var(--ink); }
+/* Seletor da loja em foco (portais com mais de uma loja), no topo de todas as páginas. */
+.loja-foco { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 14px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
 
 /* Diagnóstico da loja */
 .barra-equipe { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--orange-soft); }

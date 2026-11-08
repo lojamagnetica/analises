@@ -156,16 +156,21 @@ export function normalizar(p: Planner): Planner {
 
 const sb = () => supabaseBrowser();
 
-export async function buscarPlanner(portalId: string): Promise<Planner | null> {
-  const { data } = await sb().from("loja_planner").select("blocos, mensal, feitos, liberado").eq("portal_id", portalId).maybeSingle();
-  return data ? normalizar(data as Planner) : null;
+// Portal com mais de uma loja: cada loja tem o seu planner (loja '' = as lojas juntas, como antes).
+// Loja sem planner ainda: nasce do planner geral, sem as marcações (ao salvar, vira o planner dela).
+export async function buscarPlanner(portalId: string, loja = ""): Promise<Planner | null> {
+  const { data } = await sb().from("loja_planner").select("blocos, mensal, feitos, liberado").eq("portal_id", portalId).eq("loja", loja).maybeSingle();
+  if (data) return normalizar(data as Planner);
+  if (!loja) return null;
+  const geral = await buscarPlanner(portalId, "");
+  return geral ? { ...geral, feitos: {} } : null;
 }
 
-export async function salvarPlanner(portalId: string, p: Planner) {
+export async function salvarPlanner(portalId: string, p: Planner, loja = "") {
   // Guarda só os últimos 60 dias de marcações.
   const limite = somarDias(hoje(), -60);
   const feitos = Object.fromEntries(Object.entries(p.feitos).filter(([d]) => d >= limite));
-  const { error } = await sb().from("loja_planner").upsert({ portal_id: portalId, ...p, feitos, updated_at: new Date().toISOString() });
+  const { error } = await sb().from("loja_planner").upsert({ portal_id: portalId, ...p, loja, feitos, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" });
   if (error) throw new Error(error.message);
 }
 

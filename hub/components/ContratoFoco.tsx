@@ -2,20 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
+import { aceitarContratoFoco, buscarContratoFoco } from "@/lib/foco";
 import { dataHora } from "@/lib/formato";
-import { supabaseBrowser } from "@/lib/supabase/client";
-
-type Contrato = { resultado: string | null; indicador: string | null; de_acordo_em: string | null; curto: string | null; trabalhando: string[] | null };
 
 /** Contrato de Foco: o resultado nº 1 dos próximos 90 dias. A loja lê e dá o "de acordo"; a equipe preenche na ficha da loja. */
 export function ContratoFoco() {
   const { portal, equipe } = usePortal();
   const [erro, setErro] = useState("");
-  const { dados, recarregar } = useDados(async () => {
-    const { data } = await supabaseBrowser().rpc("contrato_foco", { p: portal.id });
-    return ((data ?? []) as Contrato[])[0] ?? null;
-  }, [portal.id]);
+  // Portal com várias lojas: o contrato da loja em foco (sem contrato próprio, vale o geral).
+  const [loja] = useLojaFoco();
+  const { dados, recarregar } = useDados(() => buscarContratoFoco(portal.id, loja), [portal.id, loja]);
   if (dados === null && equipe) {
     return (
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--line)" }}>
@@ -37,7 +34,7 @@ export function ContratoFoco() {
   return (
     <div className="card card-borda mb" style={{ ["--c" as string]: dados.de_acordo_em ? "var(--feito)" : "var(--red)" }}>
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap" }}>
-        <small className="mudo">Contrato de Foco · o resultado nº 1 dos próximos 90 dias</small>
+        <small className="mudo">Contrato de Foco{loja ? ` · ${loja}` : ""} · o resultado nº 1 dos próximos 90 dias</small>
         {dados.de_acordo_em
           ? <span className="selo feito">De acordo em {dataHora(dados.de_acordo_em)}</span>
           : <span className="selo espera">{equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo"}</span>}
@@ -63,8 +60,7 @@ export function ContratoFoco() {
           <button type="button" className="btn p" onClick={async () => {
             setErro("");
             if (!confirm("Confirmar o seu de acordo com este Contrato de Foco?")) return;
-            const { error } = await supabaseBrowser().rpc("aceitar_contrato_foco", { p: portal.id });
-            if (error) setErro(error.message); else recarregar();
+            try { await aceitarContratoFoco(portal.id, loja); recarregar(); } catch (e) { setErro((e as Error).message); }
           }}>Estou de acordo</button>
           {erro && <div className="aviso mt">{erro}</div>}
         </div>

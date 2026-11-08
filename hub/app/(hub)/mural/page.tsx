@@ -4,7 +4,7 @@
 // Cada folha tem Imprimir; cada texto tem Copiar. O texto de cada loja fica no banco.
 import { useEffect, useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
@@ -35,7 +35,7 @@ function imprimir(id: string, retrato: boolean) {
 export default function Mural() {
   const { portal } = usePortal();
   const lojas = portal.lojas?.length ? portal.lojas : [""];
-  const [loja, setLoja] = useState(lojas[0]);
+  const [loja, setLoja] = useLojaFoco(true);
   const { dados: base, recarregar } = useDados(() => buscarMural(portal.id, loja), [portal.id, loja]);
   const [d, setD] = useState<DadosMural | null>(null);
   const [editando, setEditando] = useState(false);

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
 import {
@@ -18,7 +18,7 @@ export default function MinhasClientes() {
   const { portal } = usePortal();
   const { dados, recarregar } = useDados(() => buscarClientes(portal.id), [portal.id]);
   const [busca, setBusca] = useState("");
-  const [loja, setLoja] = useState(() => ((portal.lojas ?? []).length > 1 ? (portal.lojas ?? [])[0] : ""));
+  const [loja, setLoja] = useLojaFoco();
   const [aniv, setAniv] = useState(false);
   const [tipo, setTipo] = useState<TipoOuSem | "">("");
   const [editando, setEditando] = useState<Cliente | "nova" | null>(null);

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AnotacoesDaCliente } from "@/components/Anotacoes";
 import { CamposPortal } from "@/components/CamposPortal";
 import { FichaLoja } from "@/components/FichaLoja";
+import { FocoPorLoja } from "@/components/FocoPorLoja";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { LinhaDoTempo } from "@/components/LinhaDoTempo";
 import { PendenciasDoPortal } from "@/components/Pendencias";
@@ -313,6 +314,7 @@ function EditarPortal() {
       </div>
 
       <FichaLoja portalId={p.id} />
+      {(p.lojas?.length ?? 0) > 1 && <FocoPorLoja portalId={p.id} lojas={p.lojas ?? []} />}
 
       <div className="card mt">
         <h2>Plano de Ação</h2>

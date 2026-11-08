@@ -76,6 +76,9 @@ export type Hub = {
   modoApresentacao: (sim: boolean) => void;
   /** Sai do "como a loja" e da apresentação sem trocar de página (ex.: abriu um link da empresa). */
   sairComoLoja: () => void;
+  /** Portal com mais de uma loja: a loja em foco no portal inteiro ("" = as lojas juntas). */
+  lojaFoco: string;
+  escolherLoja: (loja: string) => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
@@ -137,7 +140,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova, monta").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova, monta, loja_padrao").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -163,8 +166,23 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       entrada.dadosEm = new Date().toISOString();
     }
 
+    // Loja em foco: a escolhida neste aparelho; senão, a loja padrão da pessoa; senão, as lojas juntas.
+    const lojasDoPortal = portal?.lojas ?? [];
+    let lojaFoco = "";
+    if (portal && lojasDoPortal.length > 1) {
+      let guardada: string | null = null;
+      try { guardada = localStorage.getItem(`loja-foco:${portal.id}`); } catch { /* sem armazenamento */ }
+      lojaFoco = guardada !== null && (guardada === "" || lojasDoPortal.includes(guardada)) ? guardada
+        : !equipe && perfil?.loja_padrao && lojasDoPortal.includes(perfil.loja_padrao) ? perfil.loja_padrao : "";
+    }
+
     setHub({
       userId: user.id,
+      lojaFoco,
+      escolherLoja: (l) => {
+        try { if (portal) localStorage.setItem(`loja-foco:${portal.id}`, l); } catch { /* sem armazenamento */ }
+        setHub((h) => (h ? { ...h, lojaFoco: l } : h));
+      },
       nome: perfil?.nome ?? user.email ?? "",
       email: perfil?.email ?? user.email ?? "",
       foto: perfil?.foto ?? null,
@@ -234,6 +252,18 @@ export function usePortal() {
   const em = (lista: string[]) => lista.some((p) => caminho === p || caminho.startsWith(p + "/"));
   const soMentora = hub.equipe && ((!hub.monta && em(SO_MENTORA_NO_PORTAL)) || (!hub.aprova && em(SO_CAMILLA_NO_PORTAL)));
   return hub.comoLoja || soMentora ? { ...hub, equipe: false } : hub;
+}
+
+/**
+ * A loja em foco (portais com mais de uma loja), para as páginas que separam por loja.
+ * obrigatoria: a página só funciona com uma loja (ex.: mural); com "as lojas juntas", mostra a primeira.
+ * Mudar aqui muda o portal inteiro.
+ */
+export function useLojaFoco(obrigatoria = false): [string, (l: string) => void] {
+  const { portal, lojaFoco, escolherLoja } = useHub();
+  const lojas = portal?.lojas ?? [];
+  if (lojas.length < 2) return [obrigatoria ? (lojas[0] ?? "") : "", () => undefined];
+  return [lojaFoco || (obrigatoria ? lojas[0] : ""), escolherLoja];
 }
 
 /** Para páginas da equipe. A casca do Hub só mostra essas páginas para a equipe. */

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmBreve } from "@/components/EmBreve";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { classeNivel, corNivel, rotuloNivel } from "@/lib/diagnostico";
 import { buscarGestao, completa, liberarGestao, salvarGestao, type AnaliseGestao, type Area } from "@/lib/gestao";
@@ -15,7 +15,7 @@ type Props = { area: Area; titulo: string; sub: string; oque: string; embutida?:
 export function AnaliseDaGestao({ area, titulo, sub, oque, embutida }: Props) {
   const { portal, equipe, aprova } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
-  const [escolhida, setEscolhida] = useState<string | null>(null);
+  const [escolhida, setEscolhida] = useLojaFoco();
   const [ed, setEd] = useState(false);
   const [d, setD] = useState<AnaliseGestao | null>(null);
   const [msg, setMsg] = useState("");

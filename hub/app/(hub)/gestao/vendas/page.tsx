@@ -11,15 +11,21 @@ import { dia, hoje, moeda } from "@/lib/formato";
 import { linkWhats, semAcento } from "@/lib/clientes";
 import {
   CATEGORIAS, FORMAS, LINHAS, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
-  type ClienteSimples, type Venda,
+  type ClienteSimples, type ItemVenda, type Venda, descreverItens,
 } from "@/lib/loja-na-mao";
 import { fimDoMes, type Forma } from "@/lib/caixa";
 
+/** A venda: os itens já colocados e o item que está sendo montado agora (tipo, linha, peça, valor, peças). */
 type Form = {
   id?: string; dia: string; categoria: string; produto: string; valor: number; pecas: number; forma: Forma; maleta: boolean;
   cliente: ClienteSimples | null; parcelas: number; primeira: string; linha: string; estoque_id: string | null;
+  itens: ItemVenda[];
 };
-const novo = (d = hoje()): Form => ({ dia: d, categoria: "", produto: "", valor: 0, pecas: 1, forma: "pix", maleta: false, cliente: null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: "", estoque_id: null });
+const ITEM_VAZIO = { categoria: "", produto: "", valor: 0, pecas: 1, linha: "", estoque_id: null };
+const novo = (d = hoje()): Form => ({ dia: d, ...ITEM_VAZIO, forma: "pix", maleta: false, cliente: null, parcelas: 1, primeira: somarMeses(hoje(), 1), itens: [] });
+/** O item em montagem, se já tem o tipo ou o valor. */
+const itemAtual = (f: Form): ItemVenda | null =>
+  f.categoria || f.valor > 0 ? { categoria: f.categoria, linha: f.linha || null, produto: f.produto.trim() || null, valor: f.valor, pecas: f.pecas || 1, estoque_id: f.estoque_id } : null;
 const passarDia = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
 
 export default function VendasDoDia() {
@@ -46,12 +52,12 @@ export default function VendasDoDia() {
   const { vendas, clientes, mes, estoque, contas } = dados;
   const quem = (portal.responsavel ?? "").trim().split(" ")[0] || portal.loja;
   /** Monta o resumo de uma venda; no crediário, com as parcelas e o saldo de todas as contas da cliente. */
-  const montarResumo = (v: { dia: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; venda_id?: string },
+  const montarResumo = (v: { dia: string; itens: ItemVenda[]; valor: number; venda_id?: string },
     c: ClienteSimples | null, parcelasNovas: ReturnType<typeof gerarParcelas> | null, saldoExtra = 0) => {
     const daCliente = c ? contas.filter((x) => x.cliente_id === c.id) : [];
     const parcelas = parcelasNovas ?? (v.venda_id ? contas.find((x) => x.venda_id === v.venda_id)?.parcelas ?? null : null);
     const saldo = c ? daCliente.reduce((s, x) => s + emAberto(x.parcelas), 0) + saldoExtra : null;
-    setResumo({ texto: mensagemVenda({ nome: c?.nome ?? "", quem, loja: portal.loja, ...v, parcelas, saldo }), nome: c?.nome ?? "", whatsapp: c?.whatsapp ?? null });
+    setResumo({ texto: mensagemVenda({ nome: c?.nome ?? "", quem, loja: portal.loja, itens: v.itens, valor: v.valor, dia: v.dia, parcelas, saldo }), nome: c?.nome ?? "", whatsapp: c?.whatsapp ?? null });
   };
   // Grupos do estoque do tipo escolhido (e da linha, se escolheu): tocar preenche o valor e baixa do estoque.
   const doTipo = estoque.filter((i) => i.categoria === f.categoria && (!f.linha || i.linha === f.linha));
@@ -61,6 +67,16 @@ export default function VendasDoDia() {
   const total = vendas.reduce((s, v) => s + v.valor, 0);
   const pecas = vendas.reduce((s, v) => s + v.pecas, 0);
   const totalMes = mes.reduce((s, v) => s + v.valor, 0);
+  // Todos os itens desta venda (os já colocados e o que está sendo montado) e o total.
+  const atual = itemAtual(f);
+  const todos = [...f.itens, ...(atual ? [atual] : [])];
+  const totalVenda = todos.reduce((s, i) => s + (i.valor || 0), 0);
+  const adicionarItem = () => {
+    setErro("");
+    if (!atual?.categoria) { setErro("Escolha o tipo da peça antes de adicionar outro item."); return; }
+    if (!(atual.valor > 0)) { setErro("Escreva o valor deste item antes de adicionar outro."); return; }
+    mudar({ itens: [...f.itens, atual], ...ITEM_VAZIO });
+  };
   const formas = FORMAS.map((x) => ({ ...x, v: vendas.filter((v) => v.forma === x.chave).reduce((s, v) => s + v.valor, 0) })).filter((x) => x.v);
 
   async function salvar() {
@@ -68,16 +84,16 @@ export default function VendasDoDia() {
     if (f.forma === "crediario" && !f.cliente) { setErro("No crediário, escolha ou cadastre a cliente."); return; }
     setSalvando(true);
     try {
-      const id = await salvarVenda(portal.id, { id: f.id, dia: f.dia, categoria: f.categoria, produto: f.produto, valor: f.valor, pecas: f.pecas, forma: f.forma, maleta: f.maleta, cliente_id: f.cliente?.id ?? null, linha: f.linha || null, estoque_id: f.estoque_id }, antes);
+      const { id, valor } = await salvarVenda(portal.id, { id: f.id, dia: f.dia, forma: f.forma, maleta: f.maleta, cliente_id: f.cliente?.id ?? null, itens: todos }, antes);
       // Venda nova no crediário: abre a conta da cliente com as parcelas.
-      const parcelas = !f.id && f.forma === "crediario" && f.cliente ? gerarParcelas(f.valor, f.parcelas, f.primeira) : null;
+      const parcelas = !f.id && f.forma === "crediario" && f.cliente ? gerarParcelas(valor, f.parcelas, f.primeira) : null;
       if (parcelas && f.cliente) {
-        await salvarConta(portal.id, { cliente_id: f.cliente.id, nome: f.cliente.nome, whatsapp: f.cliente.whatsapp, venda_id: id, descricao: [f.categoria, f.produto].filter(Boolean).join(" · "), parcelas });
+        await salvarConta(portal.id, { cliente_id: f.cliente.id, nome: f.cliente.nome, whatsapp: f.cliente.whatsapp, venda_id: id, descricao: descreverItens(todos).slice(0, 200), parcelas });
       }
       // Venda nova no crediário: o registro da compra aparece na hora para copiar e mandar à cliente.
-      if (!f.id && f.cliente && parcelas) montarResumo({ dia: f.dia, categoria: f.categoria, linha: f.linha, produto: f.produto, pecas: f.pecas, valor: f.valor, forma: f.forma }, f.cliente, parcelas, parcelas ? f.valor : 0);
+      if (!f.id && f.cliente && parcelas) montarResumo({ dia: f.dia, itens: todos, valor }, f.cliente, parcelas, valor);
       else setResumo(null);
-      setAviso(f.id ? "Venda corrigida ✓" : `Venda de ${moeda(f.valor)} registrada ✓${f.forma === "crediario" ? " · conta aberta no Crediário" : ""}`);
+      setAviso(f.id ? "Venda corrigida ✓" : `Venda de ${moeda(valor)} registrada ✓${f.forma === "crediario" ? " · conta aberta no Crediário" : ""}`);
       setF(novo(f.dia)); setAntes(null); setBusca(""); setDiaVer(f.dia); recarregar();
     } catch (x) { setErro((x as Error).message); }
     setSalvando(false);
@@ -97,7 +113,21 @@ export default function VendasDoDia() {
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start" }}>
         <div className="card" style={{ flex: "1 1 340px", maxWidth: 560 }}>
           <h2 style={{ marginTop: 0 }}>{f.id ? "Corrigir venda" : "Nova venda"}</h2>
-          <label className="rotulo">O que vendeu</label>
+          {f.itens.length > 0 && (
+            <div className="card mb" style={{ background: "var(--soft)", padding: "8px 12px" }}>
+              {f.itens.map((i, n) => (
+                <div key={n} className="linha entre" style={{ padding: "6px 0", borderBottom: "1px solid var(--line)", gap: 8 }}>
+                  <span>{n + 1}. {descreverItens([i])} · <b>{moeda(i.valor)}</b></span>
+                  <span className="linha" style={{ gap: 10 }}>
+                    <button type="button" className="link-loja" onClick={() => mudar({ itens: f.itens.filter((_, k) => k !== n), categoria: i.categoria, linha: i.linha ?? "", produto: i.produto ?? "", valor: i.valor, pecas: i.pecas, estoque_id: i.estoque_id })}>editar</button>
+                    <button type="button" className="link-loja" onClick={() => { if (confirm("Tirar este item da venda?")) mudar({ itens: f.itens.filter((_, k) => k !== n) }); }}>tirar</button>
+                  </span>
+                </div>
+              ))}
+              <small className="mudo">Abaixo, o item {f.itens.length + 1}. Se já colocou tudo, é só registrar a venda.</small>
+            </div>
+          )}
+          <label className="rotulo">{f.itens.length ? `Item ${f.itens.length + 1} · o que vendeu` : "O que vendeu"}</label>
           <div className="chips">
             {CATEGORIAS.map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c, estoque_id: null })}>{c}</button>)}
           </div>
@@ -120,9 +150,11 @@ export default function VendasDoDia() {
           )}
           <input type="text" className="mt" placeholder="Qual peça (opcional). Ex.: anel solitário prata" value={f.produto} onChange={(e) => mudar({ produto: e.target.value })} />
           <div className="grade" style={{ gridTemplateColumns: "1fr 110px", gap: 10 }}>
-            <CampoReais key={f.estoque_id ?? "livre"} rotulo="Valor total" valor={f.valor} mudar={(v) => mudar({ valor: v })} vazio />
+            <CampoReais key={`${f.itens.length}-${f.estoque_id ?? "livre"}`} rotulo={f.itens.length ? "Valor deste item" : "Valor"} valor={f.valor} mudar={(v) => mudar({ valor: v })} vazio />
             <div><label className="rotulo">Peças</label><input type="number" inputMode="numeric" min={1} value={f.pecas} onChange={(e) => mudar({ pecas: Number(e.target.value) || 1 })} /></div>
           </div>
+          <button type="button" className="btn s peq mt" onClick={adicionarItem}>+ Adicionar outro item</button>
+          {todos.length > 1 && <p style={{ margin: "10px 0 0" }}>Total da venda: <b>{moeda(totalVenda)}</b> · {todos.length} itens</p>}
           <label className="rotulo">Como pagou</label>
           <div className="chips">
             {FORMAS.map((x) => <button key={x.chave} type="button" className={`chip ${f.forma === x.chave ? "escolhido" : ""}`} onClick={() => mudar({ forma: x.chave })}>{x.nome}</button>)}
@@ -192,12 +224,12 @@ export default function VendasDoDia() {
               return (
                 <div key={v.id} className="linha entre" style={{ padding: "10px 0", borderBottom: "1px solid var(--line)", gap: 10 }}>
                   <div>
-                    <b>{moeda(v.valor)}</b> · {v.categoria}{v.linha ? ` ${v.linha.toLowerCase()}` : ""}{v.pecas > 1 ? ` (${v.pecas})` : ""}{v.produto ? <span className="mudo"> · {v.produto}</span> : null}
+                    <b>{moeda(v.valor)}</b> · {descreverItens(v.itens)}
                     <div className="mudo" style={{ fontSize: 13 }}>{nomeForma(v.forma)}{v.maleta ? " · maleta" : ""}{c ? ` · ${c.nome}` : ""}</div>
                   </div>
                   <div className="linha" style={{ gap: 10 }}>
-                    {c && v.forma === "crediario" && <button type="button" className="link-loja" onClick={() => { montarResumo({ ...v, venda_id: v.id }, c, null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Registro</button>}
-                    <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, categoria: v.categoria, produto: v.produto ?? "", valor: v.valor, pecas: v.pecas, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1), linha: v.linha ?? "", estoque_id: v.estoque_id }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
+                    {c && v.forma === "crediario" && <button type="button" className="link-loja" onClick={() => { montarResumo({ dia: v.dia, itens: v.itens, valor: v.valor, venda_id: v.id }, c, null); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Registro</button>}
+                    <button type="button" className="link-loja" onClick={() => { setAntes(v); setF({ id: v.id, dia: v.dia, ...ITEM_VAZIO, forma: v.forma, maleta: v.maleta, cliente: c ?? null, parcelas: 1, primeira: somarMeses(hoje(), 1), itens: v.itens }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
                     <Excluir pergunta={`Excluir a venda de ${moeda(v.valor)}?${v.forma === "crediario" ? " A conta dela no Crediário sai junto." : ""}`} fazer={() => removerVenda(portal.id, v)} aoFim={recarregar} />
                   </div>
                 </div>

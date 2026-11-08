@@ -44,7 +44,7 @@ export default function Inicio() {
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
-      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
+      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),

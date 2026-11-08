@@ -304,6 +304,17 @@ function Apresentacao() {
         ["Hub desatualizado na segunda?", "A devolutiva fica para a próxima segunda, se já estiver tudo em dia. Isso garante a excelência operacional da mentoria."],
       ]} />,
     },
+    {
+      titulo: "Seu acesso à Carteira Ativa",
+      roteiro: "Mostre a foto e explique com as suas palavras a importância da Carteira Ativa e como ela funciona na Hubla. Todos os planos têm o acesso. Combine com ela o e-mail e libere o acesso. Depois, marque no checklist da Central: \"Acesso à Carteira Ativa liberado\".",
+      corpo: (
+        <>
+          <p className="mudo" style={{ marginTop: 0, fontSize: 17 }}>Método Carteira Ativa, na plataforma Hubla. Está incluso em todos os planos.</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${BASE}/hubla/carteira-ativa-modulos.jpg`} alt="Módulos do Método Carteira Ativa na Hubla" style={{ width: "100%", borderRadius: 14, border: "1px solid var(--line)" }} />
+        </>
+      ),
+    },
     ...ETAPAS.map((e, k) => {
       return {
         titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,

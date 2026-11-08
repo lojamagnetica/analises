@@ -377,7 +377,9 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {lista.map((g) => (
+          {/* O que está com cadeado (liberado em outra etapa) vai sempre para baixo: as áreas trancadas no fim do menu
+              e, dentro de cada área, os itens trancados no fim. Deixa clara a ordem da jornada. */}
+          {[...lista.filter((g) => !props.trancados?.includes(g.id)), ...lista.filter((g) => props.trancados?.includes(g.id))].map((g) => (
             <div key={g.id}>
               <button
                 className="nav-item nav-grupo"
@@ -389,7 +391,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
               </button>
               {abertos[g.id] && (
                 <div className="nav-sub">
-                  {g.itens.map((i) => (
+                  {[...g.itens.filter((i) => !props.trava?.(i.href)), ...g.itens.filter((i) => props.trava?.(i.href))].map((i) => (
                     <Link key={i.href} href={i.href} className={ativo(i.href) ? "ativo" : ""}>
                       <Icone nome={i.icone} /> {i.rotulo}
                       {props.trava?.(i.href) ? <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>

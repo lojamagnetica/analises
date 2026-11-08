@@ -8,7 +8,7 @@ import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
 import {
-  type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
+  type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, meuDiaDaLoja, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
 } from "@/lib/meu-dia";
 
@@ -16,13 +16,20 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque, modo = {} }: { portalId: string; estoque: Respostas | undefined; modo?: Modo }) {
+export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[] }) {
+  // Mais de uma loja: a dona escolhe ver todas juntas ou uma loja (a escolha fica guardada neste aparelho).
+  const chaveLoja = `meu-dia-loja:${portalId}`;
+  const [loja, setLojaEstado] = useState(() => { try { const l = localStorage.getItem(chaveLoja) ?? ""; return lojas.includes(l) ? l : ""; } catch { return ""; } });
+  const setLoja = (l: string) => { setLojaEstado(l); try { localStorage.setItem(chaveLoja, l); } catch { /* sem armazenamento */ } };
   const { dados, recarregar } = useDados(async () => ({ d: await buscarMeuDia(portalId, modo), m: await buscarMetodo().catch(() => null) }), [portalId, modo.solo, modo.vendaDiaria, modo.apoio]);
   const [rotina, setRotina] = useState<Rotina | null>(null);
   const [erro, setErro] = useState("");
   if (!dados) return <Carregando />;
-  const { d, m } = dados;
+  const { m } = dados;
+  const d = meuDiaDaLoja(dados.d, loja);
   const r = rotina ?? d.rotina;
+  // A rotina marcada de cada loja fica separada.
+  const ch = (k: string) => (loja ? `${loja}:${k}` : k);
   const p = placar(d);
   // Loja sem equipe: a dona não recebe feedback de vendedora sobre ela mesma.
   const vs = modo.solo ? [] : vendedoras(d, pmDoEstoque(estoque)?.valor ?? null);
@@ -43,7 +50,16 @@ export function MeuDia({ portalId, estoque, modo = {} }: { portalId: string; est
 
   return (
     <>
-      <div className="secao">Meu dia · {semana}, {dataCurta(d.agora)}</div>
+      <div className="secao">Meu dia · {semana}, {dataCurta(d.agora)}{loja ? ` · ${loja}` : ""}</div>
+      {lojas.length > 1 && (
+        <div className="chips mb" role="group" aria-label="Ver o Meu dia por loja">
+          {["", ...lojas].map((l) => (
+            <button key={l || "todas"} type="button" className={`chip ${loja === l ? "escolhido" : ""}`} aria-pressed={loja === l} onClick={() => setLoja(l)}>
+              {l || (lojas.length === 2 ? "As duas lojas" : "Todas as lojas")}
+            </button>
+          ))}
+        </div>
+      )}
       {erro && <div className="aviso mb">{erro}</div>}
 
       {!p.meta ? (
@@ -79,10 +95,10 @@ export function MeuDia({ portalId, estoque, modo = {} }: { portalId: string; est
         <h3 style={{ marginTop: 0 }}>✅ Sua rotina de hoje</h3>
         {!lista.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
         {lista.map((t) => {
-          const feito = feitosHoje.includes(t.chave);
+          const feito = feitosHoje.includes(ch(t.chave));
           return (
             <div key={t.chave} className="marcar" style={{ cursor: "default", gap: 10 }}>
-              <input type="checkbox" checked={feito} onChange={(e) => marcar(t.chave, e.target.checked)} aria-label={t.texto} />
+              <input type="checkbox" checked={feito} onChange={(e) => marcar(ch(t.chave), e.target.checked)} aria-label={t.texto} />
               <span style={feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
                 {t.texto}{t.href && !feito && <> · <Link className="link-loja" href={t.href}>abrir</Link></>}
               </span>

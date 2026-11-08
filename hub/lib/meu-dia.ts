@@ -377,6 +377,10 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
     const deHoje = d.parcelas.filter((x) => x.vence === d.agora);
     if (atr.length) t.push({ chave: "cred_atraso", texto: `Cobrar ${atr.length} ${atr.length === 1 ? "parcela atrasada" : "parcelas atrasadas"} do crediário (${moeda(atr.reduce((s, x) => s + Number(x.valor), 0))}): a mensagem está pronta`, href: "/gestao/crediario" });
     if (deHoje.length) t.push({ chave: "cred_hoje", texto: `${deHoje.length} ${deHoje.length === 1 ? "parcela vence" : "parcelas vencem"} hoje: lembrar a cliente`, href: "/gestao/crediario" });
+    // Lembrete 2 dias antes do vencimento (combinado com a loja): a mensagem está pronta no Crediário.
+    const daqui2 = somarDias(d.agora, 2);
+    const em2 = d.parcelas.filter((x) => x.vence === daqui2);
+    if (em2.length) t.push({ chave: "cred_2dias", texto: `${em2.length} ${em2.length === 1 ? "parcela vence" : "parcelas vencem"} em 2 dias: mandar o lembrete (${moeda(em2.reduce((s, x) => s + Number(x.valor), 0))})`, href: "/gestao/crediario" });
   }
   // Pós-venda: o carimbo de conexão, em até 24 horas e sem oferecer nada.
   if (solo) t.push({ chave: "pos_venda", texto: "Pós-venda das clientes de ontem: uma mensagem de carinho, sem oferecer nada, pedindo para salvar o seu número", href: "/clientes" });

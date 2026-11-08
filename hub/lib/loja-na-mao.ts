@@ -57,16 +57,37 @@ async function ajustarCliente(id: string | null, compras: number, valor: number,
 
 // ───── Vendas do dia ─────
 
+/** Um item da venda: o tipo, a linha, a peça, o valor (de todas as peças do item) e o grupo do estoque. */
+export type ItemVenda = { categoria: string; linha: string | null; produto: string | null; valor: number; pecas: number; estoque_id: string | null };
 export type Venda = {
   id: string; dia: string; categoria: string; produto: string | null; valor: number; pecas: number; forma: Forma;
   cliente_id: string | null; maleta: boolean; created_at: string; linha: string | null; estoque_id: string | null;
+  /** Os itens da venda (vendas antigas, de um item só, vêm montadas a partir das colunas). */
+  itens: ItemVenda[];
 };
-export type NovaVenda = Omit<Venda, "id" | "created_at"> & { id?: string };
+export type NovaVenda = { id?: string; dia: string; forma: Forma; cliente_id: string | null; maleta: boolean; itens: ItemVenda[] };
+
+/** Os itens da venda; as vendas de antes desta mudança têm um item só, nas colunas. */
+const itensDe = (v: { itens?: unknown; categoria: string; linha: string | null; produto: string | null; valor: unknown; pecas: unknown; estoque_id: string | null }): ItemVenda[] =>
+  Array.isArray(v.itens) && v.itens.length
+    ? (v.itens as ItemVenda[]).map((i) => ({ ...i, valor: Number(i.valor) || 0, pecas: Number(i.pecas) || 1 }))
+    : [{ categoria: v.categoria, linha: v.linha, produto: v.produto, valor: Number(v.valor) || 0, pecas: Number(v.pecas) || 1, estoque_id: v.estoque_id }];
+
+/** "2 brincos", "1 anel". */
+const PLURAL: Record<string, string> = { anel: "anéis", colar: "colares", "relógio": "relógios" };
+const qtdTipo = (n: number, tipo: string) => {
+  if (n <= 1) return tipo;
+  const t = tipo.toLowerCase();
+  return `${n} ${PLURAL[t] ?? (t.endsWith("s") ? t : `${t}s`)}`;
+};
+/** O que saiu, numa linha: "Anel prata 925, 2 brincos semijoia". */
+export const descreverItens = (itens: ItemVenda[]) =>
+  itens.map((i) => [qtdTipo(i.pecas, i.categoria), i.linha?.toLowerCase(), i.produto ? `(${i.produto})` : null].filter(Boolean).join(" ")).join(", ");
 
 export async function buscarVendas(portalId: string, de: string, ate: string) {
-  const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at, linha, estoque_id")
+  const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at, linha, estoque_id, itens")
     .eq("portal_id", portalId).gte("dia", de).lte("dia", ate).order("dia", { ascending: false }).order("created_at", { ascending: false });
-  return (data ?? []).map((v) => ({ ...v, valor: Number(v.valor), pecas: Number(v.pecas) })) as Venda[];
+  return (data ?? []).map((v) => ({ ...v, valor: Number(v.valor), pecas: Number(v.pecas), itens: itensDe(v) })) as Venda[];
 }
 
 /** Refaz o Fechamento de caixa do dia com as vendas lançadas. */
@@ -87,12 +108,23 @@ async function somarCaixa(portalId: string, dia: string) {
 }
 
 export async function salvarVenda(portalId: string, v: NovaVenda, antes?: Venda | null) {
-  if (!(v.valor > 0)) throw new Error("Escreva o valor da venda.");
-  if (!v.categoria) throw new Error("Escolha o que foi vendido.");
+  const itens = v.itens.map((i) => ({
+    categoria: i.categoria, linha: i.linha || null, produto: i.produto?.trim().slice(0, 200) || null,
+    valor: r2(i.valor), pecas: Math.max(1, Math.round(i.pecas || 1)), estoque_id: i.estoque_id || null,
+  }));
+  if (!itens.length) throw new Error("Escolha o que foi vendido.");
+  if (itens.some((i) => !i.categoria)) throw new Error("Escolha o tipo de cada item.");
+  if (itens.some((i) => !(i.valor > 0))) throw new Error("Escreva o valor de cada item.");
+  const um = itens.length === 1 ? itens[0] : null;
+  const linhas = [...new Set(itens.map((i) => i.linha).filter(Boolean))];
+  // As colunas de sempre guardam o resumo da venda (total, peças e, com um item só, o detalhe dele).
   const linha = {
-    portal_id: portalId, dia: v.dia || hoje(), categoria: v.categoria, produto: v.produto?.trim().slice(0, 200) || null,
-    valor: r2(v.valor), pecas: Math.max(1, Math.round(v.pecas || 1)), forma: v.forma, cliente_id: v.cliente_id, maleta: v.maleta,
-    linha: v.linha || null, estoque_id: v.estoque_id || null,
+    portal_id: portalId, dia: v.dia || hoje(), forma: v.forma, cliente_id: v.cliente_id, maleta: v.maleta,
+    categoria: um ? um.categoria : [...new Set(itens.map((i) => i.categoria))].join(", ").slice(0, 120),
+    produto: um ? um.produto : itens.map((i) => i.produto).filter(Boolean).join(", ").slice(0, 200) || null,
+    linha: um ? um.linha : linhas.length === 1 ? linhas[0] : null,
+    estoque_id: um ? um.estoque_id : null,
+    valor: r2(itens.reduce((s, i) => s + i.valor, 0)), pecas: itens.reduce((s, i) => s + i.pecas, 0), itens,
   };
   const salva = v.id
     ? await ok(sb().from("loja_vendas").update(linha).eq("id", v.id).select("id").single())
@@ -102,7 +134,7 @@ export async function salvarVenda(portalId: string, v: NovaVenda, antes?: Venda 
   await ajustarCliente(linha.cliente_id, 1, linha.valor, linha.dia);
   await somarCaixa(portalId, linha.dia);
   if (antes && antes.dia !== linha.dia) await somarCaixa(portalId, antes.dia);
-  return (salva as { id: string }).id;
+  return { id: (salva as { id: string }).id, valor: linha.valor };
 }
 
 export async function removerVenda(portalId: string, v: Venda) {
@@ -113,12 +145,10 @@ export async function removerVenda(portalId: string, v: Venda) {
   await somarCaixa(portalId, v.dia);
 }
 
-/** Resumo da compra para a cliente (sem oferecer nada: é o registro do que ela levou). */
 /** Registro da compra no crediário para a cliente guardar: o que levou, o valor e as parcelas combinadas. */
-export function mensagemVenda(v: { nome: string; quem: string; loja: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; parcelas?: Parcela[] | null; dia: string; saldo?: number | null }) {
+export function mensagemVenda(v: { nome: string; quem: string; loja: string; itens: ItemVenda[]; valor: number; parcelas?: Parcela[] | null; dia: string; saldo?: number | null }) {
   const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const d = (x: string) => `${x.slice(8, 10)}/${x.slice(5, 7)}/${x.slice(0, 4)}`;
-  const peca = [v.pecas > 1 ? `${v.pecas} ${v.categoria.toLowerCase()}` : v.categoria, v.linha?.toLowerCase(), v.produto].filter(Boolean).join(" · ");
   const ps = v.parcelas ?? [];
   const primeiro = arrumarNome(v.nome).split(" ")[0];
   const linhas = [
@@ -126,9 +156,9 @@ export function mensagemVenda(v: { nome: string; quem: string; loja: string; cat
     "Segue o registro das suas escolhas e das informações de pagamento que combinamos, para o seu controle:",
     "",
     `Compra de ${d(v.dia)}`,
-    `• ${peca || "Peça"}`,
-    `• Valor: ${brl(v.valor)}`,
-    `• Pagamento: crediário${ps.length ? ` em ${ps.length}x` : ""}`,
+    ...v.itens.map((i) => `• ${[qtdTipo(i.pecas, i.categoria), i.linha?.toLowerCase(), i.produto].filter(Boolean).join(" · ")} · ${brl(i.valor)}`),
+    `Total: ${brl(v.valor)}`,
+    `Pagamento: crediário${ps.length ? ` em ${ps.length}x` : ""}`,
   ];
   if (ps.length) linhas.push("", "Parcelas:", ...ps.map((p, i) => `${i + 1}ª · ${d(p.vence)} · ${brl(p.valor)}${p.pago_em ? " (paga ✓)" : ""}`));
   if (v.saldo != null && v.saldo > 0) linhas.push("", `Total em aberto no seu crediário com a gente: ${brl(v.saldo)}`);
@@ -232,10 +262,12 @@ export type ItemEstoque = {
 export async function buscarEstoque(portalId: string): Promise<ItemEstoque[]> {
   const [{ data: itens }, { data: vendas }] = await Promise.all([
     sb().from("loja_estoque").select("id, categoria, linha, preco, qtd, entradas, contado_em, obs").eq("portal_id", portalId).order("categoria").order("preco"),
-    sb().from("loja_vendas").select("estoque_id, dia, pecas").eq("portal_id", portalId).not("estoque_id", "is", null).limit(20000),
+    sb().from("loja_vendas").select("categoria, linha, produto, valor, estoque_id, dia, pecas, itens").eq("portal_id", portalId).limit(20000),
   ]);
+  // Cada item da venda que veio de um grupo do estoque baixa as peças dele.
+  const saidas = (vendas ?? []).flatMap((v) => itensDe(v).filter((x) => x.estoque_id).map((x) => ({ estoque_id: x.estoque_id, dia: v.dia as string, pecas: x.pecas })));
   return (itens ?? []).map((i) => {
-    const vendidas = (vendas ?? []).filter((v) => v.estoque_id === i.id && v.dia >= i.contado_em).reduce((s, v) => s + Number(v.pecas), 0);
+    const vendidas = saidas.filter((v) => v.estoque_id === i.id && v.dia >= i.contado_em).reduce((s, v) => s + v.pecas, 0);
     const qtd = Number(i.qtd), entradas = Number(i.entradas);
     return { ...i, preco: Number(i.preco), qtd, entradas, vendidas, atual: qtd + entradas - vendidas } as ItemEstoque;
   });

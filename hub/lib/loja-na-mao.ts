@@ -16,8 +16,8 @@ async function ok<T>(p: PromiseLike<{ data: T; error: { message: string } | null
 }
 
 /** A linha da peça (o material): é por ela que o Diagnóstico lê o que mais vende. */
-export const LINHAS = ["Ouro", "Prata 925", "Semijoia", "Acessório"];
-export const CATEGORIAS = ["Anel", "Brinco", "Colar", "Pulseira", "Conjunto", "Pingente", "Tornozeleira", "Relógio", "Outro"];
+export const LINHAS = ["Ouro", "Prata 925", "Semijoia", "Bijuteria", "Acessório"];
+export const CATEGORIAS = ["Anel", "Brinco", "Colar", "Pulseira", "Conjunto", "Pingente", "Berloque", "Piercing", "Tornozeleira", "Relógio", "Outro"];
 export { FORMAS };
 export const nomeForma = (f: string) => FORMAS.find((x) => x.chave === f)?.nome ?? f;
 /** Marca do caixa somado pelas vendas (assim dá para saber que o dia veio daqui). */
@@ -113,6 +113,17 @@ export async function removerVenda(portalId: string, v: Venda) {
   await somarCaixa(portalId, v.dia);
 }
 
+/** Resumo da compra para a cliente (sem oferecer nada: é o registro do que ela levou). */
+export function mensagemVenda(v: { nome: string; quem: string; loja: string; categoria: string; linha?: string | null; produto?: string | null; pecas: number; valor: number; forma: string; parcelas?: Parcela[] | null; dia: string }) {
+  const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  const d = (x: string) => `${x.slice(8, 10)}/${x.slice(5, 7)}`;
+  const peca = [v.pecas > 1 ? `${v.pecas} ${v.categoria.toLowerCase()}` : v.categoria, v.linha?.toLowerCase(), v.produto].filter(Boolean).join(" · ");
+  const pag = v.forma === "crediario" && v.parcelas?.length
+    ? `no crediário, em ${v.parcelas.length}x (${v.parcelas.map((p) => `${d(p.vence)}: ${brl(p.valor)}`).join(", ")})`
+    : nomeForma(v.forma);
+  return `Oi, ${arrumarNome(v.nome).split(" ")[0]}! Aqui é ${v.quem}, da ${v.loja}. Obrigada pela sua compra 💛\n\nResumo de ${d(v.dia)}:\n${peca}\nValor: ${brl(v.valor)}\nPagamento: ${pag}\n\nQualquer coisa sobre a sua peça, é só me chamar por aqui.`;
+}
+
 // ───── Parcelas (crediário e compras) ─────
 
 export type Parcela = { vence: string; valor: number; pago_em: string | null };
@@ -178,11 +189,11 @@ export function mensagemCobranca(c: Conta, quem: string, loja: string, ref = hoj
 
 export type Compra = {
   id: string; dia: string; fornecedor: string; categoria: string | null; pecas: number | null; valor: number;
-  parcelas: Parcela[]; obs: string | null; created_at: string;
+  parcelas: Parcela[]; obs: string | null; created_at: string; linha?: string | null;
 };
 
 export async function buscarCompras(portalId: string) {
-  const { data } = await sb().from("loja_compras").select("id, dia, fornecedor, categoria, pecas, valor, parcelas, obs, created_at").eq("portal_id", portalId).order("dia", { ascending: false }).limit(500);
+  const { data } = await sb().from("loja_compras").select("id, dia, fornecedor, categoria, pecas, valor, parcelas, obs, created_at, linha").eq("portal_id", portalId).order("dia", { ascending: false }).limit(500);
   return (data ?? []).map((c) => ({ ...c, valor: Number(c.valor) })) as Compra[];
 }
 
@@ -190,7 +201,7 @@ export async function salvarCompra(portalId: string, c: Omit<Compra, "id" | "cre
   if (!c.fornecedor.trim()) throw new Error("Escreva de quem você comprou.");
   if (!(c.valor > 0)) throw new Error("Escreva o valor da compra.");
   const linha = {
-    portal_id: portalId, dia: c.dia || hoje(), fornecedor: c.fornecedor.trim().slice(0, 120), categoria: c.categoria || null,
+    portal_id: portalId, dia: c.dia || hoje(), fornecedor: c.fornecedor.trim().slice(0, 120), categoria: c.categoria || null, linha: c.linha || null,
     pecas: c.pecas && c.pecas > 0 ? Math.round(c.pecas) : null, valor: r2(c.valor), parcelas: c.parcelas, obs: c.obs?.trim().slice(0, 500) || null,
   };
   await ok(c.id ? sb().from("loja_compras").update(linha).eq("id", c.id) : sb().from("loja_compras").insert(linha));

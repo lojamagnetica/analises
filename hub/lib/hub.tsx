@@ -252,7 +252,7 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
   // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
-  if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes"].some((p) => caminho.startsWith(p))) return "/equipe/central";
+  if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes", "/empresa/caixa-do-dia"].some((p) => caminho.startsWith(p))) return "/equipe/central";
   // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.
   if (hub.equipe && !hub.aprova && caminho.startsWith("/equipe/analise")) return "/equipe/central";
   if (caminho.startsWith("/empresa/minha-central/diagnostico") || caminho.startsWith("/empresa/agentes")) return hub.equipe ? null : "/inicio";

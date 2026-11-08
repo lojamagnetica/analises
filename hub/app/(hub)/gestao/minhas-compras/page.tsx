@@ -9,11 +9,11 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { fimDoMes, mesDeHoje, nomeMes, somarMes } from "@/lib/caixa";
 import {
-  CATEGORIAS, buscarCompras, buscarVendas, emAberto, gerarParcelas, marcarParcelasCompra, removerCompra, salvarCompra, somarMeses, type Compra, type Parcela,
+  LINHAS, CATEGORIAS, buscarCompras, buscarVendas, emAberto, gerarParcelas, marcarParcelasCompra, removerCompra, salvarCompra, somarMeses, type Compra, type Parcela,
 } from "@/lib/loja-na-mao";
 
-type Form = { id?: string; dia: string; fornecedor: string; categoria: string; pecas: string; valor: number; aVista: boolean; n: number; primeira: string; obs: string; parcelas: Parcela[] | null };
-const novo = (): Form => ({ dia: hoje(), fornecedor: "", categoria: "", pecas: "", valor: 0, aVista: true, n: 1, primeira: somarMeses(hoje(), 1), obs: "", parcelas: null });
+type Form = { id?: string; dia: string; fornecedor: string; categoria: string; linha: string; pecas: string; valor: number; aVista: boolean; n: number; primeira: string; obs: string; parcelas: Parcela[] | null };
+const novo = (): Form => ({ dia: hoje(), fornecedor: "", categoria: "", linha: "", pecas: "", valor: 0, aVista: true, n: 1, primeira: somarMeses(hoje(), 1), obs: "", parcelas: null });
 
 export default function MinhasCompras() {
   const { portal } = usePortal();
@@ -42,7 +42,7 @@ export default function MinhasCompras() {
     setErro("");
     try {
       const parcelas = f.parcelas ?? (f.aVista ? [{ vence: f.dia, valor: f.valor, pago_em: f.dia }] : gerarParcelas(f.valor, f.n, f.primeira));
-      await salvarCompra(portal.id, { id: f.id, dia: f.dia, fornecedor: f.fornecedor, categoria: f.categoria || null, pecas: Number(f.pecas) || null, valor: f.valor, parcelas, obs: f.obs });
+      await salvarCompra(portal.id, { id: f.id, dia: f.dia, fornecedor: f.fornecedor, categoria: f.categoria || null, linha: f.linha || null, pecas: Number(f.pecas) || null, valor: f.valor, parcelas, obs: f.obs });
       setF(null); recarregar();
     } catch (x) { setErro((x as Error).message); }
   }
@@ -71,6 +71,10 @@ export default function MinhasCompras() {
           <label className="rotulo">O que comprou (opcional)</label>
           <div className="chips">
             {[...CATEGORIAS, "Várias"].map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: f.categoria === c ? "" : c })}>{c}</button>)}
+          </div>
+          <label className="rotulo">Linha (opcional)</label>
+          <div className="chips">
+            {LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l })}>{l}</button>)}
           </div>
           <div className="grade mt" style={{ gridTemplateColumns: "1fr 100px 1fr", gap: 10 }}>
             <CampoReais rotulo="Valor total" valor={f.valor} mudar={(v) => mudar({ valor: v })} vazio />
@@ -121,7 +125,7 @@ export default function MinhasCompras() {
             <div className="linha entre" style={{ gap: 10, flexWrap: "wrap" }}>
               <div>
                 <b>{c.fornecedor}</b> · {moeda(c.valor)} <span className={`selo ${aberto === 0 ? "feito" : "andamento"}`}>{aberto === 0 ? "Pago" : `Falta ${moeda(aberto)}`}</span>
-                <div className="mudo" style={{ fontSize: 13 }}>{dia(c.dia)}{c.categoria ? ` · ${c.categoria}` : ""}{c.pecas ? ` · ${c.pecas} peças` : ""}{c.obs ? ` · ${c.obs}` : ""}</div>
+                <div className="mudo" style={{ fontSize: 13 }}>{dia(c.dia)}{c.categoria ? ` · ${c.categoria}` : ""}{c.linha ? ` ${c.linha.toLowerCase()}` : ""}{c.pecas ? ` · ${c.pecas} peças` : ""}{c.obs ? ` · ${c.obs}` : ""}</div>
               </div>
               <button type="button" className="link-loja" onClick={() => setAberta(aberta === c.id ? null : c.id)}>{aberta === c.id ? "fechar" : "detalhes"}</button>
             </div>
@@ -129,7 +133,7 @@ export default function MinhasCompras() {
               <div className="mt">
                 <ListaParcelas parcelas={c.parcelas} mudar={async (p) => { await marcarParcelasCompra(c.id, p).catch((x) => alert(x.message)); recarregar(); }} />
                 <div className="linha mt" style={{ gap: 14 }}>
-                  <button type="button" className="link-loja" onClick={() => { setF({ id: c.id, dia: c.dia, fornecedor: c.fornecedor, categoria: c.categoria ?? "", pecas: c.pecas ? String(c.pecas) : "", valor: c.valor, aVista: false, n: 1, primeira: ref, obs: c.obs ?? "", parcelas: c.parcelas }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
+                  <button type="button" className="link-loja" onClick={() => { setF({ id: c.id, dia: c.dia, fornecedor: c.fornecedor, categoria: c.categoria ?? "", linha: c.linha ?? "", pecas: c.pecas ? String(c.pecas) : "", valor: c.valor, aVista: false, n: 1, primeira: ref, obs: c.obs ?? "", parcelas: c.parcelas }); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Editar</button>
                   <Excluir pergunta={`Excluir a compra de ${moeda(c.valor)} de ${c.fornecedor}?`} fazer={() => removerCompra(c.id)} aoFim={recarregar} />
                 </div>
               </div>

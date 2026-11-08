@@ -8,20 +8,24 @@ import { dataHora, diasDesde, haQuanto } from "@/lib/formato";
 
 export default function Painel() {
   const hub = useEquipe();
-  const { dados } = useDados(async () => {
+  const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
     const agora = new Date().toISOString();
     const [{ data: portais }, { data: plano }, { data: reunioes }, { data: perfis }, { data: duvidas }, { data: passos }] = await Promise.all([
-      sb.from("portais").select("id, loja, tipo, passo_atual, ativo").order("loja"),
+      sb.from("portais").select("id, loja, tipo, passo_atual, ativo, acesso_liberado, entrega, prioridade").order("loja"),
       sb.from("plano_itens").select("portal_id, feito"),
-      sb.from("reunioes").select("portal_id, data, titulo").gte("data", agora).order("data"),
+      sb.from("reunioes").select("portal_id, data, titulo, selecionar").gte("data", agora).order("data"),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
       sb.from("solicitacoes").select("portal_id").in("status", ["Recebida", "Em andamento"]),
       sb.from("jornada_passos").select("numero, titulo"),
     ]);
-    return { portais: portais ?? [], plano: plano ?? [], reunioes: reunioes ?? [], perfis: perfis ?? [], duvidas: duvidas ?? [], passos: passos ?? [] };
+    return { portais: portais ?? [], plano: plano ?? [], reunioes: (reunioes ?? []).filter((r) => r.selecionar !== "Adiado"), perfis: perfis ?? [], duvidas: duvidas ?? [], passos: passos ?? [] };
   }, []);
   if (!dados) return <Carregando />;
+  const mudar = async (id: string, campos: Record<string, unknown>) => {
+    const { error } = await supabaseBrowser().from("portais").update(campos).eq("id", id);
+    if (error) alert(error.message); else recarregar();
+  };
 
   const semana = new Date(Date.now() + 7 * 86_400_000).toISOString();
   const linhas = dados.portais.map((p) => {
@@ -32,26 +36,46 @@ export default function Painel() {
     const pendentes = dados.duvidas.filter((d) => d.portal_id === p.id).length;
     return { ...p, pct, prox, acesso: acessos[0] ?? null, pendentes };
   });
+  // Primeiro as lojas que já têm acesso (acompanhamento), na ordem de prioridade; depois as que ainda não têm,
+  // pela próxima reunião marcada (a mais perto primeiro).
+  const porReuniao = (a: (typeof linhas)[number], b: (typeof linhas)[number]) =>
+    (a.prox?.data ?? "9999").localeCompare(b.prox?.data ?? "9999") || a.loja.localeCompare(b.loja);
   const ativos = linhas.filter((l) => l.ativo);
-  const parados = ativos.filter((l) => diasDesde(l.acesso) >= 7).length;
+  const comAcesso = ativos.filter((l) => l.acesso_liberado).sort((a, b) => (a.prioridade ?? 999) - (b.prioridade ?? 999) || porReuniao(a, b));
+  const semAcesso = ativos.filter((l) => !l.acesso_liberado).sort(porReuniao);
+  const parados = ativos.filter((l) => l.acesso_liberado && diasDesde(l.acesso) >= 7).length;
   const naSemana = dados.reunioes.filter((r) => r.data <= semana).length;
-  const passo = (n: number) => dados.passos.find((x) => x.numero === n)?.titulo ?? n;
   // Quem já encerrou a mentoria fica numa aba fechada embaixo, para não misturar com as atuais.
   const encerradas = linhas.filter((l) => !l.ativo);
   const tabela = (lista: typeof linhas, vazio: string) => (
     <div className="card tabela-wrap">
       <table className="tabela">
-        <thead><tr><th>Loja</th><th>Passo</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th>Dúvidas</th><th /></tr></thead>
+        <thead><tr><th>Loja</th><th>Fase</th><th>Status</th><th>Plano de Ação</th><th>Próxima reunião</th><th>Último acesso</th><th /></tr></thead>
         <tbody>
           {lista.length === 0 && <tr><td colSpan={7} className="mudo">{vazio}</td></tr>}
           {lista.map((l) => (
             <tr key={l.id}>
-              <td><b>{l.loja}</b><div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}</div></td>
-              <td>{l.passo_atual}. {passo(l.passo_atual)}</td>
+              <td>
+                <b>{l.loja}</b>
+                <div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}{l.pendentes ? <> · <span className="selo alerta">{l.pendentes} {l.pendentes === 1 ? "dúvida" : "dúvidas"}</span></> : null}</div>
+              </td>
+              <td>
+                <select style={{ minWidth: 170 }} aria-label={`Fase de ${l.loja}`} value={l.acesso_liberado ? "sim" : "nao"} className={l.acesso_liberado ? "sel-feito" : ""}
+                  onChange={(e) => mudar(l.id, { acesso_liberado: e.target.value === "sim" })}>
+                  <option value="sim">Acompanhamento</option>
+                  <option value="nao">Ainda sem acesso</option>
+                </select>
+              </td>
+              <td>
+                <select style={{ minWidth: 150 }} aria-label={`Status de ${l.loja}`} value={l.entrega ?? "preparacao"} className={l.entrega === "entregue" ? "sel-feito" : "sel-andamento"}
+                  onChange={(e) => mudar(l.id, { entrega: e.target.value })}>
+                  <option value="preparacao">Em preparação</option>
+                  <option value="entregue">Entregue</option>
+                </select>
+              </td>
               <td style={{ minWidth: 130 }}><div className="barra"><i style={{ width: `${l.pct}%` }} /></div><small className="mudo">{l.pct}%</small></td>
               <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{l.prox ? dataHora(l.prox.data) : <span className="mudo">sem data</span>}</td>
               <td>{l.ativo && diasDesde(l.acesso) >= 7 ? <span className="selo erro">{haQuanto(l.acesso)}</span> : haQuanto(l.acesso)}</td>
-              <td>{l.pendentes ? <span className="selo alerta">{l.pendentes}</span> : <span className="mudo">—</span>}</td>
               <td>
                 <div className="linha" style={{ flexWrap: "nowrap" }}>
                   <button className="btn p peq" type="button" onClick={() => hub.abrirPortal(l.id)}>Abrir portal</button>
@@ -67,19 +91,22 @@ export default function Painel() {
 
   return (
     <>
-      <Titulo titulo="Painel da equipe" sub="Todos os portais em uma tela: em que passo cada loja está e quem precisa de atenção." />
+      <Titulo titulo="Painel da equipe" sub="Todos os portais em uma tela: no alto as lojas que já têm acesso, na ordem de prioridade; embaixo as que ainda não têm, pela próxima reunião. Mude a fase e o status direto na tabela." />
       <div className="grade g4 mb">
         {([
           [ativos.length, "portais ativos", "var(--red)"],
           [naSemana, "reuniões nos próximos 7 dias", "var(--purple)"],
           [dados.duvidas.length, "mensagens esperando resposta", "var(--orange)"],
-          [parados, "portais sem acesso há 7+ dias", "var(--blue)"],
+          [parados, "lojas que não entram há 7+ dias", "var(--blue)"],
         ] as const).map(([n, r, c]) => (
           <div key={r} className="card card-borda kpi" style={{ ["--c" as string]: c }}><b>{n}</b><small>{r}</small></div>
         ))}
       </div>
       <div className="linha mb"><Link className="btn p" href="/equipe/portais/novo">+ Novo portal</Link></div>
-      {tabela(ativos, "Nenhum portal ativo. Crie o primeiro.")}
+      <div className="secao">Lojistas com acesso · acompanhamento · {comAcesso.length}</div>
+      {tabela(comAcesso, "Nenhuma loja com acesso ainda.")}
+      <div className="secao">Ainda sem acesso · {semAcesso.length} <span className="mudo" style={{ textTransform: "none", letterSpacing: 0, fontWeight: 400 }}>· na ordem das próximas reuniões</span></div>
+      {tabela(semAcesso, "Todas as lojas já têm acesso.")}
       {encerradas.length > 0 && (
         <details className="mt">
           <summary style={{ cursor: "pointer" }}><b>Ex-mentoradas · {encerradas.length}</b> <span className="mudo">· já encerraram a mentoria ou a consultoria</span></summary>

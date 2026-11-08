@@ -7,7 +7,7 @@ import { dataCurta, moeda } from "@/lib/formato";
 import { fmtPa, pmDoEstoque } from "@/lib/caixa";
 import type { Respostas } from "@/lib/conteudo";
 import { buscarMetodo } from "@/lib/pessoas";
-import { deHoje, salvarPlanner, type Planner } from "@/lib/planner";
+import { deHoje, frentesDa, salvarPlanner, type Planner } from "@/lib/planner";
 import {
   type Modo, DIAS, SITUACOES, acompanhamento, atitudes, buscarMeuDia, feedback, meuDiaDaLoja, padraoPm, placar, problemaDaLoja, salvarRotina, tarefas, vendedoras,
   type Config, type Rotina,
@@ -17,7 +17,7 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[] }) {
+export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
   // Mais de uma loja: a dona escolhe ver todas juntas ou uma loja (a escolha fica guardada neste aparelho).
   const chaveLoja = `meu-dia-loja:${portalId}`;
   const [loja, setLojaEstado] = useState(() => { try { const l = localStorage.getItem(chaveLoja) ?? ""; return lojas.includes(l) ? l : ""; } catch { return ""; } });
@@ -48,7 +48,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [] }: { portalId:
   };
   // As demandas de hoje do Planner de gestão (quando liberado): marcar aqui marca no planner.
   const planner = plannerMarcado === undefined ? dados.d.planner : plannerMarcado;
-  const doPlanner = planner ? deHoje(planner, d.agora) : [];
+  const doPlanner = planner ? deHoje(planner, d.agora).filter((b) => frentesDa(canais, planner.blocos).includes(b.frente)) : [];
   const feitosPlanner = planner?.feitos[d.agora] ?? [];
   const marcarPlanner = async (id: string, feito: boolean) => {
     if (!planner) return;

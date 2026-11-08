@@ -6,7 +6,7 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
 import {
-  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
+  COR_FRENTE, DIAS_SEMANA, ativa, mesCurto, FREQS, FRENTES, buscarPlanner, cumprimento, deHoje, frentesDa, modeloMentoria, modeloPlanner, novoBloco, salvarPlanner,
   type Bloco, type Freq, type Frente, type Planner,
 } from "@/lib/planner";
 
@@ -41,7 +41,7 @@ function QuemFaz({ b, mudar }: { b: Bloco; mudar: (b: Bloco) => void }) {
 }
 
 /** Uma demanda: o que é, quem faz, o dia fixo e o passo a passo, com editar e excluir. */
-function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tirar: () => void }) {
+function Cartao({ b, mudar, tirar, frentes }: { b: Bloco; mudar: (b: Bloco) => void; tirar: () => void; frentes: readonly Frente[] }) {
   const [editando, setEditando] = useState(!b.titulo);
   const borda = { padding: 12, borderLeft: `4px solid ${COR_FRENTE[b.frente]}` };
   if (editando) {
@@ -52,7 +52,7 @@ function Cartao({ b, mudar, tirar }: { b: Bloco; mudar: (b: Bloco) => void; tira
             {FREQS.map((f) => <option key={f.id} value={f.id}>{f.titulo}</option>)}
           </select>
           <select value={b.frente} aria-label="Frente" onChange={(e) => mudar({ ...b, frente: e.target.value as Frente })}>
-            {FRENTES.map((f) => <option key={f}>{f}</option>)}
+            {frentes.map((f) => <option key={f}>{f}</option>)}
           </select>
         </div>
         <input type="text" placeholder="A demanda" value={b.titulo} onChange={(e) => mudar({ ...b, titulo: e.target.value })} />
@@ -101,7 +101,9 @@ export default function PlannerGestao() {
   const [salvo, setSalvo] = useState("");
   if (!dados) return <Carregando />;
   // Mentoria: o modelo nasce com a rotina de gestão da Camilla e os dias que a loja respondeu em Dados da loja.
-  const modelo = () => (portal.tipo === "Consultoria" ? modeloPlanner() : modeloMentoria(pers.get(9)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
+  // Atacado só aparece para quem tem o canal atacado.
+  const frentes = frentesDa(portal.canais, dados.salvo?.blocos);
+  const modelo = () => (portal.tipo === "Consultoria" ? (() => { const m = modeloPlanner(); return { ...m, blocos: m.blocos.filter((b) => frentes.includes(b.frente)) }; })() : modeloMentoria(pers.get(9)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
   const atual = p ?? dados.salvo ?? modelo();
   if (!atual.liberado && !equipe) {
     return (
@@ -118,7 +120,7 @@ export default function PlannerGestao() {
     try { await salvarPlanner(portal.id, novo); if (aviso) setSalvo(aviso); } catch (e) { setErro((e as Error).message); }
   };
   const d = hoje();
-  const lista = deHoje(atual, d);
+  const lista = deHoje(atual, d).filter((b) => frentes.includes(b.frente));
   const feitos = atual.feitos[d] ?? [];
   const marcar = (bid: string, ok: boolean) => salvar({ ...atual, feitos: { ...atual.feitos, [d]: ok ? [...new Set([...feitos, bid])] : feitos.filter((x) => x !== bid) } });
   const mudar = (b: Bloco) => salvar({ ...atual, blocos: atual.blocos.map((x) => (x.id === b.id ? b : x)) });
@@ -127,8 +129,8 @@ export default function PlannerGestao() {
   const semana = new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d}T12:00:00Z`));
   const hojeDow = new Date(`${d}T12:00:00Z`).getUTCDay();
   const ordem = (b: Bloco) => FRENTES.indexOf(b.frente) * 100 + (b.dia === null ? 99 : b.dia || 32);
-  const ativos = atual.blocos.filter((b) => ativa(b, d));
-  const depois = atual.blocos.filter((b) => !ativa(b, d) && (!filtro || b.frente === filtro)).sort((a, b) => (a.inicio ?? "").localeCompare(b.inicio ?? ""));
+  const ativos = atual.blocos.filter((b) => ativa(b, d) && frentes.includes(b.frente));
+  const depois = atual.blocos.filter((b) => !ativa(b, d) && frentes.includes(b.frente) && (!filtro || b.frente === filtro)).sort((a, b) => (a.inicio ?? "").localeCompare(b.inicio ?? ""));
   const semDia = ativos.filter((b) => b.freq !== "diaria" && b.dia === null).length;
   const semQuem = ativos.filter((b) => !b.quem.trim()).length;
   const semanais = ativos.filter((b) => b.freq === "semanal");
@@ -153,7 +155,7 @@ export default function PlannerGestao() {
           {cumpre.previstos > 0 && <small className="mudo">Últimos 7 dias: {cumpre.feitos} de {cumpre.previstos} feitas</small>}
         </div>
         {!lista.length && <p className="mudo" style={{ margin: "8px 0 0" }}>Nenhuma demanda fixa hoje. Bom dia para colocar em dia o que ficou para trás.</p>}
-        {FRENTES.filter((f) => lista.some((b) => b.frente === f)).map((f) => (
+        {frentes.filter((f) => lista.some((b) => b.frente === f)).map((f) => (
           <div key={f} className="mt">
             <b style={{ color: COR_FRENTE[f] }}>{f}</b>
             {lista.filter((b) => b.frente === f).map((b) => {
@@ -190,7 +192,7 @@ export default function PlannerGestao() {
         <h2 style={{ margin: 0 }}>As demandas da gestão</h2>
         <div className="chips">
           <button type="button" className={`chip ${filtro === null ? "escolhido" : ""}`} onClick={() => setFiltro(null)}>Todas</button>
-          {FRENTES.map((f) => (
+          {frentes.map((f) => (
             <button key={f} type="button" className={`chip ${filtro === f ? "escolhido" : ""}`} style={{ borderColor: COR_FRENTE[f], color: filtro === f ? undefined : COR_FRENTE[f] }} onClick={() => setFiltro(filtro === f ? null : f)}>{f}</button>
           ))}
         </div>
@@ -202,7 +204,7 @@ export default function PlannerGestao() {
             <div className="secao">{fq.titulo} · {itens.length}</div>
             <p className="mudo" style={{ margin: "-4px 0 10px", fontSize: 13.5 }}>{fq.sub}</p>
             <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-              {itens.map((b) => <Cartao key={b.id} b={b} mudar={mudar} tirar={() => tirar(b.id)} />)}
+              {itens.map((b) => <Cartao key={b.id} b={b} mudar={mudar} tirar={() => tirar(b.id)} frentes={frentes} />)}
               <button type="button" className="btn s peq" style={{ alignSelf: "start" }} onClick={() => salvar({ ...atual, blocos: [...atual.blocos, novoBloco(fq.id, filtro ?? "Gestão")] })}>+ demanda</button>
             </div>
           </div>
@@ -213,7 +215,7 @@ export default function PlannerGestao() {
           <div className="secao">Começam depois · {depois.length}</div>
           <p className="mudo" style={{ margin: "-4px 0 10px", fontSize: 13.5 }}>Demandas que só entram no planner a partir do mês marcado. Até lá, ficam fora do Hoje e da semana.</p>
           <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-            {depois.map((b) => <Cartao key={b.id} b={b} mudar={mudar} tirar={() => tirar(b.id)} />)}
+            {depois.map((b) => <Cartao key={b.id} b={b} mudar={mudar} tirar={() => tirar(b.id)} frentes={frentes} />)}
           </div>
         </div>
       )}

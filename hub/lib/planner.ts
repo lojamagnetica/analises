@@ -9,6 +9,9 @@ import { somarDias } from "@/lib/acoes-mes";
 
 export const FRENTES = ["Varejo", "Atacado", "Gestão", "Equipe", "Conteúdo"] as const;
 export type Frente = (typeof FRENTES)[number];
+/** As frentes desta loja: Atacado só para quem tem atacado (o canal marcado em Equipe › portal ou demandas de atacado já no planner). */
+export const frentesDa = (canais: string[] | null | undefined, blocos: { frente: string }[] = []) =>
+  FRENTES.filter((f) => f !== "Atacado" || (canais ?? []).includes("atacado") || blocos.some((b) => b.frente === "Atacado"));
 export const COR_FRENTE: Record<Frente, string> = { Varejo: "var(--red)", Atacado: "var(--ink)", Gestão: "var(--green)", Equipe: "var(--blue)", Conteúdo: "var(--purple)" };
 export const DIAS_SEMANA = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 

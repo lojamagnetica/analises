@@ -14,6 +14,8 @@ export type DadosMural = {
   pa: number; tkm: number;
   /** Metas da semana: com mais de uma loja, mostra as vendedoras de todas as lojas na mesma folha. */
   metas_todas?: boolean;
+  /** Meta da semana de cada vendedora (R$), escrita pela equipe a partir do caixa: segunda-feira da semana (AAAA-MM-DD) → id da pessoa → meta. Só a semana 1 sai calculada pelo plano; as outras saem em branco até a equipe preencher. */
+  metas_semana?: Record<string, Record<string, number>>;
   /** Cores da faixa 1, 2 e 3 do mural, do texto e do símbolo (da marca da loja). */
   cores: { f1: string; f2: string; f3: string; texto: string; destaque: string; claro: string; fundo: string; suave: string; tinta: string };
   /** Símbolos da marca (imagens pequenas, data URL). Só os símbolos, sem o nome da loja. */

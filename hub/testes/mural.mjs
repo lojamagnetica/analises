@@ -31,5 +31,29 @@ await page.getByRole("button", { name: "Todas as vendedoras, das duas lojas" }).
 await page.getByRole("cell", { name: "Vendedor", exact: false }).filter({ hasText: "Loja Dois" }).first().waitFor();
 ok(true, "com todas as lojas, a folha mostra também as vendedoras da outra loja");
 await page.getByRole("button", { name: "Só as vendedoras desta loja" }).click();
+
+// Folha de metas: A4 em mm, bolinha de 12 mm, só a semana 1 com meta e a meta nova da semana vinda do caixa.
+await page.getByRole("button", { name: "‹" }).first().click();
+await page.getByText("META DA SEMANA 1").first().waitFor();
+ok(await page.getByText("REALIZADO").count() >= 1, "metas: coluna Realizado");
+const ordem = await page.locator('[data-folha="metas"] thead th').allInnerTexts();
+ok(ordem[ordem.length - 1].trim() === "BOLINHA", "metas: a bolinha é a última coluna");
+await page.getByRole("button", { name: "›" }).first().click();
+await page.getByText("META DA SEMANA 2").first().waitFor();
+const doc = await page.locator('[data-folha="metas"] tbody tr').first().locator("td").nth(3).innerText();
+ok(doc.trim() === "", "metas: as outras semanas saem em branco");
+const campo = page.locator('[data-folha="metas"] input[placeholder="R$"]').first();
+await campo.fill("5200"); await campo.blur();
+await page.locator('[data-folha="metas"] tbody tr').first().locator("td").nth(3).filter({ hasText: "5.200" }).waitFor();
+ok(true, "metas: a meta nova da semana, escrita pela equipe, aparece na folha");
+await page.addStyleTag({ content: "@page{size:A4 landscape;margin:0}" });
+await page.evaluate(() => { document.body.dataset.imprimir = "metas"; });
+await page.emulateMedia({ media: "print" });
+const med = await page.evaluate(() => { const mm = (px) => px * 25.4 / 96; const b = document.querySelector('[data-folha="metas"] .mu-b12').getBoundingClientRect(); const f = document.querySelector('[data-folha="metas"] .mu-pag').getBoundingClientRect(); return { bola: [mm(b.width), mm(b.height)], folha: [mm(f.width), mm(f.height)] }; });
+ok(Math.abs(med.bola[0] - 12) < 0.1 && Math.abs(med.bola[1] - 12) < 0.1, `metas: bolinha de 12 mm na impressão (${med.bola.map((x) => x.toFixed(2)).join(" × ")} mm)`);
+ok(Math.abs(med.folha[0] - 297) < 0.5 && Math.abs(med.folha[1] - 210) < 0.5, `metas: folha A4 exata na impressão (${med.folha.map((x) => x.toFixed(1)).join(" × ")} mm)`);
+await page.pdf({ path: `${process.argv[3] ?? "."}/mural-metas.pdf`, preferCSSPageSize: true, printBackground: true });
+await page.evaluate(() => { delete document.body.dataset.imprimir; });
+await page.emulateMedia({ media: "screen" });
 await page.screenshot({ path: `${process.argv[3] ?? "."}/mural.png`, fullPage: true });
 await browser.close();

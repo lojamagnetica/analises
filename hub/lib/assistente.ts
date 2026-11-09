@@ -141,6 +141,27 @@ export async function virarTarefa(s: Solicitacao, o: { consultoria: boolean; que
   await ok(sb().from("solicitacoes").update({ vinculo: o.consultoria ? "acao" : "plano", status: "Em andamento", updated_at: new Date().toISOString() }).eq("id", s.id));
 }
 
+/** Uma bolha da conversa contínua (a mensagem de abertura de cada solicitação e as respostas, em ordem de data). */
+export type Mensagem = {
+  id: string; solicitacao_id: string; da_loja: boolean; nome: string | null; texto: string; audio: string | null;
+  transcricao: string | null; created_at: string; automatica?: boolean; tipo?: Tipo;
+};
+
+export function mensagensDe(lista: Solicitacao[]): Mensagem[] {
+  const m: Mensagem[] = [];
+  lista.forEach((s) => {
+    m.push({ id: s.id, solicitacao_id: s.id, da_loja: true, nome: s.autor_nome, texto: s.texto, audio: s.audio, transcricao: s.transcricao, created_at: s.created_at, tipo: s.tipo });
+    s.respostas.forEach((r) => m.push({ id: r.id, solicitacao_id: s.id, da_loja: !r.equipe, nome: r.autor_nome, texto: r.texto, audio: r.audio, transcricao: r.transcricao, created_at: r.created_at, automatica: r.automatica }));
+  });
+  return m.sort((a, b) => a.created_at.localeCompare(b.created_at));
+}
+
+/** Envio pela conversa: se ainda há assunto em aberto, a mensagem entra nele; senão começa um assunto novo. */
+export async function enviarNoChat(portalId: string, autor: string, autorNome: string, equipe: boolean, tipo: Tipo, atual: Solicitacao | null, e: Envio) {
+  if (atual && atual.status !== "Concluída") return responder(atual, autor, autorNome, equipe, e);
+  return enviarSolicitacao(portalId, autor, autorNome, tipo, e);
+}
+
 /** Nome e foto da Camilla para o topo do Fale com a Camilla (ficam em hub_config, que a loja pode ler). */
 export async function buscarCamilla() {
   const { data } = await sb().from("hub_config").select("valor").eq("chave", "camilla").maybeSingle();

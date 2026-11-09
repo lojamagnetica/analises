@@ -42,7 +42,7 @@ await page.getByRole("button", { name: "›" }).first().click();
 await page.getByText("META DA SEMANA 2").first().waitFor();
 const doc = await page.locator('[data-folha="metas"] tbody tr').first().locator("td").nth(3).innerText();
 ok(doc.trim() === "", "metas: as outras semanas saem em branco");
-const campo = page.locator('[data-folha="metas"] input[type=number][step="10"]').first();
+const campo = page.locator('[data-folha="metas"] input[placeholder="R$"]').first();
 await campo.fill("5200"); await campo.blur();
 await page.locator('[data-folha="metas"] tbody tr').first().locator("td").nth(3).filter({ hasText: "5.200" }).waitFor();
 ok(true, "metas: a meta nova da semana, escrita pela equipe, aparece na folha");

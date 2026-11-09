@@ -510,6 +510,7 @@ const CSS = `
   body[data-imprimir] .mu-pag.mu-m2{width:297mm;height:210mm;min-width:0;max-width:none}
   body[data-imprimir="metas"] .mu-esc{height:210mm!important;width:297mm!important}
   body[data-imprimir="metas"] .mu-a4{transform:none!important}
+  html:has(body[data-imprimir="metas"]),body[data-imprimir="metas"]{height:210mm!important;max-height:210mm;overflow:hidden!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 `;

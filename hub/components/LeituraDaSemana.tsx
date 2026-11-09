@@ -53,7 +53,7 @@ function NumerosDaSemana() {
 /** O caixa da semana no Início da loja: sem número lançado, não tem leitura na segunda.
  *  Loja sem a Gestão no menu (usa o próprio sistema): manda os números da semana num card só. */
 export function CaixaDaSemana() {
-  const { portal } = usePortal();
+  const { portal, soCaixa } = usePortal();
   const semGestao = (portal.menu_oculto ?? []).includes("gestao");
   const { dados } = useDados(() => (semGestao ? Promise.resolve([]) : caixaDaSemana(portal.id)), [portal.id, semGestao]);
   if (semGestao) return <NumerosDaSemana />;
@@ -77,7 +77,7 @@ export function CaixaDaSemana() {
         </div>
         <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Sem caixa lançado, não tem leitura.{portal.sem_equipe ? "" : " Quer passar isso para alguém da equipe? Peça à Camilla um acesso só do caixa."}</p>
+      <p className="ajuda" style={{ margin: "8px 0 0" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Sem caixa lançado, não tem leitura.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
     </div>
   );
 }

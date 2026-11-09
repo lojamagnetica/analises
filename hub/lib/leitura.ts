@@ -4,6 +4,7 @@
 // a equipe revisa e encaminha, a Camilla publica (o banco garante). Cada publicação guarda o par rascunho → versão final para o agente aprender.
 import { fimDoMes } from "@/lib/caixa";
 import { hoje } from "@/lib/formato";
+import { diasComArquivoDoCaixa } from "@/lib/rotina";
 import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -119,5 +120,8 @@ export async function caixaDaSemana(portalId: string) {
   const { data } = await sb().from("loja_caixa").select("dia").eq("portal_id", portalId).gte("dia", semana);
   const lancados = new Set((data ?? []).map((c) => c.dia as string));
   const h = hoje();
-  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d), passou: d < h, hoje: d === h }; });
+  // Dia sem número digitado mas com os arquivos do caixa enviados também conta como lançado.
+  const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d));
+  const comArquivo = await diasComArquivoDoCaixa(portalId, semNumero).catch(() => new Set<string>());
+  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h }; });
 }

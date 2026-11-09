@@ -76,6 +76,12 @@ function Casca({ children }: { children: React.ReactNode }) {
           <span><b>magnética.hub</b> <span className="mudo">· {hub.portal?.loja ?? ""} · {hub.nome}</span></span>
           <button type="button" className="btn s peq" onClick={() => supabaseBrowser().auth.signOut().then(() => router.replace("/login"))}>Sair</button>
         </div>
+        <nav className="linha mb" style={{ gap: 8, flexWrap: "wrap" }} aria-label="Menu dos envios">
+          {[["/envios", "Envios"], ["/gestao/caixa", "Fechamento de caixa"], ["/mural", "Mural"], ["/assistente", "Fale com a Camilla"]].map(([href, rotulo]) => (
+            <Link key={href} href={href} className="chip" aria-pressed={caminho === href || caminho.startsWith(href + "/")}
+              style={caminho === href || caminho.startsWith(href + "/") ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{rotulo}</Link>
+          ))}
+        </nav>
         {destino ? <Carregando /> : children}
       </div>
     );

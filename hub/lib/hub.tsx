@@ -33,6 +33,7 @@ export type Portal = {
   plano_meses?: number | null;
   /** A dona vende sozinha: sem as áreas de time. */
   sem_equipe?: boolean;
+  segmento?: string | null; // "tecidos" adapta os textos da rotina; vazio = loja de roupa
   /** Loja na mão: Vendas do dia, Crediário e Compras no menu. */
   venda_diaria?: boolean;
   /** Quem ajuda no conteúdo (nomes, mostrados no menu Conteúdo). */

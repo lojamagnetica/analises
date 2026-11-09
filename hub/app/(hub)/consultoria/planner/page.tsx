@@ -111,7 +111,7 @@ export default function PlannerGestao() {
   // Mentoria: o modelo nasce com a rotina de gestão da Camilla e os dias que a loja respondeu em Dados da loja.
   // Atacado só aparece para quem tem o canal atacado.
   const frentes = frentesDa(portal.canais, dados.salvo?.blocos);
-  const modelo = () => (portal.tipo === "Consultoria" ? (() => { const m = modeloPlanner(); return { ...m, blocos: m.blocos.filter((b) => frentes.includes(b.frente)) }; })() : modeloMentoria(pers.get(20)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo }));
+  const modelo = () => (portal.tipo === "Consultoria" ? (() => { const m = modeloPlanner(); return { ...m, blocos: m.blocos.filter((b) => frentes.includes(b.frente)) }; })() : modeloMentoria(pers.get(20)?.respostas, { solo: !!portal.sem_equipe, inicio: portal.inicio, apoio: portal.apoio_conteudo, segmento: portal.segmento }));
   const atual = p ?? dados.salvo ?? modelo();
   if (!atual.liberado && !equipe) {
     return (

@@ -88,7 +88,7 @@ export const DIRECAO_PADRAO = [
  * cada demanda com o dia ou o momento que a loja respondeu e a situação de hoje. Sem equipe, saem as demandas de time;
  * o dia do conhecimento só vale a partir do 4º mês. Sem resposta, o dia fica "a definir".
  */
-export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo?: boolean; inicio?: string | null; apoio?: string | null } = {}): Planner {
+export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo?: boolean; inicio?: string | null; apoio?: string | null; segmento?: string | null } = {}): Planner {
   const resp = r ?? {};
   const time = !o.solo && resp.s_reuniao_quando !== "Não tenho equipe" && resp.d_direcao_quando !== "Não tenho equipe";
   const momento = (id: string) => { const v = String(resp[`${id}_quando`] ?? ""); return v && !/^Não /.test(v) ? v : ""; };
@@ -145,7 +145,23 @@ export function modeloMentoria(r: Record<string, unknown> | undefined, o: { solo
     b("m_reuniao", "mensal", mes("m_reuniao", 5), "Equipe", "Reunião do mês com o time", "Logo depois da análise do mês", ["O que foi bom e o que precisa melhorar", "A meta do mês e a de cada pessoa", "A premiação e as ações"]),
     b("m_feedback", "mensal", mes("m_feedback", 15), "Equipe", "Feedback individual do meio do mês", "Ainda dá para virar o mês", ["O número dela até aqui × a meta", "O que ela já faz bem e a força do perfil", "A solução na prática e o combinado que sai dela (o quê, quanto, até quando)"]),
   );
-  return { liberado: false, feitos: {}, mensal: [], blocos };
+  return { liberado: false, feitos: {}, mensal: [], blocos: o.segmento === "tecidos" ? paraTecidos(blocos) : blocos };
+}
+
+/** Loja de tecidos: troca o que só faz sentido em loja de roupa (arara, peça, provador, coleção) pelo dia a dia de quem vende tecido. */
+function paraTecidos(blocos: Bloco[]): Bloco[] {
+  const troca: Record<string, Partial<Bloco>> = {
+    d_loja_pronta: { titulo: "Loja pronta: mais vendidos repostos, rolos e prateleiras em ordem", como: ["Repor os tecidos que mais saem", "Rolos e prateleiras organizados por tipo e cor", "Preço e metragem visíveis e a bancada de corte livre"].join("\n") },
+    s_vm: { titulo: "Exposição da loja: vitrine e prateleiras", como: ["Trocar a vitrine com o tecido que precisa vender", "Reorganizar os rolos por tipo, cor e uso", "Colocar na frente o que está parado, com amostra e ideia de uso"].join("\n") },
+    s_parados: { titulo: "Ação para os tecidos parados", como: ["Separar os tecidos parados há mais de 60 dias", "Levar primeiro para a carteira", "Vitrine, kit ou ação"].join("\n") },
+    s_conteudo: { como: ["Ver as datas e o que precisa vender", "Programar os conteúdos da semana", "Separar os tecidos que vão aparecer"].join("\n") },
+    c_calendario: { como: ["Ver os pedidos já feitos aos fornecedores e quando chegam", "Quanto ainda cabe no orçamento dos próximos meses", "Marcar as próximas feiras e lançamentos de fornecedores"].join("\n") },
+  };
+  return blocos.map((b) => {
+    const t = troca[b.id.replace(/-[0-9a-f]{4}$/, "")];
+    const c = b.como.replace(/Marcas e produtos: o que (mais )?vendeu/, (m) => m.replace("Marcas e produtos", "Tecidos"));
+    return { ...b, ...t, como: t?.como ?? c };
+  });
 }
 
 /** Converte o formato antigo (sem frequência, datas do mês separadas) para a lista única de demandas. */

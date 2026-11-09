@@ -26,8 +26,10 @@ export type Malinha = { faturamento: number; vendas: number; pecas: number; /** 
 export type Caixa = {
   id: string; loja: string | null; dia: string; faturamento: number; vendas: number; pecas: number; obs: string | null;
   pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null; malinha: Malinha | null;
+  /** Clientes novas cadastradas no dia (null = não informou). */
+  cadastros: number | null;
 };
-export type NovoCaixa = Omit<Caixa, "id"> & { id?: string };
+export type NovoCaixa = Omit<Caixa, "id" | "cadastros"> & { id?: string; cadastros?: number | null };
 
 /** Peças por atendimento ideal do método. */
 export const PA_IDEAL = 2.5;
@@ -59,7 +61,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -73,6 +75,7 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     pagamentos: c.pagamentos && Object.keys(c.pagamentos).length ? c.pagamentos : null,
     vendedoras: c.vendedoras?.length ? c.vendedoras : null,
     malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas || c.malinha.saidas) ? c.malinha : null,
+    cadastros: c.cadastros ?? null,
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -123,6 +126,14 @@ export function somarMalinha(lista: Pick<Caixa, "faturamento" | "malinha">[]) {
   return { ...m, total, fisica: total - m.faturamento, pct: total > 0 ? Math.round((m.faturamento / total) * 100) : null, conversao };
 }
 
+/** Cadastro de clientes no período: quantas clientes novas entraram e quantas para cada 100 vendas (só dos dias em que a loja informou). */
+export function somarCadastros(lista: Pick<Caixa, "vendas" | "cadastros">[]) {
+  const informados = lista.filter((c) => c.cadastros != null);
+  const cadastros = informados.reduce((s, c) => s + (c.cadastros ?? 0), 0);
+  const vendas = informados.reduce((s, c) => s + c.vendas, 0);
+  return { cadastros, dias: informados.length, vendas, por100: vendas > 0 ? Math.round((cadastros / vendas) * 100) : null };
+}
+
 /** Total de cada vendedora no período (pela pessoa; "outras vendas" juntas). */
 export function somarVendedoras(lista: Pick<Caixa, "vendedoras">[]) {
   const t = new Map<string, LinhaVendedora & { dias: number }>();
@@ -136,7 +147,7 @@ export function somarVendedoras(lista: Pick<Caixa, "vendedoras">[]) {
 }
 
 /** O fechamento do dia em texto de WhatsApp, para mandar para a dona ou para o grupo da loja. */
-export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturamento: number; dias: number; meta: number | null }) {
+export function mensagemCaixa(c: Omit<Caixa, "id" | "cadastros"> & { cadastros?: number | null }, loja: string, mes: { faturamento: number; dias: number; meta: number | null }) {
   const i = indicadores({ faturamento: c.faturamento, vendas: c.vendas, pecas: c.pecas, dias: 1 });
   const ind = (x: { faturamento: number; vendas: number; pecas: number }) => {
     const k = indicadores({ ...x, dias: 1 });
@@ -162,6 +173,7 @@ export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturam
     linhas.push("", `📦 *Malinha (levada para provar em casa):* ${moeda(c.malinha.faturamento)} · ${c.malinha.vendas} ${c.malinha.vendas === 1 ? "venda" : "vendas"} · ${c.malinha.pecas} ${c.malinha.pecas === 1 ? "peça" : "peças"}${pct}${c.malinha.saidas ? ` · saíram ${c.malinha.saidas} ${c.malinha.saidas === 1 ? "malinha" : "malinhas"}` : ""}`,
       `🏬 Loja física: ${moeda(c.faturamento - c.malinha.faturamento)}`);
   }
+  if (c.cadastros != null) linhas.push("", `🪪 Clientes novas cadastradas: ${c.cadastros}`);
   if (c.pagamentos && Object.keys(c.pagamentos).length) {
     linhas.push("", "💳 *Formas de pagamento*", FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => `${x.nome} ${moeda(c.pagamentos![x.chave]!)}`).join(" · "));
   }

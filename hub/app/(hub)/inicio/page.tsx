@@ -16,6 +16,7 @@ import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
+import { RankingDoMes } from "@/components/RankingVendedoras";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 import { areaFechada } from "@/lib/bussola";
 
@@ -170,7 +171,7 @@ export default function Inicio() {
       </div>
 
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
-      {!onboarding && <><LeituraDaSemana /><CaixaDaSemana /></>}
+      {!onboarding && <><LeituraDaSemana /><CaixaDaSemana /><RankingDoMes /></>}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>

@@ -273,6 +273,9 @@ export function useEquipe() {
 }
 
 /** Páginas que só fazem sentido com equipe (somem na loja sem equipe). */
+/** As páginas que quem tem o acesso só do caixa (o ADM dos envios) pode abrir. */
+export const ACESSO_ENVIOS = ["/envios", "/gestao/caixa", "/mural", "/assistente", "/conta"];
+
 export const DE_TIME = /^\/(pessoas|mural|clientes\/missoes)(\/|$)/;
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
@@ -286,8 +289,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   if (!hub.equipe && caminho.startsWith("/bussola")) return "/consultoria/planner";
   // Loja sem equipe: as páginas de time não abrem nem pelo link.
   if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
-  // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
-  if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
+  // Acesso só do caixa (o ADM que cuida dos envios): Envios, Fechamento de caixa, mural e Fale com a Camilla. O resto leva aos Envios.
+  if (hub.soCaixa && !hub.equipe) return ACESSO_ENVIOS.some((p) => caminho === p || caminho.startsWith(p + "/")) ? null : "/envios";
   // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
   if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes", "/empresa/caixa-do-dia"].some((p) => caminho.startsWith(p))) return "/equipe/central";
   // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.

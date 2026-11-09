@@ -261,15 +261,15 @@ function EditarPortal() {
           {dados.pessoas.map((u) => (
             <div key={u.id} className="linha entre marcar" style={{ cursor: "default" }}>
               <div>
-                <b>{u.nome}</b>{u.so_caixa && <span className="selo andamento" style={{ marginLeft: 6 }}>só caixa</span>}
+                <b>{u.nome}</b>{u.so_caixa && <span className="selo andamento" style={{ marginLeft: 6 }}>acesso de envios</span>}
                 <div className="mudo" style={{ fontSize: 13 }}>{u.email} · último acesso {haQuanto(u.ultimo_acesso)}</div>
                 <label className="linha" style={{ gap: 6, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                   <input type="checkbox" checked={!!u.so_caixa} onChange={async (e) => {
                     const { error } = await supabaseBrowser().from("perfis").update({ so_caixa: e.target.checked }).eq("id", u.id);
-                    setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${u.nome ?? "A pessoa"} agora vê só o Fechamento de caixa.` : `${u.nome ?? "A pessoa"} voltou a ver o portal inteiro.` });
+                    setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${u.nome ?? "A pessoa"} agora vê só os Envios, o Fechamento de caixa, o mural e o Fale com a Camilla.` : `${u.nome ?? "A pessoa"} voltou a ver o portal inteiro.` });
                     recarregar();
                   }} />
-                  Só o fechamento de caixa (quem fecha o caixa não vê o resto do portal)
+                  Acesso de envios (o ADM manda o caixa, os relatórios da semana e do mês e imprime o mural, sem ver o resto do portal)
                 </label>
               </div>
               <div className="linha" style={{ flexWrap: "nowrap" }}>

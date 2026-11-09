@@ -8,7 +8,7 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
-  somaPagamentos, somar, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
+  somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
@@ -27,8 +27,10 @@ type Form = {
   soTotal: boolean;
   /** A parte do dia que foi malinha (a cliente leva as peças para provar em casa). */
   mal: Numeros & { saidas: string };
+  /** Clientes novas cadastradas no dia. */
+  cad: string;
 };
-const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" } });
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "" });
 const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
@@ -106,6 +108,7 @@ function FechamentoCaixa() {
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const malMes = somarMalinha(lista);
   const formasMes = somarPagamentos(lista);
+  const cadMes = somarCadastros(lista);
   const somaMes = somaPagamentos(formasMes);
   const mudar = (campo: "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "obs") => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [campo]: e.target.value });
 
@@ -136,6 +139,8 @@ function FechamentoCaixa() {
       if (malinha.vendas > 0 && malinha.pecas === 0) return setErro("Malinha: informe quantas peças saíram.");
       if (malinha.faturamento > faturamento || malinha.vendas > vendas || malinha.pecas > pecas) return setErro("A malinha faz parte do total do dia: ela não pode ser maior que o faturamento, as vendas ou as peças do dia.");
     }
+    const cadastros = f.cad.trim() === "" ? null : numeroDe(f.cad);
+    if (f.cad.trim() !== "" && (cadastros == null || cadastros < 0 || !Number.isInteger(cadastros))) return setErro("Clientes novas cadastradas: use um número inteiro (0 se nenhuma).");
     if (faturamento > 0 && vendas === 0) return setErro("Teve faturamento: informe quantas vendas foram.");
     if (vendas > 0 && pecas === 0) return setErro("Informe quantas peças saíram nessas vendas.");
     const loja = varias ? f.loja : null;
@@ -150,7 +155,7 @@ function FechamentoCaixa() {
     setSalvando(true);
     try {
       const vendedoras = porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null;
-      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null };
+      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null, cadastros };
       await salvarCaixa(portal.id, { id, ...salvo });
       // Mês até este dia, sem contar a versão antiga do mesmo dia.
       const antes = dados!.filter((x) => x.id !== id);
@@ -175,7 +180,8 @@ function FechamentoCaixa() {
       vend: Object.fromEntries((c.vendedoras ?? []).map((v) => [v.pessoa_id ?? OUTRAS, { faturamento: texto(v.faturamento), vendas: String(v.vendas), pecas: String(v.pecas) }])),
       // Dia antigo lançado só no total continua só no total.
       soTotal: !c.vendedoras?.length && c.faturamento > 0,
-      mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas), saidas: c.malinha.saidas ? String(c.malinha.saidas) : "" } : { faturamento: "", vendas: "", pecas: "", saidas: "" } });
+      mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas), saidas: c.malinha.saidas ? String(c.malinha.saidas) : "" } : { faturamento: "", vendas: "", pecas: "", saidas: "" },
+      cad: c.cadastros != null ? String(c.cadastros) : "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -291,6 +297,9 @@ function FechamentoCaixa() {
             ? `Malinha: ${Math.round((malinha.faturamento / (valor.faturamento || somaPag || 1)) * 100)}% do dia. Loja física: ${moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}.`
             : "Das vendas do dia acima, quanto saiu em malinha: a cliente leva as peças para provar em casa, seja enviada ou retirada na loja. O resto conta como venda na loja física. Se o dia não teve malinha, deixe em branco."}
         </div>
+        <label className="rotulo" htmlFor="cx-cad" style={{ marginTop: 10 }}>Clientes novas cadastradas hoje</label>
+        <input id="cx-cad" type="text" inputMode="numeric" placeholder="0" value={f.cad} style={{ ...NUM, maxWidth: 160 }} onChange={(e) => setF({ ...f, cad: e.target.value })} />
+        <div className="ajuda">Quantas clientes novas foram cadastradas hoje no sistema. Cada cliente cadastrada é uma cliente que a loja pode chamar de novo. Se não teve nenhuma, coloque 0.</div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
@@ -364,6 +373,11 @@ function FechamentoCaixa() {
             <div className="kpi"><small>Malinha (levada para provar em casa)</small><b style={{ fontSize: 20 }}>{moeda(malMes.faturamento)}</b><small className="mudo">{malMes.pct}% do faturamento · {malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} · {malMes.pecas} {malMes.pecas === 1 ? "peça" : "peças"}</small></div>
             {malMes.saidas > 0 && <div className="kpi"><small>Conversão da malinha</small><b style={{ fontSize: 20 }}>{malMes.conversao}%</b><small className="mudo">{malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} de {malMes.saidas} {malMes.saidas === 1 ? "malinha que saiu" : "malinhas que saíram"}</small></div>}
             <div className="kpi"><small>Loja física</small><b style={{ fontSize: 20 }}>{moeda(malMes.fisica)}</b><small className="mudo">{malMes.pct != null ? 100 - malMes.pct : 0}% do faturamento</small></div>
+          </div>
+        )}
+        {cadMes.dias > 0 && (
+          <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
+            <div className="kpi"><small>Clientes novas cadastradas</small><b style={{ fontSize: 20 }}>{cadMes.cadastros}</b><small className="mudo">{cadMes.por100 != null ? `${cadMes.por100} a cada 100 vendas · ` : ""}{cadMes.dias} {cadMes.dias === 1 ? "dia informado" : "dias informados"}</small></div>
           </div>
         )}
         {somaMes > 0 && (

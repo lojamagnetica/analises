@@ -168,7 +168,7 @@ export default function Bussola() {
       <div className="secao">Fechar o dia</div>
       <div className="card mb">
         <p className="mudo" style={{ marginTop: 0 }}>{abertasTotal.length > 0 ? `Ficaram ${abertasTotal.length} coisa(s) em aberto.` : "Tudo o que estava na rotina foi feito."} Escreva o que fica combinado para amanhã: amanhã cedo isso aparece aqui para você.</p>
-        <textarea rows={3} value={reg.fechamento} placeholder="Ex.: Ligar para o fornecedor, conversar com a Ana sobre a meta, gravar o vídeo do vestido." style={{ width: "100%" }}
+        <textarea rows={3} value={reg.fechamento} placeholder={portal.segmento === "tecidos" ? "Ex.: Ligar para o fornecedor, conversar com a Ana sobre a meta, gravar o vídeo do tecido." : "Ex.: Ligar para o fornecedor, conversar com a Ana sobre a meta, gravar o vídeo do vestido."} style={{ width: "100%" }}
           onChange={(e) => mudarReg({ fechamento: e.target.value }, false)} onBlur={() => gravar(b)} />
       </div>
 

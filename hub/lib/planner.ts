@@ -159,7 +159,7 @@ function paraTecidos(blocos: Bloco[]): Bloco[] {
   };
   return blocos.map((b) => {
     const t = troca[b.id.replace(/-[0-9a-f]{4}$/, "")];
-    const c = b.como.replace(/Marcas e produtos: o que (mais )?vendeu/, (m) => m.replace("Marcas e produtos", "Tecidos"));
+    const c = b.como.replace(/Marcas e produtos: o que (mais )?vendeu/, (m) => m.replace("Marcas e produtos", "Tecidos")).replace("venda, PA e ticket", "venda, metros por venda e ticket");
     return { ...b, ...t, como: t?.como ?? c };
   });
 }

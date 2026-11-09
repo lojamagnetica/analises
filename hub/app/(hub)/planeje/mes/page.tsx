@@ -256,7 +256,7 @@ function Plano({ mes }: { mes: string }) {
       <Passo n={4} titulo="Produtos em destaque" sub="Quais produtos têm mais a ver com o período? Eles ganham ênfase no conteúdo e na exposição.">
         {d.produtos.map((p, i) => (
           <div key={i} className="linha" style={{ gap: 8, flexWrap: "nowrap", marginBottom: 8 }}>
-            <input type="text" value={p} placeholder="Ex.: vestidos de festa" onChange={(e) => muda({ produtos: d.produtos.map((y, j) => (j === i ? e.target.value : y)) })} />
+            <input type="text" value={p} placeholder={portal.segmento === "tecidos" ? "Ex.: tecidos para festa" : "Ex.: vestidos de festa"} onChange={(e) => muda({ produtos: d.produtos.map((y, j) => (j === i ? e.target.value : y)) })} />
             <Excluir pergunta="Tirar este produto?" fazer={async () => {}} aoFim={() => muda({ produtos: d.produtos.filter((_, j) => j !== i) })} rotulo="✕" />
           </div>
         ))}
@@ -294,7 +294,7 @@ function Plano({ mes }: { mes: string }) {
                 <label className="rotulo">Conteúdo</label>
                 <textarea rows={3} value={sem.conteudo} onChange={(e) => troca({ conteudo: e.target.value })} placeholder="Ex.: reels mostrando as novidades, stories de espera" />
                 <label className="rotulo">Exposição e vitrine</label>
-                <textarea rows={2} value={sem.exposicao} onChange={(e) => troca({ exposicao: e.target.value })} placeholder="Ex.: vitrine com vestidos de festa" />
+                <textarea rows={2} value={sem.exposicao} onChange={(e) => troca({ exposicao: e.target.value })} placeholder={portal.segmento === "tecidos" ? "Ex.: vitrine com tecidos para festa" : "Ex.: vitrine com vestidos de festa"} />
               </div>
             );
           })}

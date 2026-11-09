@@ -58,7 +58,7 @@ export default function EstoqueParado() {
       <form className="card mb" onSubmit={salvar}>
         <h2 style={{ marginTop: 0 }}>{f.id ? "Editar item" : "Adicionar item parado"}</h2>
         <div className="grade g3">
-          <label>Produto ou linha<input type="text" value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value })} placeholder="Ex.: Vestido midi estampado" /></label>
+          <label>Produto ou linha<input type="text" value={f.produto} onChange={(e) => setF({ ...f, produto: e.target.value })} placeholder={portal.segmento === "tecidos" ? "Ex.: Tricoline estampado" : "Ex.: Vestido midi estampado"} /></label>
           <label>Peças<input type="number" min={1} value={f.qtd} onChange={(e) => setF({ ...f, qtd: e.target.value })} /></label>
           <label>Dias parado<input type="number" min={0} value={f.dias} onChange={(e) => setF({ ...f, dias: e.target.value })} /></label>
           <label>Giro<select value={f.giro} onChange={(e) => setF({ ...f, giro: e.target.value })}><option value="">Não sei</option><option>Lento</option><option>Médio</option><option>Rápido</option></select></label>

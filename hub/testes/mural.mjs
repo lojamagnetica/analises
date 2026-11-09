@@ -15,7 +15,7 @@ await simular(page, { tabelas: {
   loja_mural: [{ portal_id: l.portal, loja: "Loja Um", dados: { missao: "Missão de teste.", visao: "Visão de teste.", valores: ["Valor um", "Valor dois"], versiculo: "Versículo de teste.", versiculo_ref: "Livro 1:1",
     cartaz: { titulo: "Nossos valores", rodape: "Loja", simbolos: [], itens: [{ pre: "Atenda com", nome: "RESPEITO", frase: "Frase.", pontos: ["a", "b"] }] }, eventos: { [`${hoje.slice(0, 7)}-11`]: [{ t: "Evento teste", c: 1 }] } } }],
   loja_caixa: [{ id: "c1", portal_id: l.portal, loja: "Loja Um", dia: hoje, faturamento: 2000, vendas: 2, pecas: 6, obs: null, pagamentos: null, malinha: null, vendedoras: [{ pessoa_id: "e1", nome: "Vendedora Teste", faturamento: 2000, vendas: 2, pecas: 6 }] }],
-  loja_equipe: [{ id: "e1", portal_id: l.portal, nome: "Vendedora Teste", funcao: "Vendedora", ativo: true, loja: "Loja Um" }],
+  loja_equipe: [{ id: "e1", portal_id: l.portal, nome: "Vendedora Teste", funcao: "Vendedora", ativo: true, loja: "Loja Um" }, { id: "e2", portal_id: l.portal, nome: "Vendedor Outra", funcao: "Vendedora", ativo: true, loja: "Loja Dois" }],
   loja_plano_mes: [],
 } });
 await page.goto(`${BASE}/mural/`);
@@ -26,10 +26,10 @@ ok(await page.getByText("RESPEITO").count() >= 1, "mostra o cartaz de valores");
 ok(await page.getByText("Vendedora").count() >= 1, "metas listam a vendedora");
 ok(await page.getByText("LEGENDA DA BOLINHA").count() === 1, "legenda da bolinha");
 ok(await page.getByText("Evento teste").count() >= 1, "calendário mostra o evento");
-await page.getByRole("button", { name: "Loja Dois" }).click();
-await page.getByText("O mural desta loja ainda não tem texto").waitFor();
-ok(true, "outra loja começa vazia, em modelo");
-await page.getByRole("button", { name: "Loja Um" }).click();
-await page.getByText("Missão de teste.").first().waitFor();
+ok(await page.getByRole("cell").filter({ hasText: "Loja Dois" }).count() === 0, "metas começam só com as vendedoras da loja");
+await page.getByRole("button", { name: "Todas as vendedoras, das duas lojas" }).click();
+await page.getByRole("cell", { name: "Vendedor", exact: false }).filter({ hasText: "Loja Dois" }).first().waitFor();
+ok(true, "com todas as lojas, a folha mostra também as vendedoras da outra loja");
+await page.getByRole("button", { name: "Só as vendedoras desta loja" }).click();
 await page.screenshot({ path: `${process.argv[3] ?? "."}/mural.png`, fullPage: true });
 await browser.close();

@@ -55,6 +55,19 @@ export async function subirEnvio(portalId: string, loja: string, periodo: string
   if (error) throw new Error("Não deu para subir o arquivo. Confira a internet e tente de novo.");
 }
 
+/** Dias (AAAA-MM-DD) em que a loja subiu ao menos um arquivo do caixa, em qualquer das lojas do portal.
+ *  Quem sobe os arquivos do sistema não precisa digitar os números: o dia conta como enviado. */
+export async function diasComArquivoDoCaixa(portalId: string, dias: string[]): Promise<Set<string>> {
+  if (!dias.length) return new Set();
+  const { data: pastas } = await sb().storage.from(BALDE).list(`${portalId}/gestao`);
+  const lojas = (pastas ?? []).filter((p) => p.name).map((p) => p.name);
+  const achados = await Promise.all(lojas.flatMap((l) => dias.map(async (d) => {
+    const { data } = await sb().storage.from(BALDE).list(`${portalId}/gestao/${l}/${d}`);
+    return (data ?? []).some((f) => f.id && f.name.startsWith("caixa_")) ? d : null;
+  })));
+  return new Set(achados.filter((d): d is string => !!d));
+}
+
 export { abrirRelatorio as abrirEnvio, excluirRelatorio as excluirEnvio };
 
 // ───── Datas da rotina ─────

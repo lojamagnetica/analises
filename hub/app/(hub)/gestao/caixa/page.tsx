@@ -14,6 +14,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
+import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
 import { BoletosMes } from "@/components/BoletosMes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
@@ -331,6 +332,8 @@ function FechamentoCaixa() {
           <button className="btn p" type="submit" disabled={salvando}>{salvando ? "Salvando…" : f.id ? "Salvar correção" : "Salvar o dia"}</button>
         </div>
       </form>
+
+      {f.dia && <ArquivosDoCaixa portalId={portal.id} dia={f.dia} loja={varias ? f.loja : ""} />}
 
       <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />
       <BoletosMes portalId={portal.id} lojas={portal.lojas ?? []} />

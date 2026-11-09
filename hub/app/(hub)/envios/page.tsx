@@ -6,6 +6,7 @@ import { Titulo } from "@/components/Titulo";
 import { CaixaDaSemana } from "@/components/LeituraDaSemana";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { RankingVendedoras } from "@/components/RankingVendedoras";
+import { ArquivosDaSemana } from "@/components/ArquivosDoCaixa";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { daLoja, diaDaSemana, fimDoMes, fmtPa, indicadores, mesDeHoje, nomeMes, somar, somarCadastros, somarMalinha, somarMes, somarVendedoras } from "@/lib/caixa";
@@ -131,6 +132,7 @@ export default function Envios() {
         </div>
         <p className="ajuda" style={{ margin: "4px 0 0" }}>Abra o relatório de vendas da semana no sistema da loja e compare com estes números, inclusive os de cada vendedora. Se bateu, marque abaixo.</p>
         <Quadro titulo="Semana" lista={semana} />
+        <ArquivosDaSemana portalId={portal.id} loja={lojas.length > 1 ? loja || lojas[0] : ""} hoje={hoje()} />
         <Conferir tipo="semanal" periodo={de} />
       </div>
 

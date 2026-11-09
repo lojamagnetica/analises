@@ -24,7 +24,7 @@ const relogio = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(
 const MAX_SEGUNDOS = 5 * 60;
 
 /** Caixa de mensagem com texto e áudio. O áudio é gravado no navegador e, quando o navegador permite, já sai escrito. */
-export function Escrever(props: { rotulo: string; placeholder: string; enviar: (e: Envio) => Promise<void>; antes?: React.ReactNode }) {
+export function Escrever(props: { rotulo: string; placeholder: string; enviar: (e: Envio) => Promise<void>; antes?: React.ReactNode; chat?: boolean }) {
   const [texto, setTexto] = useState("");
   const [audio, setAudio] = useState<Blob | null>(null);
   const [transcricao, setTranscricao] = useState("");
@@ -109,6 +109,41 @@ export function Escrever(props: { rotulo: string; placeholder: string; enviar: (
       setErro(e instanceof Error ? e.message : "Não deu para enviar. Tente de novo.");
     }
     setEnviando(false);
+  }
+
+  if (props.chat) {
+    // Barra de mensagem no estilo WhatsApp: campo arredondado e botão redondo (microfone ou enviar).
+    const temConteudo = !!texto.trim() || !!audio;
+    return (
+      <div className="wa-barra">
+        {props.antes}
+        {erro && <div className="aviso" style={{ margin: "0 0 6px" }}>{erro}</div>}
+        {gravando && (
+          <div className="wa-gravando"><span className="ponto-rec" /> Gravando {relogio(segundos)}{transcricao && <small className="mudo"> · {transcricao.slice(-60)}</small>}</div>
+        )}
+        {!gravando && previa && (
+          <div className="wa-previa">
+            <audio controls src={previa} />
+            <button type="button" className="wa-icone" title="Apagar áudio" onClick={descartar}><Icone nome="trash" /></button>
+          </div>
+        )}
+        <div className="wa-linha">
+          {!previa && !gravando && (
+            <textarea
+              value={texto} rows={1} placeholder={props.placeholder}
+              onChange={(e) => { setTexto(e.target.value); e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && window.matchMedia("(min-width: 700px)").matches) { e.preventDefault(); if (temConteudo && !enviando) enviar(); } }}
+            />
+          )}
+          {(previa || gravando) && <div style={{ flex: 1 }} />}
+          {gravando
+            ? <button type="button" className="wa-redondo" title="Parar" onClick={parar}><Icone nome="stop" /></button>
+            : temConteudo
+              ? <button type="button" className="wa-redondo" title={props.rotulo} disabled={enviando} onClick={enviar}><Icone nome="send" /></button>
+              : <button type="button" className="wa-redondo" title="Gravar áudio" onClick={gravar}><Icone nome="mic" /></button>}
+        </div>
+      </div>
+    );
   }
 
   return (

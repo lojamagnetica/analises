@@ -2,7 +2,7 @@
 
 // Mural da loja: as folhas da parede (missão/visão/valores, versículo, cartaz de valores, metas da semana e calendário).
 // Cada folha tem Imprimir; cada texto tem Copiar. O texto de cada loja fica no banco.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -152,9 +152,30 @@ function Folha({ id, titulo, paisagem, onCopiar, children }: { id: string; titul
   );
 }
 
+/** Folha A4 paisagem em tamanho real (297 × 210 mm): na tela encolhe para caber, na impressão sai em medida exata. */
+const A4_LARG = 297 * 96 / 25.4, A4_ALT = 210 * 96 / 25.4;
+function EscalaA4({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [esc, setEsc] = useState(0.8);
+  useEffect(() => {
+    const medir = () => { const w = ref.current?.clientWidth ?? 0; if (w) setEsc(Math.min(1, w / A4_LARG)); };
+    medir();
+    const ro = new ResizeObserver(medir);
+    if (ref.current) ro.observe(ref.current);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={ref} className="mu-esc" style={{ width: "100%", height: A4_ALT * esc }}>
+      <div className="mu-a4" style={{ width: "297mm", height: "210mm", transform: `scale(${esc})`, transformOrigin: "0 0" }}>{children}</div>
+    </div>
+  );
+}
+
 function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
   const [semana, setSemana] = useState(semanaDe(hoje()));
   const mes = semana.slice(0, 7);
+  // Qual semana do mês é (1 = a primeira segunda-feira do mês). Só a semana 1 sai com a meta preenchida.
+  const nSemana = Math.max(1, semanasDoMes(mes).indexOf(semana) + 1);
   const { dados } = useDados(async () => {
     const meses = [...new Set([mes, somaDias(semana, 6).slice(0, 7)])];
     const [plano, caixas, time] = await Promise.all([
@@ -181,12 +202,19 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
       let fat = 0, vendas = 0, pecas = 0;
       for (const x of doDia) for (const v of x.vendedoras ?? []) if (v.pessoa_id === p.id) { fat += Number(v.faturamento); vendas += Number(v.vendas); pecas += Number(v.pecas); }
       const pa = vendas ? pecas / vendas : null, tkm = vendas ? fat / vendas : null;
-      const semanal = metas[p.id] ? Math.round((metas[p.id] / (dias / 7)) / 10) * 10 : null;
-      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, semanal, b: bolinha(pa, tkm, d.pa, d.tkm) };
+      const calculada = metas[p.id] ? Math.round((metas[p.id] / (dias / 7)) / 10) * 10 : null;
+      // A meta que a equipe escreveu para esta semana (a partir do caixa) vale mais que a calculada; sem ela, só a semana 1 sai preenchida.
+      const doCaixa = d.metas_semana?.[semana]?.[p.id];
+      const semanal = doCaixa ?? (nSemana === 1 ? calculada : null);
+      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, b: bolinha(pa, tkm, d.pa, d.tkm) };
     });
-  }, [dados, loja, varias, semana, mes, d.pa, d.tkm, d.metas_todas]);
+  }, [dados, loja, varias, semana, mes, nSemana, d.pa, d.tkm, d.metas_todas, d.metas_semana]);
   if (!dados) return <Carregando />;
   const vazias = Math.max(0, 6 - linhas.length);
+  // Altura de cada linha em mm: 14 até 7 linhas; mais que isso, o mínimo que ainda comporta a bolinha de 12 mm.
+  const totalLinhas = linhas.length + vazias;
+  const altLinha = totalLinhas <= 7 ? 14 : 12.6;
+  const topoLegenda = 44 + 11 + totalLinhas * altLinha + 8;
   return (
     <div className="card mb mu-folha" data-folha="metas">
       <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -208,26 +236,50 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
         <label>P.A. meta <input type="number" step="0.1" value={d.pa} onChange={(e) => guardar({ ...d, pa: Number(e.target.value) })} style={{ width: 70 }} /></label>
         <label>TKM meta (R$) <input type="number" step="10" value={d.tkm} onChange={(e) => guardar({ ...d, tkm: Number(e.target.value) })} style={{ width: 90 }} /></label>
       </div>
-      <div className="mu-moldura">
-        <div className="mu-pag mu-metas" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
-          <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>METAS DA SEMANA {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
-          <h2>INDICADORES E ACOMPANHAMENTO</h2>
-          <table>
-            <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META SEMANAL</th><th>BOLINHA</th></tr></thead>
-            <tbody>
-              {linhas.map((l) => (
-                <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "0.7em" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td>
-                  <td><span className="mu-bola" style={l.b ? { background: COR_BOLA[l.b], borderColor: COR_BOLA[l.b] } : undefined} /></td></tr>
-              ))}
-              {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td><span className="mu-bola" /></td></tr>)}
-            </tbody>
-          </table>
-          <h3>LEGENDA DA BOLINHA</h3>
-          <p className="mu-leg"><span><i style={{ background: COR_BOLA.verde }} />Verde: Superou PA e TKM</span><span><i style={{ background: COR_BOLA.amarela }} />Amarela: Bateu apenas um</span><span><i style={{ background: COR_BOLA.vermelha }} />Vermelha: Abaixo de ambos</span></p>
-          {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+      {linhas.length > 0 && (
+        <div className="card mb">
+          <b style={{ fontSize: 14 }}>Meta desta semana (semana {nSemana}), por vendedora</b>
+          <p className="ajuda" style={{ margin: "4px 0 8px" }}>Só a semana 1 sai com a meta preenchida. Nas outras semanas, escreva aqui a meta nova depois de olhar o caixa e imprima de novo: a folha já sai com o valor.</p>
+          <div className="linha" style={{ gap: 12, flexWrap: "wrap" }}>
+            {linhas.map((l) => (
+              <label key={`${semana}-${l.id}`} className="ajuda" style={{ display: "block" }}>{l.nome}{l.loja ? ` · ${l.loja}` : ""}
+                <input type="number" step="10" min="0" style={{ width: 110, display: "block" }} placeholder={nSemana === 1 && l.calculada ? String(l.calculada) : "R$"} defaultValue={d.metas_semana?.[semana]?.[l.id] ?? ""}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim() === "" ? null : Math.max(0, Number(e.target.value));
+                    const atual = { ...(d.metas_semana ?? {}) };
+                    const dessa = { ...(atual[semana] ?? {}) };
+                    if (v == null || Number.isNaN(v)) delete dessa[l.id]; else dessa[l.id] = v;
+                    if (Object.keys(dessa).length) atual[semana] = dessa; else delete atual[semana];
+                    if (JSON.stringify(atual) !== JSON.stringify(d.metas_semana ?? {})) guardar({ ...d, metas_semana: atual });
+                  }} />
+              </label>
+            ))}
+          </div>
         </div>
+      )}
+      <div className="mu-moldura">
+        <EscalaA4>
+          <div className="mu-pag mu-m2" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
+            <div className="mu-m2-topo" style={{ background: d.cores.f2 }}><h1>METAS DA SEMANA {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
+            <h2>INDICADORES E ACOMPANHAMENTO</h2>
+            <table style={{ ["--lh" as string]: `${altLinha}mm` }}>
+              <colgroup><col style={{ width: "50mm" }} /><col style={{ width: "40mm" }} /><col style={{ width: "44mm" }} /><col style={{ width: "52mm" }} /><col style={{ width: "50mm" }} /><col style={{ width: "14mm" }} /></colgroup>
+              <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META DA SEMANA {nSemana}</th><th>REALIZADO</th><th style={{ fontSize: "2.2mm" }}>BOLINHA</th></tr></thead>
+              <tbody>
+                {linhas.map((l) => (
+                  <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "2.6mm" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td><td>{l.fat > 0 ? brl(l.fat) : ""}</td>
+                    <td><span className="mu-b12" style={l.b ? { background: COR_BOLA[l.b], borderColor: COR_BOLA[l.b] } : undefined} /></td></tr>
+                ))}
+                {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td /><td><span className="mu-b12" /></td></tr>)}
+              </tbody>
+            </table>
+            <h3 style={{ top: `${topoLegenda}mm` }}>LEGENDA DA BOLINHA</h3>
+            <p className="mu-m2-leg" style={{ top: `${topoLegenda + 10}mm` }}><span><i style={{ background: COR_BOLA.verde }} />Verde: Superou PA e TKM</span><span><i style={{ background: COR_BOLA.amarela }} />Amarela: Bateu apenas um</span><span><i style={{ background: COR_BOLA.vermelha }} />Vermelha: Abaixo de ambos</span></p>
+            {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+          </div>
+        </EscalaA4>
       </div>
-      <p className="ajuda" style={{ marginBottom: 0 }}>P.A., TKM e a bolinha vêm do fechamento de caixa de cada vendedora. A meta semanal é a meta do mês dela no plano dividida pelas semanas do mês.</p>
+      <p className="ajuda" style={{ marginBottom: 0 }}>P.A., TKM, o realizado e a bolinha vêm do fechamento de caixa de cada vendedora. A meta da semana 1 é a meta do mês dela no plano dividida pelas semanas do mês; nas outras semanas, a folha sai em branco até você escrever a meta nova acima. Folha A4 em medida exata: na impressão, deixe em tamanho real (100%).</p>
     </div>
   );
 }
@@ -408,6 +460,21 @@ const CSS = `
 .mu-bola{display:inline-block;width:clamp(12px,2.4vw,28px);height:clamp(12px,2.4vw,28px);border-radius:50%;border:1.5px dashed #555;vertical-align:middle}
 .mu-leg{display:flex;justify-content:center;gap:4%;font-size:clamp(8px,1.5vw,18px);margin:0}
 .mu-leg span{display:flex;align-items:center;gap:6px}.mu-leg i,.mu-legs i{display:inline-block;width:clamp(12px,2.4vw,28px);height:clamp(12px,2.4vw,28px);border-radius:50%}
+.mu-m2{padding:0;color:#111;position:relative;width:297mm;height:210mm;min-width:0;aspect-ratio:auto}
+.mu-m2-topo{height:26mm;display:flex;align-items:center;justify-content:center;color:#fff}
+.mu-m2-topo h1{margin:0;color:#fff!important;font-weight:800;font-size:8.5mm}
+.mu-m2 h2{position:absolute;left:0;top:32mm;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
+.mu-m2 h3{position:absolute;left:0;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
+.mu-m2 table{position:absolute;left:23.5mm;top:44mm;width:250mm;border-collapse:collapse;table-layout:fixed}
+.mu-m2 th,.mu-m2 td{border:.3mm solid #111;padding:0;text-align:center;vertical-align:middle}
+.mu-m2 th{background:#111;color:#fff;font-size:3mm;font-weight:700;height:11mm}
+.mu-m2 th i{font-weight:400}
+.mu-m2 td{height:var(--lh,14mm);font-size:4mm;font-weight:600}
+.mu-b12{display:inline-block;width:12mm;height:12mm;border-radius:50%;border:.3mm dashed #555;vertical-align:middle}
+.mu-m2-leg{position:absolute;left:0;width:297mm;display:flex;justify-content:center;gap:10mm;font-size:3.4mm;font-weight:600;margin:0}
+.mu-m2-leg span{display:flex;align-items:center;gap:2mm}
+.mu-m2-leg i{display:inline-block;width:5mm;height:5mm;border-radius:50%}
+.mu-m2 .mu-simb{left:6mm;bottom:5mm;height:16mm}
 .mu-conhec td{height:clamp(22px,4.2vw,52px);white-space:nowrap}
 .mu-conhec .mu-topo h1{font-size:clamp(12px,2.8vw,32px)}
 .mu-conhec h2{font-size:clamp(8px,1.5vw,18px)}
@@ -439,6 +506,10 @@ const CSS = `
   body[data-imprimir] [data-folha] .mu-moldura{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible}
   body[data-imprimir] .mu-pag{min-width:0;width:100vw;height:100vh;aspect-ratio:auto;max-width:none}
   body[data-imprimir] .mu-cartaz{max-width:none;margin:0}
+  body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura{width:297mm;height:210mm;overflow:hidden}
+  body[data-imprimir] .mu-pag.mu-m2{width:297mm;height:210mm;min-width:0;max-width:none}
+  body[data-imprimir="metas"] .mu-esc{height:210mm!important;width:297mm!important}
+  body[data-imprimir="metas"] .mu-a4{transform:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 `;

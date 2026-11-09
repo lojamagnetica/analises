@@ -57,6 +57,11 @@ export type Hub = {
   estudio: boolean;
   /** Acesso só do caixa: vê só o Fechamento de caixa da loja. */
   soCaixa: boolean;
+  /** Quem tem o acesso só do caixa também abre o Conteúdo (o ADM que faz o conteúdo da loja). */
+  veConteudo: boolean;
+  /** A equipe vendo como o acesso de envios: "1" só os envios, "c" com o Conteúdo, "" desligado. */
+  comoEnvios: string;
+  verComoEnvios: (modo: string) => void;
   /** Pode aprovar e liberar o que vai para a loja (a Camilla). */
   aprova: boolean;
   /** Monta diagnósticos, gestão, ações e gincanas das lojas (a Camilla e a CS). Liberar continua com quem aprova. */
@@ -103,7 +108,15 @@ function lerComoLoja() {
   if (janelaDaLoja()) return true;
   try { return localStorage.getItem(CHAVE_COMO_LOJA) === "1"; } catch { return false; }
 }
+const CHAVE_COMO_ENVIOS = "lm-como-envios";
+function lerComoEnvios() {
+  try { const v = localStorage.getItem(CHAVE_COMO_ENVIOS); return v === "1" || v === "c" ? v : ""; } catch { return ""; }
+}
+function gravarComoEnvios(modo: string) {
+  try { if (modo) localStorage.setItem(CHAVE_COMO_ENVIOS, modo); else localStorage.removeItem(CHAVE_COMO_ENVIOS); } catch { /* sem armazenamento */ }
+}
 function gravarComoLoja(sim: boolean) {
+  if (!sim) gravarComoEnvios("");
   if (janelaDaLoja()) return;
   try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
 }
@@ -141,7 +154,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova, monta, loja_padrao").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, ve_conteudo, aprova, monta, loja_padrao").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -159,6 +172,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
+    const comoEnviosAgora = comoLojaAgora ? lerComoEnvios() : "";
     // Quem comprou só o curso não passa pela entrada da mentoria.
     const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora, !!portal.sem_equipe) : null;
     // A loja terminou de mandar tudo: começa o prazo do Diagnóstico.
@@ -188,7 +202,13 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       email: perfil?.email ?? user.email ?? "",
       foto: perfil?.foto ?? null,
       estudio: !!perfil?.estudio,
-      soCaixa: !equipe && !!perfil?.so_caixa,
+      soCaixa: (!equipe && !!perfil?.so_caixa) || !!comoEnviosAgora,
+      veConteudo: equipe ? comoEnviosAgora === "c" : !!perfil?.ve_conteudo,
+      comoEnvios: comoEnviosAgora,
+      verComoEnvios: (modo) => {
+        gravarComoEnvios(modo);
+        carregar().then(() => router.push(modo ? "/envios" : "/inicio"));
+      },
       aprova: equipe && !!perfil?.aprova,
       monta: equipe && (!!perfil?.aprova || !!perfil?.monta),
       equipe,
@@ -279,7 +299,7 @@ export const ACESSO_ENVIOS = ["/envios", "/gestao/caixa", "/mural", "/assistente
 export const DE_TIME = /^\/(pessoas|mural|clientes\/missoes)(\/|$)/;
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean; monta?: boolean }) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; veConteudo?: boolean; aprova?: boolean; monta?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
@@ -290,7 +310,7 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   // Loja sem equipe: as páginas de time não abrem nem pelo link.
   if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
   // Acesso só do caixa (o ADM que cuida dos envios): Envios, Fechamento de caixa, mural e Fale com a Camilla. O resto leva aos Envios.
-  if (hub.soCaixa && !hub.equipe) return ACESSO_ENVIOS.some((p) => caminho === p || caminho.startsWith(p + "/")) ? null : "/envios";
+  if (hub.soCaixa && !hub.equipe) return [...ACESSO_ENVIOS, ...(hub.veConteudo ? ["/conteudo"] : [])].some((p) => caminho === p || caminho.startsWith(p + "/")) ? null : "/envios";
   // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
   if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes", "/empresa/caixa-do-dia"].some((p) => caminho.startsWith(p))) return "/equipe/central";
   // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.

@@ -76,8 +76,15 @@ function Casca({ children }: { children: React.ReactNode }) {
           <span><b>magnética.hub</b> <span className="mudo">· {hub.portal?.loja ?? ""} · {hub.nome}</span></span>
           <button type="button" className="btn s peq" onClick={() => supabaseBrowser().auth.signOut().then(() => router.replace("/login"))}>Sair</button>
         </div>
+        {hub.equipe && (
+          <div className="faixa equipe">
+            👁 Você está vendo como o acesso de envios{hub.veConteudo ? " com Conteúdo" : ""} de {hub.portal?.loja}. É o que a pessoa vê, sem o resto do portal.
+            <button type="button" onClick={() => hub.verComoEnvios(hub.veConteudo ? "1" : "c")}>{hub.veConteudo ? "Ver sem o Conteúdo" : "Ver com o Conteúdo"}</button>
+            <button type="button" onClick={() => hub.verComoEnvios("")}>Sair deste modo</button>
+          </div>
+        )}
         <nav className="linha mb" style={{ gap: 8, flexWrap: "wrap" }} aria-label="Menu dos envios">
-          {[["/envios", "Envios"], ["/gestao/caixa", "Fechamento de caixa"], ["/mural", "Mural"], ["/assistente", "Fale com a Camilla"]].map(([href, rotulo]) => (
+          {[["/envios", "Envios"], ["/gestao/caixa", "Fechamento de caixa"], ["/mural", "Mural"], ...(hub.veConteudo ? [["/conteudo", "Conteúdo"]] : []), ["/assistente", "Fale com a Camilla"]].map(([href, rotulo]) => (
             <Link key={href} href={href} className="chip" aria-pressed={caminho === href || caminho.startsWith(href + "/")}
               style={caminho === href || caminho.startsWith(href + "/") ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{rotulo}</Link>
           ))}
@@ -98,6 +105,7 @@ function Casca({ children }: { children: React.ReactNode }) {
           <div className="faixa equipe">
             👁 Você está vendo exatamente o que {hub.portal.loja} vê. O que você marcar aqui fica na conta da loja.
             <button type="button" onClick={() => hub.modoApresentacao(true)}>🎥 Modo apresentação</button>
+            <button type="button" onClick={() => hub.verComoEnvios("1")}>👁 Ver como acesso de envios</button>
             <button type="button" onClick={() => hub.verComoLoja(false)}>Voltar para a visão da equipe</button>
           </div>
         ) : hub.equipe && hub.portal ? (

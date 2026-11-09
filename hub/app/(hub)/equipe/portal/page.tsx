@@ -111,7 +111,7 @@ function EditarPortal() {
     const sb = supabaseBrowser();
     const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }, { data: passos }] = await Promise.all([
       sb.from("portais").select("*").eq("id", id).maybeSingle(),
-      sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa").eq("portal_id", id),
+      sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa, ve_conteudo").eq("portal_id", id),
       sb.from("plano_itens").select("id, mes, texto, feito").eq("portal_id", id).order("mes").order("ordem"),
       sb.from("reunioes").select("*").eq("portal_id", id).order("data", { ascending: false }),
       sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", id),
@@ -271,6 +271,16 @@ function EditarPortal() {
                   }} />
                   Acesso de envios (o ADM manda o caixa, os relatórios da semana e do mês e imprime o mural, sem ver o resto do portal)
                 </label>
+                {u.so_caixa && (
+                  <label className="linha" style={{ gap: 6, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
+                    <input type="checkbox" checked={!!u.ve_conteudo} onChange={async (e) => {
+                      const { error } = await supabaseBrowser().from("perfis").update({ ve_conteudo: e.target.checked }).eq("id", u.id);
+                      setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${u.nome ?? "A pessoa"} agora também vê o Conteúdo.` : `${u.nome ?? "A pessoa"} deixou de ver o Conteúdo.` });
+                      recarregar();
+                    }} />
+                    Também vê o Conteúdo (quando é ela quem faz o conteúdo da loja)
+                  </label>
+                )}
               </div>
               <div className="linha" style={{ flexWrap: "nowrap" }}>
                 <button className="btn s peq" type="button" onClick={() => acesso(async () => {

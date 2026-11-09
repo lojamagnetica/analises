@@ -10,7 +10,9 @@ import { MensagensCS } from "@/components/MensagensCS";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/formato";
-import { gerarLink } from "@/lib/acoes";
+import { contratoAnexar, contratoRemoverAnexo, gerarLink } from "@/lib/acoes";
+import { abrirContratoAssinado } from "@/lib/contrato";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
 import { mensagemDiagnosticoPronto } from "@/lib/entrada";
 import { resumoOnboarding } from "@/lib/onboarding";
@@ -20,6 +22,48 @@ import {
   type Check, type ClienteJornada,
 } from "@/lib/jornada";
 
+
+/** Contrato assinado: a Claudia anexa o PDF aqui, na Central, e a cliente vê no portal dela (Contrato e renovação). */
+function ContratoAssinado({ portalId }: { portalId: string }) {
+  const { dados, recarregar } = useDados(async () => {
+    const { data } = await supabaseBrowser().from("contratos").select("id, status, inicio, fim, arquivo").eq("portal_id", portalId).order("inicio", { ascending: false });
+    return (data ?? []) as { id: string; status: string; inicio: string | null; fim: string | null; arquivo: string | null }[];
+  }, [portalId]);
+  const [msg, setMsg] = useState<{ ok?: string; erro?: string }>({});
+  const [subindo, setSubindo] = useState(false);
+  if (!dados) return null;
+  const ct = dados.find((x) => x.status === "Ativo") ?? dados[0];
+  const fazer = async (f: () => Promise<void>, ok: string) => {
+    setMsg({}); setSubindo(true);
+    try { await f(); setMsg({ ok }); recarregar(); } catch (e) { setMsg({ erro: (e as Error).message }); }
+    setSubindo(false);
+  };
+  return (
+    <div className="card mb">
+      <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+        <h3 style={{ margin: 0 }}>Contrato assinado</h3>
+        {ct && <span className={`selo ${ct.arquivo ? "feito" : "alerta"}`}>{ct.arquivo ? "Anexado · a cliente já vê" : "Falta anexar"}</span>}
+      </div>
+      {!ct ? (
+        <p className="mudo" style={{ marginBottom: 0 }}>Esta cliente ainda não tem contrato cadastrado. Cadastre o plano e as datas em <Link href={`/equipe/portal?id=${portalId}`}>Editar portal</Link> (parte Contratos) e volte aqui para anexar o assinado.</p>
+      ) : (
+        <>
+          <p className="ajuda">Anexe o PDF (ou foto) do contrato assinado. A cliente abre em Contrato e renovação, no portal dela.</p>
+          <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+            {ct.arquivo && <button type="button" className="btn s peq" onClick={() => abrirContratoAssinado(ct.arquivo!)}>Abrir o anexado</button>}
+            <label className="btn p peq" style={{ cursor: subindo ? "wait" : "pointer" }}>
+              {subindo ? "Enviando…" : ct.arquivo ? "Trocar o arquivo" : "Anexar o contrato assinado"}
+              <input type="file" accept=".pdf,image/*" disabled={subindo} style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) fazer(() => contratoAnexar(portalId, ct.id, f, ct.arquivo), "Contrato assinado anexado. A cliente já vê no portal."); }} />
+            </label>
+            {ct.arquivo && <button type="button" className="btn s peq" disabled={subindo} onClick={() => { if (confirm("Remover o contrato assinado? A cliente deixa de ver.")) fazer(() => contratoRemoverAnexo(ct.id, ct.arquivo!), "Contrato assinado removido."); }}>Remover</button>}
+          </div>
+        </>
+      )}
+      {msg.ok && <div className="aviso ok mt">{msg.ok}</div>}
+      {msg.erro && <div className="aviso mt">{msg.erro}</div>}
+    </div>
+  );
+}
 
 function Item({ c, k, nome, recarregar, extra }: { c: ClienteJornada; k: Check; nome: string; recarregar: () => void; extra?: React.ReactNode }) {
   const feito = c.checks.get(k.chave);
@@ -173,6 +217,8 @@ function Cliente() {
           {!p.recebida_em && <button type="button" className="btn p peq mt" onClick={async () => { await receberPassagem(c.id, nome); recarregar(); }}>Receber a passagem</button>}
         </details>
       )}
+
+      <ContratoAssinado portalId={c.id} />
 
       <PerguntasGargalo portalId={c.id} loja={c.loja} responsavel={c.responsavel} />
 

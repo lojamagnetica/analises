@@ -36,7 +36,7 @@ export const REGUA = [
   { id: "90", nome: "90 dias", de: 90, ate: 120, msg: "Oi, {nome}! Faz um tempinho que você não passa por aqui. Tenho uma condição especial para você voltar." },
 ] as const;
 // Aniversário: convite na primeira semana do mês (o presente vale o mês todo), só o parabéns no dia e lembrete 5 dias antes de expirar.
-export const MSG_ANIVERSARIO = "Oi, {nome}! Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente especial aqui. Já te mando o seu cupom e as novidades para você escolher o look do seu dia.";
+export const MSG_ANIVERSARIO = "Oi, {nome}! Chegou o mês do seu aniversário e a gente quer comemorar com você: durante todo este mês você tem um presente especial aqui. Já te mando o seu cupom e as novidades para você escolher o seu presente.";
 
 // etapa guarda os passos já feitos desde a última compra, separados por vírgula (ex.: "pos,30,aniv-2026").
 const feitos = (c: ClienteSite) => c.etapa.split(",").filter(Boolean);

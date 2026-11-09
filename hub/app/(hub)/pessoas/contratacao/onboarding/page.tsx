@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { BASE } from "@/lib/config";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataHora, dia, diasAte } from "@/lib/formato";
 import { buscarPessoas } from "@/lib/pessoas";
 import {
@@ -20,7 +20,8 @@ function PaginaOnboarding() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { portal } = usePortal();
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarContratacao(portal.id)), equipe: (await buscarPessoas(portal.id)).pessoas }), [portal.id]);
+  const [lojaFoco] = useLojaFoco();
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarContratacao(portal.id)), equipe: (await buscarPessoas(portal.id, lojaFoco)).pessoas }), [portal.id, lojaFoco]);
   const o = dados?.onboardings.find((x) => x.id === id) ?? null;
   const [feitos, setFeitos] = useState<Record<string, boolean>>({});
   const [notas, setNotas] = useState("");

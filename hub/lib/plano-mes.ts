@@ -165,8 +165,8 @@ export function sugerirSemanas(mes: string, d: DadosPlano): SemanaPlano[] {
       const dia = Number(a.inicio.slice(8));
       if (semanaDoDia(Math.max(1, dia - 3)) === i) conteudo.push(`Stories de espera 3 dias e 1 dia antes de ${a.titulo}, e reels no dia ${dia}.`);
     }
-    for (const x of datasAqui) conteudo.push(`Looks para ${x.titulo} antes da data (dia ${x.dia}): do mais básico ao mais arrumado.`);
-    if (p) conteudo.push(`Reels de looks com ${p} e prova social de cliente usando.`);
+    for (const x of datasAqui) conteudo.push(`Peças para ${x.titulo} antes da data (dia ${x.dia}): da mais simples à mais especial.`);
+    if (p) conteudo.push(`Reels mostrando ${p} combinado com outras peças e prova social de cliente usando.`);
     if (i === 3) conteudo.push("Últimas peças e chamada para a loja: quem ainda não veio no mês.");
 
     const temas = datasAqui.filter((x) => naSemana(x.dia)).map((x) => x.titulo);

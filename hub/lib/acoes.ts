@@ -5,8 +5,9 @@
 // e que só a equipe faz o que é da equipe.
 import { supabaseBrowser, erroDaFuncao } from "@/lib/supabase/client";
 import { BASE } from "@/lib/config";
-import { BLOCOS_PLANEJE, ETAPAS, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
+import { BLOCOS_PLANEJE, ETAPAS, ROTINA_GESTAO, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
 import { localParaIso } from "@/lib/formato";
+import { FUNDAMENTOS } from "@/lib/carteira";
 
 const sb = () => supabaseBrowser();
 const txt = (f: FormData, k: string, max = 4000) => String(f.get(k) ?? "").trim().slice(0, max);
@@ -17,7 +18,8 @@ const agora = () => new Date().toISOString();
 
 /** Salva a etapa. Dado marcado como "Ainda não tenho" vira tarefa no Plano; quando é preenchido depois, a tarefa se fecha. */
 export async function salvarEtapa(portalId: string, numero: number, form: FormData, extra?: { semRelatorio?: boolean }) {
-  const etapa = ETAPAS.find((e) => e.numero === numero);
+  // Os Dados da loja e o formulário da rotina de gestão (Planner) salvam do mesmo jeito.
+  const etapa = [...ETAPAS, ROTINA_GESTAO].find((e) => e.numero === numero);
   if (!etapa) return;
   const respostas: Respostas = {};
   const faltam: Record<string, string> = {};
@@ -166,7 +168,7 @@ export async function criarPortal(form: FormData) {
 }
 
 export async function atualizarPortal(id: string, form: FormData) {
-  await sb().from("portais").update({
+  const { error } = await sb().from("portais").update({
     loja: txt(form, "loja", 200),
     responsavel: txt(form, "responsavel", 200) || null,
     email: txt(form, "email", 200) || null,
@@ -181,6 +183,7 @@ export async function atualizarPortal(id: string, form: FormData) {
     lojas: apelidos(txt(form, "lojas", 500)),
     ativo: form.get("ativo") === "on",
   }).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 export async function convidarPessoa(portalId: string, form: FormData): Promise<{ link?: string; aviso?: string }> {
@@ -195,10 +198,22 @@ export async function desligarPessoa(portalId: string, userId: string) {
 
 export async function planoAdicionar(portalId: string, form: FormData) {
   const texto = txt(form, "texto", 500);
-  if (texto) await sb().from("plano_itens").insert({ portal_id: portalId, mes: Number(form.get("mes")) || 1, ordem: 99, texto });
+  if (!texto) return;
+  const { error } = await sb().from("plano_itens").insert({ portal_id: portalId, mes: Number(form.get("mes")) || 1, ordem: 99, texto });
+  if (error) throw new Error(`Não incluiu a tarefa: ${error.message}`);
+}
+/** Tema de um mês do Plano de Ação desta loja (vazio tira o tema e fica só "Mês N"). */
+export async function salvarTituloMes(portalId: string, mes: number, texto: string) {
+  const { data, error: e1 } = await sb().from("portais").select("plano_titulos").eq("id", portalId).single();
+  if (e1) throw new Error(e1.message);
+  const titulos = { ...((data?.plano_titulos ?? {}) as Record<string, string>) };
+  if (texto.trim()) titulos[String(mes)] = texto.trim().slice(0, 120); else delete titulos[String(mes)];
+  const { error } = await sb().from("portais").update({ plano_titulos: titulos }).eq("id", portalId);
+  if (error) throw new Error(`Não salvou o título: ${error.message}`);
 }
 export async function planoApagar(id: string) {
-  await sb().from("plano_itens").delete().eq("id", id);
+  const { error } = await sb().from("plano_itens").delete().eq("id", id);
+  if (error) throw new Error(`Não excluiu a tarefa: ${error.message}`);
 }
 
 export async function reuniaoSalvar(portalId: string, id: string | null, form: FormData) {
@@ -286,7 +301,10 @@ export async function fichaSalvar(portalId: string, form: FormData) {
     ...(termometro !== (antes?.termometro ?? null) ? { termometro_em: termometro ? new Date().toISOString().slice(0, 10) : null } : {}),
     resultado_n1: txt(form, "resultado_n1", 1000) || null,
     indicador: txt(form, "indicador", 300) || null,
-    fundamentos: form.getAll("fundamentos").map(String),
+    foco_curto: txt(form, "foco_curto", 90) || null,
+    // Cada fundamento: "nao", "trabalhando" ou "implantado" (o placar conta só os implantados).
+    fundamentos: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "implantado"),
+    fundamentos_trabalhando: FUNDAMENTOS.filter((x) => form.get(`fund:${x}`) === "trabalhando"),
     condicao_especial: txt(form, "condicao_especial", 500) || null,
     instagram: txt(form, "instagram", 300) || null,
     grupo_whatsapp: txt(form, "grupo_whatsapp", 500) || null,
@@ -316,6 +334,24 @@ export async function contratoSalvar(portalId: string, id: string | null, form: 
 }
 export async function contratoApagar(id: string) {
   await sb().from("contratos").delete().eq("id", id);
+}
+
+/** Anexa o contrato assinado (PDF ou foto). A cliente vê em "Contrato e renovação". Troca o anterior, se houver. */
+export async function contratoAnexar(portalId: string, id: string, arquivo: File, anterior?: string | null) {
+  if (!arquivo.size) throw new Error("Escolha o arquivo do contrato assinado.");
+  if (arquivo.size > 25 * 1024 * 1024) throw new Error("O arquivo passa de 25 MB.");
+  const limpo = arquivo.name.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
+  const caminho = `${portalId}/contrato/${Date.now()}__${limpo}`;
+  const { error } = await sb().storage.from("relatorios").upload(caminho, arquivo, { upsert: false });
+  if (error) throw new Error("Não deu para subir o arquivo. Confira a internet e tente de novo.");
+  const { error: e2 } = await sb().from("contratos").update({ arquivo: caminho }).eq("id", id);
+  if (e2) { await sb().storage.from("relatorios").remove([caminho]); throw new Error(e2.message); }
+  if (anterior) await sb().storage.from("relatorios").remove([anterior]);
+}
+export async function contratoRemoverAnexo(id: string, caminho: string) {
+  const { error } = await sb().from("contratos").update({ arquivo: null }).eq("id", id);
+  if (error) throw new Error(error.message);
+  await sb().storage.from("relatorios").remove([caminho]);
 }
 
 /** Link de acesso para uma pessoa nova da equipe; a função "acesso" já dá a ela o papel de equipe. */

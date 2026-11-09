@@ -39,6 +39,17 @@ export function EncontroEditar() {
           </select>
         </div>
       </div>
+      <label className="rotulo mt">Recessos (sem encontro)</label>
+      {(v.recessos ?? []).map((r, i) => (
+        <div key={i} className="linha" style={{ gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+          <input type="date" aria-label="Recesso de" value={r.de} style={{ maxWidth: 170 }} onChange={(x) => muda({ recessos: (v.recessos ?? []).map((y, k) => (k === i ? { ...y, de: x.target.value } : y)) })} />
+          <span className="mudo">a</span>
+          <input type="date" aria-label="Recesso até" value={r.ate} style={{ maxWidth: 170 }} onChange={(x) => muda({ recessos: (v.recessos ?? []).map((y, k) => (k === i ? { ...y, ate: x.target.value } : y)) })} />
+          <button type="button" className="link-loja" onClick={() => { if (confirm("Tirar este recesso?")) muda({ recessos: (v.recessos ?? []).filter((_, k) => k !== i) }); }}>tirar</button>
+        </div>
+      ))}
+      <button type="button" className="btn s peq" onClick={() => muda({ recessos: [...(v.recessos ?? []), { de: "", ate: "" }] })}>+ Recesso</button>
+      <p className="ajuda" style={{ margin: "6px 0 0" }}>O encontro que cair dentro do recesso é pulado: o Hub mostra o seguinte. Lembre de salvar.</p>
       {prox && <p className="mt">Próximo encontro: <b style={{ textTransform: "capitalize" }}>{dataHora(prox.iso)}</b></p>}
       {aviso && <div className="aviso ok mt">{aviso}</div>}
       <div className="linha mt" style={{ gap: 8 }}>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
 import { ESTAGIOS, buscarMetodo, buscarPessoas, fichaSalvar, principal, type Estagio, type Ficha, type Metodo, fichaExcluir } from "@/lib/pessoas";
 import { Excluir } from "@/components/Excluir";
@@ -70,8 +70,9 @@ function FormFicha({ m, f, pessoaInicial, pessoas, aoSalvar }: { m: Metodo; f?: 
 function Desenvolvimento() {
   const pessoaInicial = useSearchParams().get("pessoa") ?? "";
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const [nova, setNova] = useState(!!pessoaInicial);
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id, lojaFoco)), m: await buscarMetodo() }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const { m } = dados;
   const ativos = dados.pessoas.filter((p) => p.ativo);

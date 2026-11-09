@@ -1,10 +1,11 @@
 "use client";
 
+import { ContratoFoco } from "@/components/ContratoFoco";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dataHora, hoje, moeda } from "@/lib/formato";
 import {
   NIVEIS, buscarDiagnosticos, caixaPorMes, classeNivel, completo, corNivel, criarDiagnostico, liberarDiagnostico, mesCurto,
@@ -346,9 +347,9 @@ function Corpo({ d, ed, muda, caixa, equipeHub }: { d: Diagnostico; ed: boolean;
 
 function DiagnosticoDaLoja() {
   const params = useSearchParams();
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
-  const [escolhida, setEscolhida] = useState<string | null>(params.get("loja"));
+  const [escolhida, setEscolhida] = useLojaFoco();
   const [ed, setEd] = useState(false);
   const [d, setD] = useState<Diagnostico | null>(null);
   const [salvo, setSalvo] = useState(true);
@@ -433,7 +434,7 @@ function DiagnosticoDaLoja() {
             ) : (
               <>
                 <button type="button" className="btn s peq" onClick={() => setEd(true)}>Editar</button>
-                {atual.status === "liberada"
+                {!aprova ? <small className="mudo">Só a Camilla libera para a loja.</small> : atual.status === "liberada"
                   ? <button type="button" className="btn s peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, false), "Voltou para rascunho.")}>Voltar para rascunho</button>
                   : <button type="button" className="btn p peq" onClick={() => fazer(() => liberarDiagnostico(portal.id, atual.loja, true), "Liberado para a loja.")}>Liberar para a loja</button>}
               </>
@@ -442,6 +443,7 @@ function DiagnosticoDaLoja() {
         </div>
       )}
       {msg && <div className={`aviso mb ${/salvo|Liberado|rascunho|criado/.test(msg) ? "ok" : ""}`}>{msg}</div>}
+      {!ed && <ContratoFoco />}
       <Corpo d={d} ed={ed} muda={mudaSalvo} caixa={caixa ?? new Map()} equipeHub={equipe} />
       {!ed && (
         <div className="linha mt" style={{ marginTop: 24 }}>

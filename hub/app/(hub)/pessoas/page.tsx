@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { CamposPessoa } from "@/components/CamposPessoa";
 import { buscarMetodo, buscarPessoas, pessoaSalvar, principal } from "@/lib/pessoas";
 
 
 export default function MinhaEquipe() {
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const [erro, setErro] = useState("");
   const [aberto, setAberto] = useState(false);
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id, lojaFoco)), m: await buscarMetodo() }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const { m } = dados;
   const PERFIS = m.perfis;

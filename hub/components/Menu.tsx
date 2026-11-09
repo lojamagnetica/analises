@@ -6,6 +6,15 @@ import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { DE_TIME } from "@/lib/hub";
+import { LOJA_NA_MAO } from "@/lib/entrada";
+
+const NA_MAO: Item[] = [
+  { href: "/gestao/vendas", rotulo: "Vendas do dia", icone: "bag" },
+  { href: "/gestao/crediario", rotulo: "Crediário", icone: "calc" },
+  { href: "/gestao/minhas-compras", rotulo: "Compras", icone: "box" },
+  { href: "/gestao/estoque-loja", rotulo: "Estoque", icone: "tag" },
+];
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };
 export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
@@ -20,14 +29,16 @@ export function grupoDaPagina(lista: Grupo[], caminho: string) {
   return melhor?.g;
 }
 
-export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = [], aprova = false): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = [], aprova = false, monta = aprova): Grupo[] {
   const g: Grupo[] = [];
+  const cs = equipe && monta && !aprova;
   // Área da mentora: só da Camilla (quem aprova).
   if (equipe && aprova) {
     g.push({
       id: "mentora", rotulo: "Área da mentora", icone: "spark",
       itens: [
         { href: "/empresa/minha-central", rotulo: "Minha central", icone: "target" },
+        { href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" },
         { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check", soMentora: true },
         { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban", soMentora: true },
         { href: "/equipe/analises", rotulo: "Análises de perfil", icone: "insta", soMentora: true },
@@ -58,12 +69,25 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     g.push({
       id: "central", rotulo: "Central do Cliente", icone: "kanban",
       itens: [
-        { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
-        { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
+        // Do que mais se usa no dia a dia para o que menos. Para a CS (monta, sem aprovar), o que a Camilla tem na
+        // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
+        { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
+        ...(cs ? [{ href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark" }] : []),
+        ...(cs ? [{ href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" }] : []),
+        { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
+        ...(cs ? [
+          { href: "/equipe/aprovar", rotulo: "Esperando a Camilla", icone: "check" },
+          { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },
+        ] : []),
         { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
+        ...(cs ? [{ href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt" }] : []),
         { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
+        ...(cs ? [
+          { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift" },
+          { href: "/empresa/agentes", rotulo: "Agentes", icone: "robot" },
+        ] : []),
       ],
     });
     g.push({
@@ -83,18 +107,20 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
         { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
         { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
+        { href: "/equipe/guias", rotulo: "Guias em vídeo", icone: "play" },
       ],
     });
   }
-  // O que é só da Camilla (aprovar, montar e liberar para as lojas) some do menu do resto da equipe.
-  if (equipe && !aprova) g.forEach((x) => { x.itens = x.itens.filter((i) => !i.soMentora); });
+  // O que é de montar e liberar para as lojas some do menu de quem não monta.
+  if (equipe && !monta) g.forEach((x) => { x.itens = x.itens.filter((i) => !i.soMentora); });
   if (!temPortal || soCurso) return g;
   const consultoriaOuMentoria: Grupo = consultoria
     ? {
         id: "consultoria", rotulo: "Minha consultoria", icone: "target",
         itens: [
           { href: "/consultoria", rotulo: "Painel da consultoria", icone: "chart" },
-          { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal" },
+          { href: "/consultoria/planner", rotulo: "Planner e rotina da gestão", icone: "cal" },
+          { href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users" },
           { href: "/consultoria/materiais", rotulo: "Materiais", icone: "folder" },
           { href: "/reunioes", rotulo: "Encontros", icone: "video" },
           { href: "/notas", rotulo: "Notas", icone: "note" },
@@ -117,26 +143,27 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "loja", rotulo: "Minha loja", icone: "folder",
       itens: [
         { href: "/personalizacao", rotulo: "Dados da loja", icone: "sliders", ponto: persFaltam > 0 },
+        // O resultado do Diagnóstico: o resumo e a análise de estoque (a do Instagram fica em Conteúdo).
+        { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
+        { href: "/estoque", rotulo: "Diagnóstico de estoque", icone: "box" },
         { href: "/personalizacao/etapa?n=8", rotulo: "Estoque e relatórios", icone: "box" },
+        { href: "/mural", rotulo: "Mural da loja", icone: "target" },
+      ],
+    },
+    {
+      // A marca da loja: entregue com cadeado aberto na semana depois do Diagnóstico.
+      id: "marca", rotulo: "Nossa marca", icone: "book",
+      itens: [
         { href: "/nossa-historia", rotulo: "Nossa história", icone: "book" },
         { href: "/guia-marcas", rotulo: "Guia das marcas", icone: "tag" },
       ],
     },
     {
-      // O resultado do Diagnóstico: o resumo, as análises de estoque e a do Instagram.
-      id: "diagnostico", rotulo: "Diagnóstico", icone: "chart",
-      itens: [
-        { href: "/painel", rotulo: "Diagnóstico da loja", icone: "chart" },
-        { href: "/estoque", rotulo: "Diagnóstico de estoque", icone: "box" },
-        { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
-      ],
-    },
-    {
       id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
       itens: [
-        { href: "/bussola", rotulo: "Onde está o meu tempo", icone: "compass" },
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
+        // Só aparece para a loja com uma medição de Vendas por canal em andamento (o layout esconde nas outras).
         { href: "/gestao/canais", rotulo: "Vendas por canal", icone: "chart" },
         { href: "/metas", rotulo: "Metas e calculadora", icone: "target" },
       ],
@@ -159,7 +186,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "vendas", rotulo: "Vendas", icone: "funnel",
       itens: [
         { href: "/acoes", rotulo: "Ações do Mês", icone: "bolt" },
-        { href: "/scripts", rotulo: "Scripts de venda", icone: "chat" },
         { href: "/planeje", rotulo: "PLANEJE AQUI", icone: "kanban" },
       ],
     },
@@ -177,6 +203,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     {
       id: "conteudo", rotulo: "Conteúdo", icone: "insta",
       itens: [
+        { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
         { href: "/conteudo/pautas", rotulo: "Pautas quentes", icone: "spark" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
@@ -233,17 +260,26 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; semComece?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova)
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova, props.monta)
     .filter((g) => !props.ocultos?.includes(g.id))
     // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
-    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }));
+    .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }))
+    // Loja sem equipe: sai o que é de time; o Conteúdo mostra quem ajuda.
+    .filter((g) => !props.semEquipe || g.id !== "pessoas")
+    .map((g) => (props.semEquipe ? { ...g, itens: g.itens.filter((i) => !DE_TIME.test(i.href)) } : g))
+    // Loja na mão: Vendas do dia, Crediário e Compras no topo da Gestão; o caixa se soma sozinho.
+    .map((g) => (props.vendaDiaria && g.id === "gestao" ? { ...g, itens: [...NA_MAO, ...g.itens.filter((i) => i.href !== "/gestao/caixa")] } : g))
+    .map((g) => (g.id === "conteudo" && props.apoioConteudo ? { ...g, rotulo: `Conteúdo · ${props.apoioConteudo}` } : g))
+    // Onboarding: só as áreas onde a loja manda os arquivos e as informações.
+    .filter((g) => !props.soEnvio || g.id === "loja" || (props.vendaDiaria && g.id === "gestao"))
+    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao") || LOJA_NA_MAO.includes(i.href)) } : g));
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(lista.map((g) => [g.id, g.itens.some((i) => ativo(i.href))])),
+    Object.fromEntries(lista.map((g) => [g.id, !!props.soEnvio || g.itens.some((i) => ativo(i.href))])),
   );
 
   useEffect(() => {
@@ -309,10 +345,11 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {props.temPortal && !props.soCurso && (
+          {/* O Planner de gestão diário (no lugar da antiga Bússola do gestor): a rotina de gestão com dia fixo. */}
+          {props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/consultoria/planner") && (
             <div className="nav-linha">
-              <Link href="/bussola" className={`nav-item ${ativo("/bussola") ? "ativo" : ""}`}>
-                <Icone nome="compass" /> BÚSSOLA DO GESTOR
+              <Link href="/consultoria/planner" className={`nav-item ${ativo("/consultoria/planner") ? "ativo" : ""}`}>
+                <Icone nome="cal" /> PLANNER DE GESTÃO{props.trava?.("/consultoria/planner") ? " 🔒" : ""}
               </Link>
             </div>
           )}
@@ -334,7 +371,9 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           )}
 
-          {lista.map((g) => (
+          {/* O que está com cadeado (liberado em outra etapa) vai sempre para baixo: as áreas trancadas no fim do menu
+              e, dentro de cada área, os itens trancados no fim. Deixa clara a ordem da jornada. */}
+          {[...lista.filter((g) => !props.trancados?.includes(g.id)), ...lista.filter((g) => props.trancados?.includes(g.id))].map((g) => (
             <div key={g.id}>
               <button
                 className="nav-item nav-grupo"
@@ -346,7 +385,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
               </button>
               {abertos[g.id] && (
                 <div className="nav-sub">
-                  {g.itens.map((i) => (
+                  {[...g.itens.filter((i) => !props.trava?.(i.href)), ...g.itens.filter((i) => props.trava?.(i.href))].map((i) => (
                     <Link key={i.href} href={i.href} className={ativo(i.href) ? "ativo" : ""}>
                       <Icone nome={i.icone} /> {i.rotulo}
                       {props.trava?.(i.href) ? <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>
@@ -359,7 +398,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </div>
           ))}
 
-          {(props.temPortal || props.equipe) && (
+          {(props.temPortal || props.equipe) && !props.soEnvio && (
             <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
               <Icone nome="play" /> CURSO{props.cursoFechado ? " 🔒" : ""}
             </Link>
@@ -371,7 +410,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
             </Link>
           )}
 
-          {props.temPortal && !props.soCurso && (
+          {props.temPortal && !props.soCurso && !props.soEnvio && (
             <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
               <Icone nome="gift" /> Indique uma loja 🎁
               {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}

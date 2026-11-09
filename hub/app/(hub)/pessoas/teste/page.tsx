@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PerguntasDisc, faltamDisc, type MaisMenos } from "@/components/PerguntasDisc";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { buscarMetodo, buscarPessoas, perfilSalvar, perguntasDaFuncao, type Letra } from "@/lib/pessoas";
 import { liberado } from "@/lib/entrada";
 
@@ -12,12 +12,13 @@ function Teste() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { portal, entrada, equipe } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   // Antes do Diagnóstico, a ficha da pessoa ainda está fechada: volta para a etapa Time de vendas.
   const fichaAberta = equipe || !entrada || liberado("diagnostico", entrada);
   const [r, setR] = useState<MaisMenos>({ mais: [], menos: [] });
   const [por, setPor] = useState<"pessoa" | "gestor">("gestor");
   const [erro, setErro] = useState("");
-  const { dados } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  const { dados } = useDados(async () => ({ ...(await buscarPessoas(portal.id, lojaFoco)), m: await buscarMetodo() }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const p = dados.pessoas.find((x) => x.id === id);
   if (!p) return <div className="card">Pessoa não encontrada.</div>;

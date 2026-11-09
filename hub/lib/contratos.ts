@@ -23,6 +23,33 @@ export async function salvarModelo(m: Pick<Modelo, "plano_id" | "titulo" | "text
   if (error) throw new Error(error.message);
 }
 
+/** Cada alteração de um modelo fica guardada pelo banco (quem, quando, o quê). */
+export type VersaoModelo = { id: number; plano_id: string; titulo: string | null; texto: string | null; aprovado: boolean | null; acao: string; por_nome: string | null; created_at: string };
+
+export async function buscarVersoes(planoId: string) {
+  const { data, error } = await sb().from("contrato_modelo_versoes").select("*").eq("plano_id", planoId).order("created_at", { ascending: false }).limit(100);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as VersaoModelo[];
+}
+
+/** O que mudou de um texto para o outro, linha a linha (tirado / incluído / igual). */
+export function diferencas(antes: string, depois: string) {
+  const a = antes.split("\n"), b = depois.split("\n");
+  const n = a.length, m = b.length;
+  const t = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) t[i][j] = a[i] === b[j] ? t[i + 1][j + 1] + 1 : Math.max(t[i + 1][j], t[i][j + 1]);
+  const out: { tipo: "igual" | "tirou" | "incluiu"; linha: string }[] = [];
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (a[i] === b[j]) { out.push({ tipo: "igual", linha: a[i] }); i++; j++; }
+    else if (t[i + 1][j] >= t[i][j + 1]) out.push({ tipo: "tirou", linha: a[i++] });
+    else out.push({ tipo: "incluiu", linha: b[j++] });
+  }
+  while (i < n) out.push({ tipo: "tirou", linha: a[i++] });
+  while (j < m) out.push({ tipo: "incluiu", linha: b[j++] });
+  return out;
+}
+
 const UNI = ["", "um", "dois", "três", "quatro", "cinco", "seis", "sete", "oito", "nove", "dez", "onze", "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete", "dezoito", "dezenove"];
 const DEZ = ["", "", "vinte", "trinta", "quarenta", "cinquenta", "sessenta", "setenta", "oitenta", "noventa"];
 const CEN = ["", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos", "seiscentos", "setecentos", "oitocentos", "novecentos"];
@@ -96,21 +123,96 @@ export function preencher(texto: string, campos: Record<string, string>, blocos:
   return t.replace(/\{\{([A-Z_]+)\}\}/g, (_, k: string) => campos[k] || `[PREENCHER: ${k}]`);
 }
 
-/** Arquivo .doc (Word abre direto; dá para subir no Autentique). */
-export function baixarDoc(titulo: string, texto: string) {
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  const corpo = texto.split(/\n{2,}/).map((p) => {
-    const l = p.trim();
-    if (/^(CL[ÁA]USULA|QUALIFICA|CONTRATO DE)/.test(l)) return `<p style="font-weight:bold;margin-top:14pt">${esc(l).replace(/\n/g, "<br>")}</p>`;
-    return `<p style="text-align:justify">${esc(l).replace(/\n/g, "<br>")}</p>`;
-  }).join("");
-  const html = `<html><head><meta charset="utf-8"><title>${esc(titulo)}</title></head><body style="font-family:Arial;font-size:11pt;line-height:1.4">${corpo}</body></html>`;
-  const blob = new Blob(["﻿", html], { type: "application/msword" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `${titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_")}.doc`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+/** Arquivo .pdf do contrato (A4, texto justificado, títulos das cláusulas em negrito, página X de Y). */
+export async function baixarPdf(titulo: string, texto: string) {
+  const { jsPDF } = await import("jspdf");
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const M = 22, L = 210 - 2 * M, ALTURA = 297, LH = 5.4;
+  let y = M;
+  const quebra = (h: number) => { if (y + h > ALTURA - M) { pdf.addPage(); y = M; } };
+  pdf.setProperties({ title: titulo, creator: "magnética.hub" });
+  const ehTitulo = (l: string) => /^(CL[ÁA]USULA|QUALIFICA|CONTRATO DE)/.test(l);
+  // O fim (local e data + blocos que começam com a linha "____") vira o quadro de assinaturas, sempre inteiro numa página.
+  const blocos = texto.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const primeiraAss = blocos.findIndex((b) => /^_{5,}/.test(b));
+  const assinaturas = primeiraAss >= 0 ? blocos.slice(primeiraAss).filter((b) => /^_{5,}/.test(b)).map((b) => b.split("\n").slice(1).flatMap((l) => l.split(" · ")).map((l) => l.trim()).filter(Boolean)) : [];
+  const local = primeiraAss > 0 && blocos[primeiraAss - 1].length < 80 ? blocos[primeiraAss - 1] : "";
+  const corpo = primeiraAss >= 0 ? blocos.slice(0, local ? primeiraAss - 1 : primeiraAss) : blocos;
+  for (const bloco of corpo) {
+    const partes = bloco.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (!partes.length) continue;
+    for (const parte of partes) {
+      const t = ehTitulo(parte);
+      pdf.setFont("helvetica", t ? "bold" : "normal");
+      pdf.setFontSize(t ? 11 : 10.5);
+      if (t) { y += 2; quebra(LH * 3); }
+      const linhas: string[] = pdf.splitTextToSize(parte, L - 1);
+      linhas.forEach((l, i) => {
+        quebra(LH);
+        // Justificado, menos a última linha do parágrafo e os títulos.
+        if (t || i === linhas.length - 1) pdf.text(l, M, y);
+        else {
+          const palavras = l.split(" ").filter(Boolean);
+          const livre = L - palavras.reduce((t, w) => t + pdf.getTextWidth(w), 0);
+          // Nunca menos que um espaço normal, para as palavras não colarem.
+          const espaco = Math.max(livre / Math.max(palavras.length - 1, 1), pdf.getTextWidth(" "));
+          let x = M;
+          for (const w of palavras) { pdf.text(w, x, y); x += pdf.getTextWidth(w) + espaco; }
+        }
+        y += LH;
+      });
+    }
+    y += 2.6;
+  }
+  if (assinaturas.length) {
+    const COL = assinaturas.length === 2 ? (L - 14) / 2 : L;
+    pdf.setFontSize(9.5);
+    const alturaDe = (linhas: string[]) => 16 + linhas.slice(1).reduce((t, l) => t + pdf.splitTextToSize(l, COL).length * 4.6, 5);
+    const linhasQuadro = assinaturas.length === 2 ? [Math.max(...assinaturas.map(alturaDe))] : assinaturas.map(alturaDe);
+    quebra(14 + (local ? 12 : 0) + linhasQuadro.reduce((t, h) => t + h + 6, 0));
+    y += 6;
+    if (local) {
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(10.5);
+      pdf.text(local, 105, y, { align: "center" });
+      y += 12;
+    }
+    const desenhar = (linhas: string[], x: number, y0: number) => {
+      // Espaço para assinar, a linha e, embaixo, o papel em negrito e os dados.
+      let yy = y0 + 14;
+      pdf.setDrawColor(60); pdf.setLineWidth(0.3);
+      pdf.line(x, yy, x + COL, yy);
+      yy += 5;
+      pdf.setFont("helvetica", "bold"); pdf.setFontSize(10);
+      pdf.text(linhas[0] ?? "", x + COL / 2, yy, { align: "center" });
+      pdf.setFont("helvetica", "normal"); pdf.setFontSize(9.5);
+      for (const l of linhas.slice(1)) {
+        for (const parte of pdf.splitTextToSize(l, COL) as string[]) { yy += 4.6; pdf.text(parte, x + COL / 2, yy, { align: "center" }); }
+      }
+    };
+    if (assinaturas.length === 2) {
+      desenhar(assinaturas[0], M, y);
+      desenhar(assinaturas[1], M + COL + 14, y);
+      y += linhasQuadro[0];
+    } else {
+      assinaturas.forEach((a, i) => { desenhar(a, M, y); y += linhasQuadro[i] + 6; });
+    }
+  }
+  const total = pdf.getNumberOfPages();
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(120);
+  for (let i = 1; i <= total; i++) {
+    pdf.setPage(i);
+    pdf.text(`Página ${i} de ${total}`, 210 - M, ALTURA - 10, { align: "right" });
+  }
+  pdf.save(`${titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "_")}.pdf`);
+}
+
+/** Contratos já gerados desta cliente (o texto fica guardado; dá para baixar de novo em PDF). */
+export async function buscarGerados(portalId: string) {
+  const { data, error } = await sb().from("contratos_gerados").select("id, plano_id, texto, status, gerado_por, created_at").eq("portal_id", portalId).order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as { id: string; plano_id: string | null; texto: string; status: string | null; gerado_por: string | null; created_at: string }[];
 }
 
 export async function registrarContrato(portalId: string, planoId: string | null, texto: string, porNome: string) {

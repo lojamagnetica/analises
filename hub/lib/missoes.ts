@@ -7,7 +7,7 @@ import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Missao = { id: string; portal_id: string; semana: string; foco: string; criterio: string; mensagem: string; meta: number; obs: string; created_at: string };
+export type Missao = { id: string; portal_id: string; semana: string; /** "" = o portal inteiro; com mais de uma loja, o nome da loja. */ loja: string; foco: string; criterio: string; mensagem: string; meta: number; obs: string; created_at: string };
 export type MissaoPessoa = { id: string; missao_id: string; portal_id: string; pessoa_id: string | null; pessoa_nome: string; token: string; enviadas: number; respostas: number; vendas: number };
 
 export type Foco = { id: string; nome: string; tipo: "Clientes" | "Venda"; criterio: string; mensagem: string };
@@ -26,7 +26,7 @@ export const FOCOS: Foco[] = [
   { id: "segunda", nome: "Segunda compra (até 30 dias)", tipo: "Venda", criterio: "Na sua carteira (no sistema), puxe as clientes que compraram há 15 a 30 dias e já receberam o pós-venda.",
     mensagem: "Oi, {nome}! Aqui é {consultora}, da {loja}. Lembrei de você: chegaram peças que combinam com o que você levou. Te mando as fotos agora ou você já consegue vir na loja provar?" },
   { id: "aniversario", nome: "Aniversariantes do mês", tipo: "Clientes", criterio: "Na primeira semana do mês: na sua carteira (no sistema), puxe todas as clientes que fazem aniversário neste mês. São 3 mensagens: o convite agora, só o parabéns no dia (sem falar do presente) e o lembrete faltando 5 dias para o presente expirar.",
-    mensagem: "Convite · na primeira semana do mês\nOi, {nome}! Aqui é {consultora}. Este é o mês do seu aniversário, e nós da {loja} preparamos um presente especial para você: durante todo o mês do seu aniversário, você recebe {presente} nas suas compras aqui na loja. Já vamos escolher o look do seu dia? Será um privilégio te ajudar nessa escolha.\n---\nNo dia do aniversário · só o parabéns (no dia chegam muitas mensagens: não é hora de vender)\nOi, {nome}! Aqui é {consultora}, da {loja}. Feliz aniversário! 🎉 Que o seu novo ano venha leve e cheio de bons dias.\n---\nLembrete · faltando 5 dias para o presente expirar\nOi, {nome}! Aqui é {consultora}, da {loja}. Passando para lembrar: faltam 5 dias para o seu presente de aniversário expirar ({presente} nas suas compras até o fim do mês). Já separo umas peças para você: você consegue vir amanhã ou fica melhor no fim de semana?" },
+    mensagem: "Convite · na primeira semana do mês\nOi, {nome}! Aqui é {consultora}. Este é o mês do seu aniversário, e nós da {loja} preparamos um presente especial para você: durante todo o mês do seu aniversário, você recebe {presente} nas suas compras aqui na loja. Já vamos escolher o seu presente? Será um privilégio te ajudar nessa escolha.\n---\nNo dia do aniversário · só o parabéns (no dia chegam muitas mensagens: não é hora de vender)\nOi, {nome}! Aqui é {consultora}, da {loja}. Feliz aniversário! 🎉 Que o seu novo ano venha leve e cheio de bons dias.\n---\nLembrete · faltando 5 dias para o presente expirar\nOi, {nome}! Aqui é {consultora}, da {loja}. Passando para lembrar: faltam 5 dias para o seu presente de aniversário expirar ({presente} nas suas compras até o fim do mês). Já separo umas peças para você: você consegue vir amanhã ou fica melhor no fim de semana?" },
 ];
 
 /** O foco que o Hub sugere pelo momento da loja: abaixo do ritmo, as melhores clientes; senão, um por semana do mês. */
@@ -58,7 +58,7 @@ export async function buscarMissoes(portalId: string) {
 }
 /** Cria (ou atualiza) a missão da semana e garante uma linha para cada pessoa do time. */
 export async function salvarMissao(portalId: string, d: Omit<Missao, "id" | "portal_id" | "created_at">, time: { id: string; nome: string }[]) {
-  const { data, error } = await sb().from("loja_missoes").upsert({ ...d, portal_id: portalId }, { onConflict: "portal_id,semana" }).select("*").single();
+  const { data, error } = await sb().from("loja_missoes").upsert({ ...d, portal_id: portalId }, { onConflict: "portal_id,semana,loja" }).select("*").single();
   if (error) throw new Error(error.message);
   const m = data as Missao;
   if (time.length) await ok(sb().from("loja_missao_pessoas").upsert(time.map((p) => ({ missao_id: m.id, portal_id: portalId, pessoa_id: p.id, pessoa_nome: p.nome })), { onConflict: "missao_id,pessoa_id", ignoreDuplicates: true }));

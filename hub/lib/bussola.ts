@@ -1,12 +1,20 @@
 "use client";
 
-// Bússola do gestor (Onde está o meu tempo): a lojista diz quando está disponível e prefere cada tarefa,
+// Bússola do gestor: a lojista diz quando está disponível e prefere cada tarefa,
 // o Hub monta a rotina (todo dia, toda semana, todo mês) e, em cima dos números, avisa o que precisa de atenção hoje.
 // As regras dos alertas ficam aqui em cima, num lugar só, para a Camilla revisar.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { FUSO, diasAte, hoje, mesAtual, moeda } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { buscarCaixa, fimDoMes, mesDeHoje, numeroDe, somarMes, type Caixa } from "@/lib/caixa";
+
+/** Bússola fechada para todas as lojas (cadeado) enquanto a Camilla termina de ajustar. A equipe continua vendo. */
+export const BUSSOLA_FECHADA = true;
+export const bussolaFechada = (href: string) => BUSSOLA_FECHADA && href.startsWith("/bussola");
+/** Outras áreas com cadeado para todas as lojas (a equipe continua vendo). */
+// O Guia das marcas saiu daqui: agora segue o cadeado da área "Nossa marca", liberada loja por loja.
+const FECHADAS: { href: string; rotulo: string }[] = [];
+export const areaFechada = (href: string) => (bussolaFechada(href) ? "A Bússola do gestor" : FECHADAS.find((f) => href.startsWith(f.href))?.rotulo ?? null);
 
 // ───── Regras (para revisar) ─────
 
@@ -330,7 +338,7 @@ export function sugestoesDeConteudo(d: DadosHoje): Sugestao[] {
     .sort((a, b) => peso(b) - peso(a)).slice(0, 3)
     .map((i) => ({
       chave: `e-${i.id}`, origem: "estoque", titulo: `Mostrar: ${i.produto}`, href: "/conteudo/roteiro",
-      texto: `${i.qtd} peça(s) paradas há ${i.dias_parado} dias${data ? `. ${data.titulo} é ${data.faltam === 0 ? "hoje" : `em ${data.faltam} dias`}: monte um look para essa data` : ": monte um look e mostre como usar"}, e chame a cliente certa no direct.`,
+      texto: `${i.qtd} peça(s) paradas há ${i.dias_parado} dias${data ? `. ${data.titulo} é ${data.faltam === 0 ? "hoje" : `em ${data.faltam} dias`}: monte uma combinação para essa data` : ": mostre como usar com outras peças"}, e chame a cliente certa no direct.`,
     }));
   for (const p of d.pautas.slice(0, 2)) lista.push({ chave: `p-${p.titulo}`, origem: "pauta", titulo: `Em alta: ${p.titulo}`, texto: p.angulo, href: "/conteudo/pautas" });
   if (data && !lista.some((s) => s.origem === "estoque")) lista.push({ chave: `d-${data.titulo}`, origem: "data", titulo: `${data.titulo} se aproxima`, texto: `Faltam ${data.faltam} dias. Planeje o conteúdo e as ações dessa data.`, href: "/conteudo/semana" });

@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Icone } from "@/components/Icone";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   CLASSE_TIPO, REGRAS, buscarClientes, buscarMetodoClientes, classificar, contatada, estadoConteudo, lerValor, linkWhats,
@@ -23,7 +23,7 @@ export default function Resgate() {
   }, [portal.id]);
   // Alterações feitas aqui entram na hora, sem buscar a base inteira de novo.
   const [ajustes, setAjustes] = useState<Record<string, Partial<Cliente>>>({});
-  const [loja, setLoja] = useState("");
+  const [loja, setLoja] = useLojaFoco();
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [mostrar, setMostrar] = useState(PASSO);
   const [compra, setCompra] = useState<string | null>(null);
@@ -89,7 +89,7 @@ export default function Resgate() {
         <div className="card" style={{ padding: "6px 20px" }}>
           {lista.slice(0, mostrar).map((c) => {
             const l = leituras.get(c.id)!;
-            const texto = mensagemDoTipo(m, equipe, l.tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora });
+            const texto = mensagemDoTipo(m, equipe, l.tipo, { nome: c.nome, loja: c.loja ?? portal.loja, consultora: c.vendedora || (portal.sem_equipe ? (portal.responsavel ?? "").trim().split(" ")[0] || null : null) });
             const link = linkWhats(c.whatsapp, texto);
             const mandei = contatada(c);
             return (

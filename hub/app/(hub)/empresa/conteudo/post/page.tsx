@@ -64,6 +64,53 @@ function Editar({ p, aoSalvar }: { p: PostCasa; aoSalvar: () => void }) {
   );
 }
 
+/** Imagens prontas (PNGs gravados pelo Claude no card). No celular, "Salvar no celular" abre o compartilhar com todas de uma vez. */
+function ImagensProntas({ urls, nomeBase }: { urls: string[]; nomeBase: string }) {
+  const [msg, setMsg] = useState("");
+  const nomeDe = (i: number, u: string) => `${nomeBase}-${String(i + 1).padStart(2, "0")}.${/\.jpe?g($|\?)/i.test(u) ? "jpg" : "png"}`;
+  const arquivos = async () => Promise.all(urls.map(async (u, i) => {
+    const b = await (await fetch(u)).blob();
+    return new File([b], nomeDe(i, u), { type: b.type || "image/png" });
+  }));
+  const baixar = (f: File) => {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  const salvarTodas = async () => {
+    setMsg("Preparando as imagens…");
+    try {
+      const fs = await arquivos();
+      const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+      if (nav.canShare?.({ files: fs })) { await nav.share({ files: fs }); setMsg(""); return; }
+      for (const f of fs) { baixar(f); await new Promise((r) => setTimeout(r, 350)); }
+      setMsg("");
+    } catch (e) { if ((e as Error).name !== "AbortError") setMsg("Não consegui baixar agora. Toque e segure em cada imagem para salvar."); else setMsg(""); }
+  };
+  const salvarUma = async (i: number) => {
+    try { const b = await (await fetch(urls[i])).blob(); baixar(new File([b], nomeDe(i, urls[i]), { type: b.type || "image/png" })); }
+    catch { window.open(urls[i], "_blank"); }
+  };
+  return (
+    <div className="card mb">
+      <div className="linha entre">
+        <h2 style={{ margin: 0 }}>Imagens prontas para postar</h2>
+        <button type="button" className="btn p peq" onClick={salvarTodas}>Salvar no celular ({urls.length})</button>
+      </div>
+      <p className="mudo" style={{ fontSize: 14 }}>Na ordem de postagem. No celular, o botão abre o compartilhar: escolha “Salvar imagens”. Também dá para tocar e segurar em cada uma.</p>
+      {msg && <div className="aviso">{msg}</div>}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>
+        {urls.map((u, i) => (
+          <div key={u} style={{ display: "grid", gap: 4 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={u} alt={`Slide ${i + 1}`} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)" }} />
+            <button type="button" className="btn s peq" onClick={() => salvarUma(i)}>Baixar {i + 1}</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function Post() {
   useEquipe();
   const params = useSearchParams();
@@ -96,14 +143,17 @@ function Post() {
           <div className="linha" style={{ gap: 8 }}>
             {p.palavra_chave && <span className="chip">Palavra-chave: <b>{p.palavra_chave}</b></span>}
             {t != null && <span className="chip">Envios/alcance: <b>{t.toFixed(2).replace(".", ",")}%</b></span>}
-            {p.notion_url && <a className="btn s peq" href={p.notion_url} target="_blank" rel="noopener noreferrer">Abrir no Notion</a>}
           </div>
         </div>
         {p.gancho && <p className="mt" style={{ fontSize: 17, fontWeight: 700, color: "var(--ink)", margin: "14px 0 4px" }}>{p.gancho}</p>}
         {p.angulo && <p className="mudo" style={{ margin: 0 }}>{p.angulo}</p>}
       </div>
 
-      {slides.length > 0 && (
+      {(p.midias?.length ?? 0) > 0 && (
+        <ImagensProntas urls={p.midias!} nomeBase={(p.titulo || "post").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40)} />
+      )}
+
+      {slides.length > 0 && !(p.midias?.length) && (
         <div className="card mb">
           <h2>Carrossel pronto</h2>
           <p className="mudo" style={{ fontSize: 14 }}>No modelo tweet validado do perfil, com o cabeçalho de {cfg.nome}. Baixe os PNGs e poste na ordem.</p>

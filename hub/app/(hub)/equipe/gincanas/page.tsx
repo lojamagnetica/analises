@@ -6,6 +6,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { INDICADORES, buscarGincanas, gincanaSalvar, type Gincana } from "@/lib/gincanas";
 
 function CamposGincana({ g }: { g?: Gincana }) {
+  const { aprova } = useEquipe();
   return (
     <>
       <div className="grade g4" style={{ gap: 12 }}>
@@ -24,7 +25,7 @@ function CamposGincana({ g }: { g?: Gincana }) {
       <label className="rotulo">Dica</label><textarea name="dica" rows={2} defaultValue={g?.dica ?? ""} />
       <div className="linha mt">
         <label className="marcar"><input type="checkbox" name="comece" defaultChecked={g?.comece} /><span>Comece por aqui</span></label>
-        <label className="marcar"><input type="checkbox" name="publicada" defaultChecked={g?.publicada ?? true} /><span>Aparece nos portais</span></label>
+        <label className="marcar"><input type="checkbox" name="publicada" disabled={!aprova} defaultChecked={aprova ? g?.publicada ?? true : !!g?.publicada} /><span>Aparece nos portais{aprova ? "" : " (só a Camilla publica)"}</span></label>
       </div>
     </>
   );

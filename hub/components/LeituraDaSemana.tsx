@@ -75,9 +75,9 @@ export function CaixaDaSemana() {
             ))}
           </div>
         </div>
-        <Link className={`btn ${faltam ? "p" : "s"} peq`} href="/gestao/caixa">{faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
+        <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Sem caixa lançado, não tem leitura. Quer passar isso para alguém da equipe? Peça à Camilla um acesso só do caixa.</p>
+      <p className="ajuda" style={{ margin: "8px 0 0" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Sem caixa lançado, não tem leitura.{portal.sem_equipe ? "" : " Quer passar isso para alguém da equipe? Peça à Camilla um acesso só do caixa."}</p>
     </div>
   );
 }

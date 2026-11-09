@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmBreve } from "@/components/EmBreve";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { classeNivel, corNivel, rotuloNivel } from "@/lib/diagnostico";
 import { buscarGestao, completa, liberarGestao, salvarGestao, type AnaliseGestao, type Area } from "@/lib/gestao";
@@ -13,9 +13,9 @@ type Props = { area: Area; titulo: string; sub: string; oque: string; embutida?:
 
 /** Uma área da Gestão estratégica: mostra a análise da loja quando existe; senão, o que a área vai ter e como adiantar. */
 export function AnaliseDaGestao({ area, titulo, sub, oque, embutida }: Props) {
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
   const varias = (portal.lojas ?? []).length > 1;
-  const [escolhida, setEscolhida] = useState<string | null>(null);
+  const [escolhida, setEscolhida] = useLojaFoco();
   const [ed, setEd] = useState(false);
   const [d, setD] = useState<AnaliseGestao | null>(null);
   const [msg, setMsg] = useState("");
@@ -67,7 +67,7 @@ export function AnaliseDaGestao({ area, titulo, sub, oque, embutida }: Props) {
             ) : (
               <>
                 <button type="button" className="btn s peq" onClick={() => setEd(true)}>Editar textos</button>
-                {atual.status === "liberada"
+                {!aprova ? <small className="mudo">Só a Camilla libera para a loja.</small> : atual.status === "liberada"
                   ? <button type="button" className="btn s peq" onClick={() => fazer(() => liberarGestao(portal.id, area, atual.loja, false), "Voltou para rascunho.")}>Voltar para rascunho</button>
                   : <button type="button" className="btn p peq" onClick={() => fazer(() => liberarGestao(portal.id, area, atual.loja, true), "Liberado para a loja.")}>Liberar para a loja</button>}
               </>

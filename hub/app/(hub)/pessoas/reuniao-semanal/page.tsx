@@ -5,7 +5,7 @@ import { useState } from "react";
 import { CampoNumero, lerNumero } from "@/components/Numero";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
 import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, quemVende, reuniaoSalvar, type NumerosPessoa, reuniaoTimeExcluir } from "@/lib/pessoas";
 import { buscarCaixa, fimDoMes, type Caixa } from "@/lib/caixa";
@@ -45,6 +45,7 @@ const COLUNAS: [keyof Linha, string, string][] = [["venda", "Venda", "R$"], ["me
 
 export default function ReuniaoSemanal() {
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const [data, setData] = useState(hoje());
   const [linhas, setLinhas] = useState<Record<string, Linha>>({});
   const [t, setT] = useState({ funcionou: "", travou: "", foco: "", destaqueId: "", fez: "", importou: "", oque: "", quanto: "", ate: "", como: "" });
@@ -55,14 +56,14 @@ export default function ReuniaoSemanal() {
   const { dados, recarregar } = useDados(async () => {
     const mes = ini.slice(0, 7);
     const [pessoas, m, c1, c2, plano] = await Promise.all([
-      buscarPessoas(portal.id), buscarMetodo(), buscarCaixa(portal.id, mes),
+      buscarPessoas(portal.id, lojaFoco), buscarMetodo(), buscarCaixa(portal.id, mes),
       fim.slice(0, 7) !== mes ? buscarCaixa(portal.id, fim.slice(0, 7)) : Promise.resolve([] as Caixa[]),
       buscarPlano(portal.id, mes).catch(() => null),
     ]);
     const time = quemVende(pessoas.pessoas.filter((p) => p.ativo).map((p) => ({ ...p, funcao: p.funcao ?? null })), Object.keys(plano?.dados.metas ?? {}));
     const metaMes = metasDoTime(plano ? metaDoPlano(plano.dados) : null, time.map((p) => p.id), plano?.dados.metas);
     return { ...pessoas, time, m, auto: doCaixa([...c1, ...c2], ini, fim, metaMes, mes) };
-  }, [portal.id, ini]);
+  }, [portal.id, ini, lojaFoco]);
   if (!dados) return <Carregando />;
   const { m } = dados;
   // Só quem vende entra nos números da semana (administrativo e financeiro ficam de fora).
@@ -127,7 +128,7 @@ export default function ReuniaoSemanal() {
           </select>
           {t.destaqueId && (
             <div className="grade g2" style={{ gap: 12 }}>
-              <div><label className="rotulo">O que fez</label><input type="text" value={t.fez} onChange={muda("fez")} placeholder="ofereceu o cinto e a cliente levou o look" /></div>
+              <div><label className="rotulo">O que fez</label><input type="text" value={t.fez} onChange={muda("fez")} placeholder="ofereceu a peça que combinava e a cliente levou as duas" /></div>
               <div><label className="rotulo">O que importou</label><input type="text" value={t.importou} onChange={muda("importou")} placeholder="O ticket dela subiu" /></div>
             </div>
           )}

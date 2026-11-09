@@ -2,6 +2,7 @@
 
 import { Titulo } from "@/components/Titulo";
 import { EncontroGrupo } from "@/components/EncontroGrupo";
+import { RascunhoReuniao } from "@/components/RascunhoReuniao";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataHora } from "@/lib/formato";
@@ -9,8 +10,8 @@ import { dataHora } from "@/lib/formato";
 const SELO: Record<string, string> = { Realizado: "feito", Pendente: "alerta", Adiado: "espera" };
 
 export default function Reunioes() {
-  const { portal } = usePortal();
-  const { dados: data } = useDados(
+  const { portal, equipe } = usePortal();
+  const { dados: data, recarregar } = useDados(
     async () => (await supabaseBrowser().from("reunioes").select("*").eq("portal_id", portal.id).order("data", { ascending: false })).data ?? [],
     [portal.id],
   );
@@ -36,6 +37,13 @@ export default function Reunioes() {
                 <td>
                   <b>{r.titulo}</b>
                   {r.ata && <details className="mt"><summary style={{ cursor: "pointer" }}>Ver o resumo</summary><div style={{ whiteSpace: "pre-wrap", fontSize: 14, marginTop: 6 }}>{r.ata}</div></details>}
+                  {/* A equipe revisa o rascunho e libera aqui mesmo (a loja só vê o resumo liberado). */}
+                  {equipe && new Date(r.data).getTime() <= Date.now() && (
+                    <details className="mt" open={!r.ata}>
+                      <summary style={{ cursor: "pointer" }}><b>{r.ata ? "Rascunho e combinados (equipe)" : "Resumo em rascunho: revisar e liberar"}</b></summary>
+                      <RascunhoReuniao reuniaoId={r.id} portalId={portal.id} ataLiberada={r.ata} aoMudar={recarregar} />
+                    </details>
+                  )}
                 </td>
                 <td style={{ textTransform: "capitalize", whiteSpace: "nowrap" }}>{dataHora(r.data)}</td>
                 <td><span className={`selo ${SELO[r.selecionar] ?? "espera"}`}>{r.selecionar}</span></td>

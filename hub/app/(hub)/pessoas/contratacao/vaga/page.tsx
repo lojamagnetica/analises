@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { buscarMetodo, buscarPessoas, principal, type Letra } from "@/lib/pessoas";
 import {
   ALERTA_NECESSIDADE, CAMPOS_VAGA, ETAPAS_CANDIDATO, NECESSIDADE, PONTOS_ENTREVISTA, anuncio, buscarContratacao, excluirVaga,
@@ -31,10 +31,11 @@ function PaginaVaga() {
   const id = useSearchParams().get("id") ?? "";
   const router = useRouter();
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const { dados, recarregar } = useDados(async () => {
-    const [c, p, m] = await Promise.all([buscarContratacao(portal.id), buscarPessoas(portal.id), buscarMetodo().catch(() => null)]);
+    const [c, p, m] = await Promise.all([buscarContratacao(portal.id), buscarPessoas(portal.id, lojaFoco), buscarMetodo().catch(() => null)]);
     return { ...c, equipe: p.pessoas.filter((x) => x.ativo), m };
-  }, [portal.id]);
+  }, [portal.id, lojaFoco]);
   const vaga = dados?.vagas.find((v) => v.id === id) ?? null;
   const [titulo, setTitulo] = useState("");
   const [nec, setNec] = useState<Necessidade>({});

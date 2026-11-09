@@ -26,6 +26,19 @@ export type Portal = {
   /** Grupos do menu que esta loja não vê (consultorias personalizadas). */
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
+  /** Código do link do formulário da rotina de gestão (sem login). */
+  rotina_token?: string | null;
+  plano_titulos?: Record<string, string> | null;
+  /** Meses do Plano de Ação quando foge do padrão (ex.: Start estendido para 5). */
+  plano_meses?: number | null;
+  /** A dona vende sozinha: sem as áreas de time. */
+  sem_equipe?: boolean;
+  /** Loja na mão: Vendas do dia, Crediário e Compras no menu. */
+  venda_diaria?: boolean;
+  /** Quem ajuda no conteúdo (nomes, mostrados no menu Conteúdo). */
+  apoio_conteudo?: string | null;
+  /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */
+  medicao_canais?: boolean;
   canais?: string[] | null;
   meet_url: string | null;
   apelidos: string[];
@@ -45,6 +58,8 @@ export type Hub = {
   soCaixa: boolean;
   /** Pode aprovar e liberar o que vai para a loja (a Camilla). */
   aprova: boolean;
+  /** Monta diagnósticos, gestão, ações e gincanas das lojas (a Camilla e a CS). Liberar continua com quem aprova. */
+  monta: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -61,19 +76,40 @@ export type Hub = {
   modoApresentacao: (sim: boolean) => void;
   /** Sai do "como a loja" e da apresentação sem trocar de página (ex.: abriu um link da empresa). */
   sairComoLoja: () => void;
+  /** Portal com mais de uma loja: a loja em foco no portal inteiro ("" = as lojas juntas). */
+  lojaFoco: string;
+  escolherLoja: (loja: string) => void;
 };
 
 const Contexto = createContext<Hub | null>(null);
 
+/** Janela só da loja (o celular dentro da apresentação do onboarding ou uma aba aberta de lá): vê o portal como a loja
+ *  sem mexer na escolha das outras abas. Fica no nome da janela, que é só dela e sobrevive à navegação. */
+function janelaDaLoja() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const pedido = q.get("verComoLoja");
+    if (pedido && /^[\w-]{3,64}$/.test(pedido)) window.name = `lm-loja${q.get("demo") === "1" ? "-demo" : ""}:${pedido}`;
+    const m = window.name.match(/^lm-loja(?:-demo)?:(.+)$/);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
+/** Demonstração da apresentação do onboarding: o portal da loja de verdade, com as etapas abertas e sem salvar nada. */
+export function emDemonstracao() {
+  try { return janelaDaLoja() !== null && window.name.startsWith("lm-loja-demo:"); } catch { return false; }
+}
 function lerComoLoja() {
+  if (janelaDaLoja()) return true;
   try { return localStorage.getItem(CHAVE_COMO_LOJA) === "1"; } catch { return false; }
 }
 function gravarComoLoja(sim: boolean) {
+  if (janelaDaLoja()) return;
   try { if (sim) localStorage.setItem(CHAVE_COMO_LOJA, "1"); else localStorage.removeItem(CHAVE_COMO_LOJA); } catch { /* sem armazenamento */ }
 }
 
 // Modo apresentação vale só enquanto a janela está aberta: ao reabrir o Hub, a faixa da equipe volta a aparecer.
 function lerApresentacao() {
+  if (janelaDaLoja()) return true;
   try { return sessionStorage.getItem(CHAVE_APRESENTACAO) === "1"; } catch { return false; }
 }
 function gravarApresentacao(sim: boolean) {
@@ -81,6 +117,8 @@ function gravarApresentacao(sim: boolean) {
 }
 
 function lerPortalEscolhido() {
+  const daJanela = janelaDaLoja();
+  if (daJanela) return daJanela;
   try {
     // Link direto da equipe para um portal: ?portal=<id> abre aquele portal e fica escolhido.
     const daUrl = new URLSearchParams(window.location.search).get("portal");
@@ -102,39 +140,56 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, aprova, monta, loja_padrao").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
     let portal: Portal | null = null;
     const pers = new Map<number, { respostas: Respostas; concluida: boolean }>();
     if (portalId) {
-      const [{ data: p }, { data: linhas }] = await Promise.all([
+      const [{ data: p }, { data: linhas }, { count: medicoes }] = await Promise.all([
         sb.from("portais").select("*").eq("id", portalId).maybeSingle(),
         sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", portalId),
+        sb.from("loja_canais_medicao").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativa", true).gte("fim", new Date().toLocaleDateString("sv-SE", { timeZone: "America/Recife" })),
       ]);
-      portal = (p as Portal) ?? null;
+      portal = p ? { ...(p as Portal), medicao_canais: (medicoes ?? 0) > 0 } : null;
       (linhas ?? []).forEach((l) => pers.set(l.etapa, { respostas: l.respostas as Respostas, concluida: l.concluida }));
     }
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
     // Quem comprou só o curso não passa pela entrada da mentoria.
-    const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora) : null;
+    const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora, !!portal.sem_equipe) : null;
     // A loja terminou de mandar tudo: começa o prazo do Diagnóstico.
     if (entrada && !equipe && !entrada.dadosEm && dadosCompletos(entrada)) {
       await marcarDadosEnviados();
       entrada.dadosEm = new Date().toISOString();
     }
 
+    // Loja em foco: a escolhida neste aparelho; senão, a loja padrão da pessoa; senão, as lojas juntas.
+    const lojasDoPortal = portal?.lojas ?? [];
+    let lojaFoco = "";
+    if (portal && lojasDoPortal.length > 1) {
+      let guardada: string | null = null;
+      try { guardada = localStorage.getItem(`loja-foco:${portal.id}`); } catch { /* sem armazenamento */ }
+      lojaFoco = guardada !== null && (guardada === "" || lojasDoPortal.includes(guardada)) ? guardada
+        : !equipe && perfil?.loja_padrao && lojasDoPortal.includes(perfil.loja_padrao) ? perfil.loja_padrao : "";
+    }
+
     setHub({
       userId: user.id,
+      lojaFoco,
+      escolherLoja: (l) => {
+        try { if (portal) localStorage.setItem(`loja-foco:${portal.id}`, l); } catch { /* sem armazenamento */ }
+        setHub((h) => (h ? { ...h, lojaFoco: l } : h));
+      },
       nome: perfil?.nome ?? user.email ?? "",
       email: perfil?.email ?? user.email ?? "",
       foto: perfil?.foto ?? null,
       estudio: !!perfil?.estudio,
       soCaixa: !equipe && !!perfil?.so_caixa,
       aprova: equipe && !!perfil?.aprova,
+      monta: equipe && (!!perfil?.aprova || !!perfil?.monta),
       equipe,
       portal,
       pers,
@@ -185,15 +240,30 @@ export function useHub() {
 }
 
 /** Para páginas do portal. A casca do Hub (layout) só mostra essas páginas quando há portal aberto. */
-/** Páginas do portal em que montar e liberar é só da Camilla: o resto da equipe vê como a loja vê. */
+/** Páginas do portal que só quem monta (Camilla e CS) edita: o resto da equipe vê como a loja vê. Liberar é só da Camilla. */
 const SO_MENTORA_NO_PORTAL = ["/painel", "/estoque", "/consultoria/planner", "/consultoria/materiais", "/pessoas/organograma", "/planeje/mes",
-  "/clientes/campanhas", "/clientes/experiencia", "/clientes/tipos", "/acoes", "/conteudo/pautas"];
+  "/clientes/campanhas", "/clientes/experiencia", "/clientes/tipos", "/acoes"];
+/** Conteúdo (Análise do Instagram e pautas): só a Camilla edita. */
+const SO_CAMILLA_NO_PORTAL = ["/conteudo"];
 
 export function usePortal() {
   const hub = useHub() as Hub & { portal: Portal };
   const caminho = (usePathname() ?? "").replace(/\/$/, "");
-  const soMentora = hub.equipe && !hub.aprova && (caminho === "/conteudo" || SO_MENTORA_NO_PORTAL.some((p) => caminho === p || caminho.startsWith(p + "/")));
+  const em = (lista: string[]) => lista.some((p) => caminho === p || caminho.startsWith(p + "/"));
+  const soMentora = hub.equipe && ((!hub.monta && em(SO_MENTORA_NO_PORTAL)) || (!hub.aprova && em(SO_CAMILLA_NO_PORTAL)));
   return hub.comoLoja || soMentora ? { ...hub, equipe: false } : hub;
+}
+
+/**
+ * A loja em foco (portais com mais de uma loja), para as páginas que separam por loja.
+ * obrigatoria: a página só funciona com uma loja (ex.: mural); com "as lojas juntas", mostra a primeira.
+ * Mudar aqui muda o portal inteiro.
+ */
+export function useLojaFoco(obrigatoria = false): [string, (l: string) => void] {
+  const { portal, lojaFoco, escolherLoja } = useHub();
+  const lojas = portal?.lojas ?? [];
+  if (lojas.length < 2) return [obrigatoria ? (lojas[0] ?? "") : "", () => undefined];
+  return [lojaFoco || (obrigatoria ? lojas[0] : ""), escolherLoja];
 }
 
 /** Para páginas da equipe. A casca do Hub só mostra essas páginas para a equipe. */
@@ -201,16 +271,28 @@ export function useEquipe() {
   return useHub();
 }
 
+/** Páginas que só fazem sentido com equipe (somem na loja sem equipe). */
+export const DE_TIME = /^\/(pessoas|mural|clientes\/missoes)(\/|$)/;
+
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean }) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; aprova?: boolean; monta?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
+  // Scripts de venda prontos saíram de todos os portais (não se encaixavam no tom e nos produtos de cada loja).
+  if (!hub.equipe && caminho.startsWith("/scripts")) return "/inicio";
+  // A Bússola do gestor saiu: quem tiver o link cai no Planner de gestão.
+  if (!hub.equipe && caminho.startsWith("/bussola")) return "/consultoria/planner";
+  // Loja sem equipe: as páginas de time não abrem nem pelo link.
+  if (!hub.equipe && hub.portal?.sem_equipe && DE_TIME.test(caminho)) return "/inicio";
   // Acesso só do caixa: qualquer outra página leva ao Fechamento de caixa.
   if (hub.soCaixa && !hub.equipe) return caminho.startsWith("/gestao/caixa") || caminho.startsWith("/conta") ? null : "/gestao/caixa";
-  // Só da Camilla: a Área da mentora e o que aprova, monta e libera para as lojas.
-  if (hub.equipe && !hub.aprova && ["/equipe/aprovar", "/equipe/planos", "/equipe/analise", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas"].some((p) => caminho.startsWith(p))) return "/equipe/central";
-  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo") || caminho.startsWith("/empresa/minha-central") || caminho.startsWith("/empresa/agentes")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/empresa" : "/inicio";
+  // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
+  if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes", "/empresa/caixa-do-dia"].some((p) => caminho.startsWith(p))) return "/equipe/central";
+  // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.
+  if (hub.equipe && !hub.aprova && caminho.startsWith("/equipe/analise")) return "/equipe/central";
+  if (caminho.startsWith("/empresa/minha-central/diagnostico") || caminho.startsWith("/empresa/agentes")) return hub.equipe ? null : "/inicio";
+  if (caminho.startsWith("/empresa/estudio") || caminho.startsWith("/empresa/conteudo") || caminho.startsWith("/empresa/minha-central")) return hub.equipe && hub.aprova ? null : hub.equipe ? "/equipe/central" : "/inicio";
   if (caminho.startsWith("/equipe") || caminho.startsWith("/empresa")) return hub.equipe ? null : "/inicio";
   // Portal só do curso: tudo que não é o curso leva para a área de membros.
   if (hub.portal?.tipo === "Curso" && !hub.equipe && !livre && !caminho.startsWith("/cursos")) return "/cursos";

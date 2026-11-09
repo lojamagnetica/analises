@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
@@ -13,6 +13,8 @@ import {
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
+import { RelatoriosGestao } from "@/components/RelatoriosGestao";
+import { BoletosMes } from "@/components/BoletosMes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 
@@ -51,8 +53,8 @@ function FechamentoCaixa() {
   const lojas = portal.lojas ?? [];
   const varias = lojas.length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
-  const [filtro, setFiltro] = useState("");
-  const [f, setF] = useState<Form>(() => novo(varias ? lojas[0] : ""));
+  const [filtro, setFiltro] = useLojaFoco();
+  const [f, setF] = useState<Form>(() => novo(varias ? filtro || lojas[0] : ""));
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -321,6 +323,9 @@ function FechamentoCaixa() {
         </div>
       </form>
 
+      <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />
+      <BoletosMes portalId={portal.id} lojas={portal.lojas ?? []} />
+
       <div className="linha entre mb">
         <div className="linha" style={{ gap: 6 }}>
           <button type="button" className="btn s peq" aria-label="Mês anterior" onClick={() => setMes(somarMes(mes, -1))}>‹</button>
@@ -333,7 +338,7 @@ function FechamentoCaixa() {
       {varias && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">
           {["", ...lojas].map((l) => (
-            <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => setFiltro(l)}
+            <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => { setFiltro(l); if (l && !f.id) setF({ ...f, loja: l }); }}
               style={filtro === l ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
               {l || (lojas.length === 2 ? "As duas lojas" : "Todas as lojas")}
             </button>

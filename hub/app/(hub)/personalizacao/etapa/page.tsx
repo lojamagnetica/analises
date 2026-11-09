@@ -3,58 +3,19 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
+import { CampoEtapa } from "@/components/CampoEtapa";
 import { EquipeDaEtapa } from "@/components/EquipeDaEtapa";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
-import { ETAPAS, SITUACOES, chaveSituacao, type Campo, type Respostas, type Situacao } from "@/lib/conteudo";
+import { Carregando, emDemonstracao, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { ETAPAS } from "@/lib/conteudo";
 import { salvarEtapa } from "@/lib/acoes";
 import { dataCurta } from "@/lib/formato";
 import { relatoriosNoDrive } from "@/lib/gestao";
-import { RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
+import { ARQUIVOS_ETAPA, RELATORIOS, abrirRelatorio, excluirRelatorio, listarRelatorios, mensagemSuporte, subirRelatorio, tamanhoLegivel, type TipoRelatorio } from "@/lib/relatorios";
 import { Excluir } from "@/components/Excluir";
-
-/** Um campo da etapa. Os dados (números, relatório) têm as 3 opções: tenho, estimativa, ainda não tenho. */
-function CampoEtapa({ c, r, padrao }: { c: Campo; r: Respostas; padrao: string }) {
-  const [st, setSt] = useState<Situacao>((r[chaveSituacao(c.id)] as Situacao) || "tenho");
-  const valor = typeof r[c.id] === "string" ? (r[c.id] as string) : padrao;
-  const lista = Array.isArray(r[c.id]) ? (r[c.id] as string[]) : [];
-  const fora = st === "nao_tenho";
-  return (
-    <div style={{ marginBottom: 6 }}>
-      <label className="rotulo" htmlFor={c.id}>{c.rotulo}</label>
-      {c.tipo === "textarea" ? (
-        <textarea id={c.id} name={c.id} defaultValue={valor} disabled={fora} />
-      ) : c.tipo === "opcao" ? (
-        <select id={c.id} name={c.id} defaultValue={valor} disabled={fora}>
-          <option value="">Escolha…</option>
-          {c.opcoes!.map((o) => <option key={o}>{o}</option>)}
-        </select>
-      ) : c.tipo === "multi" ? (
-        c.opcoes!.map((o) => (
-          <label key={o} className="marcar">
-            <input type="checkbox" name={c.id} value={o} defaultChecked={lista.includes(o)} disabled={fora} />
-            <span>{o}</span>
-          </label>
-        ))
-      ) : (
-        <input id={c.id} name={c.id} type={c.tipo === "numero" ? "number" : "text"} step="any" defaultValue={valor} disabled={fora} />
-      )}
-      {c.ajuda && <div className="ajuda">{c.ajuda}</div>}
-      {c.dado && (
-        <div className="linha" style={{ gap: 6, marginTop: 6 }} role="radiogroup" aria-label={`Situação: ${c.rotulo}`}>
-          <input type="hidden" name={chaveSituacao(c.id)} value={st} />
-          {SITUACOES.map((s) => (
-            <button key={s.valor} type="button" className="chip" aria-pressed={st === s.valor} onClick={() => setSt(s.valor)}
-              style={st === s.valor ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)", fontSize: 12.5 } : { fontSize: 12.5 }}>
-              {s.rotulo}
-            </button>
-          ))}
-        </div>
-      )}
-      {fora && <div className="ajuda">Sem problema: isso vira uma tarefa no seu Plano e você completa quando tiver.</div>}
-    </div>
-  );
-}
+import Link from "next/link";
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { emOnboarding } from "@/lib/entrada";
 
 /** Etapa de estoque: um lugar para cada relatório do sistema e a mensagem pronta para pedir ao suporte. */
 function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome: string; loja: string; aoMudar: (n: number) => void }) {
@@ -68,8 +29,15 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
   const [erro, setErro] = useState("");
   const msg = mensagemSuporte(nome, loja);
   const subir = async (tipo: TipoRelatorio, arquivos: FileList | null) => {
+    if (emDemonstracao()) { setErro("Aqui é só uma demonstração: no seu Hub, o arquivo sobe e a equipe recebe na hora."); return; }
     setErro(""); setEnviando(tipo);
-    try { for (const f of [...(arquivos ?? [])]) await subirRelatorio(portalId, f, tipo); recarregar(); } catch (x) { setErro((x as Error).message); }
+    try {
+      const lista = [...(arquivos ?? [])];
+      for (const f of lista) await subirRelatorio(portalId, f, tipo);
+      // Camilla e Claudia recebem o alerta do envio (a equipe subindo não avisa).
+      if (lista.length) await supabaseBrowser().rpc("avisar_envio", { p_qtd: lista.length, p_tipo: RELATORIOS.find((x) => x.chave === tipo)?.titulo ?? "Outros relatórios" });
+      recarregar();
+    } catch (x) { setErro((x as Error).message); }
     setEnviando(null);
   };
   const Lista = ({ tipo }: { tipo: string }) => (
@@ -90,6 +58,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
     <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 720 }}>
       <h2 style={{ marginTop: 0 }}>Os relatórios do seu sistema · {recebidos} de {RELATORIOS.length}</h2>
       <p className="mudo" style={{ marginTop: -4 }}>São eles que mostram de verdade como a loja está: o que vende, o que está parado e quem são as suas clientes. Pode ser planilha do Excel, CSV, PDF ou até foto da tela. Os arquivos ficam guardados só para a sua loja e a equipe.</p>
+      <div className="aviso mb" style={{ fontSize: 14 }}>Não tem sistema ou algum relatório? Tudo bem: responda as perguntas lá embaixo com o que você souber (pode ser estimativa) ou marque &quot;Ainda não tenho&quot;. Nada trava.</div>
       {RELATORIOS.map((r, i) => {
         const tem = dados?.some((a) => a.tipo === r.chave);
         return (
@@ -112,7 +81,7 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
       })}
       <div style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
         <b>Outros relatórios (opcional)</b>
-        <div className="ajuda" style={{ margin: "2px 0 8px" }}>Compras por fornecedor, contas a receber, vendas por vendedora ou o que mais achar útil.</div>
+        <div className="ajuda" style={{ margin: "2px 0 8px" }}>Vendas por vendedora, ticket médio ou o que mais achar útil.</div>
         <Lista tipo="outros" />
         <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
           📎 Subir arquivo
@@ -151,16 +120,88 @@ function Relatorios({ portalId, nome, loja, aoMudar }: { portalId: string; nome:
   );
 }
 
+/** Arquivos das outras etapas (faturamento, prints do Instagram, vídeo e fotos da loja), cada um no seu lugar. */
+function ArquivosDaEtapa({ portalId, etapa }: { portalId: string; etapa: number }) {
+  const lugares = ARQUIVOS_ETAPA.filter((a) => a.etapa === etapa);
+  const { dados, recarregar } = useDados(() => listarRelatorios(portalId), [portalId]);
+  const [enviando, setEnviando] = useState<string | null>(null);
+  const [erro, setErro] = useState("");
+  if (!lugares.length) return null;
+  const subir = async (chave: string, titulo: string, arquivos: FileList | null) => {
+    if (emDemonstracao()) { setErro("Aqui é só uma demonstração: no seu Hub, o arquivo sobe e a equipe recebe na hora."); return; }
+    setErro(""); setEnviando(chave);
+    try {
+      const lista = [...(arquivos ?? [])];
+      for (const f of lista) await subirRelatorio(portalId, f, chave);
+      if (lista.length) await supabaseBrowser().rpc("avisar_envio", { p_qtd: lista.length, p_tipo: titulo });
+      recarregar();
+    } catch (x) { setErro((x as Error).message); }
+    setEnviando(null);
+  };
+  return (
+    <div className="card mb card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 720 }}>
+      <h2 style={{ marginTop: 0 }}>Arquivos desta etapa</h2>
+      {lugares.map((l) => {
+        const meus = (dados ?? []).filter((a) => a.tipo === l.chave);
+        return (
+          <div key={l.chave} style={{ padding: "12px 0", borderTop: "1px solid var(--line)" }}>
+            <span className={`selo ${meus.length ? "feito" : "espera"}`} style={{ float: "right" }}>{meus.length ? "recebido" : "falta"}</span>
+            <b>{l.titulo}</b>
+            <div className="ajuda" style={{ margin: "2px 0 8px" }}>{l.oque}</div>
+            {meus.map((a) => (
+              <div key={a.caminho} className="linha entre" style={{ padding: "4px 0" }}>
+                <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>📎 {a.nome} <small className="mudo">· {tamanhoLegivel(a.tamanho)} · {dataCurta(a.em)}</small></span>
+                <span className="linha" style={{ gap: 10 }}>
+                  <button type="button" className="link-loja" onClick={() => abrirRelatorio(a.caminho)}>Abrir</button>
+                  <Excluir pergunta={`Excluir o arquivo ${a.nome}?`} fazer={() => excluirRelatorio(a.caminho)} aoFim={recarregar} />
+                </span>
+              </div>
+            ))}
+            <label className="btn s peq" style={{ cursor: enviando ? "wait" : "pointer", marginTop: 6 }}>
+              📎 {meus.length ? "Subir outro arquivo" : l.video ? "Subir o vídeo" : "Subir arquivo"}
+              <input type="file" hidden accept={l.aceita} multiple={!l.video} disabled={!!enviando} onChange={(e) => { subir(l.chave, l.titulo, e.target.files); e.target.value = ""; }} />
+            </label>
+            {enviando === l.chave && <p className="ajuda">Enviando… {l.video ? "(vídeo pode levar alguns minutos, não feche a página)" : ""}</p>}
+          </div>
+        );
+      })}
+      <p className="ajuda" style={{ marginBottom: 0 }}>Não tem algum desses arquivos? Sem problema: escreva no formulário abaixo o que souber ou marque &quot;Ainda não tenho&quot;.</p>
+      {erro && <div className="aviso mt">{erro}</div>}
+    </div>
+  );
+}
+
 function Etapa() {
   const router = useRouter();
-  const n = Number(useSearchParams().get("n"));
+  const busca = useSearchParams();
+  const n = Number(busca.get("n"));
+  const feita = busca.get("feita");
   const etapa = ETAPAS.find((e) => e.numero === n);
   const posicao = ETAPAS.findIndex((e) => e.numero === n) + 1;
-  const { portal, pers, recarregar, nome } = usePortal();
+  const { portal, pers, recarregar, nome, equipe, entrada } = usePortal();
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [arquivos, setArquivos] = useState(0);
   if (!etapa) return <div className="card">Etapa não encontrada.</div>;
+  // Trilha guiada no onboarding: uma etapa abre quando a anterior foi concluída.
+  const pendente = ETAPAS.find((e) => !pers.get(e.numero)?.concluida);
+  const demo = emDemonstracao();
+  const naTrilha = !equipe && emOnboarding(entrada) && !demo;
+  if (naTrilha && pendente && !pers.get(etapa.numero)?.concluida && pendente.numero !== etapa.numero) {
+    const pos = ETAPAS.indexOf(pendente) + 1;
+    return (
+      <>
+        <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} />
+        <div className="card card-borda" style={{ ["--c" as string]: "var(--red)", maxWidth: 640 }}>
+          <div style={{ fontSize: 30 }}>🔒</div>
+          <h3 style={{ margin: "6px 0" }}>Esta etapa abre quando você concluir a anterior.</h3>
+          <p className="mudo">Os Dados da loja seguem em ordem: o que você conta em uma etapa ajuda na próxima.</p>
+          <Link className="btn p" href={`/personalizacao/etapa?n=${pendente.numero}`}>Ir para a etapa {pos}: {pendente.titulo} →</Link>
+        </div>
+      </>
+    );
+  }
+  const seguinte = ETAPAS.slice(ETAPAS.indexOf(etapa) + 1).find((e) => !pers.get(e.numero)?.concluida) ?? ETAPAS.find((e) => e.numero !== etapa.numero && !pers.get(e.numero)?.concluida);
   const r = pers.get(etapa.numero)?.respostas ?? {};
   const assina = (pers.get(2)?.respostas?.seu_nome as string) || primeiroNome(nome);
   const varias = (portal.lojas ?? []).length > 1;
@@ -168,18 +209,22 @@ function Etapa() {
   return (
     <>
       <Titulo voltar={{ href: "/personalizacao", rotulo: "Dados da loja" }} titulo={`${posicao}. ${etapa.titulo}`} sub={etapa.descricao} />
+      {feita && <div className="aviso ok mb" style={{ maxWidth: 720 }}>Etapa {feita} enviada ✓ Agora a etapa {posicao} de {ETAPAS.length}.</div>}
       {varias && <div className="aviso mb" style={{ maxWidth: 720 }}>Vocês têm {portal.lojas.join(" e ")}. Quando a resposta for diferente em cada loja, escreva as duas. Ex.: &quot;{portal.lojas[0]}: … · {portal.lojas[1]}: …&quot;.</div>}
-      {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} />}
+      {etapa.numero === 5 && <EquipeDaEtapa portalId={portal.id} demo={demo} />}
+      <ArquivosDaEtapa portalId={portal.id} etapa={etapa.numero} />
       {etapa.numero === 8 && <Relatorios portalId={portal.id} nome={assina} loja={portal.loja} aoMudar={setArquivos} />}
       <form
         className="card"
         style={{ maxWidth: 720 }}
         action={async (form) => {
+          if (demo) { setErro("Aqui é só uma demonstração: no seu Hub, este botão salva a etapa e abre a próxima."); return; }
           setErro(""); setSalvando(true);
           try {
             await salvarEtapa(portal.id, etapa.numero, form, { semRelatorio: arquivos === 0 });
             await recarregar();
-            router.push(`/personalizacao?salvo=${posicao}`);
+            // Na trilha, segue direto para a próxima etapa; no fim, volta para o resumo.
+            router.push(naTrilha && seguinte ? `/personalizacao/etapa?n=${seguinte.numero}&feita=${posicao}` : `/personalizacao?salvo=${posicao}`);
           } catch (e) { setErro((e as Error).message); setSalvando(false); }
         }}
       >

@@ -9,18 +9,18 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import {
-  aplicarHub, apagarArquivo, buscarPreparo, conferirParada, excluirPreparo, importarDrive, levarMercado, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
+  aplicarHub, aplicarPlano, apagarArquivo, buscarPreparo, conferirParada, excluirPreparo, importarDrive, levarMercado, linkArquivo, listarArquivos, rodarParada, salvarPreparo, subirArquivo,
   type Escolha, type Parada, type Preparo,
 } from "@/lib/diagnostico-preparo";
 
-const NOMES: Record<Parada, string> = { raiox: "Raio-X e proposta", mercado: "Concorrentes e mercado", perguntas: "Perguntas do gargalo", solucao: "Solução, roteiro e PDF", hub: "Diagnóstico da loja no Hub" };
+const NOMES: Record<Parada, string> = { raiox: "Raio-X e proposta", mercado: "Concorrentes e mercado", perguntas: "Perguntas do gargalo", solucao: "Solução, roteiro e PDF", hub: "Diagnóstico da loja no Hub", plano: "Plano de Ação" };
 const semPrefixo = (n: string) => n.replace(/^\d{13}-/, "").replace(/^drive-[A-Za-z0-9_-]{20,}?-/, "");
 const kb = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 /** O botão que chama o agente numa parada, com o pedido de ajuste para refazer. */
 function Rodar({ p, parada, rotulo, ocupado, pode, aoPedir }: { p: Preparo | null; parada: Parada; rotulo: string; ocupado: boolean; pode: boolean; aoPedir: (ajuste: string) => Promise<void> }) {
   const [ajuste, setAjuste] = useState(p?.ajustes?.[parada] ?? "");
-  const feito = parada === "raiox" ? !!p?.raiox : parada === "mercado" ? !!p?.mercado : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : !!p?.hub;
+  const feito = parada === "raiox" ? !!p?.raiox : parada === "mercado" ? !!p?.mercado : parada === "perguntas" ? !!p?.perguntas?.length : parada === "solucao" ? !!p?.solucao : parada === "plano" ? !!p?.plano : !!p?.hub;
   return (
     <div className="mt">
       {feito && (
@@ -36,7 +36,7 @@ function Rodar({ p, parada, rotulo, ocupado, pode, aoPedir }: { p: Preparo | nul
 }
 
 function Preparar({ portalId }: { portalId: string }) {
-  const { abrirPortal } = useEquipe();
+  const { abrirPortal, aprova } = useEquipe();
   const { dados, recarregar } = useDados(async () => {
     const [p, arquivos, { data: portal }] = await Promise.all([
       buscarPreparo(portalId), listarArquivos(portalId),
@@ -208,6 +208,7 @@ function Preparar({ portalId }: { portalId: string }) {
           <Copiar texto={pergs.map((q, i) => `${i + 1}. ${q}`).join("\n")} rotulo="Copiar" />
           {p?.perguntas_liberadas
             ? <button type="button" className="link-loja" onClick={() => salvar({ perguntas_liberadas: false })}>Tirar da Claudia</button>
+            : !aprova ? <small className="mudo">A Camilla confere e libera as perguntas para mandar.</small>
             : <button type="button" className="btn p peq" disabled={!!perg} onClick={() => { if (confirm("Liberar as perguntas para a Claudia mandar para a loja?")) salvar({ perguntas_liberadas: true }, "Liberado ✓ A Claudia vê as perguntas na ficha da loja, na Jornada das clientes."); }}>Liberar para a Claudia mandar</button>}
         </div>}
         {p?.perguntas_liberadas && <p className="ajuda">A Claudia vê as perguntas na ficha da loja (Jornada das clientes) e cola aqui as respostas quando a loja mandar.</p>}
@@ -265,6 +266,42 @@ function Preparar({ portalId }: { portalId: string }) {
           );
         })()}
         <Rodar p={p} parada="hub" rotulo="Montar a versão do Diagnóstico da loja" ocupado={ocupado} pode={!!s} aoPedir={pedir("hub")} />
+      </div>
+
+      <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)", opacity: p?.escolha ? 1 : 0.6 }}>
+        <h2 style={{ marginTop: 0 }}>5 · Plano de Ação</h2>
+        <p className="ajuda" style={{ marginTop: 0 }}>O agente lista tudo o que {dados.responsavel || "a loja"} pediu (formulário, Comercial, transcrições), olha o Diagnóstico e os planos que você já fez para outras lojas, e monta o plano mês a mês, com o que ela mais quer nos 2 primeiros meses. Fica aqui como rascunho: só vai para a loja quando você aplicar.</p>
+        {p?.plano && (() => {
+          const pl = p.plano;
+          return (
+            <div className="mb">
+              {pl.resumo && <p style={{ whiteSpace: "pre-wrap" }}>{pl.resumo}</p>}
+              <div className="grade g2" style={{ gap: 10 }}>
+                {pl.meses.map((m) => (
+                  <div key={m.mes} className="card" style={{ margin: 0 }}>
+                    <b>Mês {m.mes} · {m.tema}</b><br /><small className="mudo">{m.porque}</small>
+                    <ol style={{ margin: "6px 0 0", paddingLeft: 18 }}>{m.tarefas.map((x, i) => <li key={i}>{x}</li>)}</ol>
+                  </div>
+                ))}
+              </div>
+              <h3>O que ela pediu e em que mês entra</h3>
+              <div className="tabela-wrap mb"><table className="tabela"><thead><tr><th>Pedido</th><th>Mês</th><th>Como</th></tr></thead><tbody>
+                {[...pl.pedidos].sort((a, b) => a.mes - b.mes).map((x, i) => <tr key={i}><td>{x.pedido}<br /><small className="mudo">{x.fonte}</small></td><td><b>{x.mes}</b></td><td>{x.como}</td></tr>)}
+              </tbody></table></div>
+              {pl.fora.length > 0 && <div className="aviso mb"><b>Fica fora do plano:</b> {pl.fora.map((x) => `${x.pedido} (${x.porque})`).join(" · ")}</div>}
+              {aprova && (
+                <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" className="btn p peq" onClick={async () => {
+                    if (!confirm("Aplicar no Plano de Ação da loja? Os temas dos meses são trocados por estes e as tarefas entram junto com as que já existem (tarefa igual não repete). A loja passa a ver.")) return;
+                    try { const n = await aplicarPlano(portalId, pl); setMsg(`Aplicado ✓ ${n} ${n === 1 ? "tarefa nova" : "tarefas novas"} no Plano de Ação.`); } catch (x) { setMsg((x as Error).message); }
+                  }}>Aplicar no Plano de Ação</button>
+                  <button type="button" className="btn s peq" onClick={() => abrirPortal(portalId, "/plano")}>Abrir o Plano de Ação atual</button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+        <Rodar p={p} parada="plano" rotulo="Montar o Plano de Ação" ocupado={ocupado} pode={!!p?.escolha} aoPedir={pedir("plano")} />
       </div>
 
       <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => { if (confirm("Apagar toda a preparação desta loja (Raio-X, escolha, perguntas e solução)? Os arquivos e o Diagnóstico do Hub ficam.")) { await excluirPreparo(portalId); recarregar(); } }}>Apagar a preparação</button>

@@ -3,22 +3,24 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Icone } from "@/components/Icone";
-import { Carregando, primeiroNome, useDados, usePortal } from "@/lib/hub";
+import { Carregando, primeiroNome, useDados, useLojaFoco, usePortal } from "@/lib/hub";
+import { buscarContratoFoco } from "@/lib/foco";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta, dataHora, dia, hoje, mesAtual, MESES_ABREV } from "@/lib/formato";
 import { buscarPlanos, mesDoPlano, mesesDoInicio, semanaDoDia } from "@/lib/plano-mes";
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
-import { dadosCompletos, liberado, prazoDiagnostico, requisito } from "@/lib/entrada";
+import { dadosCompletos, liberado, prazoDiagnostico, requisito, emOnboarding } from "@/lib/entrada";
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
+import { areaFechada } from "@/lib/bussola";
 
 const ATALHOS = [
-  { href: "/bussola", rotulo: "Bússola do gestor", icone: "compass", cor: "var(--red)" },
+  { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
@@ -43,7 +45,7 @@ export default function Inicio() {
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
-      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).order("data").limit(1).maybeSingle(),
+      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
@@ -55,6 +57,17 @@ export default function Inicio() {
     ]);
     return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo };
   }, [portal.id]);
+  // Contrato de Foco vigente: fica no topo para lembrar o resultado nº 1 sempre que entrar (o da loja em foco, quando há várias).
+  const [lojaFoco] = useLojaFoco();
+  const { dados: focoD } = useDados(() => buscarContratoFoco(portal.id, lojaFoco), [portal.id, lojaFoco]);
+  const foco = focoD ?? null;
+  // Loja em foco: o nome no topo é só o de quem cuida dela; com as lojas juntas, o nome geral.
+  const { dados: donos } = useDados(async () => {
+    if ((portal.lojas?.length ?? 0) < 2) return [] as { loja: string; nome: string }[];
+    const { data } = await supabaseBrowser().rpc("responsaveis_das_lojas", { p: portal.id });
+    return (data ?? []) as { loja: string; nome: string }[];
+  }, [portal.id]);
+  const donoDaLoja = lojaFoco ? donos?.find((x) => x.loja === lojaFoco)?.nome : undefined;
   if (!dados) return <Carregando />;
   const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
   // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
@@ -69,25 +82,32 @@ export default function Inicio() {
   const total = plano?.length ?? 0;
   const feitos = plano?.filter((p) => p.feito).length ?? 0;
   const pct = total ? Math.round((feitos / total) * 100) : 0;
+  const passosEntrada = PASSOS_ENTRADA.filter((p) => !(portal.sem_equipe && p.chave === "equipe"));
   const etapa2 = pers.get(2)?.respostas;
-  const quem = (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
+  const quem = donoDaLoja || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
   const c = consult?.dados;
   const nMes = c ? mesDaConsultoria(c.inicio) : 0;
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
   const abertas = consult ? consult.acoes.filter((a) => a.tipo === "Ação da loja" && a.status !== "Feito").length : 0;
   // Áreas que a equipe tirou do menu desta loja (consultorias personalizadas) somem também dos atalhos.
   const ocultos = portal.menu_oculto ?? [];
-  const escondido = (href: string) => (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
+  const escondido = (href: string) => ocultos.includes(href.split("?")[0]) || (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
   const mesProx = mesesDoInicio().proximo;
   const atalhos = (consultoria
     ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
     : ATALHOS)
+    // Loja na mão: o atalho do caixa vira Registrar venda.
+    .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
     .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
-  const trancado = (href: string) => { const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
+  const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true;
+    // Área Conteúdo com cadeado nesta loja (Equipe › portal): o atalho da Análise do Instagram mostra o cadeado.
+    if (!equipe && href.startsWith("/conteudo") && (portal.menu_trancado ?? []).includes("conteudo")) return true; const r = requisito(href.split("?")[0]); return !!ent && !!r && !liberado(r, ent); };
   const entradaAberta = !!ent && !ent.livre && !dadosCompletos(ent);
+  // Onboarding: o Início mostra só a boas-vindas e o passo a passo de envio.
+  const onboarding = emOnboarding(ent);
   // Mandou tudo e o Diagnóstico ainda não foi liberado: mostra o prazo.
   const esperandoDiag = !!ent && !ent.livre && dadosCompletos(ent) && !ent.diagnostico;
   // Diagnóstico liberado nos últimos 15 dias: avisa no Início.
@@ -101,6 +121,15 @@ export default function Inicio() {
 
   return (
     <>
+      {portal.venda_diaria && (
+        <div className="linha mt" style={{ gap: 10, flexWrap: "wrap" }}>
+          <Link className="btn p" href="/gestao/vendas">+ Registrar venda</Link>
+          <Link className="btn s" href="/gestao/crediario">Crediário</Link>
+          <Link className="btn s" href="/gestao/minhas-compras">Compras</Link>
+          <Link className="btn s" href="/gestao/estoque-loja">Estoque</Link>
+          <Link className="btn s" href="/clientes">Minhas clientes</Link>
+        </div>
+      )}
       <div className="heroi mt">
         <div>
           <h1>Que bom ter você aqui, {quem}!</h1>
@@ -125,18 +154,30 @@ export default function Inicio() {
             </div>
           )}
         </div>
+        {/* Contrato de Foco: faixa larga e baixa logo abaixo do nome (o resultado à esquerda, a meta e o de acordo à direita). */}
+        {!onboarding && foco?.resultado && (
+          <Link href="/painel" className="meet foco" style={{ color: "inherit", textDecoration: "none" }}>
+            <div className="foco-texto">
+              <small>🎯 Contrato de Foco · o resultado nº 1</small>
+              {/* No Início vai a versão curta; o contrato completo fica no Diagnóstico. */}
+              <b style={{ display: "block", marginTop: 2, lineHeight: 1.35 }}>{foco.curto?.trim() || foco.resultado}</b>
+            </div>
+            <div className="foco-linha">
+              <span>{foco.de_acordo_em ? `✓ De acordo em ${dataCurta(foco.de_acordo_em.slice(0, 10))} · ver o contrato` : equipe ? "Esperando o de acordo da loja" : "Falta o seu de acordo · toque para ver"}</span>
+            </div>
+          </Link>
+        )}
       </div>
 
       {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
-      <LeituraDaSemana />
-      <CaixaDaSemana />
+      {!onboarding && <><LeituraDaSemana /><CaixaDaSemana /></>}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
-          <h3 style={{ marginTop: 0 }}>Para montar o seu Diagnóstico · {PASSOS_ENTRADA.filter((p) => ent[p.chave]).length} de 3</h3>
+          <h3 style={{ marginTop: 0 }}>Para montar o seu Diagnóstico · {passosEntrada.filter((p) => ent[p.chave]).length} de {passosEntrada.length}</h3>
           <p className="mudo" style={{ marginTop: -4 }}>Com esses dados a equipe monta o Diagnóstico da sua loja em até 5 dias úteis. É dele que saem o seu Plano de Ação e o resto do Hub.</p>
           <div className="grade g3" style={{ gap: 10 }}>
-            {PASSOS_ENTRADA.map((p, i) => (
+            {passosEntrada.map((p, i) => (
               <Link key={p.chave} href={p.href} className="marcar" style={{ gap: 10 }}>
                 <span className={`selo ${ent[p.chave] ? "feito" : "espera"}`}>{ent[p.chave] ? "✓" : i + 1}</span>
                 <span>{p.titulo}{p.chave === "loja" && !ent.loja ? ` · falta${persFaltam > 1 ? "m" : ""} ${persFaltam}` : ""}</span>
@@ -153,8 +194,7 @@ export default function Inicio() {
             Seu Diagnóstico fica pronto em até 5 dias úteis{ent.dadosEm ? <>, até <b>{dataCurta(prazoDiagnostico(ent.dadosEm))}</b></> : ""}.
             Assim que ele sair, o Plano de Ação e as outras áreas abrem para você.
           </p>
-          <p style={{ margin: "10px 0 0" }}><b>Enquanto isso, comece pelo Curso:</b> o módulo Carteira Ativa já te ajuda a vender mais para quem já é sua cliente.</p>
-          <Link className="btn p peq mt" href="/cursos">Começar pelo Curso · Carteira Ativa →</Link>
+          <p style={{ margin: "10px 0 0" }}>Lembrou de algo ou tem mais algum arquivo? Mande em <Link className="link-loja" href="/personalizacao/etapa?n=8">Estoque e relatórios</Link> ou no Fale com a Camilla.</p>
         </div>
       )}
 
@@ -189,19 +229,42 @@ export default function Inicio() {
 
       {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
 
+      {!onboarding && <>
       <div className="secao">Seus atalhos</div>
       <div className="atalhos">
-        {atalhos.map((a) => (
+        {/* Atalhos com cadeado (liberados em outra etapa) ficam no fim. */}
+        {[...atalhos.filter((a) => !trancado(a.href)), ...atalhos.filter((a) => trancado(a.href))].map((a) => (
           <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
+            {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}
+            {a.href.startsWith("/planeje/mes") && !trancado(a.href) && (
+              planoProx && planoProx.status !== "rascunho"
+                ? <small style={{ color: "var(--feito)", fontWeight: 700, fontSize: 11.5 }}>Enviado ✓</small>
+                : <small style={{ color: "var(--red)", fontWeight: 700, fontSize: 11.5, lineHeight: 1.25 }}>
+                    {Number(hoje().slice(8)) > 20 ? "Prazo passou: envie hoje" : `Planeje e envie para a Camilla até 20/${hoje().slice(5, 7)}`}
+                  </small>
+            )}
           </Link>
         ))}
       </div>
+
+      {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
+      {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} /></div>
+      ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
+        <>
+          <div className="secao">Os 7 passos da sua mentoria</div>
+          <SetePassos passos={passos} atual={portal.passo_atual} />
+        </>
+      )}
+      </>}
       {ent && (ent.livre || (ent.video && ent.loja && ent.equipe)) && (
         <p className="ajuda"><Link className="link-loja" href="/comece">▶ Rever o vídeo de boas-vindas e o passo a passo</Link></p>
       )}
 
+      {/* No onboarding, o Início fica só com a boas-vindas e o passo a passo de envio. */}
+      {!onboarding && <>
       <div className="grade g3 mt">
         {consultoria ? (
           <>
@@ -223,12 +286,12 @@ export default function Inicio() {
           </>
         ) : (
           <>
-            <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
+            {!escondido("/jornada") && <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
               <h3>Sua jornada</h3>
               <p className="mudo">Passo {portal.passo_atual} de 7 · {passo?.titulo}</p>
               <div className="barra"><i style={{ width: `${(portal.passo_atual / 7) * 100}%` }} /></div>
               <Link className="btn s peq mt" href="/jornada">Ver os 7 passos</Link>
-            </div>
+            </div>}
             <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
               <h3>Plano de Ação 90 dias{trancado("/plano") ? " 🔒" : ""}</h3>
               {trancado("/plano") ? (
@@ -251,16 +314,7 @@ export default function Inicio() {
           <Link className="btn s peq" href={`/planeje/mes?m=${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
         </div>
       </div>
-
-      {/* O Meu dia fica no lugar dos 7 passos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
-      {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} /></div>
-      ) : !consultoria && passos.length > 0 && (
-        <>
-          <div className="secao">Os 7 passos da sua mentoria</div>
-          <SetePassos passos={passos} atual={portal.passo_atual} />
-        </>
-      )}
+      </>}
     </>
   );
 }

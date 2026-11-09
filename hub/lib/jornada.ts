@@ -5,7 +5,7 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 
-export type Check = { chave: string; texto: string; prazo?: number; data?: boolean; ajuda?: string; acao?: "contrato" | "acesso" | "pendencias" | "diagnostico" | "plano" | "reunioes" | "boasvindas" };
+export type Check = { chave: string; texto: string; prazo?: number; data?: boolean; ajuda?: string; acao?: "contrato" | "acesso" | "pendencias" | "diagnostico" | "plano" | "reunioes" | "boasvindas" | "post" };
 export type Etapa = { n: number; nome: string; quem: string; janela: [number, number]; checks: Check[] };
 
 /** prazo = dia útil (contado do pagamento) até quando o item deve estar feito. */
@@ -17,8 +17,10 @@ export const ETAPAS: Etapa[] = [
   { n: 1, nome: "Primeiros passos", quem: "CS", janela: [0, 7], checks: [
     { chave: "contrato", texto: "Contrato gerado e enviado para assinatura", prazo: 0, acao: "contrato" },
     { chave: "grupo", texto: "Grupo individual criado + boas-vindas e envio do contrato (mensagens 1 e 2)", prazo: 0, acao: "boasvindas" },
+    { chave: "post_entrada", texto: "Post de entrada (crachá de boas-vindas) feito e enviado para a cliente", prazo: 1, acao: "post" },
     { chave: "onboarding_marcado", texto: "Contrato assinado e onboarding marcado (mensagens 3 e 4)", prazo: 0, data: true, acao: "boasvindas" },
     { chave: "clube", texto: "Cliente adicionada ao Clube da Loja Magnética (mensagens 5 e 6)", prazo: 1, acao: "boasvindas" },
+    { chave: "carteira_ativa", texto: "Acesso à Carteira Ativa liberado na Hubla (vale para todos os planos)", prazo: 1, data: true },
     { chave: "onboarding", texto: "Onboarding feito e acesso ao Hub enviado na call", prazo: 1, acao: "acesso" },
     { chave: "pendencias", texto: "Mensagem de Pendências enviada no grupo", prazo: 1, acao: "pendencias" },
     { chave: "lembrete", texto: "Lembrete do dia 3 (só o que falta)", prazo: 4, acao: "pendencias" },

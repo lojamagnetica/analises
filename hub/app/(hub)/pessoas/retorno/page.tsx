@@ -5,7 +5,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import {
   FALTAS, alertasTexto, buscarMetodo, buscarPessoas, principal, retornoSalvar, roteiroCobranca, roteiroReconhecimento, type Falta,
 } from "@/lib/pessoas";
@@ -13,12 +13,13 @@ import {
 function Retorno() {
   const inicial = useSearchParams().get("pessoa") ?? "";
   const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const [pessoaId, setPessoaId] = useState(inicial);
   const [tipo, setTipo] = useState<"Cobrar" | "Reconhecer">("Cobrar");
   const [falta, setFalta] = useState<Falta>("Querer");
   const [c, setC] = useState({ combinado: "", aconteceu: "", impacto: "", novo: "", retorno: "", fez: "", importou: "", mostra: "" });
   const [salvo, setSalvo] = useState("");
-  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id)), m: await buscarMetodo() }), [portal.id]);
+  const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portal.id, lojaFoco)), m: await buscarMetodo() }), [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const { m } = dados;
   const PERFIS = m.perfis;

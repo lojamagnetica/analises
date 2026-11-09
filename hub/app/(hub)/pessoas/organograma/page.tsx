@@ -3,21 +3,23 @@
 import { useState } from "react";
 import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { buscarPessoas } from "@/lib/pessoas";
 import {
-  buscarOrganograma, modeloOrganograma, novaArea, pessoasEmTexto, salvarOrganograma, textoEmPessoas,
-  type Area, type Organograma,
+  buscarOrganograma, modeloOrganograma, novaArea, salvarOrganograma,
+  type Area, type Organograma, type PessoaOrg,
 } from "@/lib/organograma";
 
 const linhas = (t: string) => t.split("\n").map((x) => x.trim()).filter(Boolean);
 
-/** Uma área: nome, responsável, pessoas e o que faz; com as áreas que respondem a ela logo abaixo. */
-function CaixaArea({ a, org, nivel, mudar, tirar, criar }: {
-  a: Area; org: Organograma; nivel: number; mudar: (a: Area) => void; tirar: (id: string) => void; criar: (pai: string) => void;
+/** Uma área: nome, responsável, pessoas e o que faz; com as áreas que respondem a ela logo abaixo.
+ *  Na versão para o time, somem o salário, o horário e o que a direção espera da área. */
+function CaixaArea({ a, org, nivel, paraTime, mudar, tirar, criar }: {
+  a: Area; org: Organograma; nivel: number; paraTime: boolean; mudar: (a: Area) => void; tirar: (id: string) => void; criar: (pai: string) => void;
 }) {
   const [editando, setEditando] = useState(!a.nome);
-  const [r, setR] = useState({ ...a, texto: pessoasEmTexto(a.pessoas) });
+  const [r, setR] = useState<Area>(a);
+  const mudaPessoa = (i: number, x: Partial<PessoaOrg>) => setR({ ...r, pessoas: r.pessoas.map((p, j) => (j === i ? { ...p, ...x } : p)) });
   const filhas = org.areas.filter((x) => x.pai === a.id);
   const cor = nivel === 0 ? "var(--red)" : "var(--ink)";
 
@@ -35,18 +37,29 @@ function CaixaArea({ a, org, nivel, mudar, tirar, criar }: {
             {org.areas.filter((x) => !proibidas.has(x.id)).map((x) => <option key={x.id} value={x.id}>{x.nome}</option>)}
           </select>
         </label>
-        <label className="ajuda" style={{ display: "block" }}>Pessoas: uma por linha, &quot;Nome — função&quot;
-          <textarea rows={4} value={r.texto} onChange={(e) => setR({ ...r, texto: e.target.value })} />
-        </label>
+        <div className="ajuda" style={{ marginTop: 6 }}>Pessoas da área (horário e salário só a direção vê)</div>
+        {r.pessoas.map((p, i) => (
+          <div key={i} className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 6, padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+            <input type="text" placeholder="Nome" aria-label="Nome" value={p.nome} onChange={(e) => mudaPessoa(i, { nome: e.target.value })} />
+            <input type="text" placeholder="Função" aria-label="Função" value={p.funcao} onChange={(e) => mudaPessoa(i, { funcao: e.target.value })} />
+            <input type="text" placeholder="Horário" aria-label="Horário" value={p.horario ?? ""} onChange={(e) => mudaPessoa(i, { horario: e.target.value })} />
+            <input type="text" placeholder="Salário e comissão" aria-label="Salário e comissão" value={p.salario ?? ""} onChange={(e) => mudaPessoa(i, { salario: e.target.value })} />
+            <button type="button" className="link-loja" style={{ color: "var(--red)", justifySelf: "start" }} onClick={() => { if (confirm(`Tirar ${p.nome || "esta pessoa"} desta área?`)) setR({ ...r, pessoas: r.pessoas.filter((_, j) => j !== i) }); }}>Tirar</button>
+          </div>
+        ))}
+        <button type="button" className="link-loja" style={{ fontSize: 12.5 }} onClick={() => setR({ ...r, pessoas: [...r.pessoas, { nome: "", funcao: "" }] })}>+ pessoa</button>
         <label className="ajuda" style={{ display: "block" }}>O que essa área faz: uma responsabilidade por linha
           <textarea rows={4} value={r.responsabilidades} onChange={(e) => setR({ ...r, responsabilidades: e.target.value })} />
         </label>
+        <label className="ajuda" style={{ display: "block" }}>O que a direção espera de quem cuida desta área (não aparece na versão para o time)
+          <textarea rows={3} value={r.espera ?? ""} onChange={(e) => setR({ ...r, espera: e.target.value })} />
+        </label>
         <div className="linha" style={{ gap: 8 }}>
           <button type="button" className="btn p peq" disabled={!r.nome.trim()} onClick={() => {
-            const { texto, ...resto } = r;
-            mudar({ ...resto, nome: resto.nome.trim(), pessoas: textoEmPessoas(texto) }); setEditando(false);
+            const pessoas = r.pessoas.map((p) => ({ ...p, nome: p.nome.trim(), funcao: p.funcao.trim(), horario: p.horario?.trim() || undefined, salario: p.salario?.trim() || undefined })).filter((p) => p.nome);
+            mudar({ ...r, nome: r.nome.trim(), pessoas, espera: r.espera?.trim() || undefined }); setEditando(false);
           }}>Salvar</button>
-          {a.nome && <button type="button" className="btn s peq" onClick={() => { setR({ ...a, texto: pessoasEmTexto(a.pessoas) }); setEditando(false); }}>Cancelar</button>}
+          {a.nome && <button type="button" className="btn s peq" onClick={() => { setR(a); setEditando(false); }}>Cancelar</button>}
           <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={() => {
             if (confirm(filhas.length ? `Excluir "${a.nome || "esta área"}"? As áreas abaixo dela passam a responder à área de cima.` : `Excluir "${a.nome || "esta área"}"?`)) tirar(a.id);
           }}>Excluir</button>
@@ -67,6 +80,7 @@ function CaixaArea({ a, org, nivel, mudar, tirar, criar }: {
         {a.pessoas.map((p, i) => (
           <div key={i} style={{ fontSize: 13.5, padding: "4px 0", borderTop: "1px solid var(--line)" }}>
             <b>{p.nome}</b>{p.funcao && <span className="mudo"> · {p.funcao}</span>}
+            {!paraTime && (p.horario || p.salario) && <div className="mudo" style={{ fontSize: 12.5 }}>{[p.horario, p.salario].filter(Boolean).join(" · ")}</div>}
           </div>
         ))}
         {resp.length > 0 && (
@@ -75,11 +89,17 @@ function CaixaArea({ a, org, nivel, mudar, tirar, criar }: {
             <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13.5 }}>{resp.map((x, i) => <li key={i}>{x}</li>)}</ul>
           </details>
         )}
+        {!paraTime && a.espera && (
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600 }}>O que a direção espera</summary>
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 13.5 }}>{linhas(a.espera).map((x, i) => <li key={i}>{x}</li>)}</ul>
+          </details>
+        )}
         <button type="button" className="link-loja" style={{ fontSize: 12.5, marginTop: 8 }} onClick={() => criar(a.id)}>+ área abaixo</button>
       </div>
       {filhas.length > 0 && (
         <div style={{ display: "grid", gap: 10, paddingLeft: 14, borderLeft: "2px solid var(--line)", marginLeft: 10 }}>
-          {filhas.map((f) => <CaixaArea key={f.id} a={f} org={org} nivel={nivel + 1} mudar={mudar} tirar={tirar} criar={criar} />)}
+          {filhas.map((f) => <CaixaArea key={f.id} a={f} org={org} nivel={nivel + 1} paraTime={paraTime} mudar={mudar} tirar={tirar} criar={criar} />)}
         </div>
       )}
     </div>
@@ -87,13 +107,15 @@ function CaixaArea({ a, org, nivel, mudar, tirar, criar }: {
 }
 
 export default function OrganogramaPagina() {
-  const { portal, equipe } = usePortal();
+  const { portal, equipe, aprova } = usePortal();
+  const [lojaFoco] = useLojaFoco();
   const { dados } = useDados(async () => ({
     salvo: await buscarOrganograma(portal.id),
-    pessoas: (await buscarPessoas(portal.id)).pessoas.filter((p) => p.ativo),
-  }), [portal.id]);
+    pessoas: (await buscarPessoas(portal.id, lojaFoco)).pessoas.filter((p) => p.ativo),
+  }), [portal.id, lojaFoco]);
   const [atual, setAtual] = useState<{ org: Organograma; liberado: boolean } | null>(null);
   const [erro, setErro] = useState("");
+  const [paraTime, setParaTime] = useState(false);
   if (!dados) return <Carregando />;
   const { org, liberado } = atual ?? dados.salvo ?? { org: modeloOrganograma(portal.responsavel ?? "", dados.pessoas), liberado: false };
 
@@ -129,10 +151,15 @@ export default function OrganogramaPagina() {
           {liberado
             ? <>A loja já vê o organograma. <button type="button" className="link-loja" onClick={() => salvar(org, false)}>Voltar para rascunho</button></>
             : <>Rascunho: só a equipe vê. {!dados.salvo && !atual && "Este é um modelo de partida, montado com a equipe cadastrada. "}
-              <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o organograma para a loja?")) salvar(org, true); }}>Liberar para a loja</button></>}
+              {aprova ? <button type="button" className="btn p peq" style={{ marginLeft: 8 }} onClick={() => { if (confirm("Liberar o organograma para a loja?")) salvar(org, true); }}>Liberar para a loja</button> : <small className="mudo"> Só a Camilla libera para a loja.</small>}</>}
         </div>
       )}
       {erro && <div className="aviso mb">{erro}</div>}
+      <div className="chips mb" role="group" aria-label="Versão do organograma">
+        <button type="button" className={`chip ${!paraTime ? "escolhido" : ""}`} aria-pressed={!paraTime} onClick={() => setParaTime(false)}>Completo (só a direção)</button>
+        <button type="button" className={`chip ${paraTime ? "escolhido" : ""}`} aria-pressed={paraTime} onClick={() => setParaTime(true)}>Para mostrar ao time</button>
+        <small className="mudo" style={{ alignSelf: "center" }}>{paraTime ? "Sem salário, horário e o que a direção espera de cada área." : "Com salário, horário e o que a direção espera de cada área."}</small>
+      </div>
 
       <div className="card card-borda mb" style={{ ["--c" as string]: "var(--red)", textAlign: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto" }}>
         <small className="mudo" style={{ fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>{org.topo.cargo || "Direção"}</small>
@@ -148,7 +175,7 @@ export default function OrganogramaPagina() {
       <div style={{ width: 2, height: 18, background: "var(--line)", margin: "-10px auto 8px" }} />
 
       <div className="grade mb" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, alignItems: "start" }}>
-        {raizes.map((a) => <CaixaArea key={a.id} a={a} org={org} nivel={0} mudar={mudar} tirar={tirar} criar={criar} />)}
+        {raizes.map((a) => <CaixaArea key={a.id} a={a} org={org} nivel={0} paraTime={paraTime} mudar={mudar} tirar={tirar} criar={criar} />)}
       </div>
       <div className="linha entre" style={{ flexWrap: "wrap", gap: 8 }}>
         <button type="button" className="btn s peq" onClick={() => criar(null)}>+ área</button>

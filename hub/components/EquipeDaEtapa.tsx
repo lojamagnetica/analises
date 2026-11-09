@@ -6,18 +6,25 @@ import { CamposPessoa } from "@/components/CamposPessoa";
 import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados } from "@/lib/hub";
 import { BASE } from "@/lib/config";
-import { buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal } from "@/lib/pessoas";
+import { buscarMetodo, buscarPessoas, linkDoTeste, pessoaDesligar, pessoaSalvar, principal, type Pessoa } from "@/lib/pessoas";
 
-/** Etapa Time de vendas: cadastrar quem atende e mandar o teste de perfil para cada pessoa. Alimenta o Diagnóstico. */
-export function EquipeDaEtapa({ portalId }: { portalId: string }) {
-  const [aberto, setAberto] = useState(false);
+/** Pessoa de exemplo da demonstração do onboarding (não existe no banco). */
+const exemplo = (portalId: string, id: string, nome: string, funcao: string | null): Pessoa =>
+  ({ id, portal_id: portalId, nome, funcao, entrada: null, ativo: true, respostas: null, perfil: null, respondido_por: null, perfil_em: null, motor: null });
+
+/** Etapa Time de vendas: cadastrar quem atende e mandar o teste de perfil para cada pessoa. Alimenta o Diagnóstico.
+ *  Na demonstração do onboarding (demo), já vem uma pessoa de exemplo e o cadastro fica aberto: tudo acontece só
+ *  na tela, sem gravar, para a Claudia mostrar que depois de cadastrar já dá para mandar o teste de perfil. */
+export function EquipeDaEtapa({ portalId, demo = false }: { portalId: string; demo?: boolean }) {
+  const [aberto, setAberto] = useState(demo);
+  const [deMentira, setDeMentira] = useState<Pessoa[]>(() => [exemplo(portalId, "exemplo-1", "Maria (exemplo)", "Vendedora")]);
   const [erro, setErro] = useState("");
   const [links, setLinks] = useState<Record<string, string>>({});
   const [editando, setEditando] = useState<string | null>(null);
   const { dados, recarregar } = useDados(async () => ({ ...(await buscarPessoas(portalId)), m: await buscarMetodo() }), [portalId]);
   if (!dados) return <Carregando />;
   const { m } = dados;
-  const ativos = dados.pessoas.filter((p) => p.ativo);
+  const ativos = demo ? deMentira : dados.pessoas.filter((p) => p.ativo);
   const semPerfil = ativos.filter((p) => !p.perfil).length;
 
   return (
@@ -30,6 +37,12 @@ export function EquipeDaEtapa({ portalId }: { portalId: string }) {
       {aberto && (
         <form className="mb" action={async (f) => {
           setErro("");
+          if (demo) {
+            const nome = String(f.get("nome") ?? "").trim();
+            if (nome) setDeMentira((l) => [...l, exemplo(portalId, `exemplo-${Date.now()}`, nome, String(f.get("funcao") ?? "").trim() || null)]);
+            setAberto(false);
+            return;
+          }
           try { await pessoaSalvar(portalId, null, f); setAberto(false); recarregar(); } catch (e) { setErro((e as Error).message); }
         }}>
           <CamposPessoa m={m} />
@@ -53,6 +66,7 @@ export function EquipeDaEtapa({ portalId }: { portalId: string }) {
                   <button type="button" className="link-loja" style={{ color: "var(--red)" }} onClick={async () => {
                     if (!confirm(`Remover ${p.nome} do seu time?`)) return;
                     setErro("");
+                    if (demo) { setDeMentira((l) => l.filter((x) => x.id !== p.id)); return; }
                     try { await pessoaDesligar(p.id, false); recarregar(); } catch (e) { setErro((e as Error).message); }
                   }}>Remover</button>
                 </span>
@@ -63,15 +77,21 @@ export function EquipeDaEtapa({ portalId }: { portalId: string }) {
                   <span className="linha" style={{ gap: 6 }}>
                     <button type="button" className="btn s peq" onClick={async () => {
                       setErro("");
+                      if (demo) { setLinks((x) => ({ ...x, [p.id]: `${window.location.origin}${BASE}/t/exemplo` })); return; }
                       try { const l = await linkDoTeste(p.id, `${window.location.origin}${BASE}`); setLinks((x) => ({ ...x, [p.id]: l })); } catch (e) { setErro((e as Error).message); }
                     }}>Enviar o teste</button>
-                    <Link className="btn s peq" href={`/pessoas/teste?id=${p.id}`}>Fazer aqui</Link>
+                    {!demo && <Link className="btn s peq" href={`/pessoas/teste?id=${p.id}`}>Fazer aqui</Link>}
                   </span>
                 )}
             </div>
             {editando === p.id && (
               <form className="mt" action={async (f) => {
                 setErro("");
+                if (demo) {
+                  setDeMentira((l) => l.map((x) => x.id === p.id ? { ...x, nome: String(f.get("nome") ?? x.nome), funcao: String(f.get("funcao") ?? "") || null } : x));
+                  setEditando(null);
+                  return;
+                }
                 try { await pessoaSalvar(portalId, p.id, f); setEditando(null); recarregar(); } catch (e) { setErro((e as Error).message); }
               }}>
                 <CamposPessoa p={p} m={m} />

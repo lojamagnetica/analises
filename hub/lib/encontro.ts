@@ -13,6 +13,8 @@ export type EncontroGrupo = {
   intervalo: number;
   /** Duração em minutos: enquanto o encontro acontece, ele continua aparecendo como "agora". */
   duracao: number;
+  /** Recessos (dias de Recife, "2026-12-24" a "2027-01-05"): o encontro que cair dentro é pulado. */
+  recessos?: { de: string; ate: string }[];
 };
 
 export const ENCONTRO_PADRAO: EncontroGrupo = { titulo: "Encontro em grupo da mentoria", link: "", primeiro: "", intervalo: 14, duracao: 90 };
@@ -33,13 +35,19 @@ export async function salvarEncontro(e: EncontroGrupo) {
 /** Horário de Recife ("2026-10-30T19:00") → instante. Recife é UTC−3 o ano todo. */
 const instante = (local: string) => Date.parse(`${local}:00-03:00`);
 
-/** O próximo encontro (ou o que está acontecendo agora). */
+/** O dia (em Recife) de um instante. */
+const diaRecife = (t: number) => new Date(t - 3 * 3_600_000).toISOString().slice(0, 10);
+/** O recesso em que o dia cai, se cair em algum. */
+export const noRecesso = (e: EncontroGrupo, dia: string) => (e.recessos ?? []).find((r) => r.de && r.ate && dia >= r.de && dia <= r.ate) ?? null;
+
+/** O próximo encontro (ou o que está acontecendo agora), pulando os recessos. */
 export function proximoEncontro(e: EncontroGrupo, agora = Date.now()) {
   const inicio = instante(e.primeiro);
   if (!Number.isFinite(inicio) || e.intervalo < 1) return null;
   const passo = e.intervalo * 86_400_000;
   const fimDoPrimeiro = inicio + e.duracao * 60_000;
-  const k = agora <= fimDoPrimeiro ? 0 : Math.ceil((agora - fimDoPrimeiro) / passo);
+  let k = agora <= fimDoPrimeiro ? 0 : Math.ceil((agora - fimDoPrimeiro) / passo);
+  for (let n = 0; n < 60 && noRecesso(e, diaRecife(inicio + k * passo)); n++) k++;
   const quando = inicio + k * passo;
   const hoje = new Date(agora - 3 * 3_600_000).toISOString().slice(0, 10) === new Date(quando - 3 * 3_600_000).toISOString().slice(0, 10);
   return { iso: new Date(quando).toISOString(), agora: agora >= quando && agora <= quando + e.duracao * 60_000, hoje };
@@ -50,7 +58,8 @@ export function linkAgenda(e: EncontroGrupo) {
   const fmt = (t: number) => new Date(t - 3 * 3_600_000).toISOString().replace(/[-:]/g, "").slice(0, 15);
   const ini = instante(e.primeiro);
   const regra = e.intervalo % 7 === 0 ? `RRULE:FREQ=WEEKLY;INTERVAL=${e.intervalo / 7}` : `RRULE:FREQ=DAILY;INTERVAL=${e.intervalo}`;
-  const q = new URLSearchParams({ action: "TEMPLATE", text: e.titulo, ctz: "America/Recife", details: `Sala do Meet: ${e.link}`, location: e.link, recur: regra });
+  const pausas = (e.recessos ?? []).filter((r) => r.ate >= diaRecife(Date.now())).map((r) => `${r.de.split("-").reverse().join("/")} a ${r.ate.split("-").reverse().join("/")}`);
+  const q = new URLSearchParams({ action: "TEMPLATE", text: e.titulo, ctz: "America/Recife", details: `Sala do Meet: ${e.link}${pausas.length ? `\nRecesso (sem encontro): ${pausas.join(", ")}` : ""}`, location: e.link, recur: regra });
   // O Google Agenda não entende a barra das datas codificada (%2F): ela vai por fora.
   return `https://calendar.google.com/calendar/render?${q.toString()}&dates=${fmt(ini)}/${fmt(ini + e.duracao * 60_000)}`;
 }

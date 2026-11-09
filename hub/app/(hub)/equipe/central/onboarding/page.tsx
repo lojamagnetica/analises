@@ -9,6 +9,7 @@ import { BASE } from "@/lib/config";
 import { dataCurta, hoje } from "@/lib/formato";
 import { gerarLink } from "@/lib/acoes";
 import { ETAPAS } from "@/lib/conteudo";
+import { guia } from "@/lib/guias";
 import { buscarJornada, diasUteisDepois, marcarCheck, type ClienteJornada } from "@/lib/jornada";
 
 // Apresentação do onboarding: a Claudia conduz a call com a cliente, tela a tela. Cria o acesso, manda o link,
@@ -235,7 +236,7 @@ function Apresentacao() {
     { titulo: "O seu acesso ao Hub", roteiro: "Gere o link agora, com ela na call, e mande no WhatsApp dela. Peça para ela abrir e criar a senha enquanto vocês conversam.", corpo: <Acesso c={c} /> },
     {
       titulo: "Transforme o Hub em aplicativo",
-      roteiro: "Faça junto com ela, no celular dela. Depois de instalar, ela abre o Hub pelo ícone, como um app.",
+      roteiro: "Faça junto com ela, no celular dela. Se ajudar, dê play no vídeo do celular dela (iPhone ou Android). Depois de instalar, ela abre o Hub pelo ícone, como um app.",
       corpo: (
         <div className="grade g2" style={{ gap: 14 }}>
           <div className="card" style={{ margin: 0 }}>
@@ -246,6 +247,8 @@ function Apresentacao() {
               <li>Toque em <b>Adicionar à Tela de Início</b>.</li>
               <li>Toque em <b>Adicionar</b>. O ícone da magnética aparece na tela.</li>
             </ol>
+            <video src={`${BASE}/video/${guia("primeiro-acesso-iphone").arquivo}`} poster={`${BASE}/video/primeiro-acesso.jpg`} controls playsInline preload="none"
+              style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block", margin: "14px auto 0", background: "#141210" }} />
           </div>
           <div className="card" style={{ margin: 0 }}>
             <h3 style={{ marginTop: 0 }}>Android</h3>
@@ -255,6 +258,8 @@ function Apresentacao() {
               <li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li>
               <li>Confirme. O ícone da magnética aparece na tela.</li>
             </ol>
+            <video src={`${BASE}/video/${guia("primeiro-acesso-android").arquivo}`} poster={`${BASE}/video/primeiro-acesso.jpg`} controls playsInline preload="none"
+              style={{ width: "100%", maxWidth: 260, borderRadius: 12, display: "block", margin: "14px auto 0", background: "#141210" }} />
           </div>
         </div>
       ),
@@ -270,9 +275,34 @@ function Apresentacao() {
         </>
       ),
     },
+    ...ETAPAS.map((e, k) => {
+      return {
+        titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,
+        roteiro: (k === 0
+          ? "Mostre como a etapa funciona: responde, salva e a próxima abre sozinha. Nos números, ela marca se tem o dado, se é estimativa ou se ainda não tem."
+          : e.numero === 5 ? "Mostre o cadastro do time e o link do teste de perfil: cada pessoa responde no celular dela, e o resultado aparece no Hub."
+          : e.numero === 8 ? "Se ela tem sistema, mostre a mensagem pronta para pedir os relatórios ao suporte. Se não tem, ela responde estimando."
+          : "Passe pelo que é perguntado e combine o que ela já tem em mãos.") + " A tela é a do portal dela, em demonstração: dá para clicar e digitar, nada é salvo.",
+        corpo: <TelaDoPortal portalId={c.id} caminho={`/personalizacao/etapa/?n=${e.numero}`} />,
+      };
+    }),
+    {
+      titulo: "O que abre com os seus dados bem preenchidos",
+      roteiro: "Passe rápido, sem aprofundar: o objetivo é ela ver que cada resposta vira uma ferramenta. Quanto mais completo, mais certeiro fica tudo.",
+      corpo: <Ferramentas />,
+    },
+    {
+      titulo: "A cada etapa, a equipe acompanha",
+      roteiro: "Conte que a equipe recebe um aviso a cada etapa enviada e que, se faltar algo, ela recebe uma mensagem só com o que falta.",
+      corpo: <Passos itens={[
+        ["Você salva a etapa", "A próxima abre na hora."],
+        ["A equipe recebe o aviso", "A Camilla e a Claudia veem cada etapa e cada arquivo que chega."],
+        ["Faltou algo?", "Você recebe uma mensagem só com o que falta. Nunca perguntamos de novo o que você já contou."],
+      ]} />,
+    },
     {
       titulo: "Como usar o Hub no dia a dia",
-      roteiro: "Mostre no celular ao vivo (tela anterior) onde fica cada coisa: o menu, o Início e o Fale com a Camilla.",
+      roteiro: "Mostre no celular dela (ou no portal ao vivo da tela \"O que você vê no Hub agora\") onde fica cada coisa: o menu, o Início e o Fale com a Camilla.",
       corpo: (
         <div className="grade g3" style={{ gap: 12 }}>
           {[
@@ -315,31 +345,6 @@ function Apresentacao() {
           <p className="mt" style={{ fontSize: 20, fontWeight: 700, textAlign: "center", marginBottom: 0 }}>Seu time treinado e com consciência da importância de construir relacionamento com os clientes e cuidar da carteira.</p>
         </>
       ),
-    },
-    ...ETAPAS.map((e, k) => {
-      return {
-        titulo: `Etapa ${k + 1} de ${ETAPAS.length} · ${e.titulo}`,
-        roteiro: (k === 0
-          ? "Mostre como a etapa funciona: responde, salva e a próxima abre sozinha. Nos números, ela marca se tem o dado, se é estimativa ou se ainda não tem."
-          : e.numero === 5 ? "Mostre o cadastro do time e o link do teste de perfil: cada pessoa responde no celular dela, e o resultado aparece no Hub."
-          : e.numero === 8 ? "Se ela tem sistema, mostre a mensagem pronta para pedir os relatórios ao suporte. Se não tem, ela responde estimando."
-          : "Passe pelo que é perguntado e combine o que ela já tem em mãos.") + " A tela é a do portal dela, em demonstração: dá para clicar e digitar, nada é salvo.",
-        corpo: <TelaDoPortal portalId={c.id} caminho={`/personalizacao/etapa/?n=${e.numero}`} />,
-      };
-    }),
-    {
-      titulo: "O que abre com os seus dados bem preenchidos",
-      roteiro: "Passe rápido, sem aprofundar: o objetivo é ela ver que cada resposta vira uma ferramenta. Quanto mais completo, mais certeiro fica tudo.",
-      corpo: <Ferramentas />,
-    },
-    {
-      titulo: "A cada etapa, a equipe acompanha",
-      roteiro: "Conte que a equipe recebe um aviso a cada etapa enviada e que, se faltar algo, ela recebe uma mensagem só com o que falta.",
-      corpo: <Passos itens={[
-        ["Você salva a etapa", "A próxima abre na hora."],
-        ["A equipe recebe o aviso", "A Camilla e a Claudia veem cada etapa e cada arquivo que chega."],
-        ["Faltou algo?", "Você recebe uma mensagem só com o que falta. Nunca perguntamos de novo o que você já contou."],
-      ]} />,
     },
     { titulo: "Próximo passo: enviar tudo", roteiro: "Combine com ela o prazo para enviar tudo e clique em Combinar este prazo (isso conclui o onboarding no checklist). Depois da call, copie o resumo na Central do Cliente e mande no grupo dela. A reunião com a Camilla é marcada só quando tudo chegar sem pendência.", corpo: <Fechar c={c} nome={nome} aoMudar={recarregar} /> },
   ];

@@ -149,7 +149,8 @@ export function mensagemCaixa(c: Omit<Caixa, "id">, loja: string, mes: { faturam
     "",
     `💰 Faturamento: *${moeda(c.faturamento)}*`,
     `🛍️ ${c.vendas} ${c.vendas === 1 ? "venda" : "vendas"} · ${c.pecas} ${c.pecas === 1 ? "peça" : "peças"}`,
-    i.pa != null ? `PA ${fmtPa(i.pa)} · Ticket ${moeda(i.tkm!)} · Preço médio ${moeda(i.pm!)}` : "",
+    // Sem peças lançadas (só o total do dia), não há PA nem preço médio: mostra só o ticket.
+    i.pm != null ? `PA ${fmtPa(i.pa!)} · Ticket ${moeda(i.tkm!)} · Preço médio ${moeda(i.pm)}` : i.tkm != null ? `Ticket ${moeda(i.tkm)}` : "",
   ];
   const vs = (c.vendedoras ?? []).filter((v) => v.faturamento || v.vendas);
   if (vs.length) {

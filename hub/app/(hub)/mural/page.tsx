@@ -166,21 +166,25 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
   }, [portalId, semana]);
   const linhas = useMemo(() => {
     if (!dados) return [];
-    const time = quemVende(dados.time.filter((p) => !varias || !p.loja || p.loja === loja));
+    const todas = varias && !!d.metas_todas;
+    const time = quemVende(dados.time.filter((p) => !varias || todas || !p.loja || p.loja === loja));
     const dp = dados.plano?.dados ?? {};
-    const metaLoja = varias ? (dp.canais?.find((x) => x.canal === loja)?.faixas[0]?.valor || null) : metaDoPlano(dp);
-    const metas = metasDoTime(metaLoja, time.map((p) => p.id), dp.metas);
+    // A meta de cada pessoa vem da meta da loja dela (com todas as lojas na folha, cada uma na sua).
+    const lojaDe = (p: Pessoa) => (varias ? (p.loja || loja) : "");
+    const metaDe = (l: string) => (varias ? (dp.canais?.find((x) => x.canal === l)?.faixas[0]?.valor || null) : metaDoPlano(dp));
+    const metas: Record<string, number> = {};
+    for (const l of [...new Set(time.map(lojaDe))]) Object.assign(metas, metasDoTime(metaDe(l), time.filter((p) => lojaDe(p) === l).map((p) => p.id), dp.metas));
     const dias = Number(fimDoMes(mes).slice(8));
     const fim = somaDias(semana, 6);
-    const doDia = dados.caixas.filter((x: Caixa) => (!varias || x.loja === loja) && x.dia >= semana && x.dia <= fim);
+    const doDia = dados.caixas.filter((x: Caixa) => (!varias || todas || x.loja === loja) && x.dia >= semana && x.dia <= fim);
     return time.map((p) => {
       let fat = 0, vendas = 0, pecas = 0;
       for (const x of doDia) for (const v of x.vendedoras ?? []) if (v.pessoa_id === p.id) { fat += Number(v.faturamento); vendas += Number(v.vendas); pecas += Number(v.pecas); }
       const pa = vendas ? pecas / vendas : null, tkm = vendas ? fat / vendas : null;
       const semanal = metas[p.id] ? Math.round((metas[p.id] / (dias / 7)) / 10) * 10 : null;
-      return { id: p.id, nome: p.nome.split(" ")[0], pa, tkm, semanal, b: bolinha(pa, tkm, d.pa, d.tkm) };
+      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, semanal, b: bolinha(pa, tkm, d.pa, d.tkm) };
     });
-  }, [dados, loja, varias, semana, mes, d.pa, d.tkm]);
+  }, [dados, loja, varias, semana, mes, d.pa, d.tkm, d.metas_todas]);
   if (!dados) return <Carregando />;
   const vazias = Math.max(0, 6 - linhas.length);
   return (
@@ -194,6 +198,12 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
           <button type="button" className="btn p peq" onClick={() => imprimir("metas", false)}>Imprimir esta folha</button>
         </span>
       </div>
+      {varias && (
+        <div className="chips mb">
+          <button type="button" className={`chip ${!d.metas_todas ? "on" : ""}`} onClick={() => guardar({ ...d, metas_todas: false })}>Só as vendedoras desta loja</button>
+          <button type="button" className={`chip ${d.metas_todas ? "on" : ""}`} onClick={() => guardar({ ...d, metas_todas: true })}>Todas as vendedoras, das duas lojas</button>
+        </div>
+      )}
       <div className="linha mb" style={{ gap: 14, flexWrap: "wrap" }}>
         <label>P.A. meta <input type="number" step="0.1" value={d.pa} onChange={(e) => guardar({ ...d, pa: Number(e.target.value) })} style={{ width: 70 }} /></label>
         <label>TKM meta (R$) <input type="number" step="10" value={d.tkm} onChange={(e) => guardar({ ...d, tkm: Number(e.target.value) })} style={{ width: 90 }} /></label>
@@ -206,7 +216,7 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
             <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META SEMANAL</th><th>BOLINHA</th></tr></thead>
             <tbody>
               {linhas.map((l) => (
-                <tr key={l.id}><td>{l.nome}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td>
+                <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "0.7em" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td>
                   <td><span className="mu-bola" style={l.b ? { background: COR_BOLA[l.b], borderColor: COR_BOLA[l.b] } : undefined} /></td></tr>
               ))}
               {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td><span className="mu-bola" /></td></tr>)}

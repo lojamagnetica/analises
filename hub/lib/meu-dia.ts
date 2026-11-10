@@ -96,7 +96,7 @@ export type Vendedora = {
   /** Referências do feedback: o preço médio do estoque e quanto ela está abaixo do ritmo da meta. */
   pmEstoque?: number | null; fontePm?: "estoque" | "loja"; faltaRitmo?: number | null;
 };
-export type Tarefa = { chave: string; texto: string; href?: string };
+export type Tarefa = { chave: string; texto: string; href?: string; auto?: boolean };
 export type Atitude = { tipo: "CRM" | "Conteúdo" | "Ação"; titulo: string; texto: string; href: string; botao: string };
 
 /** Como a loja trabalha: sozinha (sem equipe), com Vendas do dia e Crediário, e quem ajuda no conteúdo. */
@@ -391,9 +391,11 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   const cfg = d.rotina.config;
   const hojeDow = dow(d.agora);
   const diaDoMes = Number(d.agora.slice(8));
-  if (!d.caixaOntem.length) t.push(d.modo.vendaDiaria
-    ? { chave: "caixa_ontem", texto: "Registrar as vendas de ontem em Vendas do dia (se faltou alguma)", href: "/gestao/vendas" }
-    : { chave: "caixa_ontem", texto: "Lançar o caixa de ontem", href: "/gestao/caixa" });
+  // O caixa/vendas de ontem fica sempre na lista: quando já foi lançado, o check fica verde sozinho.
+  const lancado = d.caixaOntem.length > 0;
+  t.push(d.modo.vendaDiaria
+    ? { chave: "caixa_ontem", texto: lancado ? "Vendas de ontem registradas" : "Registrar as vendas de ontem em Vendas do dia (se faltou alguma)", href: "/gestao/vendas", auto: lancado }
+    : { chave: "caixa_ontem", texto: lancado ? "Caixa de ontem lançado" : "Lançar o caixa de ontem", href: "/gestao/caixa", auto: lancado });
   if (d.modo.vendaDiaria) {
     const atr = d.parcelas.filter((x) => x.vence < d.agora);
     const deHoje = d.parcelas.filter((x) => x.vence === d.agora);

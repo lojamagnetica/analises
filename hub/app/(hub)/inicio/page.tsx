@@ -19,7 +19,6 @@ import { VezNoAtalho } from "@/components/VezNoAtalho";
 import { CaixaDaSemana } from "@/components/LeituraDaSemana";
 import { chaveDoAtalho, lerVisto, marcarVisto, temNovidade } from "@/lib/atalho-novo";
 import { buscarNovidades } from "@/lib/novidades-atalhos";
-import { CaixaNoAtalho } from "@/components/CaixaNoAtalho";
 import { RankingDoMes } from "@/components/RankingVendedoras";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 import { areaFechada } from "@/lib/bussola";
@@ -255,7 +254,6 @@ export default function Inicio() {
             {comNovidade(a.href) && <small className="novidade">novidade</small>}
             {/* Lista da vez: os atendimentos de cada vendedora, hoje e no mês. */}
             {a.href === "/gestao/vez" && !trancado(a.href) && <VezNoAtalho />}
-            {a.href === "/gestao/caixa" && !trancado(a.href) && <CaixaNoAtalho />}
             {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}
             {a.href.startsWith("/planeje/mes") && !trancado(a.href) && (
               planoProx && planoProx.status !== "rascunho"

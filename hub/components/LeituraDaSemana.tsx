@@ -60,7 +60,7 @@ export function CaixaDaSemana() {
   if (!dados) return null;
   const faltam = dados.filter((d) => d.passou && !d.lancado).length;
   return (
-    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam ? "var(--red)" : "var(--green)" }}>
+    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam ? "var(--red)" : "var(--feito)" }}>
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div>
           <b>🧾 Caixa desta semana</b>
@@ -68,7 +68,7 @@ export function CaixaDaSemana() {
             {dados.map((d, i) => (
               <span key={d.dia} title={dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
                 <span style={{ display: "block", width: 22, height: 22, margin: "0 auto 2px", borderRadius: 11, lineHeight: "22px", fontSize: 12,
-                  background: d.lancado ? "var(--green)" : d.passou ? "var(--red-soft)" : "var(--soft)", color: d.lancado ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
+                  background: d.lancado ? "var(--feito)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || d.passou ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
                   {d.lancado ? "✓" : d.passou ? "!" : ""}
                 </span>{DIAS[i]}
               </span>

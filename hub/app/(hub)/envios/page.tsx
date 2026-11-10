@@ -9,7 +9,7 @@ import { RankingVendedoras } from "@/components/RankingVendedoras";
 import { ArquivosDaSemana } from "@/components/ArquivosDoCaixa";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
-import { daLoja, diaDaSemana, fimDoMes, fmtPa, indicadores, mesDeHoje, nomeMes, somar, somarCadastros, somarMalinha, somarMes, somarVendedoras } from "@/lib/caixa";
+import { daLoja, diaDaSemana, fimDoMes, fmtPa, indicadores, mesDeHoje, nomeMes, somar, somarMes, somarVendedoras } from "@/lib/caixa";
 import { buscarCaixaPeriodo, buscarConferencia, desfazerConferencia, marcarConferido, semanaDoDia, type TipoEnvio } from "@/lib/envios";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
@@ -41,8 +41,6 @@ function Conferir({ tipo, periodo }: { tipo: TipoEnvio; periodo: string }) {
 
 function Quadro({ titulo, lista }: { titulo: string; lista: Awaited<ReturnType<typeof buscarCaixaPeriodo>> }) {
   const t = indicadores(somar(lista));
-  const mal = somarMalinha(lista);
-  const cad = somarCadastros(lista);
   const vend = somarVendedoras(lista);
   const porDia = [...new Set(lista.map((c) => c.dia))].sort().map((d) => ({ d, ...somar(lista.filter((c) => c.dia === d)) }));
   return (
@@ -54,10 +52,6 @@ function Quadro({ titulo, lista }: { titulo: string; lista: Awaited<ReturnType<t
         <div className="kpi"><small>PA</small><b style={{ fontSize: 22 }}>{t.pa != null ? fmtPa(t.pa) : "—"}</b></div>
         <div className="kpi"><small>Ticket médio</small><b style={{ fontSize: 22 }}>{t.tkm != null ? moeda(t.tkm) : "—"}</b></div>
       </div>
-      {(mal.faturamento > 0 || mal.saidas > 0) && (
-        <p className="ajuda" style={NUM}>Malinha: {moeda(mal.faturamento)} ({mal.pct ?? 0}% do total) · {mal.vendas} {mal.vendas === 1 ? "venda" : "vendas"}{mal.saidas > 0 ? ` de ${mal.saidas} que saíram` : ""} · loja física: {moeda(mal.fisica)}</p>
-      )}
-      {cad.dias > 0 && <p className="ajuda" style={NUM}>Clientes novas cadastradas: <b>{cad.cadastros}</b>{cad.por100 != null ? ` (${cad.por100} a cada 100 vendas)` : ""} · informado em {cad.dias} {cad.dias === 1 ? "dia" : "dias"}.</p>}
       {vend.length > 0 && (
         <div className="tabela-wrap mt">
           <table className="tabela">

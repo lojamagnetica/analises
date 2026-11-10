@@ -278,29 +278,9 @@ function FechamentoCaixa() {
           )}
           {!equipe.length && !soCaixa && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
         </div>
-        <label className="rotulo" style={{ marginTop: 10 }}>Malinha (a cliente leva as peças para provar em casa)</label>
-        <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "0 12px" }}>
-          {([["faturamento", "Faturamento da malinha (R$)", "0,00", "decimal"], ["vendas", "Vendas por malinha", "0", "numeric"], ["pecas", "Peças por malinha", "0", "numeric"], ["saidas", "Malinhas que saíram (quantidade, do sistema)", "0", "numeric"]] as const).map(([campo, rot, ph, modo]) => (
-            <div key={campo}>
-              <label className="rotulo" htmlFor={`cx-mal-${campo}`} style={{ fontWeight: 400 }}>{rot}</label>
-              <input id={`cx-mal-${campo}`} type="text" inputMode={modo} placeholder={ph} value={f.mal[campo]} style={NUM}
-                onChange={(e) => setF({ ...f, mal: { ...f.mal, [campo]: e.target.value } })} />
-            </div>
-          ))}
-        </div>
         <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", ...NUM }}>
-          <div className="kpi"><small>Venda loja física (total do dia)</small><b style={{ fontSize: 20 }}>{moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}</b></div>
-          <div className="kpi"><small>Venda malinha</small><b style={{ fontSize: 20 }}>{moeda(malinha.faturamento)}</b></div>
           <div className="kpi"><small>Total do dia</small><b style={{ fontSize: 20 }}>{moeda(valor.faturamento || somaPag)}</b></div>
         </div>
-        <div className="ajuda">
-          {temMalinha && valor.faturamento > 0
-            ? `Malinha: ${Math.round((malinha.faturamento / (valor.faturamento || somaPag || 1)) * 100)}% do dia. Loja física: ${moeda(Math.max(0, (valor.faturamento || somaPag) - malinha.faturamento))}.`
-            : "Das vendas do dia acima, quanto saiu em malinha: a cliente leva as peças para provar em casa, seja enviada ou retirada na loja. O resto conta como venda na loja física. Se o dia não teve malinha, deixe em branco."}
-        </div>
-        <label className="rotulo" htmlFor="cx-cad" style={{ marginTop: 10 }}>Clientes novas cadastradas hoje</label>
-        <input id="cx-cad" type="text" inputMode="numeric" placeholder="0" value={f.cad} style={{ ...NUM, maxWidth: 160 }} onChange={(e) => setF({ ...f, cad: e.target.value })} />
-        <div className="ajuda">Quantas clientes novas foram cadastradas hoje no sistema. Cada cliente cadastrada é uma cliente que a loja pode chamar de novo. Se não teve nenhuma, coloque 0.</div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
@@ -371,18 +351,6 @@ function FechamentoCaixa() {
           <div className="kpi"><small>Ticket médio</small><b style={{ fontSize: 24 }}>{t.tkm != null ? moeda(t.tkm) : "—"}</b></div>
           <div className="kpi"><small>Preço médio</small><b style={{ fontSize: 24 }}>{t.pm != null ? moeda(t.pm) : "—"}</b></div>
         </div>
-        {(malMes.faturamento > 0 || malMes.saidas > 0) && (
-          <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
-            <div className="kpi"><small>Malinha (levada para provar em casa)</small><b style={{ fontSize: 20 }}>{moeda(malMes.faturamento)}</b><small className="mudo">{malMes.pct}% do faturamento · {malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} · {malMes.pecas} {malMes.pecas === 1 ? "peça" : "peças"}</small></div>
-            {malMes.saidas > 0 && <div className="kpi"><small>Conversão da malinha</small><b style={{ fontSize: 20 }}>{malMes.conversao}%</b><small className="mudo">{malMes.vendas} {malMes.vendas === 1 ? "venda" : "vendas"} de {malMes.saidas} {malMes.saidas === 1 ? "malinha que saiu" : "malinhas que saíram"}</small></div>}
-            <div className="kpi"><small>Loja física</small><b style={{ fontSize: 20 }}>{moeda(malMes.fisica)}</b><small className="mudo">{malMes.pct != null ? 100 - malMes.pct : 0}% do faturamento</small></div>
-          </div>
-        )}
-        {cadMes.dias > 0 && (
-          <div className="grade mt" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", ...NUM }}>
-            <div className="kpi"><small>Clientes novas cadastradas</small><b style={{ fontSize: 20 }}>{cadMes.cadastros}</b><small className="mudo">{cadMes.por100 != null ? `${cadMes.por100} a cada 100 vendas · ` : ""}{cadMes.dias} {cadMes.dias === 1 ? "dia informado" : "dias informados"}</small></div>
-          </div>
-        )}
         {somaMes > 0 && (
           <>
             <h3 className="mt">Formas de pagamento</h3>
@@ -446,7 +414,6 @@ function FechamentoCaixa() {
               </div>
               {c.vendas > 0 && <div className="mudo" style={{ fontSize: 13 }}><Indicadores {...c} /></div>}
               {c.vendedoras && <div className="mudo" style={{ fontSize: 13, ...NUM }}>{c.vendedoras.map((v) => `${v.nome} ${moeda(v.faturamento)}`).join(" · ")}</div>}
-              {c.malinha && <div className="mudo" style={{ fontSize: 13, ...NUM }}>📦 Malinha {moeda(c.malinha.faturamento)} · {c.malinha.vendas} {c.malinha.vendas === 1 ? "venda" : "vendas"} · {c.malinha.pecas} {c.malinha.pecas === 1 ? "peça" : "peças"}{c.malinha.saidas ? ` · saíram ${c.malinha.saidas}` : ""}</div>}
               {c.pagamentos && <div className="mudo" style={{ fontSize: 13, ...NUM }}><ListaFormas p={c.pagamentos} /></div>}
               {c.obs && <div className="ajuda" style={{ margin: 0 }}>{c.obs}</div>}
             </div>

@@ -111,7 +111,7 @@ function EditarPortal() {
     const sb = supabaseBrowser();
     const [{ data: portal }, { data: pessoas }, { data: plano }, { data: reunioes }, { data: pers }, { data: entrada }, { count: equipeLoja }, { data: passos }] = await Promise.all([
       sb.from("portais").select("*").eq("id", id).maybeSingle(),
-      sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa, ve_conteudo").eq("portal_id", id),
+      sb.from("perfis").select("id, nome, email, ultimo_acesso, so_caixa, ve_conteudo, loja_acesso").eq("portal_id", id),
       sb.from("plano_itens").select("id, mes, texto, feito").eq("portal_id", id).order("mes").order("ordem"),
       sb.from("reunioes").select("*").eq("portal_id", id).order("data", { ascending: false }),
       sb.from("personalizacao").select("etapa, respostas, concluida").eq("portal_id", id),
@@ -271,6 +271,19 @@ function EditarPortal() {
                   }} />
                   Acesso de envios (o ADM manda o caixa, os relatórios da semana e do mês e imprime o mural, sem ver o resto do portal)
                 </label>
+                {u.so_caixa && (p.lojas?.length ?? 0) > 1 && (
+                  <label className="linha" style={{ gap: 6, fontSize: 13, marginTop: 4, alignItems: "center" }}>
+                    Vê só a loja:
+                    <select value={u.loja_acesso ?? ""} style={{ maxWidth: 220 }} onChange={async (e) => {
+                      const { error } = await supabaseBrowser().from("perfis").update({ loja_acesso: e.target.value || null }).eq("id", u.id);
+                      setAviso(error ? { erro: error.message } : { ok: e.target.value ? `${u.nome ?? "A pessoa"} agora vê só o caixa da ${e.target.value}.` : `${u.nome ?? "A pessoa"} volta a ver as duas lojas.` });
+                      recarregar();
+                    }}>
+                      <option value="">Todas as lojas</option>
+                      {(p.lojas ?? []).map((l: string) => <option key={l} value={l}>{l}</option>)}
+                    </select>
+                  </label>
+                )}
                 {u.so_caixa && (
                   <label className="linha" style={{ gap: 6, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                     <input type="checkbox" checked={!!u.ve_conteudo} onChange={async (e) => {

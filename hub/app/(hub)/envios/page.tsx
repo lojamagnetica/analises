@@ -90,9 +90,9 @@ function Quadro({ titulo, lista }: { titulo: string; lista: Awaited<ReturnType<t
 /** O que a loja manda e confere: o caixa do dia, os números e os relatórios da semana, e os do mês que fechou.
  *  É a página de quem recebeu o acesso só caixa (em geral o ADM) e também serve à dona e à equipe. */
 export default function Envios() {
-  const { portal } = usePortal();
-  const lojas = portal.lojas ?? [];
-  const [loja, setLoja] = useState("");
+  const { portal, lojaTravada } = usePortal();
+  const lojas = lojaTravada ? [lojaTravada] : portal.lojas ?? [];
+  const [loja, setLoja] = useState(lojaTravada);
   const { de, ate } = semanaDoDia(hoje());
   const mesFechado = somarMes(mesDeHoje(), -1);
   const { dados } = useDados(async () => ({

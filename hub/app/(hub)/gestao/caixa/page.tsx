@@ -54,9 +54,9 @@ function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vend
 
 function FechamentoCaixa() {
   const params = useSearchParams();
-  const { portal, soCaixa } = usePortal();
-  const lojas = portal.lojas ?? [];
-  const varias = lojas.length > 1;
+  const { portal, soCaixa, lojaTravada } = usePortal();
+  const lojas = lojaTravada ? [lojaTravada] : portal.lojas ?? [];
+  const varias = (portal.lojas ?? []).length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
   const [filtro, setFiltro] = useLojaFoco();
   const [f, setF] = useState<Form>(() => novo(varias ? filtro || lojas[0] : ""));
@@ -331,7 +331,7 @@ function FechamentoCaixa() {
         {!soCaixa && <Link className="btn s peq" href={`/gestao/resultado?mes=${mes}`}>Ver o resultado do mês</Link>}
       </div>
 
-      {varias && (
+      {varias && !lojaTravada && (
         <div className="linha mb" style={{ gap: 8 }} role="group" aria-label="Ver por loja">
           {["", ...lojas].map((l) => (
             <button key={l || "todas"} type="button" className="chip" aria-pressed={filtro === l} onClick={() => { setFiltro(l); if (l && !f.id) setF({ ...f, loja: l }); }}

@@ -10,9 +10,8 @@ export type SlotRelatorio = { chave: string; titulo: string; oque: string };
 
 /** O que a loja manda toda semana (vence na sexta, às 18h). */
 export const RELATORIOS_SEMANA: SlotRelatorio[] = [
-  { chave: "vendas_semana", titulo: "Vendas da semana", oque: "A lista de vendas da semana, com vendedora e cliente." },
   { chave: "mais_vendidos_semana", titulo: "Mais vendidos da semana", oque: "Com categoria, marca e o estoque atual de cada produto." },
-  { chave: "estoque_linha", titulo: "Estoque por linha", oque: "O estoque de hoje, por categoria." },
+  { chave: "estoque_linha", titulo: "Estoque atualizado", oque: "O estoque de hoje, por categoria, para ver o que chegou de mercadoria e o que saiu (baixa)." },
 ];
 
 /** O que a loja manda no começo do mês, sobre o mês que fechou (vence no dia 5). */

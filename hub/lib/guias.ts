@@ -13,3 +13,11 @@ export const GUIAS: Guia[] = [
 export const linkGuia = (g: Guia) =>
   `${typeof window === "undefined" ? "https://lojamagnetica.github.io" : window.location.origin}${BASE}/video/${g.arquivo}`;
 export const guia = (id: string) => GUIAS.find((g) => g.id === id)!;
+
+/** Aulas interativas (página própria, em public/aula): passo a passo animado para a loja e para a equipe. */
+export type Aula = { id: string; titulo: string; para: string; arquivo: string; duracao: string };
+export const AULAS: Aula[] = [
+  { id: "fechamento-caixa", titulo: "Como fechar o caixa no Hub", para: "Quem tem sistema sobe até 3 arquivos do fechamento; quem não tem preenche à mão todos os dias.", arquivo: "fechamento-caixa.html", duracao: "3 min" },
+];
+export const linkAula = (a: Aula) =>
+  `${typeof window === "undefined" ? "https://lojamagnetica.github.io" : window.location.origin}${BASE}/aula/${a.arquivo}`;

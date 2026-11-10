@@ -15,6 +15,7 @@ import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
+import { AulaDoCaixa } from "@/components/AulaDoCaixa";
 import { LerRelatorioDoCaixa } from "@/components/LerRelatorioDoCaixa";
 import { BoletosMes } from "@/components/BoletosMes";
 
@@ -201,6 +202,7 @@ function FechamentoCaixa() {
   return (
     <>
       <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: o que cada vendedora vendeu e as formas de pagamento. Depois é só mandar no WhatsApp. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
+      <AulaDoCaixa />
 
       <form className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }} onSubmit={salvar}>
         <div className="linha entre">

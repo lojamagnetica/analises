@@ -9,6 +9,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
   - Hub da equipe/empresa: `hub/app/(hub)/equipe/**` e `hub/app/(hub)/empresa/**`.
   - Lógica e acesso ao banco em `hub/lib/*.ts`; componentes em `hub/components/`.
 - `portal/`: o site publicado (GitHub Pages em `/analises/portal`). É GERADO, nunca editar à mão.
+- Lista da vez: gestora em `/gestao/vez`; a equipe abre `/vez?t=<token>` no celular (link pessoal em `loja_equipe.vez_token`, sem login, só por funções `vez_*` do banco). Fila por loja e por dia, resultado de cada atendimento, missão do dia e meta/P.A./TKM vindos do caixa. Contas em `hub/lib/vez-calculo.ts` (com teste).
 - Banco: Supabase (RLS com `is_equipe()`, `meu_portal()`, `pode_ver(portal_id)`). Migrações em `hub/supabase/migrations/NNNN_nome.sql`.
 
 ## Fluxo

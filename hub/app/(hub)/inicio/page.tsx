@@ -268,10 +268,7 @@ export default function Inicio() {
 
       {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
-          <div style={{ flex: "2 1 340px", minWidth: 0 }}><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} /></div>
-          <div style={{ flex: "1 1 260px", minWidth: 0, maxWidth: 420 }}><RankingDoMes compacto /></div>
-        </div>
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} lateral={<RankingDoMes compacto />} /></div>
       ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>

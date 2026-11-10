@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@600;700&display=swap">
+<title>Lista da vez no celular</title>
+<style>
+/* Aula interativa em cenas: o celular à esquerda mostra a tela do Hub, a fala (teleprompter) à direita. Paleta da marca: tinta quente, laranja queimado, verde de "feito". */
+:root{
+  --bg:#F3EFEA; --card:#FFFFFF; --ink:#1E1915; --mudo:#6F665E; --linha:#E2DAD2; --soft:#EFE8E0;
+  --marca:#B7400E; --marca-soft:#F7E4DA; --feito:#2F7D4F; --feito-soft:#E1F0E6; --alerta:#B42318; --alerta-soft:#FBE4E1;
+  --tela:#FBF9F6; --fone:#1E1915;
+  --f-titulo:"Space Grotesk",system-ui,sans-serif; --f-texto:"Inter",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14110F; --card:#1F1A17; --ink:#F4EEE8; --mudo:#A99F96; --linha:#332B26; --soft:#2A231F;
+  --marca:#E4743F; --marca-soft:#3A241A; --feito:#5CBF84; --feito-soft:#18301F; --alerta:#F0776B; --alerta-soft:#3B1D1A;
+  --tela:#1A1613; --fone:#000; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14110F; --card:#1F1A17; --ink:#F4EEE8; --mudo:#A99F96; --linha:#332B26; --soft:#2A231F;
+  --marca:#E4743F; --marca-soft:#3A241A; --feito:#5CBF84; --feito-soft:#18301F; --alerta:#F0776B; --alerta-soft:#3B1D1A;
+  --tela:#1A1613; --fone:#000; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-texto);line-height:1.5;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.pagina{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-titulo);margin:0;text-wrap:balance;line-height:1.15}
+.topo{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.topo h1{font-size:clamp(22px,4vw,30px)}
+.topo small{color:var(--mudo);font-size:13px}
+.palco{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:24px;align-items:start}
+@media(max-width:780px){.palco{grid-template-columns:1fr}}
+
+
+.shotwrap{flex:1;overflow:hidden;background:var(--tela)}
+.shotwrap img.shot{display:block;width:100%;height:auto;transition:transform 1.6s ease}
+@media(prefers-reduced-motion:reduce){.shotwrap img.shot{transition:none}}
+
+.shotwrap{flex:1;overflow:hidden;background:var(--tela)}
+.shotwrap img.shot{display:block;width:100%;height:auto;transition:transform 1.6s ease}
+@media(prefers-reduced-motion:reduce){.shotwrap img.shot{transition:none}}
+/* celular */
+.fone{background:var(--fone);border-radius:34px;padding:10px;width:100%;max-width:340px;margin:0 auto;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.tela{background:var(--tela);border-radius:26px;height:600px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.barra-app{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 8px}
+.menu-btn{background:var(--ink);color:var(--bg);border-radius:99px;font:700 12px var(--f-texto);padding:7px 12px}
+.zap{width:28px;height:28px;border-radius:50%;background:#25D366;display:grid;place-items:center;color:#fff;font-size:13px}
+.corpo{padding:4px 14px 14px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+.t-pag{font:700 16px var(--f-titulo)}
+.cartao{background:var(--card);border:1px solid var(--linha);border-radius:14px;padding:11px}
+.cartao h4{margin:0 0 6px;font:700 13px var(--f-titulo)}
+.mini{font-size:11.5px;color:var(--mudo);margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:10px;padding:9px 13px;font:700 12.5px var(--f-texto);cursor:pointer;background:var(--soft);color:var(--ink)}
+.btn.p{background:var(--marca);color:#fff}
+.btn.v{background:var(--feito);color:#fff}
+.campo{border:1px solid var(--linha);background:var(--card);border-radius:9px;padding:7px 9px;font-size:12px;display:flex;justify-content:space-between;gap:8px}
+.campo b{font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+th{font-weight:600;color:var(--mudo);text-align:left;padding:3px 4px}
+td{padding:4px;border-top:1px solid var(--linha)}
+.dias{display:flex;gap:6px}
+.dia{text-align:center;font-size:10.5px;flex:1}
+.bola{width:26px;height:26px;border-radius:50%;margin:0 auto 2px;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--soft);color:var(--mudo);transition:background .4s,color .4s}
+.bola.ok{background:var(--feito);color:#fff}.bola.falta{background:var(--alerta);color:#fff}.bola.hoje{outline:2px solid var(--ink)}
+
+/* aparecer no tempo */
+[data-t]{opacity:0;transform:translateY(8px);transition:opacity .45s,transform .45s}
+[data-t].on{opacity:1;transform:none}
+.pulsa{animation:pulsa 1.4s ease-in-out infinite}
+@keyframes pulsa{50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--marca) 28%,transparent)}}
+@media(prefers-reduced-motion:reduce){[data-t]{transition:none}.pulsa{animation:none}}
+
+/* lado da fala */
+.lado{display:flex;flex-direction:column;gap:14px;min-width:0}
+.cena-rot{font:700 12px var(--f-texto);letter-spacing:.12em;text-transform:uppercase;color:var(--marca)}
+.cena-tit{font-size:clamp(22px,3.4vw,30px)}
+.fala{background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:16px 18px;min-height:210px}
+.fala p{margin:0 0 .45em;font-size:clamp(17px,2.4vw,21px);line-height:1.35;color:var(--mudo);transition:color .3s}
+.fala p.atual{color:var(--ink);font-weight:600}
+.caminhos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.caminhos{grid-template-columns:1fr}}
+.caminho{border:1.5px solid var(--linha);background:var(--card);border-radius:14px;padding:13px;text-align:left;cursor:pointer;color:inherit;font:inherit}
+.caminho b{display:block;font-family:var(--f-titulo);margin-bottom:2px}
+.caminho span{font-size:13.5px;color:var(--mudo)}
+.caminho:hover,.caminho:focus-visible{border-color:var(--marca)}
+.caminho.sel{border-color:var(--marca);background:var(--marca-soft)}
+
+/* controles */
+.controles{margin-top:22px;background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.trilho{display:flex;gap:5px}
+.trilho button{flex:1;height:8px;border-radius:99px;border:0;background:var(--soft);padding:0;cursor:pointer;position:relative;overflow:hidden}
+.trilho button i{position:absolute;inset:0 auto 0 0;width:0;background:var(--marca)}
+.trilho button.feita i{width:100%}
+.botoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.botoes .grow{flex:1;font-size:13px;color:var(--mudo);min-width:120px}
+button:focus-visible{outline:2px solid var(--marca);outline-offset:2px}
+details.roteiro{margin-top:18px;background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:12px 16px}
+details.roteiro summary{cursor:pointer;font:700 14px var(--f-titulo)}
+details.roteiro pre{white-space:pre-wrap;font:15px/1.6 var(--f-texto);margin:10px 0 0}
+[hidden]{display:none!important}
+html,body{margin:0}
+</style>
+</head>
+<body>
+
+<div class="pagina">
+  <div class="topo">
+    <div><h1>Lista da vez no celular</h1><small>Para o time · 2 minutos · tela real do portal, dados de exemplo</small></div>
+  </div>
+
+  <div class="palco">
+    <div class="fone" aria-label="Tela do celular com o Hub"><div class="tela" id="tela"></div></div>
+    <div class="lado">
+      <div class="cena-rot" id="rot"></div>
+      <h2 class="cena-tit" id="tit"></h2>
+      <div class="fala" id="fala" aria-live="polite"></div>
+      <div id="escolha" class="caminhos" hidden>
+        <button class="caminho" data-c="a"><b>Tenho sistema</b><span>Subo até 3 arquivos do fechamento</span></button>
+        <button class="caminho" data-c="b"><b>Não tenho sistema</b><span>Preencho à mão todos os dias</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controles">
+    <div class="trilho" id="trilho"></div>
+    <div class="botoes">
+      <button class="btn" id="ant">◀ Anterior</button>
+      <button class="btn p" id="play">▶ Começar a aula</button>
+      <button class="btn" id="prox">Próxima ▶</button>
+      <button class="btn" id="voz" aria-pressed="true">🔊 Voz ligada</button>
+      <button class="btn" id="vel">Ritmo: normal</button>
+      <span class="grow" id="status"></span>
+    </div>
+  </div>
+
+  <details class="roteiro" id="roteiro-box" hidden>
+    <summary>Roteiro para gravar (teleprompter)</summary>
+    <pre id="roteiro"></pre>
+    <button class="btn" id="copiar" style="margin-top:10px">Copiar o roteiro</button>
+  </details>
+</div>
+
+<script>
+/* Cenas: cada uma tem a tela do celular (html), a fala em frases curtas e o tempo. Elementos com data-t aparecem no ms indicado. */
+const IMGS={"vez_equipe":"img/vez_equipe.jpg","vez_nao":"img/vez_nao.jpg"};
+const shot=(n)=>`<div class="shotwrap"><img class="shot" src="${IMGS[n]}" alt=""></div>`;
+
+const topo=`<div class="barra-app"><span class="menu-btn">☰ Menu</span><span class="zap">✆</span></div>`;
+const CENAS={
+  abertura:{rot:"Para o time",tit:"A sua lista da vez no celular",dur:24000,
+    fala:["Olá, Magnéticos!","Esse é o seu acesso à lista da vez.","Em dois minutos, você aprende a usar.","E vai usar o dia inteiro, direto no celular."],
+    tela:()=>shot("vez_equipe"),pan:[[0,0],[10000,300]]},
+  instalar:{rot:"Passo 1",tit:"Abra o seu link e coloque na tela inicial",dur:26000,
+    fala:["Primeiro: abra o seu link pessoal.","Sem senha, é só abrir.","Depois coloque na tela inicial, para virar aplicativo.","No iPhone: Compartilhar, e Adicionar à Tela de Início.","No Android: os três pontinhos, e Instalar app."],
+    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Tela inicial do celular</div>
+      <div class="cartao" data-t="400"><h4>🔗 Seu link pessoal</h4><p class="mini">Sem senha. É só tocar no link que a gestora mandou.</p></div>
+      <div class="cartao" data-t="6500"><h4>🍎 iPhone (Safari)</h4><p class="mini">Compartilhar → Adicionar à Tela de Início</p></div>
+      <div class="cartao" data-t="12500"><h4>🤖 Android (Chrome)</h4><p class="mini">Os três pontinhos → Instalar app</p></div>
+      <div class="cartao" data-t="18500" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">✓ Agora é um ícone no seu celular</b></div></div>`},
+  vez:{rot:"Passo 2",tit:"Entre na vez e atenda quando chegar a sua",dur:26000,
+    fala:["Quando chegar na loja, toque em Entrar na vez.","Quem chega primeiro, atende primeiro.","Quando a vez for sua, aparece: é a sua vez.","Toque em: vou atender agora.","Quem atendeu volta para o final da lista."],
+    tela:()=>shot("vez_equipe"),pan:[[0,0],[9000,350]]},
+  resultado:{rot:"Passo 3",tit:"Vendeu ou não vendeu: marque sempre",dur:28000,
+    fala:["Terminou o atendimento? Marque se vendeu, ou se não vendeu.","Se não vendeu, escolha o motivo. Pode marcar mais de um.","E, se quiser, escreva o que a cliente queria.","Por exemplo: casaco P de lã.","Isso ajuda a loja a ter o que a cliente procura."],
+    tela:()=>shot("vez_nao"),pan:[[0,250],[10000,650]]},
+  missao:{rot:"Passo 4",tit:"Missão do dia e os seus números",dur:24000,
+    fala:["Aqui embaixo ficam o objetivo de hoje e a missão do dia.","Cumpriu a missão? Dá o check.","Em meus números, você vê a sua meta, o P.A. e o ticket médio.","Tudo atualizado com o caixa da loja."],
+    tela:()=>shot("vez_equipe"),pan:[[0,1100],[10000,1650]]},
+  fim:{rot:"Combinado",tit:"O que a gente combina",dur:22000,
+    fala:["Combinado:","entre na vez quando chegar.","Marque todo atendimento, vendendo ou não.","É isso que mostra o fluxo real da loja.","E a gente corrige, junto, o que trava a venda."],
+    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Nosso combinado</div>
+      <div class="cartao" data-t="300"><b style="color:var(--feito)">✓</b> Entrar na vez quando chegar</div>
+      <div class="cartao" data-t="3800"><b style="color:var(--feito)">✓</b> Marcar todo atendimento: vendeu ou não</div>
+      <div class="cartao" data-t="7600"><b style="color:var(--feito)">✓</b> Cumprir e dar check na missão do dia</div>
+      <div class="cartao" data-t="11500" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">Juntas, a gente vende mais.</b></div></div>`}
+};
+let ordem=["abertura", "instalar", "vez", "resultado", "missao", "fim"];
+let ritmo=1.0,atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
+const sintese=("speechSynthesis" in window)?window.speechSynthesis:null;
+function escolheVoz(){const v=sintese?sintese.getVoices():[];const br=v.filter(x=>/pt[-_]BR/i.test(x.lang));
+  return br.find(x=>/google|luciana|francisca|microsoft.*(maria|francisca)/i.test(x.name))||br[0]||v.find(x=>/^pt/i.test(x.lang))||null}
+function fala(c){
+  if(!sintese||!voz||!tocando){falou=true;return}
+  sintese.cancel();
+  if(!sintese.getVoices().length){falou=true;return}
+  falou=false;
+  const vz=escolheVoz();
+  c.fala.forEach((txt,k)=>{const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";u.rate=ritmo;if(vz)u.voice=vz;
+    u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
+    if(k===c.fala.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
+    sintese.speak(u)});
+}
+function paraFala(){if(sintese)sintese.cancel()}
+
+const $=(s)=>document.querySelector(s);
+function montaTrilho(){$("#trilho").innerHTML=ordem.map((_,i)=>`<button aria-label="Ir para a cena ${i+1}" data-i="${i}"><i></i></button>`).join("");
+  $("#trilho").querySelectorAll("button").forEach(b=>b.onclick=()=>ir(+b.dataset.i));}
+function animaTela(c){
+  const w=document.querySelector("#tela .shotwrap");if(!w)return;
+  const im=w.querySelector("img.shot");
+  (c.pan||[[0,0]]).forEach(([t,y])=>timers.push(setTimeout(()=>{im.style.transform=`translateY(${-y*(w.clientWidth/780)}px)`},t)));
+  (c.troca||[]).forEach(([t,n])=>timers.push(setTimeout(()=>{im.src=IMGS[n]},t)));
+}
+function limpa(){timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf);paraFala()}
+let raf=0;
+function ir(i){
+  limpa();atual=Math.max(0,Math.min(ordem.length-1,i));
+  const c=CENAS[ordem[atual]];
+  $("#rot").textContent=`Cena ${atual+1} de ${ordem.length} · ${c.rot}`;$("#tit").textContent=c.tit;
+  $("#tela").innerHTML=c.tela();
+  animaTela(c);
+  $("#fala").innerHTML=c.fala.map((f,k)=>`<p data-k="${k}">${f}</p>`).join("");
+  $("#escolha").hidden=!c.escolha;
+  $("#trilho").querySelectorAll("button").forEach((b,k)=>{b.classList.toggle("feita",k<atual);b.querySelector("i").style.width=k<atual?"100%":"0"});
+  ini=performance.now();
+  // aparecer no tempo
+  $("#tela").querySelectorAll("[data-t]").forEach(el=>{const t=+el.dataset.t;timers.push(setTimeout(()=>el.classList.add("on"),t))});
+  const passo=c.dur/(c.fala.length+1);
+  if(!(voz&&sintese))c.fala.forEach((_,k)=>timers.push(setTimeout(()=>{$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k))},k*passo)));
+  fala(c);
+  quadro();
+}
+function quadro(){
+  const c=CENAS[ordem[atual]],gasto=performance.now()-ini;
+  const b=$("#trilho").querySelectorAll("button")[atual].querySelector("i");b.style.width=Math.min(100,gasto/c.dur*100)+"%";
+  $("#status").textContent=tocando?"":(iniciou?"Pausado":"Toque em Começar para ouvir a aula");
+  if(!tocando)return;
+  if(gasto>=c.dur&&(falou||gasto>c.dur+20000)){ if(c.escolha&&!caminho){/* espera a escolha */ return} proximo();return}
+  raf=requestAnimationFrame(quadro);
+}
+function proximo(){
+  if(ordem[atual]==="caminhos"&&caminho){ordem=["abertura","caminhos",caminho==="a"?"subir":"manual",caminho==="a"?"manual":"subir","semana","fim"];montaTrilho()}
+  if(atual<ordem.length-1)ir(atual+1);else{tocando=false;paraFala();$("#play").textContent="Rever do início";$("#status").textContent="Fim da aula"}
+}
+$("#prox").onclick=()=>{if(ordem[atual]==="caminhos"&&!caminho){caminho="a"}proximo()};
+$("#ant").onclick=()=>ir(atual-1);
+$("#play").onclick=()=>{
+  const t=$("#play").textContent;
+  if(t==="Rever do início"||t==="▶ Começar a aula"){tocando=true;iniciou=true;$("#play").textContent="Pausar";montaTrilho();return ir(0)}
+  tocando=!tocando;$("#play").textContent=tocando?"Pausar":"Continuar";
+  if(tocando){const c=CENAS[ordem[atual]];ini=performance.now()-(parseFloat($("#trilho").querySelectorAll("button")[atual].querySelector("i").style.width)/100*c.dur);if(sintese&&voz&&sintese.paused)sintese.resume();else if(sintese&&voz&&!sintese.speaking)fala(c);quadro()}
+  else{cancelAnimationFrame(raf);if(sintese)sintese.pause();$("#status").textContent="Pausado"}
+};
+const RITMOS=[["normal",1.0],["rápido",1.25],["bem rápido",1.5]];let ri=0;
+$("#vel").onclick=()=>{ri=(ri+1)%RITMOS.length;ritmo=RITMOS[ri][1];$("#vel").textContent="Ritmo: "+RITMOS[ri][0];if(voz&&tocando){paraFala();fala(CENAS[ordem[atual]])}};
+$("#voz").onclick=()=>{voz=!voz;$("#voz").textContent=voz?"🔊 Voz ligada":"🔇 Voz desligada";$("#voz").setAttribute("aria-pressed",voz);paraFala();if(voz&&tocando)fala(CENAS[ordem[atual]]);else falou=true};
+document.querySelectorAll(".caminho").forEach(b=>b.onclick=()=>{
+  caminho=b.dataset.c;document.querySelectorAll(".caminho").forEach(x=>x.classList.toggle("sel",x===b));
+  ordem=["abertura","caminhos",caminho==="a"?"subir":"manual",caminho==="a"?"manual":"subir","semana","fim"];montaTrilho();tocando=true;iniciou=true;$("#play").textContent="Pausar";ir(2);
+});
+/* Roteiro de gravação: só as falas, um bloco por respiração */
+const roteiro=ordem.map(k=>`— ${CENAS[k].rot} —\n`+CENAS[k].fala.join("\n")).join("\n\n");
+$("#roteiro").textContent=roteiro;
+$("#copiar").onclick=async()=>{try{await navigator.clipboard.writeText(roteiro);$("#copiar").textContent="Roteiro copiado ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#roteiro"));getSelection().removeAllRanges();getSelection().addRange(r);$("#copiar").textContent="Selecionado: copie com o teclado"}};
+if(sintese)sintese.onvoiceschanged=()=>{};
+/* O roteiro de gravação só aparece para quem abre o endereço com #roteiro */
+const mostraRoteiro=()=>{$("#roteiro-box").hidden=location.hash!=="#roteiro"};mostraRoteiro();addEventListener("hashchange",mostraRoteiro);
+montaTrilho();ir(0);
+</script>
+
+</body>
+</html>

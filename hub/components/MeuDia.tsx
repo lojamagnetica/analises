@@ -18,7 +18,7 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }: { portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
+export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], lateral }: { lateral?: React.ReactNode; portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
   // Mais de uma loja: vale a loja em foco do portal inteiro (seletor no topo).
   const [loja] = useLojaFoco();
   // O planner é de cada loja: com as lojas juntas, ele não aparece aqui.
@@ -106,8 +106,9 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
         </div>
       )}
 
-      <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)" }}>
-        <h3 style={{ marginTop: 0 }}>✅ Sua rotina de hoje</h3>
+      <div className="mb" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+      <div className="card card-borda" style={{ ["--c" as string]: "var(--green)", flex: "1.4 1 300px", minWidth: 0, padding: 12, fontSize: 14 }}>
+        <h3 style={{ marginTop: 0, fontSize: 16 }}>✅ Sua rotina de hoje</h3>
         {!lista.length && !doPlanner.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
         {!modo.solo && new Date(`${d.agora}T12:00:00Z`).getUTCDay() !== 0 && (
           <details className="mt" style={{ marginBottom: 6 }}>
@@ -139,6 +140,8 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
             </div>
           );
         })}
+      </div>
+      {lateral && <div style={{ flex: "1 1 240px", minWidth: 0, maxWidth: 400 }}>{lateral}</div>}
       </div>
 
       {vs.length > 0 && (

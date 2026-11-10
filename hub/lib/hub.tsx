@@ -57,6 +57,8 @@ export type Hub = {
   estudio: boolean;
   /** Acesso só do caixa: vê só o Fechamento de caixa da loja. */
   soCaixa: boolean;
+  /** Acesso de envios travado em uma loja do portal ("" = todas). */
+  lojaTravada: string;
   /** Quem tem o acesso só do caixa também abre o Conteúdo (o ADM que faz o conteúdo da loja). */
   veConteudo: boolean;
   /** A equipe vendo como o acesso de envios: "1" só os envios, "c" com o Conteúdo, "" desligado. */
@@ -154,7 +156,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, ve_conteudo, aprova, monta, loja_padrao").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, ve_conteudo, aprova, monta, loja_padrao, loja_acesso").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -184,7 +186,9 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     // Loja em foco: a escolhida neste aparelho; senão, a loja padrão da pessoa; senão, as lojas juntas.
     const lojasDoPortal = portal?.lojas ?? [];
     let lojaFoco = "";
-    if (portal && lojasDoPortal.length > 1) {
+    const lojaTravada = !equipe && perfil?.loja_acesso && lojasDoPortal.includes(perfil.loja_acesso) ? perfil.loja_acesso : "";
+    if (lojaTravada) lojaFoco = lojaTravada;
+    else if (portal && lojasDoPortal.length > 1) {
       let guardada: string | null = null;
       try { guardada = localStorage.getItem(`loja-foco:${portal.id}`); } catch { /* sem armazenamento */ }
       lojaFoco = guardada !== null && (guardada === "" || lojasDoPortal.includes(guardada)) ? guardada
@@ -194,7 +198,9 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     setHub({
       userId: user.id,
       lojaFoco,
+      lojaTravada,
       escolherLoja: (l) => {
+        if (lojaTravada) return;
         try { if (portal) localStorage.setItem(`loja-foco:${portal.id}`, l); } catch { /* sem armazenamento */ }
         setHub((h) => (h ? { ...h, lojaFoco: l } : h));
       },

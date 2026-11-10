@@ -162,6 +162,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "gestao", rotulo: "Gestão estratégica", icone: "calc",
       itens: [
         { href: "/gestao/caixa", rotulo: "Fechamento de caixa", icone: "calc" },
+        { href: "/gestao/vez", rotulo: "Lista da vez", icone: "users" },
         { href: "/envios", rotulo: "Envios da loja", icone: "folder" },
         { href: "/gestao/resultado", rotulo: "Resultado do mês", icone: "target" },
         // Só aparece para a loja com uma medição de Vendas por canal em andamento (o layout esconde nas outras).

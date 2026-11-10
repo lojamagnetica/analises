@@ -8,8 +8,8 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { quemVende } from "@/lib/pessoas";
-import { MOTIVOS, filaDeEspera, horaMin, ordenarFila, resumoDoDia, textoDoResumo } from "@/lib/vez-calculo";
-import { atendEditar, atendExcluir, buscarVezDoDia, linkDaVez, missaoAdicionar, missaoExcluir, novoLinkDaPessoa, tirarDaFila, type AtendGestao } from "@/lib/vez";
+import { DIAS_FLUXO, MOTIVOS, filaDeEspera, fluxoSemanal, horaMin, ordenarFila, resumoDoDia, textoDoResumo } from "@/lib/vez-calculo";
+import { atendEditar, atendExcluir, buscarFluxo, buscarVezDoDia, linkDaVez, missaoAdicionar, missaoExcluir, novoLinkDaPessoa, tirarDaFila, type AtendGestao } from "@/lib/vez";
 
 const somaDias = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n * 100)}%`);
@@ -29,6 +29,7 @@ function Linha({ rotulo, valor, max, cor, extra }: { rotulo: string; valor: numb
 function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string; ehHoje: boolean }) {
   const { portal } = usePortal();
   const { dados, recarregar } = useDados(() => buscarVezDoDia(portal.id, loja, dia), [portal.id, loja, dia]);
+  const { dados: fluxoBruto } = useDados(() => buscarFluxo(portal.id, loja, dia), [portal.id, loja, dia]);
   useEffect(() => { if (!ehHoje) return; const t = setInterval(recarregar, 10000); return () => clearInterval(t); }, [ehHoje, recarregar]);
   const [editar, setEditar] = useState<string | null>(null);
   const [res, setRes] = useState<"vendeu" | "nao_vendeu" | "">("");
@@ -123,6 +124,35 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
             <div className="linha mt" style={{ gap: 8 }}><Copiar texto={textoDoResumo(loja ?? "", dia, resumo)} rotulo="Copiar o resumo para o WhatsApp" /></div>
           </>
         )}
+      </div>
+
+      <div className="secao">Fluxo dos últimos 30 dias</div>
+      <div className="card mb" style={{ overflowX: "auto" }}>
+        {(() => {
+          const f = fluxoSemanal(fluxoBruto ?? []);
+          if (!f.total) return <p className="mudo" style={{ margin: 0 }}>O mapa aparece quando houver atendimentos registrados.</p>;
+          return (
+            <>
+              <table style={{ borderCollapse: "separate", borderSpacing: 3, fontSize: 12, minWidth: 320 }}>
+                <thead><tr><th />{f.horas.map((h) => <th key={h} style={{ fontWeight: 600 }}>{h}h</th>)}</tr></thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5, 6].map((dow) => (
+                    <tr key={dow}>
+                      <td style={{ fontWeight: 700, paddingRight: 6 }}>{DIAS_FLUXO[dow]}</td>
+                      {f.horas.map((h) => {
+                        const n = f.celulas[`${dow}-${h}`] ?? 0;
+                        return <td key={h} title={`${DIAS_FLUXO[dow]} ${h}h: ${n}`} style={{ width: 34, height: 28, textAlign: "center", borderRadius: 6, fontWeight: 700, background: n ? `rgba(183, 64, 14, ${0.15 + 0.75 * (n / f.maximo)})` : "var(--line)", color: n && n / f.maximo > 0.5 ? "#fff" : "inherit" }}>{n || ""}</td>;
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="ajuda" style={{ marginBottom: 0 }}>
+                {f.total} atendimentos. {f.pico ? `Maior movimento: ${DIAS_FLUXO[f.pico.dow]} às ${f.pico.hora}h (${f.pico.qtd}).` : ""} Quanto mais escuro, mais atendimentos começaram naquele dia e horário.
+              </p>
+            </>
+          );
+        })()}
       </div>
 
       <div className="secao">Atendimentos do dia</div>

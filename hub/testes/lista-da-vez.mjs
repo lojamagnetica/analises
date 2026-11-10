@@ -59,6 +59,8 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   ok(await page.getByText("Bia").first().isVisible(), "mostra quem está na lista");
   ok(await page.getByText("Conversão").first().isVisible() && await page.getByText("33%").count() >= 1, "mostra a conversão do dia (1 venda em 3 atendimentos)");
   ok(await page.getByText("Fluxo por horário").count() === 1, "mostra o fluxo por horário");
+  await page.getByText("Maior movimento:", { exact: false }).waitFor();
+  ok(await page.getByText("Fluxo dos últimos 30 dias").count() === 1, "mostra o mapa de fluxo por dia da semana e horário");
   ok(await page.getByText("Preço", { exact: true }).count() >= 1, "mostra os motivos que mais aparecem");
   ok(await page.getByText("Mostrar a vitrine nova").count() === 1, "mostra a missão do dia e o check");
   ok(await page.getByRole("link", { name: "Abrir" }).count() === 2, "mostra o link de cada vendedora");

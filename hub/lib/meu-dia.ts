@@ -181,10 +181,12 @@ export function placar(d: DadosMeuDia) {
   const passados = ontemIso.startsWith(mes) ? diasDeLoja(`${mes}-01`, ontemIso) : 0;
   const metaHoje = meta ? Math.max(0, (meta - ate) / restantes) : null;
   const ritmo = passados > 0 ? ate / passados : null;
+  // Quanto do mês já passou (dias de loja aberta, até ontem): é o quanto da meta já deveria estar feito.
+  const esperado = passados / Math.max(1, diasDeLoja(`${mes}-01`, fimDoMes(mes)));
   const ontemConta = ontemIso.startsWith(mes) && new Date(`${ontemIso}T12:00:00Z`).getUTCDay() !== 0;
   const ontem = somar(d.caixaOntem);
   return {
-    meta, vendido: ate + deHoje, ate, deHoje, restantes, metaHoje, ritmo,
+    meta, vendido: ate + deHoje, ate, deHoje, restantes, metaHoje, ritmo, esperado,
     // Quanto o ritmo atual está abaixo do necessário (0,25 = 25% abaixo).
     abaixo: metaHoje && ritmo != null && metaHoje > 0 ? Math.max(0, 1 - ritmo / metaHoje) : null,
     ontem: d.caixaOntem.length ? ontem.faturamento : null,

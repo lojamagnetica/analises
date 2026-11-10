@@ -95,7 +95,17 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
             <small className="mudo">No mês · meta {moeda(p.meta)}</small>
             <div style={{ fontSize: 20, fontWeight: 800 }}>{moeda(p.vendido)}</div>
-            <div className="barra"><i style={{ width: `${Math.min(100, Math.round((p.vendido / p.meta) * 100))}%` }} /></div>
+            {(() => {
+              const feito = Math.round((p.vendido / p.meta) * 100);
+              const deveria = Math.round(p.esperado * 100);
+              const ok = feito >= deveria;
+              return (
+                <>
+                  <div style={{ margin: "4px 0 2px" }}><b style={{ fontSize: 15, color: ok ? "var(--feito)" : "var(--red)" }}>{feito}% da meta feito</b>{deveria > 0 && <span className="mudo"> · já deveria estar em {deveria}%</span>}</div>
+                  <div className="barra" style={{ position: "relative" }}><i style={{ width: `${Math.min(100, feito)}%`, background: ok ? "var(--feito)" : undefined }} />{deveria > 0 && <span title={`Já deveria estar em ${deveria}%`} style={{ position: "absolute", left: `${Math.min(100, deveria)}%`, top: -2, bottom: -2, width: 2, background: "var(--ink)" }} />}</div>
+                </>
+              );
+            })()}
             <small>{p.vendido >= p.meta ? "Meta do mês batida! 🎉" : <>Faltam <b>{moeda(p.meta - p.vendido)}</b> em <b>{p.restantes} {p.restantes === 1 ? "dia" : "dias"}</b></>}</small>
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: p.abaixo ? "var(--orange)" : "var(--green)" }}>

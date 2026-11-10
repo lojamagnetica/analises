@@ -67,4 +67,13 @@ assert.equal(fx.celulas["3-11"], 1);
 assert.deepEqual(fx.horas, [10, 11]);
 assert.deepEqual(fx.pico, { dow: 2, hora: 10, qtd: 3 });
 assert.equal(fx.total, 4);
+
+// Vários motivos no mesmo atendimento e a observação livre
+const multi = resumoDoDia([
+  { ...a("m1", "ana", "2026-11-10T13:05:00Z", "nao_vendeu", "Tamanho / grade; Preço", "2026-11-10T13:20:00Z"), obs: "Queria casaco P de lã" },
+  a("m2", "bia", "2026-11-10T13:40:00Z", "nao_vendeu", "Preço", "2026-11-10T13:50:00Z"),
+]);
+assert.deepEqual(multi.motivos, [{ motivo: "Preço", qtd: 2 }, { motivo: "Tamanho / grade", qtd: 1 }]);
+assert.deepEqual(multi.procuravam, [{ nome: "ANA", obs: "Queria casaco P de lã", motivo: "Tamanho / grade; Preço" }]);
+assert.match(textoDoResumo("", "2026-11-10", multi), /• Queria casaco P de lã \(ANA\)/);
 console.log("lista da vez: tudo certo");

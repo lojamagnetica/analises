@@ -27,8 +27,8 @@ export const vezEntrar = (token: string) => sb().rpc("vez_entrar", { p_token: to
 export const vezSair = (token: string) => sb().rpc("vez_sair", { p_token: token });
 export const vezPassar = (token: string) => sb().rpc("vez_passar", { p_token: token });
 export const vezAtender = (token: string) => sb().rpc("vez_atender", { p_token: token });
-export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", motivo: string, cliente: string) =>
-  sb().rpc("vez_encerrar", { p_token: token, p_resultado: resultado, p_motivo: motivo, p_cliente: cliente });
+export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", motivo: string, cliente: string, obs: string) =>
+  sb().rpc("vez_encerrar", { p_token: token, p_resultado: resultado, p_motivo: motivo, p_cliente: cliente, p_obs: obs });
 export const vezCorrigir = (token: string, id: string, resultado: "vendeu" | "nao_vendeu", motivo: string) =>
   sb().rpc("vez_corrigir", { p_token: token, p_id: id, p_resultado: resultado, p_motivo: motivo });
 export const vezMissaoMarcar = (token: string, id: string, feito: boolean) => sb().rpc("vez_missao_marcar", { p_token: token, p_id: id, p_feito: feito });
@@ -45,7 +45,7 @@ export type AtendGestao = Atend & { dia: string; loja: string };
 /** loja = null: todas as lojas do portal (portal de uma loja só); com mais de uma loja, a loja em foco. */
 export async function buscarVezDoDia(portalId: string, loja: string | null, dia: string) {
   let qf = sb().from("loja_vez_fila").select("pessoa_id, loja, status, chegou_em, ordem_em").eq("portal_id", portalId).eq("dia", dia);
-  let qa = sb().from("loja_vez_atend").select("id, pessoa_id, nome, inicio_em, fim_em, resultado, motivo, cliente, fora_da_vez, dia, loja").eq("portal_id", portalId).eq("dia", dia);
+  let qa = sb().from("loja_vez_atend").select("id, pessoa_id, nome, inicio_em, fim_em, resultado, motivo, cliente, obs, fora_da_vez, dia, loja").eq("portal_id", portalId).eq("dia", dia);
   if (loja !== null) { qf = qf.eq("loja", loja); qa = qa.eq("loja", loja); }
   const [f, a, m, e] = await Promise.all([
     qf,
@@ -61,7 +61,7 @@ export async function buscarVezDoDia(portalId: string, loja: string | null, dia:
 
 export const tirarDaFila = (portalId: string, loja: string, dia: string, pessoaId: string) =>
   sb().from("loja_vez_fila").delete().eq("portal_id", portalId).eq("loja", loja).eq("dia", dia).eq("pessoa_id", pessoaId);
-export const atendEditar = (id: string, campos: { resultado: "vendeu" | "nao_vendeu" | null; motivo: string }) => sb().from("loja_vez_atend").update(campos).eq("id", id);
+export const atendEditar = (id: string, campos: { resultado: "vendeu" | "nao_vendeu" | null; motivo: string; obs: string }) => sb().from("loja_vez_atend").update(campos).eq("id", id);
 export const atendExcluir = (id: string) => sb().from("loja_vez_atend").delete().eq("id", id);
 export const missaoAdicionar = (portalId: string, dia: string, pessoas: string[], texto: string) =>
   sb().from("loja_missao_dia").insert(pessoas.map((pessoa_id) => ({ portal_id: portalId, dia, pessoa_id, texto })));

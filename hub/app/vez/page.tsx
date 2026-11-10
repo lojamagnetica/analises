@@ -48,7 +48,8 @@ function Vez() {
   const [p, setP] = useState<Painel | null | undefined>(undefined);
   const [ocupado, setOcupado] = useState(false);
   const [fechando, setFechando] = useState<null | "vendeu" | "nao_vendeu">(null);
-  const [motivo, setMotivo] = useState("");
+  const [motivos, setMotivos] = useState<string[]>([]);
+  const [obs, setObs] = useState("");
   const [outro, setOutro] = useState("");
   const [cliente, setCliente] = useState("");
   const [corrigir, setCorrigir] = useState<string | null>(null);
@@ -86,13 +87,13 @@ function Vez() {
   const { eu, espera, minha, meuAberto, md, resumo } = d;
   const cor = md ? COR[corDaMeta(md.ritmo, md.batida) as keyof typeof COR] : COR.amarela;
   const dataTxt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "long", day: "2-digit", month: "long" }).format(new Date(agora));
-  const motivoFinal = motivo === "Outro" ? (outro.trim() ? `Outro: ${outro.trim()}` : "Outro") : motivo;
+  const motivoFinal = motivos.map((m) => (m === "Outro" ? (outro.trim() ? `Outro: ${outro.trim().replace(/;/g, ",")}` : "Outro") : m)).join("; ");
   const minutos = meuAberto ? Math.max(0, Math.round((agora - new Date(meuAberto.inicio_em).getTime()) / 60000)) : 0;
 
   const salvar = async () => {
     if (!fechando) return;
-    await agir(() => vezEncerrar(token, fechando, fechando === "nao_vendeu" ? motivoFinal : "", cliente.trim()));
-    setFechando(null); setMotivo(""); setOutro(""); setCliente("");
+    await agir(() => vezEncerrar(token, fechando, fechando === "nao_vendeu" ? motivoFinal : "", cliente.trim(), fechando === "nao_vendeu" ? obs.trim() : ""));
+    setFechando(null); setMotivos([]); setOutro(""); setCliente(""); setObs("");
   };
   const motivoMsg = md
     ? md.batida ? "Meta do mês batida! 🎉 Agora cada venda é a mais."
@@ -148,17 +149,18 @@ function Vez() {
               <div style={{ marginTop: 10 }}>
                 {fechando === "nao_vendeu" && (
                   <>
-                    <b>Por que não vendeu?</b>
+                    <b>Por que não vendeu?</b> <small className="mudo">Marque um ou mais</small>
                     <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                      {MOTIVOS.map((m) => <button key={m} type="button" className={`vez-chip ${motivo === m ? "on" : ""}`} onClick={() => setMotivo(m)}>{m}</button>)}
+                      {MOTIVOS.map((m) => <button key={m} type="button" className={`vez-chip ${motivos.includes(m) ? "on" : ""}`} onClick={() => setMotivos(motivos.includes(m) ? motivos.filter((x) => x !== m) : [...motivos, m])}>{m}</button>)}
                     </div>
-                    {motivo === "Outro" && <input type="text" placeholder="Qual foi o motivo?" value={outro} onChange={(e) => setOutro(e.target.value)} maxLength={120} style={{ width: "100%", marginTop: 8, fontSize: 16 }} />}
+                    {motivos.includes("Outro") && <input type="text" placeholder="Qual foi o motivo?" value={outro} onChange={(e) => setOutro(e.target.value)} maxLength={120} style={{ width: "100%", marginTop: 8, fontSize: 16 }} />}
+                    <textarea placeholder="O que a cliente queria? (se quiser anotar. Ex.: casaco P de lã)" value={obs} onChange={(e) => setObs(e.target.value)} maxLength={300} rows={2} style={{ width: "100%", marginTop: 10, fontSize: 16, fontFamily: "inherit" }} />
                   </>
                 )}
                 <input type="text" placeholder="Nome da cliente (se quiser anotar)" value={cliente} onChange={(e) => setCliente(e.target.value)} maxLength={60} style={{ width: "100%", marginTop: 10, fontSize: 16 }} />
                 <div className="linha" style={{ gap: 8, marginTop: 10 }}>
-                  <button type="button" className="btn s" style={{ flex: 1 }} onClick={() => { setFechando(null); setMotivo(""); }}>Voltar</button>
-                  <button type="button" className="vez-btn" style={{ flex: 2 }} disabled={ocupado || (fechando === "nao_vendeu" && !motivo)} onClick={salvar}>Salvar e voltar para o final da fila</button>
+                  <button type="button" className="btn s" style={{ flex: 1 }} onClick={() => { setFechando(null); setMotivos([]); setObs(""); }}>Voltar</button>
+                  <button type="button" className="vez-btn" style={{ flex: 2 }} disabled={ocupado || (fechando === "nao_vendeu" && motivos.length === 0)} onClick={salvar}>Salvar e voltar para o final da fila</button>
                 </div>
               </div>
             )}
@@ -244,7 +246,7 @@ function Vez() {
             {[...d.meus].reverse().map((a) => (
               <div key={a.id} style={{ padding: "8px 0", borderTop: "1px solid var(--line)" }}>
                 <div className="linha entre" style={{ gap: 8 }}>
-                  <span>{horaMin(a.inicio_em)} · {a.resultado === "vendeu" ? "✅ Vendeu" : a.resultado === "nao_vendeu" ? `❌ Não vendeu${a.motivo ? `: ${a.motivo}` : ""}` : "em atendimento"}{a.cliente ? ` · ${a.cliente}` : ""}</span>
+                  <span>{horaMin(a.inicio_em)} · {a.resultado === "vendeu" ? "✅ Vendeu" : a.resultado === "nao_vendeu" ? `❌ Não vendeu${a.motivo ? `: ${a.motivo}` : ""}` : "em atendimento"}{a.cliente ? ` · ${a.cliente}` : ""}{a.obs ? ` · “${a.obs}”` : ""}</span>
                   {a.resultado && <button type="button" className="btn s peq" onClick={() => setCorrigir(corrigir === a.id ? null : a.id)}>Corrigir</button>}
                 </div>
                 {corrigir === a.id && (

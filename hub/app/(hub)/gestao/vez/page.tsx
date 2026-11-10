@@ -34,6 +34,7 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
   const [editar, setEditar] = useState<string | null>(null);
   const [res, setRes] = useState<"vendeu" | "nao_vendeu" | "">("");
   const [mot, setMot] = useState("");
+  const [obsEd, setObsEd] = useState("");
   const [paraQuem, setParaQuem] = useState("todas");
   const [texto, setTexto] = useState("");
   const [erro, setErro] = useState("");
@@ -50,7 +51,7 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
     const origem = typeof window !== "undefined" ? window.location.origin : "";
 
   const falha = (e: { message: string } | null) => { setErro(e ? `Não deu certo: ${e.message}` : ""); recarregar(); };
-  const salvarAtend = async (x: AtendGestao) => falha((await atendEditar(x.id, { resultado: res || null, motivo: res === "nao_vendeu" ? mot : "" })).error);
+  const salvarAtend = async (x: AtendGestao) => falha((await atendEditar(x.id, { resultado: res || null, motivo: res === "nao_vendeu" ? mot : "", obs: res === "nao_vendeu" ? obsEd.trim() : "" })).error);
   const adicionar = async () => {
     if (!texto.trim()) return;
     const quem = paraQuem === "todas" ? time.map((p) => p.id) : [paraQuem];
@@ -120,6 +121,14 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
                 <p className="ajuda" style={{ marginBottom: 0 }}>Cada “não” é uma pista do que comprar e de como vender melhor.</p>
               </>
             )}
+            {resumo.procuravam.length > 0 && (
+              <>
+                <b style={{ display: "block", marginTop: 14 }}>O que as clientes procuravam</b>
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                  {resumo.procuravam.map((x, i) => <li key={i}>{x.obs} <span className="mudo">· {x.nome.split(" ")[0]}{x.motivo ? ` · ${x.motivo.replace(/;/g, ",")}` : ""}</span></li>)}
+                </ul>
+              </>
+            )}
             {resumo.foraDaVez > 0 && <p className="ajuda" style={{ marginBottom: 0 }}>{resumo.foraDaVez} atendimento{resumo.foraDaVez === 1 ? "" : "s"} fora da vez.</p>}
             <div className="linha mt" style={{ gap: 8 }}><Copiar texto={textoDoResumo(loja ?? "", dia, resumo)} rotulo="Copiar o resumo para o WhatsApp" /></div>
           </>
@@ -160,16 +169,17 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
         {dados.atend.length ? [...dados.atend].reverse().map((x) => (
           <div key={x.id} style={{ padding: "8px 0", borderTop: "1px solid var(--line)" }}>
             <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-              <span>{horaMin(x.inicio_em)} · <b>{nomeDe(x.pessoa_id) || x.nome.split(" ")[0]}</b> · {x.resultado === "vendeu" ? "✅ vendeu" : x.resultado === "nao_vendeu" ? `❌ não vendeu${x.motivo ? `: ${x.motivo}` : ""}` : "em atendimento"}{x.cliente ? ` · ${x.cliente}` : ""}{x.fora_da_vez ? <span className="mudo"> · fora da vez</span> : null}</span>
+              <span>{horaMin(x.inicio_em)} · <b>{nomeDe(x.pessoa_id) || x.nome.split(" ")[0]}</b> · {x.resultado === "vendeu" ? "✅ vendeu" : x.resultado === "nao_vendeu" ? `❌ não vendeu${x.motivo ? `: ${x.motivo}` : ""}` : "em atendimento"}{x.cliente ? ` · ${x.cliente}` : ""}{x.obs ? ` · “${x.obs}”` : ""}{x.fora_da_vez ? <span className="mudo"> · fora da vez</span> : null}</span>
               <span className="linha" style={{ gap: 6 }}>
-                <button type="button" className="btn s peq" onClick={() => { setEditar(editar === x.id ? null : x.id); setRes(x.resultado ?? ""); setMot(x.motivo); }}>Editar</button>
+                <button type="button" className="btn s peq" onClick={() => { setEditar(editar === x.id ? null : x.id); setRes(x.resultado ?? ""); setMot(x.motivo); setObsEd(x.obs ?? ""); }}>Editar</button>
                 <button type="button" className="btn s peq" onClick={async () => { if (confirm("Excluir este atendimento?")) falha((await atendExcluir(x.id)).error); }}>Excluir</button>
               </span>
             </div>
             {editar === x.id && (
               <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
                 <select value={res} onChange={(e) => setRes(e.target.value as typeof res)}><option value="">Em atendimento</option><option value="vendeu">Vendeu</option><option value="nao_vendeu">Não vendeu</option></select>
-                {res === "nao_vendeu" && <select value={mot} onChange={(e) => setMot(e.target.value)}><option value="">Motivo</option>{MOTIVOS.map((o) => <option key={o}>{o}</option>)}</select>}
+                {res === "nao_vendeu" && <select value={mot} onChange={(e) => setMot(e.target.value)}><option value="">Motivo</option>{[...new Set([...(mot && !MOTIVOS.includes(mot) ? [mot] : []), ...MOTIVOS])].map((o) => <option key={o}>{o}</option>)}</select>}
+                {res === "nao_vendeu" && <input type="text" placeholder="O que a cliente queria" value={obsEd} onChange={(e) => setObsEd(e.target.value)} maxLength={300} style={{ minWidth: 220 }} />}
                 <button type="button" className="btn p peq" onClick={async () => { await salvarAtend(x); setEditar(null); }}>Salvar</button>
               </div>
             )}

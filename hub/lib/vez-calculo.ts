@@ -3,10 +3,10 @@
 
 export type Atend = {
   id: string; pessoa_id: string | null; nome: string; inicio_em: string; fim_em: string | null;
-  resultado: "vendeu" | "nao_vendeu" | null; motivo: string; cliente: string; fora_da_vez?: boolean;
+  resultado: "vendeu" | "nao_vendeu" | null; motivo: string; cliente: string; obs?: string; fora_da_vez?: boolean;
 };
 
-/** Os motivos de "não vendeu" que mais aparecem (do método). */
+/** Os motivos de "não vendeu" que mais aparecem (do método). Cada atendimento pode ter mais de um, separados por ponto e vírgula. */
 export const MOTIVOS = ["Preço", "Tamanho / grade", "Modelagem", "Cor ou estampa", "Insegurança na compra", "Forma de pagamento", "Troca", "Só passeando", "Defeito", "Outro"];
 
 const FUSO = "America/Recife";
@@ -22,6 +22,8 @@ export type ResumoDia = {
   porPessoa: { nome: string; total: number; vendeu: number; conversao: number | null }[];
   porHora: { hora: number; total: number; vendeu: number }[];
   motivos: { motivo: string; qtd: number }[];
+  /** O que a cliente procurava e não levou (a observação livre de quem atendeu). */
+  procuravam: { nome: string; obs: string; motivo: string }[];
 };
 
 const taxa = (v: number, t: number) => (t ? v / t : null);
@@ -45,7 +47,10 @@ export function resumoDoDia(atends: Atend[]): ResumoDia {
     horas.set(h, x);
   }
   const motivos = new Map<string, number>();
-  for (const a of fechados) if (a.resultado === "nao_vendeu") { const m = a.motivo.trim() || "Sem motivo"; motivos.set(m, (motivos.get(m) ?? 0) + 1); }
+  for (const a of fechados) if (a.resultado === "nao_vendeu") {
+    const lista = a.motivo.split(";").map((m) => m.trim()).filter(Boolean);
+    for (const m of lista.length ? lista : ["Sem motivo"]) motivos.set(m, (motivos.get(m) ?? 0) + 1);
+  }
   const duracoes = fechados.filter((a) => a.fim_em).map((a) => (new Date(a.fim_em!).getTime() - new Date(a.inicio_em).getTime()) / 60000).filter((m) => m >= 0 && m < 240);
   return {
     total: atends.length, vendeu, naoVendeu, abertos: atends.length - fechados.length, conversao: taxa(vendeu, fechados.length),
@@ -54,6 +59,7 @@ export function resumoDoDia(atends: Atend[]): ResumoDia {
     porPessoa: [...pessoas.values()].map((p) => ({ ...p, conversao: taxa(p.vendeu, p.total) })).sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome)),
     porHora: [...horas.values()].sort((a, b) => a.hora - b.hora),
     motivos: [...motivos.entries()].map(([motivo, qtd]) => ({ motivo, qtd })).sort((a, b) => b.qtd - a.qtd),
+    procuravam: fechados.filter((a) => a.resultado === "nao_vendeu" && (a.obs ?? "").trim()).map((a) => ({ nome: a.nome, obs: (a.obs ?? "").trim(), motivo: a.motivo })),
   };
 }
 
@@ -119,6 +125,7 @@ export function textoDoResumo(loja: string, dia: string, r: ResumoDia) {
     linhas.push("", `Horário de maior movimento: ${pico.hora}h (${pico.total} atendimentos)`);
   }
   if (r.motivos.length) linhas.push("", "*Por que não vendeu*", ...r.motivos.slice(0, 5).map((x) => `${x.motivo}: ${x.qtd}`));
+  if (r.procuravam.length) linhas.push("", "*O que as clientes procuravam*", ...r.procuravam.slice(0, 8).map((x) => `• ${x.obs} (${x.nome})`));
   return linhas.join("\n");
 }
 

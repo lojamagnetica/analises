@@ -32,6 +32,27 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   ok(banco.chamadas.some((c) => c.rpc === "vez_missao_marcar" && c.args.p_feito === true), "dá o check na missão do dia");
   await page.close();
 }
+// 1b) Não vendeu: vários motivos e uma observação livre
+{
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  page.on("pageerror", (e) => console.log("erro na página:", e.message));
+  const painel = { pessoa: { id: "e1", nome: "Ana", loja: "" }, hoje, fila: [{ pessoa_id: "e1", nome: "Ana", status: "atendendo", chegou_em: agora, ordem_em: agora }],
+    atend: [{ id: "a1", pessoa_id: "e1", nome: "Ana", inicio_em: agora, fim_em: null, resultado: null, motivo: "", cliente: "", obs: "" }], missoes: [],
+    mes: null, plano: { meta_loja: null, ajustes: {}, vendedoras: [] }, mural: { pa: 2.5, tkm: null } };
+  const banco = await simular(page, { rpc: { vez_painel: () => painel, vez_encerrar: () => null }, tabelas: lojaBase().tabelas });
+  await page.goto(`${BASE}/vez/?t=${TOKEN}`);
+  await page.getByRole("button", { name: "Não vendeu" }).click();
+  const salvar = page.getByRole("button", { name: /Salvar e voltar/ });
+  ok(await salvar.isDisabled(), "não salva sem marcar o motivo");
+  await page.getByRole("button", { name: "Tamanho / grade" }).click();
+  await page.getByRole("button", { name: "Preço", exact: true }).click();
+  await page.getByPlaceholder(/O que a cliente queria/).fill("Casaco P de lã");
+  await salvar.click();
+  await page.waitForTimeout(400);
+  const c = banco.chamadas.find((x) => x.rpc === "vez_encerrar");
+  ok(c && c.args.p_motivo === "Tamanho / grade; Preço" && c.args.p_obs === "Casaco P de lã" && c.args.p_resultado === "nao_vendeu", "guarda os motivos marcados e o que a cliente queria");
+  await page.close();
+}
 // 2) Link que não vale
 {
   const page = await browser.newPage();
@@ -50,7 +71,7 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   const banco = await simular(page, { tabelas: { ...l.tabelas,
     loja_equipe: [{ id: "e1", portal_id: l.portal, nome: "Ana Souza", funcao: "Vendedora", ativo: true, loja: null, vez_token: TOKEN }, { id: "e2", portal_id: l.portal, nome: "Bia Lima", funcao: "Vendedora", ativo: true, loja: null, vez_token: "99999999-2222-3333-4444-555555555555" }],
     loja_vez_fila: [{ portal_id: l.portal, loja: "", dia: hoje, pessoa_id: "e2", status: "fila", chegou_em: agora, ordem_em: agora }],
-    loja_vez_atend: [A("a1", "e1", "Ana Souza", "vendeu", ""), A("a2", "e1", "Ana Souza", "nao_vendeu", "Preço"), A("a3", "e2", "Bia Lima", "nao_vendeu", "Preço")],
+    loja_vez_atend: [A("a1", "e1", "Ana Souza", "vendeu", ""), { ...A("a2", "e1", "Ana Souza", "nao_vendeu", "Preço"), obs: "Queria casaco P de lã" }, A("a3", "e2", "Bia Lima", "nao_vendeu", "Preço")],
     loja_missao_dia: [{ id: "m1", portal_id: l.portal, dia: hoje, pessoa_id: "e1", texto: "Mostrar a vitrine nova", feito: true, feito_em: agora }],
   } });
   await page.goto(`${BASE}/gestao/vez/`);
@@ -63,6 +84,7 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   ok(await page.getByText("Fluxo dos últimos 30 dias").count() === 1, "mostra o mapa de fluxo por dia da semana e horário");
   ok(await page.getByText("Preço", { exact: true }).count() >= 1, "mostra os motivos que mais aparecem");
   ok(await page.getByText("Mostrar a vitrine nova").count() === 1, "mostra a missão do dia e o check");
+  ok(await page.getByText("O que as clientes procuravam").count() === 1 && await page.getByText("Queria casaco P de lã").count() >= 1, "mostra o que as clientes procuravam");
   ok(await page.getByRole("link", { name: "Abrir" }).count() === 2, "mostra o link de cada vendedora");
   await page.close();
 }

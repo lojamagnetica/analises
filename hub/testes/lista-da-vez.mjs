@@ -125,5 +125,31 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   const txt = await atalho.innerText();
   ok(/Ana/.test(txt) && /2 · 1✓ 1✗/.test(txt), "mostra os atendimentos de hoje da Ana (2: 1 venda e 1 não)");
   ok(/(\d+) · 2✓ 1✗/.test(txt) && /Bia/.test(txt), "mostra os atendimentos do mês e a Bia sem atendimentos");
+  await page.close();
+}
+// 6) Atalhos do Início: leitura da semana como atalho, novidade em verde até abrir, e sem Cursos, Instagram e Consultoria
+{
+  const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
+  page.on("pageerror", (e) => console.log("erro na página:", e.message));
+  const l = lojaBase({ tipo: "Consultoria" });
+  await simular(page, { tabelas: { ...l.tabelas,
+    loja_leituras: [{ id: "l1", portal_id: l.portal, semana: hoje, texto: "A semana foi boa.", acoes: [], autor_nome: "Camilla", rascunho: null, publicada: true, publicada_em: agora, updated_at: agora, pronta: false }],
+    loja_equipe: [], loja_vez_atend: [],
+  } });
+  await page.goto(`${BASE}/inicio/`);
+  await page.getByText("Seus atalhos").waitFor();
+  const leitura = page.locator("a.atalho", { hasText: "Leitura da semana" });
+  await leitura.waitFor();
+  await page.locator("a.atalho.novo").first().waitFor();
+  ok(/novidade/i.test(await leitura.innerText()), "a leitura nova deixa o atalho verde");
+  ok(await page.getByText("A semana foi boa.").count() === 0, "a leitura não fica mais aberta no Início");
+  ok(await page.locator("a.atalho", { hasText: "Cursos" }).count() === 0 && await page.locator("a.atalho", { hasText: "Análise do Instagram" }).count() === 0 && await page.locator("a.atalho", { hasText: /^Consultoria/ }).count() === 0, "sem os atalhos de Cursos, Análise do Instagram e Consultoria");
+  await leitura.click();
+  await page.getByRole("heading", { name: "Leitura da semana" }).waitFor();
+  await page.goBack();
+  await page.getByText("Seus atalhos").waitFor();
+  await page.locator("a.atalho", { hasText: "Leitura da semana" }).waitFor();
+  await page.waitForTimeout(600);
+  ok(!/novidade/i.test(await page.locator("a.atalho", { hasText: "Leitura da semana" }).innerText()), "depois de abrir, o atalho deixa de ficar verde");
   await browser.close();
 }

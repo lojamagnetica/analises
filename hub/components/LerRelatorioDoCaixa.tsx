@@ -67,12 +67,11 @@ export function LerRelatorioDoCaixa({ portalId, loja, equipe, aoLancar }: { port
         <>
           <div className="tabela-wrap mt">
             <table className="tabela">
-              <thead><tr><th>Dia</th><th>Faturamento</th><th>Vendas</th><th>Peças</th><th>Quem vendeu</th></tr></thead>
+              <thead><tr><th>Dia</th><th>Faturamento</th><th>Vendas</th><th>Peças</th></tr></thead>
               <tbody>
                 {dias.map((d) => (
                   <tr key={d.dia} style={NUM}>
-                    <td>{dataBr(d.dia)}</td><td>{moeda(d.faturamento)}</td><td>{d.vendas}</td><td>{d.pecas}</td>
-                    <td style={{ fontSize: 12.5 }}>{d.vendedoras.map((v) => `${bonito(v.nome.split(" ")[0])} ${moeda(v.faturamento)}`).join(" · ")}</td>
+                    <td>{dataBr(d.dia)}<div className="mudo" style={{ fontSize: 11.5 }}>{d.vendedoras.map((v) => `${bonito(v.nome.split(" ")[0])} ${moeda(v.faturamento)}`).join(" · ")}</div></td><td>{moeda(d.faturamento)}</td><td>{d.vendas}</td><td>{d.pecas}</td>
                   </tr>
                 ))}
               </tbody>

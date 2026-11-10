@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@600;700&display=swap">
-<title>Fechando o caixa no Hub</title>
+<title>Fechando o caixa no portal</title>
 <style>
 /* Aula interativa em cenas: o celular à esquerda mostra a tela do Hub, a fala (teleprompter) à direita. Paleta da marca: tinta quente, laranja queimado, verde de "feito". */
 :root{
@@ -31,9 +31,13 @@ h1,h2,h3{font-family:var(--f-titulo);margin:0;text-wrap:balance;line-height:1.15
 .palco{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:24px;align-items:start}
 @media(max-width:780px){.palco{grid-template-columns:1fr}}
 
+
+.shotwrap{flex:1;overflow:hidden;background:var(--tela)}
+.shotwrap img.shot{display:block;width:100%;height:auto;transition:transform 1.6s ease}
+@media(prefers-reduced-motion:reduce){.shotwrap img.shot{transition:none}}
 /* celular */
 .fone{background:var(--fone);border-radius:34px;padding:10px;width:100%;max-width:340px;margin:0 auto;box-shadow:0 18px 40px rgba(0,0,0,.18)}
-.tela{background:var(--tela);border-radius:26px;height:560px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+.tela{background:var(--tela);border-radius:26px;height:600px;overflow:hidden;position:relative;display:flex;flex-direction:column}
 .barra-app{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 8px}
 .menu-btn{background:var(--ink);color:var(--bg);border-radius:99px;font:700 12px var(--f-texto);padding:7px 12px}
 .zap{width:28px;height:28px;border-radius:50%;background:#25D366;display:grid;place-items:center;color:#fff;font-size:13px}
@@ -97,7 +101,7 @@ html,body{margin:0}
 
 <div class="pagina">
   <div class="topo">
-    <div><h1>Fechando o caixa no Hub</h1><small>Aula de 3 minutos para a equipe e para o ADM · dados de exemplo</small></div>
+    <div><h1>Fechando o caixa no portal</h1><small>Aula de 3 minutos para a equipe e para o ADM · tela real do portal, dados de exemplo</small></div>
   </div>
 
   <div class="palco">
@@ -134,61 +138,34 @@ html,body{margin:0}
 
 <script>
 /* Cenas: cada uma tem a tela do celular (html), a fala em frases curtas e o tempo. Elementos com data-t aparecem no ms indicado. */
-const bolas=(cls)=>`<div class="dias">${["seg","ter","qua","qui","sex","sáb"].map((d,i)=>`<div class="dia"><div class="bola ${cls[i]||""}">${(cls[i]||"").includes("ok")?"✓":(cls[i]||"").includes("falta")?"!":""}</div>${d}</div>`).join("")}</div>`;
-const topo=`<div class="barra-app"><span class="menu-btn">☰ Menu</span><span class="zap">✆</span></div>`;
+const IMGS={"inicio":"img/inicio.jpg","caixa_toda_antes":"img/caixa_toda_antes.jpg","caixa_toda_depois":"img/caixa_toda_depois.jpg","caixa_manual":"img/caixa_manual.jpg","envios":"img/envios.jpg"};
+const shot=(n)=>`<div class="shotwrap"><img class="shot" src="${IMGS[n]}" alt=""></div>`;
 
-const CENAS = {
-  abertura:{rot:"Abertura",tit:"O caixa fechado todo dia",dur:15000,
-    fala:["Fechar o caixa leva poucos minutos.","E é ele que alimenta tudo no Hub:","o resultado do mês, a meta e o ranking.","E tem mais: na segunda, a Camilla analisa a semana da sua loja,","e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado.","Mas só para quem fechou o caixa de todos os dias.","Caixa incompleto na segunda? A análise vem só na segunda seguinte."],
-    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Início</div>
-      <div class="cartao" data-t="400"><h4>🧾 Caixa desta semana</h4>${bolas(["ok","ok","ok","","",""])}</div>
-      <div class="cartao" data-t="2400"><h4>No mês · meta R$ 80.000</h4><div class="mini">35% da meta feito · já deveria estar em 28%</div></div>
-      <div class="cartao" data-t="4600"><h4>🏆 Ranking de vendas</h4><div class="mini">1º Ana · 2º Bia · 3º Carla</div></div>
-      <div class="cartao" data-t="6800"><h4>📊 Análise da Camilla</h4><div class="mini">Segunda, para quem fechou a semana 100%.</div></div></div>`},
+const topo=`<div class="barra-app"><span class="menu-btn">☰ Menu</span><span class="zap">✆</span></div>`;
+const CENAS={
+  abertura:{rot:"Abertura",tit:"O caixa fechado todo dia",dur:26000,
+    fala:["Olá, Magnéticos!","Fechar o caixa leva poucos minutos.","E é ele que alimenta tudo no portal:","o resultado do mês, a meta e o ranking.","E tem mais: na segunda, a Camilla analisa a semana da sua loja,","e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado.","Mas só para quem fechou o caixa de todos os dias.","Caixa incompleto na segunda? A análise vem só na segunda seguinte."],
+    tela:()=>shot("inicio"),pan:[[0,0],[7000,480],[16000,1500]]},
   caminhos:{rot:"Escolha o seu caminho",tit:"Dois jeitos de fechar",dur:16000,escolha:true,
     fala:["Existem dois caminhos.","Se a sua loja tem sistema,","você sobe até três arquivos do fechamento do dia.","Se não tem sistema,","você preenche à mão, todos os dias.","Toque no seu caminho para ver como é."],
-    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Fechamento de caixa</div>
-      <div class="cartao" data-t="500"><h4>📄 Tenho sistema</h4><p class="mini">Subo até 3 arquivos (PDF, Excel ou foto) com as vendas do dia.</p></div>
-      <div class="cartao" data-t="2500"><h4>✍️ Não tenho sistema</h4><p class="mini">Digito: quanto cada vendedora vendeu, vendas, peças e formas de pagamento.</p></div></div>`},
-  subir:{rot:"Caminho 1 · Tenho sistema",tit:"Suba os arquivos do fechamento",dur:22000,
-    fala:["No Fechamento de caixa, toque em “Escolher o PDF”.","Pode subir até três arquivos de uma vez.","O Hub lê no seu aparelho, o arquivo não sai dele.","Você confere o dia, por vendedora.","Tudo certo? Toque em “Lançar o dia”.","Pronto: o caixa e os produtos mais vendidos ficam registrados."],
-    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Fechamento de caixa</div>
-      <div class="cartao"><h4>Lançar pelo relatório do sistema</h4><p class="mini">Suba o PDF “Lista de Vendas”.</p>
-        <div style="margin-top:8px"><span class="btn p pulsa">Escolher o PDF (até 3)</span></div></div>
-      <div class="cartao" data-t="4000"><h4>Arquivos do caixa</h4>
-        <div class="campo" style="margin-bottom:5px"><span>📎 vendas-dia.pdf</span><b>✓</b></div>
-        <div class="campo" data-t="5200" style="margin-bottom:5px"><span>📎 pagamentos.pdf</span><b>✓</b></div>
-        <div class="campo" data-t="6200"><span>📎 troca-vale.pdf</span><b>✓</b></div></div>
-      <div class="cartao" data-t="8500"><table><tr><th>Dia</th><th>Faturamento</th><th>Vendas</th></tr><tr><td>10/11</td><td>R$ 4.250</td><td>9</td></tr></table>
-        <div class="mini" style="margin-top:4px">Ana R$ 2.600 · Bia R$ 1.650</div></div>
-      <div class="cartao" data-t="12000" style="display:flex;gap:8px"><span class="btn v pulsa">Lançar o dia</span><span class="btn">Cancelar</span></div>
-      <div class="cartao" data-t="15500" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito);font-size:13px">✓ 1 dia lançado com os produtos vendidos.</b></div></div>`},
+    tela:()=>shot("caixa_toda_antes"),pan:[[0,0],[5000,2444],[10500,500]]},
+  subir:{rot:"Caminho 1 · Tenho sistema",tit:"Suba os arquivos do fechamento",dur:24000,
+    fala:["No Fechamento de caixa, toque em “Escolher o PDF”.","Pode subir até três arquivos de uma vez.","O portal lê no seu aparelho, o arquivo não sai dele.","Você confere o dia, por vendedora.","Tudo certo? Toque em “Lançar o dia”.","Pronto: o caixa e os produtos mais vendidos ficam registrados."],
+    tela:()=>shot("caixa_toda_antes"),pan:[[0,2444]],troca:[[9000,"caixa_toda_depois"]]},
   manual:{rot:"Caminho 2 · Não tenho sistema",tit:"Preencha à mão, todo dia",dur:22000,
     fala:["Sem sistema, você digita ao fechar a loja.","Escolha o dia.","Coloque o que cada vendedora vendeu:","faturamento, vendas e peças.","Depois, as formas de pagamento.","Toque em “Salvar”. Leva dois minutos.","Faça isso todos os dias, sem pular."],
-    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Fechamento de caixa</div>
-      <div class="cartao"><h4>Lançar o dia</h4>
-        <div class="campo"><span>Dia</span><b>10/11/2026</b></div>
-        <table data-t="2500" style="margin-top:8px"><tr><th>Quem vendeu</th><th>R$</th><th>Vendas</th><th>Peças</th></tr>
-          <tr><td>Ana</td><td>2.600</td><td>5</td><td>11</td></tr><tr data-t="4000"><td>Bia</td><td>1.650</td><td>4</td><td>8</td></tr></table>
-        <div class="campo" data-t="6500" style="margin-top:8px"><span>Pix</span><b>1.900</b></div>
-        <div class="campo" data-t="7600" style="margin-top:4px"><span>Crédito</span><b>2.350</b></div></div>
-      <div class="cartao" data-t="10500" style="display:flex;gap:8px"><span class="btn p pulsa">Salvar</span></div>
-      <div class="cartao" data-t="14500" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito);font-size:13px">✓ Fechamento de 10/11 salvo.</b></div></div>`},
-  semana:{rot:"Acompanhe",tit:"Verde enviado, vermelho esquecido",dur:16000,
+    tela:()=>shot("caixa_manual"),pan:[[0,350],[8000,700],[15000,1150]]},
+  semana:{rot:"Acompanhe",tit:"Verde enviado, vermelho esquecido",dur:20000,
     fala:["Na tela de Envios você vê a semana.","Dia com caixa enviado fica verde.","Dia que passou sem caixa fica vermelho.","Se ficou vermelho, lance o que faltou antes da segunda.","Semana toda verde: a Camilla analisa e você recebe as ações personalizadas.","Se ficar vermelho na segunda, a análise vai para a próxima."],
-    tela:()=>`${topo}<div class="corpo"><div class="t-pag">Envios</div>
-      <div class="cartao"><h4>🧾 Caixa desta semana</h4><div id="sem">${bolas(["ok","ok","falta","ok","hoje","" ])}</div>
-        <div style="margin-top:8px" data-t="5500"><span class="btn p peq pulsa">Lançar o dia que falta</span></div></div>
-      <div class="cartao" data-t="9000"><h4>Conferência</h4><p class="mini">Abra o relatório do sistema e compare com estes números.</p>
-        <div style="margin-top:6px"><span class="btn v">✓ Conferi: bate com o sistema</span></div></div></div>`},
-  fim:{rot:"Resumo",tit:"Combinado de todo dia",dur:14000,
+    tela:()=>shot("envios"),pan:[[0,450],[10000,1000]]},
+  fim:{rot:"Resumo",tit:"Combinado de todo dia",dur:15000,
     fala:["Combinado simples:","todo dia, ao fechar a loja, o caixa entra.","Com sistema: suba os arquivos.","Sem sistema: preencha à mão.","Caixa em dia é loja que enxerga o próprio resultado."],
     tela:()=>`${topo}<div class="corpo"><div class="t-pag">Todo dia, ao fechar</div>
       <div class="cartao" data-t="300"><h4>📄 Tenho sistema</h4><p class="mini">Até 3 arquivos no Fechamento de caixa.</p></div>
-      <div class="cartao" data-t="2200"><h4>✍️ Não tenho sistema</h4><p class="mini">Preencho os números do dia.</p></div>
-      <div class="cartao" data-t="4200" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">✓ Check verde no dia = caixa enviado</b></div></div>`}
+      <div class="cartao" data-t="3000"><h4>✍️ Não tenho sistema</h4><p class="mini">Preencho os números do dia.</p></div>
+      <div class="cartao" data-t="6000" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">✓ Check verde no dia = caixa enviado</b></div></div>`}
 };
-let ordem=["abertura","caminhos","subir","manual","semana","fim"];
+let ordem=["abertura", "caminhos", "subir", "manual", "semana", "fim"];
 let ritmo=1.0,atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
 const sintese=("speechSynthesis" in window)?window.speechSynthesis:null;
 function escolheVoz(){const v=sintese?sintese.getVoices():[];const br=v.filter(x=>/pt[-_]BR/i.test(x.lang));
@@ -199,22 +176,22 @@ function fala(c){
   if(!sintese.getVoices().length){falou=true;return}
   falou=false;
   const vz=escolheVoz();
-  const en=sintese.getVoices().find(x=>/^en[-_]US/i.test(x.lang))||sintese.getVoices().find(x=>/^en/i.test(x.lang))||null;
-  /* "Hub" e "Deyvid" (David) são lidos em inglês; o resto em português */
-  const partes=(t)=>t.split(/\b(Hub|Deyvid)\b/).filter(x=>x!=="").map(x=>x==="Hub"?{t:"Hub",en:true}:x==="Deyvid"?{t:"David",en:true}:{t:x,en:false});
-  c.fala.forEach((txt,k)=>{const ps=partes(txt);
-    ps.forEach((pt,m)=>{const u=new SpeechSynthesisUtterance(pt.t);
-      if(pt.en){u.lang="en-US";if(en)u.voice=en}else{u.lang="pt-BR";if(vz)u.voice=vz}
-      u.rate=ritmo;
-      if(m===0)u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
-      if(k===c.fala.length-1&&m===ps.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
-      sintese.speak(u)})});
+  c.fala.forEach((txt,k)=>{const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";u.rate=ritmo;if(vz)u.voice=vz;
+    u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
+    if(k===c.fala.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
+    sintese.speak(u)});
 }
 function paraFala(){if(sintese)sintese.cancel()}
 
 const $=(s)=>document.querySelector(s);
 function montaTrilho(){$("#trilho").innerHTML=ordem.map((_,i)=>`<button aria-label="Ir para a cena ${i+1}" data-i="${i}"><i></i></button>`).join("");
   $("#trilho").querySelectorAll("button").forEach(b=>b.onclick=()=>ir(+b.dataset.i));}
+function animaTela(c){
+  const w=document.querySelector("#tela .shotwrap");if(!w)return;
+  const im=w.querySelector("img.shot");
+  (c.pan||[[0,0]]).forEach(([t,y])=>timers.push(setTimeout(()=>{im.style.transform=`translateY(${-y*(w.clientWidth/780)}px)`},t)));
+  (c.troca||[]).forEach(([t,n])=>timers.push(setTimeout(()=>{im.src=IMGS[n]},t)));
+}
 function limpa(){timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf);paraFala()}
 let raf=0;
 function ir(i){
@@ -222,6 +199,7 @@ function ir(i){
   const c=CENAS[ordem[atual]];
   $("#rot").textContent=`Cena ${atual+1} de ${ordem.length} · ${c.rot}`;$("#tit").textContent=c.tit;
   $("#tela").innerHTML=c.tela();
+  animaTela(c);
   $("#fala").innerHTML=c.fala.map((f,k)=>`<p data-k="${k}">${f}</p>`).join("");
   $("#escolha").hidden=!c.escolha;
   $("#trilho").querySelectorAll("button").forEach((b,k)=>{b.classList.toggle("feita",k<atual);b.querySelector("i").style.width=k<atual?"100%":"0"});

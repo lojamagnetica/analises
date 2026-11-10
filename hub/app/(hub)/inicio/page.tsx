@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
 import { Carregando, primeiroNome, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { buscarContratoFoco } from "@/lib/foco";
@@ -16,22 +16,23 @@ import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { VezNoAtalho } from "@/components/VezNoAtalho";
-import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
+import { CaixaDaSemana } from "@/components/LeituraDaSemana";
+import { chaveDoAtalho, lerVisto, marcarVisto, temNovidade } from "@/lib/atalho-novo";
+import { buscarNovidades } from "@/lib/novidades-atalhos";
 import { RankingDoMes } from "@/components/RankingVendedoras";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 import { areaFechada } from "@/lib/bussola";
 
 const ATALHOS = [
   { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
+  { href: "/leitura", rotulo: "Leitura da semana", icone: "chart", cor: "var(--purple)" },
   { href: "/gestao/vez", rotulo: "Lista da vez", icone: "users", cor: "var(--orange)" },
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
-  { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta", cor: "var(--orange)" },
   // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
   { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
   { href: "/assistente", rotulo: "Fale com a Camilla", icone: "chat", cor: "var(--purple)" },
-  { href: "/cursos", rotulo: "Cursos", icone: "play", cor: "var(--blue)" },
 ];
 
 const PASSOS_ENTRADA = [
@@ -45,6 +46,9 @@ export default function Inicio() {
   const consultoria = portal.tipo === "Consultoria";
   const mes = mesAtual();
   useEffect(() => { document.title = "Início · magnética.hub"; }, []);
+  // Atalhos que ficam verdes quando tem novidade que a pessoa ainda não abriu (neste aparelho).
+  const { dados: novidades } = useDados(() => buscarNovidades(portal.id, equipe).catch(() => ({} as Record<string, string>)), [portal.id, equipe]);
+  const [vistos, setVistos] = useState<Record<string, string>>({});
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
@@ -96,15 +100,20 @@ export default function Inicio() {
   const ocultos = portal.menu_oculto ?? [];
   const escondido = (href: string) => ocultos.includes(href.split("?")[0]) || (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
   const mesProx = mesesDoInicio().proximo;
-  const atalhos = (consultoria
-    ? ATALHOS.map((a) => (a.href === "/plano" ? { ...a, href: "/consultoria", rotulo: "Consultoria", icone: "chart" } : a))
-    : ATALHOS)
+  // Consultoria: sem o atalho do Plano 90 dias nem o da própria Consultoria (a gestão usa o Planner, a Lista da vez e as Reuniões).
+  const atalhos = (consultoria ? ATALHOS.filter((a) => a.href !== "/plano") : ATALHOS)
+    // A análise da semana e do mês fica à mão da gestão (consultoria).
+    .concat(consultoria ? [{ href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users", cor: "var(--blue)" }] : [])
     // Loja na mão: o atalho do caixa vira Registrar venda.
     .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
     // Loja sem equipe não tem fila de atendimento.
     .filter((a) => !(a.href === "/gestao/vez" && portal.sem_equipe))
     .filter((a) => !escondido(a.href));
+  const comNovidade = (href: string) => {
+    const k = chaveDoAtalho(href);
+    return !!novidades?.[k] && !trancado(href) && temNovidade(novidades[k], vistos[k] ?? lerVisto(portal.id, href));
+  };
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;
   const trancado = (href: string) => { if (!equipe && areaFechada(href)) return true;
@@ -174,8 +183,7 @@ export default function Inicio() {
         )}
       </div>
 
-      {/* A leitura da semana da Camilla, logo depois da boas-vindas. */}
-      {!onboarding && <><LeituraDaSemana /><CaixaDaSemana /><RankingDoMes /></>}
+      {!onboarding && <><CaixaDaSemana /><RankingDoMes /></>}
 
       {entradaAberta && ent && (
         <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
@@ -239,9 +247,11 @@ export default function Inicio() {
       <div className="atalhos">
         {/* Atalhos com cadeado (liberados em outra etapa) ficam no fim. */}
         {[...atalhos.filter((a) => !trancado(a.href)), ...atalhos.filter((a) => trancado(a.href))].map((a) => (
-          <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor, ...(a.href === "/gestao/vez" && !trancado(a.href) ? { gridColumn: "span 2" } : {}) }}>
+          <Link key={a.href} href={a.href} className={`atalho${comNovidade(a.href) ? " novo" : ""}`} style={{ ["--c" as string]: a.cor, ...(a.href === "/gestao/vez" && !trancado(a.href) ? { gridColumn: "span 2" } : {}) }}
+            onClick={() => { const k = chaveDoAtalho(a.href); setVistos((v) => ({ ...v, [k]: marcarVisto(portal.id, a.href) })); }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
+            {comNovidade(a.href) && <small className="novidade">novidade</small>}
             {/* Lista da vez: os atendimentos de cada vendedora, hoje e no mês. */}
             {a.href === "/gestao/vez" && !trancado(a.href) && <VezNoAtalho />}
             {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}

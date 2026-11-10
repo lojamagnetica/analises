@@ -120,12 +120,12 @@ html,body{margin:0}
       <button class="btn p" id="play">▶ Começar a aula</button>
       <button class="btn" id="prox">Próxima ▶</button>
       <button class="btn" id="voz" aria-pressed="true">🔊 Voz ligada</button>
-      <button class="btn" id="vel">Ritmo: rápido</button>
+      <button class="btn" id="vel">Ritmo: normal</button>
       <span class="grow" id="status"></span>
     </div>
   </div>
 
-  <details class="roteiro">
+  <details class="roteiro" id="roteiro-box" hidden>
     <summary>Roteiro para gravar (teleprompter)</summary>
     <pre id="roteiro"></pre>
     <button class="btn" id="copiar" style="margin-top:10px">Copiar o roteiro</button>
@@ -139,12 +139,12 @@ const topo=`<div class="barra-app"><span class="menu-btn">☰ Menu</span><span c
 
 const CENAS = {
   abertura:{rot:"Abertura",tit:"O caixa fechado todo dia",dur:15000,
-    fala:["Fechar o caixa leva poucos minutos.","E é ele que alimenta tudo no Hub:","o resultado do mês, a meta, o ranking","e a leitura da sua semana.","Sem caixa lançado, não tem leitura."],
+    fala:["Fechar o caixa leva poucos minutos.","E é ele que alimenta tudo no Hub:","o resultado do mês, a meta e o ranking.","E tem mais: na segunda, a Camilla analisa a semana da sua loja,","e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado.","Mas só para quem fechou o caixa de todos os dias.","Caixa incompleto na segunda? A análise vem só na segunda seguinte."],
     tela:()=>`${topo}<div class="corpo"><div class="t-pag">Início</div>
       <div class="cartao" data-t="400"><h4>🧾 Caixa desta semana</h4>${bolas(["ok","ok","ok","","",""])}</div>
       <div class="cartao" data-t="2400"><h4>No mês · meta R$ 80.000</h4><div class="mini">35% da meta feito · já deveria estar em 28%</div></div>
       <div class="cartao" data-t="4600"><h4>🏆 Ranking de vendas</h4><div class="mini">1º Ana · 2º Bia · 3º Carla</div></div>
-      <div class="cartao" data-t="6800"><h4>📊 Leitura da semana</h4><div class="mini">Chega toda segunda, com as ações.</div></div></div>`},
+      <div class="cartao" data-t="6800"><h4>📊 Análise da Camilla</h4><div class="mini">Segunda, para quem fechou a semana 100%.</div></div></div>`},
   caminhos:{rot:"Escolha o seu caminho",tit:"Dois jeitos de fechar",dur:16000,escolha:true,
     fala:["Existem dois caminhos.","Se a sua loja tem sistema,","você sobe até três arquivos do fechamento do dia.","Se não tem sistema,","você preenche à mão, todos os dias.","Toque no seu caminho para ver como é."],
     tela:()=>`${topo}<div class="corpo"><div class="t-pag">Fechamento de caixa</div>
@@ -175,7 +175,7 @@ const CENAS = {
       <div class="cartao" data-t="10500" style="display:flex;gap:8px"><span class="btn p pulsa">Salvar</span></div>
       <div class="cartao" data-t="14500" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito);font-size:13px">✓ Fechamento de 10/11 salvo.</b></div></div>`},
   semana:{rot:"Acompanhe",tit:"Verde enviado, vermelho esquecido",dur:16000,
-    fala:["Na tela de Envios você vê a semana.","Dia com caixa enviado fica verde.","Dia que passou sem caixa fica vermelho.","Se ficou vermelho, lance o que faltou.","Tudo verde, a leitura da semana sai completa."],
+    fala:["Na tela de Envios você vê a semana.","Dia com caixa enviado fica verde.","Dia que passou sem caixa fica vermelho.","Se ficou vermelho, lance o que faltou antes da segunda.","Semana toda verde: a Camilla analisa e você recebe as ações personalizadas.","Se ficar vermelho na segunda, a análise vai para a próxima."],
     tela:()=>`${topo}<div class="corpo"><div class="t-pag">Envios</div>
       <div class="cartao"><h4>🧾 Caixa desta semana</h4><div id="sem">${bolas(["ok","ok","falta","ok","hoje","" ])}</div>
         <div style="margin-top:8px" data-t="5500"><span class="btn p peq pulsa">Lançar o dia que falta</span></div></div>
@@ -189,7 +189,7 @@ const CENAS = {
       <div class="cartao" data-t="4200" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">✓ Check verde no dia = caixa enviado</b></div></div>`}
 };
 let ordem=["abertura","caminhos","subir","manual","semana","fim"];
-let ritmo=1.3,atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
+let ritmo=1.0,atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
 const sintese=("speechSynthesis" in window)?window.speechSynthesis:null;
 function escolheVoz(){const v=sintese?sintese.getVoices():[];const br=v.filter(x=>/pt[-_]BR/i.test(x.lang));
   return br.find(x=>/google|luciana|francisca|microsoft.*(maria|francisca)/i.test(x.name))||br[0]||v.find(x=>/^pt/i.test(x.lang))||null}
@@ -199,10 +199,16 @@ function fala(c){
   if(!sintese.getVoices().length){falou=true;return}
   falou=false;
   const vz=escolheVoz();
-  c.fala.forEach((txt,k)=>{const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";u.rate=ritmo;if(vz)u.voice=vz;
-    u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
-    if(k===c.fala.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
-    sintese.speak(u)});
+  const en=sintese.getVoices().find(x=>/^en[-_]US/i.test(x.lang))||sintese.getVoices().find(x=>/^en/i.test(x.lang))||null;
+  /* "Hub" e "Deyvid" (David) são lidos em inglês; o resto em português */
+  const partes=(t)=>t.split(/\b(Hub|Deyvid)\b/).filter(x=>x!=="").map(x=>x==="Hub"?{t:"Hub",en:true}:x==="Deyvid"?{t:"David",en:true}:{t:x,en:false});
+  c.fala.forEach((txt,k)=>{const ps=partes(txt);
+    ps.forEach((pt,m)=>{const u=new SpeechSynthesisUtterance(pt.t);
+      if(pt.en){u.lang="en-US";if(en)u.voice=en}else{u.lang="pt-BR";if(vz)u.voice=vz}
+      u.rate=ritmo;
+      if(m===0)u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
+      if(k===c.fala.length-1&&m===ps.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
+      sintese.speak(u)})});
 }
 function paraFala(){if(sintese)sintese.cancel()}
 
@@ -248,7 +254,7 @@ $("#play").onclick=()=>{
   if(tocando){const c=CENAS[ordem[atual]];ini=performance.now()-(parseFloat($("#trilho").querySelectorAll("button")[atual].querySelector("i").style.width)/100*c.dur);if(sintese&&voz&&sintese.paused)sintese.resume();else if(sintese&&voz&&!sintese.speaking)fala(c);quadro()}
   else{cancelAnimationFrame(raf);if(sintese)sintese.pause();$("#status").textContent="Pausado"}
 };
-const RITMOS=[["normal",1.05],["rápido",1.3],["bem rápido",1.6]];let ri=1;
+const RITMOS=[["normal",1.0],["rápido",1.25],["bem rápido",1.5]];let ri=0;
 $("#vel").onclick=()=>{ri=(ri+1)%RITMOS.length;ritmo=RITMOS[ri][1];$("#vel").textContent="Ritmo: "+RITMOS[ri][0];if(voz&&tocando){paraFala();fala(CENAS[ordem[atual]])}};
 $("#voz").onclick=()=>{voz=!voz;$("#voz").textContent=voz?"🔊 Voz ligada":"🔇 Voz desligada";$("#voz").setAttribute("aria-pressed",voz);paraFala();if(voz&&tocando)fala(CENAS[ordem[atual]]);else falou=true};
 document.querySelectorAll(".caminho").forEach(b=>b.onclick=()=>{
@@ -260,6 +266,8 @@ const roteiro=ordem.map(k=>`— ${CENAS[k].rot} —\n`+CENAS[k].fala.join("\n"))
 $("#roteiro").textContent=roteiro;
 $("#copiar").onclick=async()=>{try{await navigator.clipboard.writeText(roteiro);$("#copiar").textContent="Roteiro copiado ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#roteiro"));getSelection().removeAllRanges();getSelection().addRange(r);$("#copiar").textContent="Selecionado: copie com o teclado"}};
 if(sintese)sintese.onvoiceschanged=()=>{};
+/* O roteiro de gravação só aparece para quem abre o endereço com #roteiro */
+const mostraRoteiro=()=>{$("#roteiro-box").hidden=location.hash!=="#roteiro"};mostraRoteiro();addEventListener("hashchange",mostraRoteiro);
 montaTrilho();ir(0);
 </script>
 

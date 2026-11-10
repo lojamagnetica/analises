@@ -21,10 +21,11 @@ export function LerRelatorioDoCaixa({ portalId, loja, equipe, aoLancar }: { port
   const [erro, setErro] = useState("");
   const [ok, setOk] = useState("");
 
-  async function ler(arq: File) {
+  async function ler(arqs: File[]) {
     setErro(""); setOk(""); setDias(null); setLendo(true);
     try {
-      const texto = await textoDoPdf(arq);
+      let texto = "";
+      for (const a of arqs.slice(0, 3)) texto += "\n" + await textoDoPdf(a);
       const lidos = lerListaDeVendas(texto);
       if (!lidos.length) throw new Error("Não achei vendas neste arquivo. Use o relatório \"Lista de Vendas\" do sistema, em PDF.");
       const m = /Emitido em (\d\d\/\d\d\/\d{4}) às (\d\d:\d\d)/.exec(texto);
@@ -57,8 +58,8 @@ export function LerRelatorioDoCaixa({ portalId, loja, equipe, aoLancar }: { port
       <h3 style={{ margin: 0 }}>Lançar pelo relatório do sistema</h3>
       <p className="ajuda" style={{ margin: "4px 0 8px" }}>Suba o PDF &quot;Lista de Vendas&quot; (de um dia ou da semana). O Hub lê no seu aparelho e lança o caixa de cada dia, por vendedora e forma de pagamento, e guarda os produtos para os mais vendidos da semana. Você confere antes de lançar.</p>
       <label className="btn s peq" style={{ cursor: lendo ? "wait" : "pointer", margin: 0 }}>
-        {lendo ? "Lendo…" : "Escolher o PDF"}
-        <input type="file" hidden accept=".pdf,application/pdf" disabled={lendo || salvando} onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) ler(f); }} />
+        {lendo ? "Lendo…" : "Escolher o PDF (até 3)"}
+        <input type="file" hidden multiple accept=".pdf,application/pdf" disabled={lendo || salvando} onChange={(e) => { const f = [...(e.target.files ?? [])]; e.target.value = ""; if (f.length) ler(f); }} />
       </label>
       {erro && <div className="aviso mt" role="alert">{erro}</div>}
       {ok && <div className="aviso ok mt">{ok}</div>}

@@ -40,6 +40,8 @@ assert.equal(d3.vale, 200.5, "devolução fica fora das formas de pagamento");
 assert.equal(dias[1].pagamentos.crediario, 100);
 assert.equal(dias[1].itens.length, 1);
 
+assert.equal(lerListaDeVendas(texto + "\n" + texto)[0].faturamento, 1500.5, "arquivo repetido não duplica");
+
 const top = maisVendidos(dias.flatMap((d) => d.itens));
 assert.equal(top[0].produto, "CAMISA AZUL");
 assert.equal(top[0].qtd, 4);

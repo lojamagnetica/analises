@@ -114,34 +114,6 @@ function Vez() {
         <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{saudacao}, {p.pessoa.nome}!</h1>
       </div>
 
-      {/* O objetivo do dia: o que fazer hoje para chegar na meta */}
-      <div className="card mb" style={{ borderLeft: `6px solid ${cor}` }}>
-        <small className="mudo">Objetivo de hoje</small>
-        {md && !md.batida ? (
-          <>
-            <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15 }}>Vender {brl(md.porDia)}</div>
-            <p style={{ margin: "4px 0 0" }}>com <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
-          </>
-        ) : md ? (
-          <div style={{ fontSize: 24, fontWeight: 800 }}>Meta do mês batida! 🎉</div>
-        ) : (
-          <p style={{ margin: "4px 0 0" }}>Sua gestora ainda não definiu a sua meta do mês. Enquanto isso, o objetivo é <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
-        )}
-        {p.missoes.length > 0 && (
-          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
-            <small className="mudo">Missão do dia</small>
-            {p.missoes.map((m) => (
-              <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
-                <input type="checkbox" checked={m.feito} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
-                  onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
-                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}>{m.texto}</span>
-              </label>
-            ))}
-            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏</p>}
-          </div>
-        )}
-      </div>
-
       {/* A lista da vez */}
       <div className="card mb">
         <div className="linha entre"><b style={{ fontSize: 18 }}>Lista da vez</b><small className="mudo">{espera.length} na fila{p.fila.some((f) => f.status === "atendendo") ? ` · ${p.fila.filter((f) => f.status === "atendendo").length} atendendo` : ""}</small></div>
@@ -209,6 +181,34 @@ function Vez() {
         )}
         {ordenarFila(p.fila).length === 0 && <p className="mudo" style={{ margin: "12px 0 0" }}>Ninguém na lista ainda. Quem chega primeiro entra na vez.</p>}
         <p className="ajuda" style={{ marginBottom: 0 }}>Quem chega primeiro entra na vez e é a primeira a atender. Quem atendeu volta para o final da lista.</p>
+      </div>
+
+      {/* O objetivo do dia: o que fazer hoje para chegar na meta */}
+      <div className="card mb" style={{ borderLeft: `6px solid ${cor}` }}>
+        <small className="mudo">Objetivo de hoje</small>
+        {md && !md.batida ? (
+          <>
+            <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15 }}>Vender {brl(md.porDia)}</div>
+            <p style={{ margin: "4px 0 0" }}>com <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
+          </>
+        ) : md ? (
+          <div style={{ fontSize: 24, fontWeight: 800 }}>Meta do mês batida! 🎉</div>
+        ) : (
+          <p style={{ margin: "4px 0 0" }}>Sua gestora ainda não definiu a sua meta do mês. Enquanto isso, o objetivo é <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
+        )}
+        {p.missoes.length > 0 && (
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+            <small className="mudo">Missão do dia</small>
+            {p.missoes.map((m) => (
+              <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
+                <input type="checkbox" checked={m.feito} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
+                  onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
+                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}>{m.texto}</span>
+              </label>
+            ))}
+            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏</p>}
+          </div>
+        )}
       </div>
 
       {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}

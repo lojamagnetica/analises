@@ -22,6 +22,7 @@ import { areaFechada } from "@/lib/bussola";
 
 const ATALHOS = [
   { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
+  { href: "/gestao/vez", rotulo: "Lista da vez", icone: "users", cor: "var(--orange)" },
   { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
@@ -100,6 +101,8 @@ export default function Inicio() {
     // Loja na mão: o atalho do caixa vira Registrar venda.
     .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
+    // Loja sem equipe não tem fila de atendimento.
+    .filter((a) => !(a.href === "/gestao/vez" && portal.sem_equipe))
     .filter((a) => !escondido(a.href));
   // A loja vê o cadeado nas áreas que ainda não abriram; a equipe vê tudo aberto.
   const ent = equipe ? null : entrada;

@@ -62,5 +62,24 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   ok(await page.getByText("Preço", { exact: true }).count() >= 1, "mostra os motivos que mais aparecem");
   ok(await page.getByText("Mostrar a vitrine nova").count() === 1, "mostra a missão do dia e o check");
   ok(await page.getByRole("link", { name: "Abrir" }).count() === 2, "mostra o link de cada vendedora");
+  await page.close();
+}
+// 4) Duas lojas: cada loja com a sua lista, a sua conversão e as suas pessoas
+{
+  const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
+  page.on("pageerror", (e) => console.log("erro na página:", e.message));
+  const l = lojaBase({ tipo: "Consultoria" });
+  l.tabelas.portais[0].lojas = ["Loja Um", "Loja Dois"];
+  const A = (id, loja, pessoa, nome, res) => ({ id, portal_id: l.portal, loja, dia: hoje, pessoa_id: pessoa, nome, inicio_em: agora, fim_em: agora, resultado: res, motivo: res === "nao_vendeu" ? "Preço" : "", cliente: "", fora_da_vez: false });
+  await simular(page, { tabelas: { ...l.tabelas,
+    loja_equipe: [{ id: "e1", portal_id: l.portal, nome: "Ana Souza", funcao: "Vendedora", ativo: true, loja: "Loja Um", vez_token: TOKEN }, { id: "e3", portal_id: l.portal, nome: "Tiago Lima", funcao: "Vendedor", ativo: true, loja: "Loja Dois", vez_token: "88888888-2222-3333-4444-555555555555" }],
+    loja_vez_fila: [], loja_missao_dia: [],
+    loja_vez_atend: [A("a1", "Loja Um", "e1", "Ana Souza", "vendeu"), A("a2", "Loja Um", "e1", "Ana Souza", "nao_vendeu"), A("a3", "Loja Dois", "e3", "Tiago Lima", "vendeu")],
+  } });
+  await page.goto(`${BASE}/gestao/vez/`);
+  await page.getByRole("heading", { name: "Loja Dois" }).waitFor();
+  ok(await page.getByRole("heading", { name: "Loja Um" }).count() === 1, "cada loja tem o seu bloco");
+  ok(await page.getByText("100%").count() >= 1 && await page.getByText("50%").count() >= 1, "a conversão é separada por loja (Loja Dois 100%, Loja Um 50%)");
+  ok(await page.getByRole("link", { name: "Abrir" }).count() === 2, "cada loja mostra só o link da sua equipe");
   await browser.close();
 }

@@ -25,13 +25,9 @@ function Linha({ rotulo, valor, max, cor, extra }: { rotulo: string; valor: numb
   );
 }
 
-export default function ListaDaVez() {
+/** Tudo da lista da vez de uma loja (a fila, a missão, o resumo e os links). loja = null: portal de uma loja só. */
+function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string; ehHoje: boolean }) {
   const { portal } = usePortal();
-  const [lojaFoco] = useLojaFoco();
-  const varias = (portal.lojas?.length ?? 0) > 1;
-  const loja = varias ? lojaFoco : null; // com as lojas juntas, mostra todas
-  const [dia, setDia] = useState(hoje());
-  const ehHoje = dia === hoje();
   const { dados, recarregar } = useDados(() => buscarVezDoDia(portal.id, loja, dia), [portal.id, loja, dia]);
   useEffect(() => { if (!ehHoje) return; const t = setInterval(recarregar, 10000); return () => clearInterval(t); }, [ehHoje, recarregar]);
   const [editar, setEditar] = useState<string | null>(null);
@@ -44,13 +40,13 @@ export default function ListaDaVez() {
 
   const time = quemVende(dados.equipe.filter((p) => !loja || !p.loja || p.loja === loja));
   const nomeDe = (id: string | null) => dados.equipe.find((p) => p.id === id)?.nome.split(" ")[0] ?? "";
+  const missoesDaLoja = dados.missoes.filter((x) => time.some((p) => p.id === x.pessoa_id));
   const resumo = resumoDoDia(dados.atend);
   const fila = ordenarFila(dados.fila);
   const espera = filaDeEspera(dados.fila);
   const maxHora = Math.max(1, ...resumo.porHora.map((h) => h.total));
   const maxMotivo = Math.max(1, ...resumo.motivos.map((m) => m.qtd));
-  const [a, m, d] = dia.split("-");
-  const origem = typeof window !== "undefined" ? window.location.origin : "";
+    const origem = typeof window !== "undefined" ? window.location.origin : "";
 
   const falha = (e: { message: string } | null) => { setErro(e ? `Não deu certo: ${e.message}` : ""); recarregar(); };
   const salvarAtend = async (x: AtendGestao) => falha((await atendEditar(x.id, { resultado: res || null, motivo: res === "nao_vendeu" ? mot : "" })).error);
@@ -64,19 +60,7 @@ export default function ListaDaVez() {
 
   return (
     <>
-      <Titulo titulo={`Lista da vez${varias && lojaFoco ? ` · ${lojaFoco}` : ""}`} sub="A fila de atendimento da loja, a conversão do dia e a missão de cada pessoa. A equipe usa pelo celular, com o link pessoal de cada uma." />
       {erro && <div className="aviso mb">{erro}</div>}
-
-      <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
-        <span className="linha" style={{ gap: 8, alignItems: "center" }}>
-          <button type="button" className="btn s peq" onClick={() => setDia(somaDias(dia, -1))}>‹</button>
-          <b>{d}/{m}/{a}</b>
-          <button type="button" className="btn s peq" disabled={ehHoje} onClick={() => setDia(somaDias(dia, 1))}>›</button>
-          {!ehHoje && <button type="button" className="btn s peq" onClick={() => setDia(hoje())}>Hoje</button>}
-        </span>
-        <span className="mudo">{ehHoje ? "Ao vivo: atualiza sozinho" : "Dia anterior"}</span>
-      </div>
-
       <div className="grade g4 mb">
         {[["Atendimentos", String(resumo.total)], ["Vendas", String(resumo.vendeu)], ["Conversão", pct(resumo.conversao)], ["Tempo médio", resumo.tempoMedioMin === null ? "—" : `${Math.round(resumo.tempoMedioMin)} min`]].map(([r, v]) => (
           <div key={r} className="card" style={{ textAlign: "center" }}><div style={{ fontSize: 28, fontWeight: 800 }}>{v}</div><small className="mudo">{r}</small></div>
@@ -108,9 +92,9 @@ export default function ListaDaVez() {
           <input type="text" placeholder="Ex.: oferecer a segunda peça em todo atendimento" value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => e.key === "Enter" && adicionar()} style={{ flex: 1, minWidth: 200 }} maxLength={200} />
           <button type="button" className="btn p peq" onClick={adicionar}>Colocar</button>
         </div>
-        {dados.missoes.length > 0 && (
+        {missoesDaLoja.length > 0 && (
           <div style={{ marginTop: 10 }}>
-            {dados.missoes.map((x) => (
+            {missoesDaLoja.map((x) => (
               <div key={x.id} className="linha entre" style={{ gap: 8, padding: "6px 0", borderTop: "1px solid var(--line)" }}>
                 <span>{x.feito ? "✅" : "⬜"} <b>{nomeDe(x.pessoa_id)}</b>: {x.texto}{x.feito && x.feito_em ? <span className="mudo"> · feito às {horaMin(x.feito_em)}</span> : null}</span>
                 <button type="button" className="btn s peq" onClick={async () => { if (confirm("Tirar esta missão?")) falha((await missaoExcluir(x.id)).error); }}>Tirar</button>
@@ -177,6 +161,38 @@ export default function ListaDaVez() {
           </div>
         )) : <p className="mudo" style={{ margin: 0 }}>Cadastre a equipe em Gestão de pessoas, com a função de vendedora, para gerar os links.</p>}
       </div>
+    </>
+  );
+}
+
+export default function ListaDaVez() {
+  const { portal } = usePortal();
+  const [lojaFoco] = useLojaFoco();
+  const lojas = portal.lojas ?? [];
+  const varias = lojas.length > 1;
+  // Mais de uma loja: cada loja tem a sua lista, o seu fluxo e a sua conversão, uma embaixo da outra (ou só a loja em foco).
+  const paineis: (string | null)[] = varias ? (lojaFoco ? [lojaFoco] : lojas) : [null];
+  const [dia, setDia] = useState(hoje());
+  const ehHoje = dia === hoje();
+  const [a, m, d] = dia.split("-");
+  return (
+    <>
+      <Titulo titulo="Lista da vez" sub="A fila de atendimento de cada loja, a conversão do dia e a missão de cada pessoa. A equipe usa pelo celular, com o link pessoal de cada uma." />
+      <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
+        <span className="linha" style={{ gap: 8, alignItems: "center" }}>
+          <button type="button" className="btn s peq" onClick={() => setDia(somaDias(dia, -1))}>‹</button>
+          <b>{d}/{m}/{a}</b>
+          <button type="button" className="btn s peq" disabled={ehHoje} onClick={() => setDia(somaDias(dia, 1))}>›</button>
+          {!ehHoje && <button type="button" className="btn s peq" onClick={() => setDia(hoje())}>Hoje</button>}
+        </span>
+        <span className="mudo">{ehHoje ? "Ao vivo: atualiza sozinho" : "Dia anterior"}</span>
+      </div>
+      {paineis.map((l) => (
+        <section key={l ?? "loja"} className="mb" style={varias ? { borderTop: "3px solid var(--red)", paddingTop: 14, marginTop: 22 } : undefined}>
+          {varias && <h2 style={{ margin: "0 0 12px" }}>{l}</h2>}
+          <PainelDaLoja loja={l} dia={dia} ehHoje={ehHoje} />
+        </section>
+      ))}
     </>
   );
 }

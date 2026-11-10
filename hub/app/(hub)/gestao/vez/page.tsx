@@ -4,6 +4,7 @@
 // (fluxo por horário, conversão, motivos) e os links pessoais da equipe.
 import { useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { aulaPorId, linkAula } from "@/lib/guias";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
@@ -194,7 +195,7 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
           <div key={p.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--line)" }}>
             <span><b>{p.nome.split(" ")[0]}</b>{p.loja ? <span className="mudo"> · {p.loja}</span> : null}</span>
             <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
-              <Copiar texto={`Oi, ${p.nome.split(" ")[0]}! Este é o seu link da lista da vez, da meta e da missão do dia. Abre direto no celular: ${linkDaVez(origem, p.vez_token)}`} rotulo="Copiar para o WhatsApp" />
+              <Copiar texto={`Oi, ${p.nome.split(" ")[0]}! Este é o seu link da lista da vez, da meta e da missão do dia. Abre direto no celular: ${linkDaVez(origem, p.vez_token)}\n\nAntes de usar, veja o vídeo de 2 minutos que explica tudo: ${linkAula(aulaPorId("lista-da-vez"))}`} rotulo="Copiar para o WhatsApp" />
               <a className="btn s peq" href={linkDaVez(origem, p.vez_token)} target="_blank" rel="noopener">Abrir</a>
               <button type="button" className="btn s peq" onClick={async () => { if (confirm(`Gerar um link novo para ${p.nome.split(" ")[0]}? O link antigo deixa de funcionar.`)) falha((await novoLinkDaPessoa(p.id)).error); }}>Gerar novo</button>
             </span>

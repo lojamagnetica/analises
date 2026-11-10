@@ -94,7 +94,7 @@ function CamposReuniao({ r }: { r?: Reuniao }) {
 function EditarPortal() {
   const id = useSearchParams().get("id") ?? "";
   const hub = useEquipe();
-  const [aviso, setAviso] = useState<{ ok?: string; erro?: string; link?: string }>({});
+  const [aviso, setAviso] = useState<{ ok?: string; erro?: string; link?: string; pessoa?: boolean }>({});
   const [salvo, setSalvo] = useState(false);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ function EditarPortal() {
 
   const acesso = async (fazer: () => Promise<{ link?: string; aviso?: string }>) => {
     const r = await fazer();
-    setAviso({ link: r.link, erro: r.aviso });
+    setAviso({ link: r.link, erro: r.aviso, pessoa: true });
     recarregar();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -140,7 +140,7 @@ function EditarPortal() {
     <>
       <Titulo voltar={{ href: "/empresa/carteira", rotulo: "Gestão de Clientes" }} titulo={p.loja} sub={`${p.tipo} · passo ${p.passo_atual} de 7`} />
       {aviso.ok && <div className="aviso ok mb">{aviso.ok}</div>}
-      {aviso.link && <LinkAcesso link={aviso.link} nome={p.responsavel ?? ""} whatsapp={p.whatsapp} />}
+      {aviso.link && <LinkAcesso link={aviso.link} nome={aviso.pessoa ? "" : p.responsavel ?? ""} whatsapp={aviso.pessoa ? null : p.whatsapp} pessoaDoTime={!!aviso.pessoa} />}
       {aviso.erro && <div className="aviso mb">{aviso.erro}</div>}
       <div className="mb"><button className="btn p" type="button" onClick={() => hub.abrirPortal(p.id)}>Abrir o portal da loja</button></div>
 

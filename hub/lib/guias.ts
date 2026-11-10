@@ -18,6 +18,8 @@ export const guia = (id: string) => GUIAS.find((g) => g.id === id)!;
 export type Aula = { id: string; titulo: string; para: string; arquivo: string; duracao: string };
 export const AULAS: Aula[] = [
   { id: "fechamento-caixa", titulo: "Como fechar o caixa no Hub", para: "Quem tem sistema sobe até 3 arquivos do fechamento; quem não tem preenche à mão todos os dias.", arquivo: "fechamento-caixa.html", duracao: "3 min" },
+  { id: "lista-da-vez", titulo: "Como usar a Lista da vez no celular", para: "Para a equipe: abrir o link pessoal, entrar na vez, marcar vendeu ou não vendeu, a missão do dia e os seus números.", arquivo: "lista-da-vez.html", duracao: "2 min" },
 ];
+export const aulaPorId = (id: string) => AULAS.find((a) => a.id === id)!;
 export const linkAula = (a: Aula) =>
   `${typeof window === "undefined" ? "https://lojamagnetica.github.io" : window.location.origin}${BASE}/aula/${a.arquivo}`;

@@ -3,7 +3,7 @@
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { BASE } from "@/lib/config";
-import { GUIAS, linkGuia } from "@/lib/guias";
+import { AULAS, GUIAS, linkAula, linkGuia } from "@/lib/guias";
 
 export default function GuiasEmVideo() {
   return (
@@ -23,6 +23,24 @@ export default function GuiasEmVideo() {
                 <a className="btn p peq" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
                 <Copiar texto={link} rotulo="Copiar link" />
                 <a className="btn s peq" href={`${BASE}/video/${g.arquivo}`} download>Baixar</a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <h2 className="mt">Aulas interativas</h2>
+      <div className="grade g2" style={{ gap: 16 }}>
+        {AULAS.map((a) => {
+          const link = linkAula(a);
+          const texto = `Oi! Aqui está a aula de ${a.duracao} para você: ${a.titulo}. ${a.para}\n${link}`;
+          return (
+            <div key={a.id} className="card">
+              <h3 style={{ marginTop: 0 }}>{a.titulo}</h3>
+              <p className="mudo" style={{ marginTop: -4 }}>{a.para} · {a.duracao}</p>
+              <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+                <a className="btn p peq" href={`https://wa.me/?text=${encodeURIComponent(texto)}`} target="_blank" rel="noopener">Enviar no WhatsApp</a>
+                <Copiar texto={link} rotulo="Copiar link" />
+                <a className="btn s peq" href={`${BASE}/aula/${a.arquivo}`} target="_blank" rel="noopener">Abrir a aula</a>
               </div>
             </div>
           );

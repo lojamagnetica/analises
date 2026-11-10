@@ -62,7 +62,7 @@ export function Ferramentas({ temPortal, equipe = false }: { temPortal: boolean;
   return (
     <div className="topo">
       <button className="redondo hamb" aria-label="Abrir menu" onClick={() => window.dispatchEvent(new Event("abrir-menu"))}>
-        <Icone nome="menu" />
+        <Icone nome="menu" /><span>Menu</span>
       </button>
       <div className="ferramentas">
         {equipe && (

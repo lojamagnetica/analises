@@ -1,6 +1,6 @@
 // Rode com: node --experimental-strip-types lib/vez-calculo.test.ts
 import assert from "node:assert/strict";
-import { contarPorPessoa, corDaMeta, diasDeLoja, filaDeEspera, horaDe, metaDoDia, ordenarFila, resumoDoDia, textoDoResumo, type Atend } from "./vez-calculo.ts";
+import { contarPorPessoa, fluxoSemanal, corDaMeta, diasDeLoja, filaDeEspera, horaDe, metaDoDia, ordenarFila, resumoDoDia, textoDoResumo, type Atend } from "./vez-calculo.ts";
 
 // 10h e 11h em Recife (UTC−3)
 const a = (id: string, pessoa: string, utc: string, resultado: Atend["resultado"], motivo = "", fim?: string): Atend => ({ id, pessoa_id: pessoa, nome: pessoa.toUpperCase(), inicio_em: utc, fim_em: fim ?? null, resultado, motivo, cliente: "" });
@@ -56,4 +56,15 @@ assert.deepEqual(c[0].mes, { total: 4, vendeu: 2, naoVendeu: 1 });
 assert.deepEqual(c[1].hoje, { total: 0, vendeu: 0, naoVendeu: 0 });
 assert.deepEqual(c[1].mes, { total: 1, vendeu: 0, naoVendeu: 1 });
 assert.equal(c[2].mes.total, 0);
+
+// Fluxo por dia da semana e horário (10 e 11 de novembro de 2026 são terça e quarta)
+const fx = fluxoSemanal([
+  { dia: "2026-11-10", inicio_em: "2026-11-10T13:05:00Z" }, { dia: "2026-11-10", inicio_em: "2026-11-10T13:40:00Z" },
+  { dia: "2026-11-17", inicio_em: "2026-11-17T13:10:00Z" }, { dia: "2026-11-11", inicio_em: "2026-11-11T14:10:00Z" },
+]);
+assert.equal(fx.celulas["2-10"], 3);
+assert.equal(fx.celulas["3-11"], 1);
+assert.deepEqual(fx.horas, [10, 11]);
+assert.deepEqual(fx.pico, { dow: 2, hora: 10, qtd: 3 });
+assert.equal(fx.total, 4);
 console.log("lista da vez: tudo certo");

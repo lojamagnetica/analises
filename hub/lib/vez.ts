@@ -81,4 +81,12 @@ export async function buscarContagemVez(portalId: string, loja: string | null) {
   };
 }
 
+/** Os atendimentos dos últimos 30 dias (só dia e hora de início), para o fluxo por dia da semana e horário. */
+export async function buscarFluxo(portalId: string, loja: string | null, ate: string) {
+  const de = new Date(`${ate}T12:00:00Z`); de.setUTCDate(de.getUTCDate() - 29);
+  let q = sb().from("loja_vez_atend").select("dia, inicio_em").eq("portal_id", portalId).gte("dia", de.toISOString().slice(0, 10)).lte("dia", ate);
+  if (loja !== null) q = q.eq("loja", loja);
+  return ((await q).data ?? []) as { dia: string; inicio_em: string }[];
+}
+
 export const hojeVez = hoje;

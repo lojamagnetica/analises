@@ -145,3 +145,21 @@ export function contarPorPessoa(
   }
   return [...linhas.values()];
 }
+
+// ───── Fluxo por dia da semana e horário ─────
+
+export type Fluxo = { celulas: Record<string, number>; horas: number[]; maximo: number; total: number; pico: { dow: number; hora: number; qtd: number } | null };
+export const DIAS_FLUXO = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+/** Quantos atendimentos começaram em cada dia da semana e hora (horário de Recife). Só os horários que tiveram atendimento viram coluna. */
+export function fluxoSemanal(atends: { dia: string; inicio_em: string }[]): Fluxo {
+  const celulas: Record<string, number> = {};
+  let maximo = 0, pico: Fluxo["pico"] = null;
+  for (const a of atends) {
+    const dow = new Date(`${a.dia}T12:00:00Z`).getUTCDay(), hora = horaDe(a.inicio_em), k = `${dow}-${hora}`;
+    celulas[k] = (celulas[k] ?? 0) + 1;
+    if (celulas[k] > maximo) { maximo = celulas[k]; pico = { dow, hora, qtd: maximo }; }
+  }
+  const horas = [...new Set(Object.keys(celulas).map((k) => Number(k.split("-")[1])))].sort((a, b) => a - b);
+  return { celulas, horas, maximo, total: atends.length, pico };
+}

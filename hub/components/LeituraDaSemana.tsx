@@ -33,7 +33,7 @@ function NumerosDaSemana() {
   return (
     <div className="card card-borda mt" style={{ ["--c" as string]: "var(--red)" }}>
       <b>📈 Os números da semana de {dia(semana)}</b>
-      <p className="ajuda" style={{ margin: "2px 0 8px" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Pegue no seu sistema e mande aqui: leva 1 minuto.</p>
+      <p className="ajuda" style={{ margin: "2px 0 8px" }}>Na segunda, a Camilla analisa a semana das lojas com o caixa 100% lançado e já personaliza o que você precisa fazer. Pegue no seu sistema e mande aqui: leva 1 minuto.</p>
       <div className="grade g3" style={{ gap: "0 10px" }}>
         <label className="ajuda" style={{ display: "block" }}>Quanto vendeu (R$)<input type="text" inputMode="decimal" value={f.faturamento} onChange={(e) => setR({ ...f, faturamento: e.target.value })} /></label>
         <label className="ajuda" style={{ display: "block" }}>Quantas vendas<input type="text" inputMode="numeric" value={f.vendas} onChange={(e) => setR({ ...f, vendas: e.target.value })} /></label>
@@ -77,7 +77,7 @@ export function CaixaDaSemana() {
         </div>
         <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>Toda segunda a Camilla lê os números da sua semana e te manda a leitura com as ações. Sem caixa lançado, não tem leitura.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
+      <p className="ajuda" style={{ margin: "8px 0 0" }}>Na segunda, a Camilla analisa a semana das lojas que fecharam o caixa 100% e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado. Caixa incompleto na segunda: a análise vem só na segunda seguinte.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
     </div>
   );
 }

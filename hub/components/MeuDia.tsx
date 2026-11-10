@@ -129,10 +129,10 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [] }
           );
         })}
         {lista.map((t) => {
-          const feito = feitosHoje.includes(ch(t.chave));
+          const feito = !!t.auto || feitosHoje.includes(ch(t.chave));
           return (
             <div key={t.chave} className="marcar" style={{ cursor: "default", gap: 10 }}>
-              <input type="checkbox" checked={feito} onChange={(e) => marcar(ch(t.chave), e.target.checked)} aria-label={t.texto} />
+              <input type="checkbox" checked={feito} disabled={!!t.auto} onChange={(e) => marcar(ch(t.chave), e.target.checked)} aria-label={t.texto} />
               <span style={feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>
                 {t.texto}{t.href && !feito && <> · <Link className="link-loja" href={t.href}>abrir</Link></>}
               </span>

@@ -103,12 +103,28 @@ export function metasDoTime(meta: number | null, ids: string[], ajustes: Record<
   return out;
 }
 
-/** A meta do mês da loja física. Com metas por canal, é a Meta 1 do canal Loja. */
-export const metaDoPlano = (d: Partial<DadosPlano>) => {
-  const loja = d.canais?.find((c) => c.canal === "Loja")?.faixas[0]?.valor;
-  if (loja) return loja;
+const CANAIS_DE_VENDA = ["Loja", "Site", "Atacado"];
+/** A meta do mês. Com a loja: a do canal com o nome dela (portal com mais de uma loja). Sem a loja: a da loja física
+ *  (canal "Loja"); portal com mais de uma loja, a soma das metas de cada loja. */
+export const metaDoPlano = (d: Partial<DadosPlano>, loja?: string) => {
+  const canais = d.canais ?? [];
+  const doCanal = (nome: string) => canais.find((c) => c.canal === nome)?.faixas[0]?.valor || 0;
+  if (loja && doCanal(loja)) return doCanal(loja);
+  if (doCanal("Loja")) return doCanal("Loja");
+  const dasLojas = canais.filter((c) => !CANAIS_DE_VENDA.includes(c.canal)).reduce((t, c) => t + (c.faixas[0]?.valor || 0), 0);
+  if (dasLojas) return dasLojas;
   return d.base ? Math.round((d.base * (1 + (d.crescimento ?? CRESCIMENTO_PADRAO) / 100)) / 100) * 100 : null;
 };
+
+/** A meta do mês de cada pessoa: a meta da loja dela dividida entre as vendedoras daquela loja (ou o que a lojista ajustou). */
+export function metasDasPessoas(d: Partial<DadosPlano>, pessoas: { id: string; loja?: string | null }[]) {
+  const nomes = new Set((d.canais ?? []).map((c) => c.canal));
+  const grupos = new Map<string, string[]>();
+  for (const p of pessoas) { const k = p.loja && nomes.has(p.loja) ? p.loja : ""; grupos.set(k, [...(grupos.get(k) ?? []), p.id]); }
+  const out: Record<string, number> = {};
+  for (const [k, ids] of grupos) Object.assign(out, metasDoTime(metaDoPlano(d, k), ids, d.metas));
+  return out;
+}
 
 export function planoVazio(datas: { dia: number | null; titulo: string }[]): DadosPlano {
   return {

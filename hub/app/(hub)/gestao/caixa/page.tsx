@@ -11,7 +11,7 @@ import {
   somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
+import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
@@ -65,14 +65,14 @@ function FechamentoCaixa() {
   const { dados: tudo, recarregar } = useDados(async () => {
     const [caixa, { data: equipe }, plano] = await Promise.all([
       buscarCaixa(portal.id, mes),
-      supabaseBrowser().from("loja_equipe").select("id, nome, funcao").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
+      supabaseBrowser().from("loja_equipe").select("id, nome, funcao, loja").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
       buscarPlano(portal.id, mes).catch(() => null),
     ]);
     // Só quem vende (quem já tem venda lançada no mês continua aparecendo).
     const lancados = caixa.flatMap((c) => (c.vendedoras ?? []).map((v) => v.pessoa_id ?? ""));
-    const time = quemVende((equipe ?? []) as { id: string; nome: string; funcao: string | null }[], lancados);
+    const time = quemVende((equipe ?? []) as { id: string; nome: string; funcao: string | null; loja?: string | null }[], lancados);
     const meta = plano ? metaDoPlano(plano.dados) : null;
-    return { caixa, equipe: time, meta, premiacao: plano?.dados.premiacao?.trim() ?? "", metas: metasDoTime(meta, time.map((p) => p.id), plano?.dados.metas) };
+    return { caixa, equipe: time, meta, planoDados: plano?.dados ?? null, premiacao: plano?.dados.premiacao?.trim() ?? "", metas: plano ? metasDasPessoas(plano.dados, time) : {} };
   }, [portal.id, mes]);
   if (!tudo) return <Carregando />;
   const dados = tudo.caixa;
@@ -91,7 +91,7 @@ function FechamentoCaixa() {
   const mesAte = (c: Pick<Caixa, "dia" | "loja">, extra?: number) => {
     const ate = dados.filter((x) => x.dia <= c.dia && x.dia.slice(0, 7) === c.dia.slice(0, 7) && (x.loja ?? "") === (c.loja ?? ""));
     const s = somar(ate);
-    return { faturamento: s.faturamento + (extra ?? 0), dias: s.dias + (extra != null ? 1 : 0), meta: c.dia.slice(0, 7) === mes ? tudo.meta : null };
+    return { faturamento: s.faturamento + (extra ?? 0), dias: s.dias + (extra != null ? 1 : 0), meta: c.dia.slice(0, 7) === mes ? (tudo.planoDados ? metaDoPlano(tudo.planoDados, c.loja ?? "") : tudo.meta) : null };
   };
   const linkWhats = (c: Omit<Caixa, "id">, mesInfo: ReturnType<typeof mesAte>) =>
     `https://wa.me/?text=${encodeURIComponent(mensagemCaixa(c, portal.loja, mesInfo))}`;

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { moeda } from "@/lib/formato";
+import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
 import {
   PA_IDEAL, arredondarGanho, buscarCaixa, daLoja, diagnosticar, fmtPa, fraseFoco, indicadores, mesDeHoje, mesValido, nomeMes, numeroDe,
   pmDoEstoque, somar, somarMes, type Foco, type PmEstoque,
@@ -78,8 +79,9 @@ function Resultado() {
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) && m <= mesDeHoje() ? m : mesDeHoje(); });
   // A loja em foco vale para o portal inteiro (seletor no topo).
   const [loja, setLoja] = useLojaFoco();
-  const { dados } = useDados(() => buscarCaixa(portal.id, mes), [portal.id, mes]);
-  if (!dados) return <Carregando />;
+  const { dados: tudo } = useDados(async () => ({ caixa: await buscarCaixa(portal.id, mes), plano: await buscarPlano(portal.id, mes).catch(() => null) }), [portal.id, mes]);
+  if (!tudo) return <Carregando />;
+  const dados = tudo.caixa;
 
   const pmEst = pmDoEstoque(pers.get(8)?.respostas);
   const lista = dados.filter((c) => daLoja(c, loja));
@@ -94,6 +96,11 @@ function Resultado() {
   const ticketCadastro = numeroDe(metas?.ticket);
   const paCadastro = numeroDe(metas?.pa);
 
+  // A meta do mês do plano: de cada loja (portal com mais de uma) ou da loja inteira.
+  const metasDoMes = tudo.plano
+    ? (varias && !loja ? lojas : [loja]).map((l) => ({ nome: l, meta: metaDoPlano(tudo.plano!.dados, l) ?? 0, vendido: somar(dados.filter((c) => daLoja(c, l))).faturamento })).filter((m) => m.meta > 0)
+    : [];
+
   const cabecalho = (
     <>
       <Titulo titulo="Resultado do mês" sub="PA, ticket médio e preço médio do mês, a partir do fechamento de caixa." />
@@ -104,6 +111,20 @@ function Resultado() {
               style={loja === l ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>
               {l || todas}
             </button>
+          ))}
+        </div>
+      )}
+      {metasDoMes.length > 0 && (
+        <div className="card mb">
+          <b>Meta do mês</b>
+          {metasDoMes.map((m) => (
+            <div key={m.nome} style={{ marginTop: 10 }}>
+              <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+                <span>{m.nome ? <b>{m.nome}</b> : null}{m.nome ? " · " : ""}{moeda(m.vendido)} de {moeda(m.meta)}</span>
+                <span className="mudo">{Math.round((m.vendido / m.meta) * 100)}% da meta{m.vendido < m.meta ? ` · faltam ${moeda(m.meta - m.vendido)}` : " · meta batida 🎉"}</span>
+              </div>
+              <div className="barra mt" aria-hidden><i style={{ width: `${Math.min(100, (m.vendido / m.meta) * 100)}%`, background: m.vendido >= m.meta ? "var(--feito)" : undefined }} /></div>
+            </div>
           ))}
         </div>
       )}

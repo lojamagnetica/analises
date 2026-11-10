@@ -9,7 +9,7 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje, dia } from "@/lib/formato";
 import { acaoDaLeitura, buscarMetodo, buscarPessoas, leitura, pautaSemanal, quemVende, reuniaoSalvar, type NumerosPessoa, reuniaoTimeExcluir } from "@/lib/pessoas";
 import { buscarCaixa, fimDoMes, type Caixa } from "@/lib/caixa";
-import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
+import { buscarPlano, diasDeLoja, metasDasPessoas } from "@/lib/plano-mes";
 import { semanaDe } from "@/lib/leitura";
 import { somarDias } from "@/lib/acoes-mes";
 import { Excluir } from "@/components/Excluir";
@@ -61,7 +61,7 @@ export default function ReuniaoSemanal() {
       buscarPlano(portal.id, mes).catch(() => null),
     ]);
     const time = quemVende(pessoas.pessoas.filter((p) => p.ativo).map((p) => ({ ...p, funcao: p.funcao ?? null })), Object.keys(plano?.dados.metas ?? {}));
-    const metaMes = metasDoTime(plano ? metaDoPlano(plano.dados) : null, time.map((p) => p.id), plano?.dados.metas);
+    const metaMes = plano ? metasDasPessoas(plano.dados, time) : {};
     return { ...pessoas, time, m, auto: doCaixa([...c1, ...c2], ini, fim, metaMes, mes) };
   }, [portal.id, ini, lojaFoco]);
   if (!dados) return <Carregando />;

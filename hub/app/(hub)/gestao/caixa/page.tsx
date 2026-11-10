@@ -15,6 +15,7 @@ import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
+import { LerRelatorioDoCaixa } from "@/components/LerRelatorioDoCaixa";
 import { BoletosMes } from "@/components/BoletosMes";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
@@ -313,6 +314,7 @@ function FechamentoCaixa() {
         </div>
       </form>
 
+      <LerRelatorioDoCaixa portalId={portal.id} loja={varias ? f.loja : ""} equipe={equipe.filter((p) => !varias || !p.loja || p.loja === f.loja).map((p) => ({ id: p.id, nome: p.nome }))} aoLancar={recarregar} />
       {f.dia && <ArquivosDoCaixa portalId={portal.id} dia={f.dia} loja={varias ? f.loja : ""} />}
 
       <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />

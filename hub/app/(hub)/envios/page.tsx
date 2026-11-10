@@ -10,6 +10,7 @@ import { ArquivosDaSemana } from "@/components/ArquivosDoCaixa";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { daLoja, diaDaSemana, fimDoMes, fmtPa, indicadores, mesDeHoje, nomeMes, somar, somarMes, somarVendedoras } from "@/lib/caixa";
+import { maisVendidosDoPeriodo } from "@/lib/caixa-itens";
 import { buscarCaixaPeriodo, buscarConferencia, desfazerConferencia, marcarConferido, semanaDoDia, type TipoEnvio } from "@/lib/envios";
 
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
@@ -97,6 +98,7 @@ export default function Envios() {
   const { dados } = useDados(async () => ({
     semana: await buscarCaixaPeriodo(portal.id, de, ate),
     mes: await buscarCaixaPeriodo(portal.id, `${mesFechado}-01`, fimDoMes(mesFechado)),
+    top: await maisVendidosDoPeriodo(portal.id, de, ate),
   }), [portal.id, de, ate, mesFechado]);
   if (!dados) return <Carregando />;
   const semana = dados.semana.filter((c) => daLoja(c, loja));
@@ -131,6 +133,18 @@ export default function Envios() {
       </div>
 
       <RankingVendedoras lista={semana} titulo="Ranking da semana" />
+
+      <div className="card mt">
+        <h3 style={{ margin: 0 }}>Mais vendidos da semana</h3>
+        {dados.top.lista.length ? (
+          <div className="tabela-wrap mt">
+            <table className="tabela">
+              <thead><tr><th>#</th><th>Produto</th><th>Peças</th><th>Vendido</th></tr></thead>
+              <tbody>{dados.top.lista.map((x, i) => <tr key={x.produto} style={NUM}><td>{i + 1}º</td><td>{x.produto}</td><td>{x.qtd}</td><td>{moeda(x.total)}</td></tr>)}</tbody>
+            </table>
+          </div>
+        ) : <p className="ajuda" style={{ margin: "4px 0 0" }}>Ainda sem produtos. No Fechamento de caixa, suba o relatório &quot;Lista de Vendas&quot; do sistema: o Hub lança o caixa e monta os mais vendidos da semana sozinho.</p>}
+      </div>
 
       <div className="mt"><RelatoriosGestao portalId={portal.id} lojas={lojas} /></div>
 

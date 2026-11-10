@@ -66,7 +66,11 @@ export function lerVendas(texto: string): VendaLida[] {
 /** Agrupa por dia: totais, por vendedora, formas de pagamento, vale/devolução e os itens. */
 export function lerListaDeVendas(texto: string): DiaLido[] {
   const dias = new Map<string, DiaLido>();
+  const vistas = new Set<string>(); // o mesmo relatório subido duas vezes não conta em dobro
   for (const v of lerVendas(texto)) {
+    const chave = `${v.id}|${v.dia}|${v.valor}`;
+    if (vistas.has(chave)) continue;
+    vistas.add(chave);
     const d = dias.get(v.dia) ?? { dia: v.dia, faturamento: 0, vendas: 0, pecas: 0, vendedoras: [], pagamentos: {}, vale: 0, itens: [] };
     dias.set(v.dia, d);
     d.faturamento += v.valor; d.vendas += 1; d.pecas += v.pecas;

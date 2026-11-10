@@ -83,10 +83,10 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           <span className="btn s peq">Definir a meta</span>
         </Link>
       ) : (
-        <div className="grade g3 mb" style={NUM}>
+        <div className="grade g3 mb" style={{ ...NUM, fontSize: 12.5 }}>
           <div className="card card-borda" style={{ ["--c" as string]: "var(--red)" }}>
             <small className="mudo">Meta de hoje</small>
-            <div style={{ fontSize: 28, fontWeight: 800 }}>{moeda(p.metaHoje ?? 0)}</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{moeda(p.metaHoje ?? 0)}</div>
             {p.deHoje > 0 && <small>Parcial lançada: {moeda(p.deHoje)} · faltam {moeda(Math.max(0, (p.metaHoje ?? 0) - p.deHoje))}</small>}
             {p.ontem != null
               ? <div><small>Ontem: <b>{moeda(p.ontem)}</b>{p.metaOntem ? (p.ontem >= p.metaOntem ? " ✓ bateu a meta" : <span style={{ color: "var(--red)" }}> · {moeda(p.metaOntem - p.ontem)} abaixo</span>) : ""}</small></div>
@@ -94,21 +94,21 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: "var(--purple)" }}>
             <small className="mudo">No mês · meta {moeda(p.meta)}</small>
-            <div style={{ fontSize: 28, fontWeight: 800 }}>{moeda(p.vendido)}</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{moeda(p.vendido)}</div>
             <div className="barra"><i style={{ width: `${Math.min(100, Math.round((p.vendido / p.meta) * 100))}%` }} /></div>
             <small>{p.vendido >= p.meta ? "Meta do mês batida! 🎉" : <>Faltam <b>{moeda(p.meta - p.vendido)}</b> em <b>{p.restantes} {p.restantes === 1 ? "dia" : "dias"}</b></>}</small>
           </div>
           <div className="card card-borda" style={{ ["--c" as string]: p.abaixo ? "var(--orange)" : "var(--green)" }}>
             <small className="mudo">Ritmo</small>
-            <div style={{ fontSize: 28, fontWeight: 800 }}>{p.ritmo != null ? <>{moeda(p.ritmo)}<span className="mudo" style={{ fontSize: 15 }}>/dia</span></> : "—"}</div>
+            <div style={{ fontSize: 20, fontWeight: 800 }}>{p.ritmo != null ? <>{moeda(p.ritmo)}<span className="mudo" style={{ fontSize: 15 }}>/dia</span></> : "—"}</div>
             <small>Precisa de <b>{moeda(p.metaHoje ?? 0)}/dia</b>{p.abaixo ? <> · <b style={{ color: "var(--red)" }}>{Math.round(p.abaixo * 100)}% abaixo</b></> : p.ritmo != null ? " · no ritmo ✓" : ""}</small>
           </div>
         </div>
       )}
 
       <div className="mb" style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
-      <div className="card card-borda" style={{ ["--c" as string]: "var(--green)", flex: "1.4 1 300px", minWidth: 0, padding: 12, fontSize: 14 }}>
-        <h3 style={{ marginTop: 0, fontSize: 16 }}>✅ Sua rotina de hoje</h3>
+      <div className="card card-borda" style={{ ["--c" as string]: "var(--green)", flex: "1 1 260px", maxWidth: 440, minWidth: 0, padding: 10, fontSize: 12.5 }}>
+        <h3 style={{ marginTop: 0, marginBottom: 2, fontSize: 14 }}>✅ Sua rotina de hoje</h3>
         {!lista.length && !doPlanner.length && <p className="mudo" style={{ margin: 0 }}>Nada pendente hoje. Bom trabalho!</p>}
         {!modo.solo && new Date(`${d.agora}T12:00:00Z`).getUTCDay() !== 0 && (
           <details className="mt" style={{ marginBottom: 6 }}>

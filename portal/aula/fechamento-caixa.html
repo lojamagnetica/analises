@@ -120,6 +120,7 @@ html,body{margin:0}
       <button class="btn p" id="play">▶ Começar a aula</button>
       <button class="btn" id="prox">Próxima ▶</button>
       <button class="btn" id="voz" aria-pressed="true">🔊 Voz ligada</button>
+      <button class="btn" id="vel">Ritmo: rápido</button>
       <span class="grow" id="status"></span>
     </div>
   </div>
@@ -188,7 +189,7 @@ const CENAS = {
       <div class="cartao" data-t="4200" style="background:var(--feito-soft);border-color:var(--feito)"><b style="color:var(--feito)">✓ Check verde no dia = caixa enviado</b></div></div>`}
 };
 let ordem=["abertura","caminhos","subir","manual","semana","fim"];
-let atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
+let ritmo=1.3,atual=0,tocando=false,timers=[],ini=0,caminho=null,voz=true,falou=true,iniciou=false;
 const sintese=("speechSynthesis" in window)?window.speechSynthesis:null;
 function escolheVoz(){const v=sintese?sintese.getVoices():[];const br=v.filter(x=>/pt[-_]BR/i.test(x.lang));
   return br.find(x=>/google|luciana|francisca|microsoft.*(maria|francisca)/i.test(x.name))||br[0]||v.find(x=>/^pt/i.test(x.lang))||null}
@@ -198,7 +199,7 @@ function fala(c){
   if(!sintese.getVoices().length){falou=true;return}
   falou=false;
   const vz=escolheVoz();
-  c.fala.forEach((txt,k)=>{const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";u.rate=0.95;if(vz)u.voice=vz;
+  c.fala.forEach((txt,k)=>{const u=new SpeechSynthesisUtterance(txt);u.lang="pt-BR";u.rate=ritmo;if(vz)u.voice=vz;
     u.onstart=()=>$("#fala").querySelectorAll("p").forEach((p,j)=>p.classList.toggle("atual",j===k));
     if(k===c.fala.length-1){u.onend=()=>{falou=true};u.onerror=()=>{falou=true}}
     sintese.speak(u)});
@@ -247,6 +248,8 @@ $("#play").onclick=()=>{
   if(tocando){const c=CENAS[ordem[atual]];ini=performance.now()-(parseFloat($("#trilho").querySelectorAll("button")[atual].querySelector("i").style.width)/100*c.dur);if(sintese&&voz&&sintese.paused)sintese.resume();else if(sintese&&voz&&!sintese.speaking)fala(c);quadro()}
   else{cancelAnimationFrame(raf);if(sintese)sintese.pause();$("#status").textContent="Pausado"}
 };
+const RITMOS=[["normal",1.05],["rápido",1.3],["bem rápido",1.6]];let ri=1;
+$("#vel").onclick=()=>{ri=(ri+1)%RITMOS.length;ritmo=RITMOS[ri][1];$("#vel").textContent="Ritmo: "+RITMOS[ri][0];if(voz&&tocando){paraFala();fala(CENAS[ordem[atual]])}};
 $("#voz").onclick=()=>{voz=!voz;$("#voz").textContent=voz?"🔊 Voz ligada":"🔇 Voz desligada";$("#voz").setAttribute("aria-pressed",voz);paraFala();if(voz&&tocando)fala(CENAS[ordem[atual]]);else falou=true};
 document.querySelectorAll(".caminho").forEach(b=>b.onclick=()=>{
   caminho=b.dataset.c;document.querySelectorAll(".caminho").forEach(x=>x.classList.toggle("sel",x===b));

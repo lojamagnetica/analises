@@ -26,12 +26,10 @@ const ATALHOS = [
   { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
   { href: "/leitura", rotulo: "Leitura da semana", icone: "chart", cor: "var(--purple)" },
   { href: "/gestao/vez", rotulo: "Lista da vez", icone: "users", cor: "var(--orange)" },
-  { href: "/painel", rotulo: "Diagnóstico", icone: "chart", cor: "var(--red)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
   { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
-  { href: "/assistente", rotulo: "Fale com a Camilla", icone: "chat", cor: "var(--purple)" },
 ];
 
 const PASSOS_ENTRADA = [

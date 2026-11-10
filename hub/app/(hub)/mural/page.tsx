@@ -36,7 +36,10 @@ export default function Mural() {
   const { portal } = usePortal();
   const lojas = portal.lojas?.length ? portal.lojas : [""];
   const [loja, setLoja] = useLojaFoco(true);
-  const { dados: base, recarregar } = useDados(() => buscarMural(portal.id, loja), [portal.id, loja]);
+  // Portal com mais de uma loja: um mural só para todas (folhas, metas e calendário iguais para o time inteiro).
+  const unico = lojas.length > 1;
+  const chave = unico ? "" : loja;
+  const { dados: base, recarregar } = useDados(() => buscarMural(portal.id, chave), [portal.id, chave]);
   const [d, setD] = useState<DadosMural | null>(null);
   const [editando, setEditando] = useState(false);
   const [msg, setMsg] = useState("");
@@ -44,7 +47,7 @@ export default function Mural() {
 
   async function guardar(novo: DadosMural) {
     setD(novo);
-    try { await salvarMural(portal.id, loja, novo); setMsg("Salvo ✓"); } catch (e) { setMsg(`Não salvou: ${(e as Error).message}`); }
+    try { await salvarMural(portal.id, chave, novo); setMsg("Salvo ✓"); } catch (e) { setMsg(`Não salvou: ${(e as Error).message}`); }
     setTimeout(() => setMsg(""), 2000);
   }
   if (!d) return <Carregando />;
@@ -55,14 +58,12 @@ export default function Mural() {
     <>
       <style>{CSS}</style>
       <Titulo titulo="Mural" sub="As folhas para imprimir e colocar na parede. Edite o texto, copie ou imprima cada folha." />
-      {lojas.length > 1 && (
-        <div className="chips mb">{lojas.map((l) => <button key={l} type="button" className={`chip ${l === loja ? "on" : ""}`} onClick={() => { setD(null); setEditando(false); setLoja(l); }}>{l}</button>)}</div>
-      )}
+      {unico && <p className="mudo mb" style={{ marginTop: 0 }}>Um mural só para as {lojas.length} lojas: as metas trazem as vendedoras de todas.</p>}
       <div className="linha entre mb">
         <span className="mudo">{msg}</span>
         <button type="button" className="btn s peq" onClick={() => setEditando(!editando)}>{editando ? "Fechar edição" : "Editar textos"}</button>
       </div>
-      {vazio && !editando && <div className="aviso mb">O mural desta loja ainda não tem texto. Clique em "Editar textos" para escrever a missão, a visão e os valores.</div>}
+      {vazio && !editando && <div className="aviso mb">O mural ainda não tem texto. Clique em "Editar textos" para escrever a missão, a visão e os valores.</div>}
 
       {editando && (
         <div className="card mb">
@@ -123,7 +124,7 @@ export default function Mural() {
       )}
 
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
-      <DiaDoConhecimento portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
+      <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
       <Calendario d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
@@ -187,7 +188,7 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
   }, [portalId, semana]);
   const linhas = useMemo(() => {
     if (!dados) return [];
-    const todas = varias && !!d.metas_todas;
+    const todas = varias; // mural único: as vendedoras de todas as lojas na mesma folha
     const time = quemVende(dados.time.filter((p) => !varias || todas || !p.loja || p.loja === loja));
     const dp = dados.plano?.dados ?? {};
     // A meta de cada pessoa vem da meta da loja dela (com todas as lojas na folha, cada uma na sua).
@@ -226,12 +227,6 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
           <button type="button" className="btn p peq" onClick={() => imprimir("metas", false)}>Imprimir esta folha</button>
         </span>
       </div>
-      {varias && (
-        <div className="chips mb">
-          <button type="button" className={`chip ${!d.metas_todas ? "on" : ""}`} onClick={() => guardar({ ...d, metas_todas: false })}>Só as vendedoras desta loja</button>
-          <button type="button" className={`chip ${d.metas_todas ? "on" : ""}`} onClick={() => guardar({ ...d, metas_todas: true })}>Todas as vendedoras, das duas lojas</button>
-        </div>
-      )}
       <div className="linha mb" style={{ gap: 14, flexWrap: "wrap" }}>
         <label>P.A. meta <input type="number" step="0.1" value={d.pa} onChange={(e) => guardar({ ...d, pa: Number(e.target.value) })} style={{ width: 70 }} /></label>
         <label>TKM meta (R$) <input type="number" step="10" value={d.tkm} onChange={(e) => guardar({ ...d, tkm: Number(e.target.value) })} style={{ width: 90 }} /></label>

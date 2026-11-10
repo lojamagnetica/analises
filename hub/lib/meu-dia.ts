@@ -9,7 +9,7 @@ import { MESES } from "@/lib/conteudo";
 import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { PA_IDEAL, buscarCaixa, fimDoMes, fmtPa, indicadores, somar, somarMes, type Caixa } from "@/lib/caixa";
-import { buscarPlano, diasDeLoja, metaDoPlano, metasDoTime, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
+import { buscarPlano, diasDeLoja, metaDoPlano, metasDasPessoas, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
 import { VANTAGEM, principal, quemVende, type Letra } from "@/lib/pessoas";
 import { FOCOS, focoSugerido } from "@/lib/missoes";
 export { VANTAGEM };
@@ -194,8 +194,7 @@ export function placar(d: DadosMeuDia) {
 }
 
 export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[] {
-  const meta = d.plano ? metaDoPlano(d.plano.dados) : null;
-  const metas = metasDoTime(meta, d.equipe.map((p) => p.id), d.plano?.dados.metas);
+  const metas = d.plano ? metasDasPessoas(d.plano.dados, d.equipe) : {};
   // Proporção do mês já passada (até ontem), em dias de loja aberta.
   const mes = d.agora.slice(0, 7);
   const ontemIso = somarDias(d.agora, -1);

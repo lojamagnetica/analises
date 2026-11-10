@@ -1,6 +1,6 @@
 // Rode com: node --experimental-strip-types lib/vez-calculo.test.ts
 import assert from "node:assert/strict";
-import { corDaMeta, diasDeLoja, filaDeEspera, horaDe, metaDoDia, ordenarFila, resumoDoDia, textoDoResumo, type Atend } from "./vez-calculo.ts";
+import { contarPorPessoa, corDaMeta, diasDeLoja, filaDeEspera, horaDe, metaDoDia, ordenarFila, resumoDoDia, textoDoResumo, type Atend } from "./vez-calculo.ts";
 
 // 10h e 11h em Recife (UTC−3)
 const a = (id: string, pessoa: string, utc: string, resultado: Atend["resultado"], motivo = "", fim?: string): Atend => ({ id, pessoa_id: pessoa, nome: pessoa.toUpperCase(), inicio_em: utc, fim_em: fim ?? null, resultado, motivo, cliente: "" });
@@ -44,4 +44,16 @@ assert.equal(corDaMeta(1.02, false), "verde");
 assert.equal(corDaMeta(0.9, false), "amarela");
 assert.equal(metaDoDia({ meta: 1000, realizado: 1200, hoje: "2026-11-10" }).batida, true);
 assert.equal(metaDoDia({ meta: 1000, realizado: 0, hoje: "2026-11-02" }).ritmo, null); // domingo não conta: ainda não era para ter vendido nada
+
+// Contagem por vendedora: dia e mês, vendeu e não vendeu (em andamento conta só como atendimento)
+const c = contarPorPessoa([
+  { pessoa_id: "ana", dia: "2026-11-10", resultado: "vendeu" }, { pessoa_id: "ana", dia: "2026-11-10", resultado: "nao_vendeu" }, { pessoa_id: "ana", dia: "2026-11-10", resultado: null },
+  { pessoa_id: "ana", dia: "2026-11-04", resultado: "vendeu" }, { pessoa_id: "bia", dia: "2026-11-09", resultado: "nao_vendeu" },
+  { pessoa_id: "ana", dia: "2026-10-30", resultado: "vendeu" }, { pessoa_id: "fora", dia: "2026-11-10", resultado: "vendeu" }, { pessoa_id: null, dia: "2026-11-10", resultado: "vendeu" },
+], [{ id: "ana", nome: "Ana" }, { id: "bia", nome: "Bia" }, { id: "cla", nome: "Cláudia" }], "2026-11-10");
+assert.deepEqual(c[0].hoje, { total: 3, vendeu: 1, naoVendeu: 1 });
+assert.deepEqual(c[0].mes, { total: 4, vendeu: 2, naoVendeu: 1 });
+assert.deepEqual(c[1].hoje, { total: 0, vendeu: 0, naoVendeu: 0 });
+assert.deepEqual(c[1].mes, { total: 1, vendeu: 0, naoVendeu: 1 });
+assert.equal(c[2].mes.total, 0);
 console.log("lista da vez: tudo certo");

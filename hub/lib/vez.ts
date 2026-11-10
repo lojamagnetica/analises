@@ -4,7 +4,8 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { BASE } from "@/lib/config";
-import type { Atend } from "@/lib/vez-calculo";
+import { contarPorPessoa, type Atend } from "@/lib/vez-calculo";
+import { quemVende } from "@/lib/pessoas";
 
 export type FilaItem = { pessoa_id: string; nome: string; status: "fila" | "atendendo"; chegou_em: string; ordem_em: string };
 export type MissaoDia = { id: string; texto: string; feito: boolean };
@@ -66,5 +67,18 @@ export const missaoAdicionar = (portalId: string, dia: string, pessoas: string[]
   sb().from("loja_missao_dia").insert(pessoas.map((pessoa_id) => ({ portal_id: portalId, dia, pessoa_id, texto })));
 export const missaoExcluir = (id: string) => sb().from("loja_missao_dia").delete().eq("id", id);
 export const novoLinkDaPessoa = (id: string) => sb().from("loja_equipe").update({ vez_token: crypto.randomUUID() }).eq("id", id);
+
+/** Atendimentos de cada vendedora no dia e no mês, só de loja_vez_atend. loja = null: todas as lojas do portal. */
+export async function buscarContagemVez(portalId: string, loja: string | null) {
+  const dia = hoje();
+  let qa = sb().from("loja_vez_atend").select("pessoa_id, dia, resultado, loja").eq("portal_id", portalId).gte("dia", `${dia.slice(0, 7)}-01`).lte("dia", dia);
+  if (loja !== null) qa = qa.eq("loja", loja);
+  const [a, e] = await Promise.all([qa, sb().from("loja_equipe").select("id, nome, funcao, loja").eq("portal_id", portalId).eq("ativo", true).order("nome")]);
+  const pessoas = quemVende(((e.data ?? []) as { id: string; nome: string; funcao: string | null; loja: string | null }[]).filter((p) => loja === null || !p.loja || p.loja === loja));
+  return {
+    dia, loja: new Map(pessoas.map((p) => [p.id, p.loja ?? ""])),
+    linhas: contarPorPessoa((a.data ?? []) as { pessoa_id: string | null; dia: string; resultado: "vendeu" | "nao_vendeu" | null }[], pessoas.map((p) => ({ id: p.id, nome: p.nome.split(" ")[0] })), dia),
+  };
+}
 
 export const hojeVez = hoje;

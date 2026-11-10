@@ -15,6 +15,7 @@ import { dadosCompletos, liberado, prazoDiagnostico, requisito, emOnboarding } f
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
+import { VezNoAtalho } from "@/components/VezNoAtalho";
 import { CaixaDaSemana, LeituraDaSemana } from "@/components/LeituraDaSemana";
 import { RankingDoMes } from "@/components/RankingVendedoras";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
@@ -238,9 +239,11 @@ export default function Inicio() {
       <div className="atalhos">
         {/* Atalhos com cadeado (liberados em outra etapa) ficam no fim. */}
         {[...atalhos.filter((a) => !trancado(a.href)), ...atalhos.filter((a) => trancado(a.href))].map((a) => (
-          <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor }}>
+          <Link key={a.href} href={a.href} className="atalho" style={{ ["--c" as string]: a.cor, ...(a.href === "/gestao/vez" && !trancado(a.href) ? { gridColumn: "span 2" } : {}) }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
+            {/* Lista da vez: os atendimentos de cada vendedora, hoje e no mês. */}
+            {a.href === "/gestao/vez" && !trancado(a.href) && <VezNoAtalho />}
             {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}
             {a.href.startsWith("/planeje/mes") && !trancado(a.href) && (
               planoProx && planoProx.status !== "rascunho"

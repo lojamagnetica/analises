@@ -81,5 +81,25 @@ const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).fo
   ok(await page.getByRole("heading", { name: "Loja Um" }).count() === 1, "cada loja tem o seu bloco");
   ok(await page.getByText("100%").count() >= 1 && await page.getByText("50%").count() >= 1, "a conversão é separada por loja (Loja Dois 100%, Loja Um 50%)");
   ok(await page.getByRole("link", { name: "Abrir" }).count() === 2, "cada loja mostra só o link da sua equipe");
+  await page.close();
+}
+// 5) Atalho no Início: atendimentos de cada vendedora, hoje e no mês
+{
+  const page = await browser.newPage({ viewport: { width: 1300, height: 1000 } });
+  page.on("pageerror", (e) => console.log("erro na página:", e.message));
+  const l = lojaBase({ tipo: "Consultoria" });
+  const mesAtual = hoje.slice(0, 7);
+  const A = (id, pessoa, nome, dia, res) => ({ id, portal_id: l.portal, loja: "", dia, pessoa_id: pessoa, nome, inicio_em: agora, fim_em: agora, resultado: res, motivo: "", cliente: "", fora_da_vez: false });
+  await simular(page, { tabelas: { ...l.tabelas,
+    loja_equipe: [{ id: "e1", portal_id: l.portal, nome: "Ana Souza", funcao: "Vendedora", ativo: true, loja: null }, { id: "e2", portal_id: l.portal, nome: "Bia Lima", funcao: "Vendedora", ativo: true, loja: null }],
+    loja_vez_atend: [A("a1", "e1", "Ana Souza", hoje, "vendeu"), A("a2", "e1", "Ana Souza", hoje, "nao_vendeu"), A("a3", "e1", "Ana Souza", `${mesAtual}-01`, "vendeu")],
+  } });
+  await page.goto(`${BASE}/inicio/`);
+  await page.getByText("Seus atalhos").waitFor();
+  const atalho = page.locator("a.atalho", { hasText: "Lista da vez" });
+  await atalho.waitFor();
+  const txt = await atalho.innerText();
+  ok(/Ana/.test(txt) && /2 · 1✓ 1✗/.test(txt), "mostra os atendimentos de hoje da Ana (2: 1 venda e 1 não)");
+  ok(/(\d+) · 2✓ 1✗/.test(txt) && /Bia/.test(txt), "mostra os atendimentos do mês e a Bia sem atendimentos");
   await browser.close();
 }

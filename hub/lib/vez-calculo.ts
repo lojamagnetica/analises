@@ -121,3 +121,27 @@ export function textoDoResumo(loja: string, dia: string, r: ResumoDia) {
   if (r.motivos.length) linhas.push("", "*Por que não vendeu*", ...r.motivos.slice(0, 5).map((x) => `${x.motivo}: ${x.qtd}`));
   return linhas.join("\n");
 }
+
+// ───── Contagem por vendedora (atalho do Início da gestão) ─────
+
+export type ContaVez = { total: number; vendeu: number; naoVendeu: number };
+export type LinhaContagem = { pessoa_id: string; nome: string; hoje: ContaVez; mes: ContaVez };
+const zero = (): ContaVez => ({ total: 0, vendeu: 0, naoVendeu: 0 });
+
+/** Atendimentos de cada vendedora no dia e no mês (os que ainda estão em andamento contam como atendimento, sem resultado). */
+export function contarPorPessoa(
+  atends: { pessoa_id: string | null; dia: string; resultado: "vendeu" | "nao_vendeu" | null }[],
+  pessoas: { id: string; nome: string }[],
+  hoje: string,
+): LinhaContagem[] {
+  const linhas = new Map<string, LinhaContagem>(pessoas.map((p) => [p.id, { pessoa_id: p.id, nome: p.nome, hoje: zero(), mes: zero() }]));
+  const mes = hoje.slice(0, 7);
+  for (const a of atends) {
+    const l = a.pessoa_id ? linhas.get(a.pessoa_id) : undefined;
+    if (!l || a.dia.slice(0, 7) !== mes || a.dia > hoje) continue;
+    const somar = (c: ContaVez) => { c.total++; if (a.resultado === "vendeu") c.vendeu++; else if (a.resultado === "nao_vendeu") c.naoVendeu++; };
+    somar(l.mes);
+    if (a.dia === hoje) somar(l.hoje);
+  }
+  return [...linhas.values()];
+}

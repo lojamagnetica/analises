@@ -15,7 +15,8 @@ await simular(page, { usuario: { id: "u-cs", email: "cs@teste.com" }, tabelas: {
   loja_caixa: [], reunioes: [], contratos: [], loja_leituras: [], loja_plano_mes: [],
 } });
 await page.goto(`${BASE}/empresa/cs/`);
-await page.getByText("Faça agora").first().waitFor();
+await page.getByRole("button", { name: /Por loja/ }).click();
+await page.getByText("Sem entrar no portal").or(page.getByText("A Camilla liberou")).first().waitFor({ timeout: 10000 });
 const t = await page.locator("main").innerText(); if (process.env.DEBUG) console.log(t.slice(0, 900));
 ok(/Loja Atrasada/.test(t) && /Sem entrar no portal há 10 dias/.test(t), "mostra a loja sem entrar há 10 dias");
 ok(await page.getByRole("link", { name: "Mandar no WhatsApp" }).first().getAttribute("href").then((h) => h?.includes("wa.me/5581999990000") && decodeURIComponent(h).includes("Aqui é a Claudia")), "o WhatsApp abre com a mensagem pronta no número da loja");

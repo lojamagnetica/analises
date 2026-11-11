@@ -22,7 +22,7 @@ export default function Acompanhamento() {
     const semana = semanaDe();
     const prox = mesesDoInicio().proximo;
     const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: fichas }, { data: planosNome }, { data: contratos }] = await Promise.all([
-      sb.from("portais").select("id, loja, tipo, menu_oculto").eq("ativo", true).order("loja"),
+      sb.from("portais").select("id, loja, tipo, menu_oculto").eq("ativo", true).eq("cs_acompanha", true).order("loja"),
       sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
       sb.from("loja_caixa").select("portal_id, dia").gte("dia", semana),
       sb.from("loja_leituras").select("portal_id, semana, publicada, pronta").eq("semana", semana),

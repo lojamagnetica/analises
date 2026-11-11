@@ -11,7 +11,7 @@ page.on("pageerror", (e) => console.log("erro na página:", e.message));
 const ontem = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 await simular(page, { usuario: { id: "u-cs", email: "cs@teste.com" }, tabelas: {
   perfis: [{ id: "u-cs", nome: "Claudia Teste", email: "cs@teste.com", papel: "equipe", portal_id: null, aprova: false, monta: true, foto: null }, { id: "p1", nome: "Ana", email: "a@a.com", papel: "mentorado", portal_id: "A", ultimo_acesso: ontem(10) }],
-  portais: [{ id: "A", loja: "Loja Atrasada", tipo: "Mentoria", whatsapp: "81999990000", responsavel: "Ana Souza", ativo: true, menu_oculto: [] }, { id: "B", loja: "Loja Em Dia", tipo: "Mentoria", whatsapp: null, responsavel: "Bia", ativo: true, menu_oculto: [] }],
+  portais: [{ id: "A", loja: "Loja Atrasada", tipo: "Mentoria", whatsapp: "81999990000", responsavel: "Ana Souza", ativo: true, menu_oculto: [], cs_acompanha: true }, { id: "B", loja: "Loja Em Dia", tipo: "Mentoria", whatsapp: null, responsavel: "Bia", ativo: true, menu_oculto: [], cs_acompanha: true }],
   loja_caixa: [], reunioes: [], contratos: [], loja_leituras: [], loja_plano_mes: [],
 } });
 await page.goto(`${BASE}/empresa/cs/`);

@@ -43,6 +43,8 @@ export async function buscarPendencias(portalId?: string): Promise<PortalPend[]>
     return { data: (data ?? []) as unknown as Reg[] };
   };
   let qp = sb().from("portais").select("id, loja, responsavel, tipo").eq("ativo", true).order("loja");
+  // A lista geral só tem as lojas que já estão no acompanhamento da CS; a ficha de uma loja específica abre sempre.
+  if (!portalId) qp = qp.eq("cs_acompanha", true);
   if (portalId) qp = qp.eq("id", portalId);
   const [{ data: portais }, { data: pers }, { data: equipe }, { data: caixa }, { data: clientes }, { data: reunioes }, { data: insta }, { data: diag }, { data: acessos }, { data: salvas }] = await Promise.all([
     qp,

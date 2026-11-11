@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora, haQuanto } from "@/lib/formato";
-import { linkZap, painelCs, type LojaCs, type Nivel } from "@/lib/cs";
+import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 const COR: Record<Nivel, string> = { vermelho: "var(--red)", amarelo: "var(--orange)", verde: "var(--feito)" };
 const ROTULO: Record<Nivel, string> = { vermelho: "Precisa de você hoje", amarelo: "Atenção", verde: "Em dia" };
@@ -14,12 +15,72 @@ function Ponto({ nivel }: { nivel: Nivel }) {
   return <span aria-hidden style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: COR[nivel], marginRight: 7, flex: "none" }} />;
 }
 
-/** Início da CS: o que precisa da Claudia hoje, em ordem, com a mensagem pronta para cada loja. */
+/** Registrar a conversa com a loja: o que ela respondeu, se precisa de ajuda e o próximo passo. Fecha o alerta que pediu o contato. */
+function RegistrarConversa({ loja, registro, nome, feito }: { loja: LojaCs; registro: { tipo: string; ref: string }; nome: string; feito: () => void }) {
+  const [resumo, setResumo] = useState("");
+  const [ajuda, setAjuda] = useState(false);
+  const [passo, setPasso] = useState("");
+  const [quando, setQuando] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const salvar = async () => {
+    setSalvando(true);
+    const { error } = await supabaseBrowser().from("cs_contatos").insert({ portal_id: loja.id, tipo: registro.tipo, ref: registro.ref, feito_em: new Date().toISOString(), feito_por: nome || null, resumo: resumo.trim() || null, precisa_ajuda: ajuda, proximo_passo: passo.trim() || null, proximo_em: quando || null });
+    setSalvando(false);
+    if (error) { alert(error.message); return; }
+    feito();
+  };
+  return (
+    <div className="card mt" style={{ background: "var(--soft)" }}>
+      <label className="rotulo">O que a loja respondeu?</label>
+      <textarea rows={2} value={resumo} onChange={(e) => setResumo(e.target.value)} placeholder="Ex.: viu, entendeu, vai começar pela vitrine" />
+      <label className="marcar"><input type="checkbox" checked={ajuda} onChange={(e) => setAjuda(e.target.checked)} /><span>Tem uma dificuldade em que precisamos ajudar</span></label>
+      <div className="grade g2" style={{ gap: 10 }}>
+        <div><label className="rotulo">Próximo passo</label><input type="text" value={passo} onChange={(e) => setPasso(e.target.value)} placeholder="Ex.: ligar na quinta" /></div>
+        <div><label className="rotulo">Quando</label><input type="date" value={quando} onChange={(e) => setQuando(e.target.value)} /></div>
+      </div>
+      <div className="linha mt" style={{ gap: 8 }}>
+        <button type="button" className="btn p peq" disabled={salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar a conversa"}</button>
+      </div>
+    </div>
+  );
+}
+
+/** Um cartão por loja: tudo o que ela precisa hoje, cada item com a mensagem pronta e o registro da conversa. */
+function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; abrir: (id: string, destino?: string) => void; recarregar: () => void }) {
+  const [copiada, setCopiada] = useState("");
+  const [aberto, setAberto] = useState<string | null>(null);
+  const alertas = [...l.alertas].sort((a, b) => Number(b.grave) - Number(a.grave));
+  const copiar = async (id: string, msg: string) => { try { await navigator.clipboard.writeText(msg); setCopiada(id); setTimeout(() => setCopiada(""), 2000); } catch { /* sem permissão */ } };
+  const item = (a: AlertaCs) => (
+    <div key={a.chave} style={{ padding: "8px 0", borderTop: "1px solid var(--line)" }}>
+      <div style={{ color: a.grave ? "var(--red)" : "inherit" }}>{a.txt}</div>
+      <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+        {a.msg && <a className="btn p peq" href={linkZap(l.whatsapp, a.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>}
+        {a.msg && <button type="button" className="btn s peq" onClick={() => copiar(`${l.id}-${a.chave}`, a.msg as string)}>{copiada === `${l.id}-${a.chave}` ? "Copiada ✓" : "Copiar a mensagem"}</button>}
+        {a.registro && <button type="button" className="btn s peq" onClick={() => setAberto(aberto === a.chave ? null : a.chave)}>Conversei</button>}
+        {a.destino && !a.msg && <button type="button" className="btn s peq" onClick={() => abrir(l.id, a.destino)}>Abrir</button>}
+      </div>
+      {a.registro && aberto === a.chave && <RegistrarConversa loja={l} registro={a.registro} nome={nome} feito={() => { setAberto(null); recarregar(); }} />}
+    </div>
+  );
+  return (
+    <div className="card card-borda mb" style={{ ["--c" as string]: COR[l.nivel] }}>
+      <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+        <span className="linha" style={{ alignItems: "center" }}><Ponto nivel={l.nivel} /><b style={{ fontSize: 16 }}>{l.loja}</b></span>
+        <small className="mudo">{l.ultimo ? `acesso ${haQuanto(l.ultimo)}` : "nunca entrou"}{l.contato ? ` · conversamos ${haQuanto(l.contato.feito_em)}` : ""}{l.contato?.precisa_ajuda ? " · pediu ajuda" : ""}</small>
+      </div>
+      {l.contato?.resumo && <small className="mudo" style={{ display: "block", marginTop: 2 }}>Última conversa: {l.contato.resumo}</small>}
+      {alertas.map(item)}
+      <div className="linha mt"><button type="button" className="btn s peq" onClick={() => abrir(l.id, "/inicio")}>Abrir a loja</button></div>
+    </div>
+  );
+}
+
+/** Faça agora da CS: uma loja, um cartão, os mais urgentes primeiro. Cada alerta some sozinho quando o dado entra ou a conversa é registrada. */
 export default function InicioCs() {
   const { nome, abrirPortal } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
-  const [ver, setVer] = useState<"agora" | "todas">("agora");
-  const [copiada, setCopiada] = useState("");
+  const [ver, setVer] = useState<"agora" | "depois" | "todas">("agora");
   if (!dados) return <Carregando />;
 
   const { lojas, reunioes } = dados;
@@ -27,15 +88,12 @@ export default function InicioCs() {
   const amarelas = lojas.filter((l) => l.nivel === "amarelo");
   const comCaixa = lojas.filter((l) => l.caixaCompleto !== null);
   const caixaOk = comCaixa.filter((l) => l.caixaCompleto).length;
-  // Faça agora: os alertas graves, loja por loja, do mais urgente para o menos.
-  const tarefas = lojas.flatMap((l) => l.alertas.filter((a) => a.grave).map((a) => ({ l, a })));
-  const copiar = async (id: string, msg: string) => {
-    try { await navigator.clipboard.writeText(msg); setCopiada(id); setTimeout(() => setCopiada(""), 2000); } catch { /* sem permissão */ }
-  };
+  const depois = lojas.filter((l) => l.nivel !== "vermelho" && l.alertas.length);
+  const nomeCs = nome?.split(" ")[0] ?? "";
 
   return (
     <>
-      <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub="O que precisa de você hoje, em ordem. Resolva de cima para baixo: cada item já traz a mensagem pronta para mandar à loja." />
+      <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub="Uma loja, um cartão. Resolva de cima para baixo: cada item traz a mensagem pronta, e a conversa que você registrar fecha o alerta." />
 
       <div className="grade g4 mb">
         <div className="kpi"><small>Precisam de você hoje</small><b style={{ fontSize: 28, color: vermelhas.length ? "var(--red)" : "var(--feito)" }}>{vermelhas.length}</b><small className="mudo">de {lojas.length} lojas</small></div>
@@ -45,31 +103,24 @@ export default function InicioCs() {
       </div>
 
       <div className="chips mb">
-        <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Faça agora · {tarefas.length}</button>
+        <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Faça agora · {vermelhas.length}</button>
+        <button type="button" className={`chip${ver === "depois" ? " escolhido" : ""}`} onClick={() => setVer("depois")}>Depois · {depois.length}</button>
         <button type="button" className={`chip${ver === "todas" ? " escolhido" : ""}`} onClick={() => setVer("todas")}>Todas as lojas · {lojas.length}</button>
         <button type="button" className="chip" onClick={recarregar}>Atualizar</button>
       </div>
 
       {ver === "agora" && (
         <>
-          {!tarefas.length && <div className="card mudo">Nada urgente agora. Todas as lojas estão em dia. 🎉</div>}
-          {tarefas.map(({ l, a }) => (
-            <div key={`${l.id}-${a.chave}`} className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>
-              <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-                <b>{l.loja}</b>
-                <small className="mudo">{l.ultimo ? `último acesso ${haQuanto(l.ultimo)}` : "nunca entrou"}</small>
-              </div>
-              <p style={{ margin: "4px 0 8px" }}>{a.txt}</p>
-              <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
-                {a.msg && <a className="btn p peq" href={linkZap(l.whatsapp, a.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>}
-                {a.msg && <button type="button" className="btn s peq" onClick={() => copiar(`${l.id}-${a.chave}`, a.msg as string)}>{copiada === `${l.id}-${a.chave}` ? "Copiada ✓" : "Copiar a mensagem"}</button>}
-                <button type="button" className="btn s peq" onClick={() => abrirPortal(l.id, a.destino ?? "/inicio")}>Abrir a loja</button>
-              </div>
-            </div>
-          ))}
+          {!vermelhas.length && <div className="card mudo">Nada urgente agora. Todas as lojas estão em dia. 🎉</div>}
+          {vermelhas.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} />)}
         </>
       )}
-
+      {ver === "depois" && (
+        <>
+          {!depois.length && <div className="card mudo">Nada para depois.</div>}
+          {depois.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} />)}
+        </>
+      )}
       {ver === "todas" && <Lojas lojas={lojas} abrir={abrirPortal} />}
 
       {reunioes.length > 0 && (
@@ -86,12 +137,7 @@ export default function InicioCs() {
         </>
       )}
 
-      <div className="secao">Atalhos</div>
-      <div className="grade g4 mb">
-        {[["/equipe/central", "Jornada das clientes"], ["/equipe/pendencias", "Pendências por cliente"], ["/empresa/acompanhamento", "Lojas que precisam de atenção"], ["/empresa/caixa-do-dia", "Caixa do dia"]].map(([href, rot]) => (
-          <Link key={href} href={href} className="card" style={{ textDecoration: "none", color: "inherit", fontWeight: 600 }}>{rot}</Link>
-        ))}
-      </div>
+      <p className="ajuda"><Link href="/equipe/controle">Voltar ao Controle de clientes</Link></p>
     </>
   );
 }

@@ -18,6 +18,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
     titulo: "Todo dia", sub: "A rotina da manhã e da tarde, nesta ordem.",
     atalhos: [
       { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
+      { href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox", so: "monta" },
       { href: "/equipe/contatos", rotulo: "Contatos das lojas", icone: "phone" },
       { href: "/equipe/duvidas", rotulo: "Fale com a Camilla", icone: "chat" },
       { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "heart" },
@@ -56,13 +57,14 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 export default function ControleDeClientes() {
   const { nome, monta, conversas, userId } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
+  const { dados: caixaAberta } = useDados(async () => (monta ? (await supabaseBrowser().from("caixa_dia").select("id", { count: "exact", head: true }).eq("perfil", "camilla").neq("status", "Feito")).count ?? 0 : 0), [monta]);
   const { dados: paraRevisar } = useDados(async () => (await supabaseBrowser().from("reunioes_gravadas").select("id", { count: "exact", head: true }).in("status", ["rascunho", "sem_loja"])).count ?? 0, []);
   const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, userId]);
   useEffect(() => { document.title = "Controle de clientes · magnética.hub"; }, []);
   if (!dados) return <Carregando />;
   const hoje = dados.lojas.filter((l) => l.nivel === "vermelho").length;
   const atencao = dados.lojas.filter((l) => l.nivel === "amarelo").length;
-  const aviso = (href: string) => (href === "/equipe/reunioes-revisar" && (paraRevisar ?? 0) > 0 ? `${paraRevisar} para revisar` : href === "/empresa/cs" && hoje > 0 ? `${hoje} ${hoje === 1 ? "loja precisa" : "lojas precisam"} de você` : href === "/empresa/acompanhamento" && atencao > 0 ? `${atencao} em atenção` : null);
+  const aviso = (href: string) => (href === "/empresa/caixa-do-dia" && (caixaAberta ?? 0) > 0 ? `${caixaAberta} em aberto` : href === "/equipe/reunioes-revisar" && (paraRevisar ?? 0) > 0 ? `${paraRevisar} para revisar` : href === "/empresa/cs" && hoje > 0 ? `${hoje} ${hoje === 1 ? "loja precisa" : "lojas precisam"} de você` : href === "/empresa/acompanhamento" && atencao > 0 ? `${atencao} em atenção` : null);
   return (
     <>
       <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub={`Controle de clientes: ${dados.lojas.length} ${dados.lojas.length === 1 ? "loja acompanhada" : "lojas acompanhadas"}${dados.aCaminho.length ? `, ${dados.aCaminho.length} a caminho` : ""}. ${hoje ? `${hoje} ${hoje === 1 ? "precisa" : "precisam"} de você hoje.` : "Todas em dia por enquanto."}`} />

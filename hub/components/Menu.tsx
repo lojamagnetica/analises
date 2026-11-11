@@ -67,11 +67,12 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       ],
     });
     g.push({
-      id: "central", rotulo: "Central do Cliente", icone: "kanban",
+      id: "central", rotulo: "Central do Cliente", icone: "relacionamento",
       itens: [
         // Do que mais se usa no dia a dia para o que menos. Para a CS (monta, sem aprovar), o que a Camilla tem na
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
-        { href: "/empresa/cs", rotulo: "Início da CS", icone: "target" },
+        { href: "/equipe/controle", rotulo: "Controle de clientes", icone: "relacionamento" },
+        { href: "/empresa/cs", rotulo: "Faça agora (Início da CS)", icone: "target" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },

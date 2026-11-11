@@ -56,6 +56,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "empresa", rotulo: "Nossa empresa", icone: "home",
       itens: [
         // Só o que é da empresa; o trabalho com as lojas fica na Central do Cliente.
+        { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },

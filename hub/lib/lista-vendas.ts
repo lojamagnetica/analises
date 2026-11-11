@@ -3,7 +3,7 @@
 
 export type FormaLida = "pix" | "credito" | "debito" | "dinheiro" | "crediario" | "vale";
 export type ItemLido = { codigo: string; produto: string; qtd: number; total: number };
-export type VendaLida = { id: string; dia: string; vendedora: string; valor: number; pecas: number; pagamentos: { forma: FormaLida; valor: number }[]; itens: ItemLido[] };
+export type VendaLida = { id: string; dia: string; vendedora: string; cliente: string; valor: number; pecas: number; pagamentos: { forma: FormaLida; valor: number }[]; itens: ItemLido[] };
 export type DiaLido = {
   dia: string; faturamento: number; vendas: number; pecas: number;
   vendedoras: { nome: string; faturamento: number; vendas: number; pecas: number }[];
@@ -38,7 +38,7 @@ export function lerVendas(texto: string): VendaLida[] {
       const c = linha.split(/\s{2,}/);
       const m = /^(\d\d)\/(\d\d)\/(\d{4})\s+\d\d:\d\d:\d\d$/.exec(c[3] ?? "");
       if (m && c.length >= 7 && DINHEIRO.test(c[c.length - 1])) {
-        cur = { id: c[0], dia: `${m[3]}-${m[2]}-${m[1]}`, vendedora: (c[4] ?? "").trim(), valor: num(c[c.length - 1]), pecas: 0, pagamentos: [], itens: [] };
+        cur = { id: c[0], dia: `${m[3]}-${m[2]}-${m[1]}`, vendedora: (c[4] ?? "").trim(), cliente: (c[5] ?? "").trim(), valor: num(c[c.length - 1]), pecas: 0, pagamentos: [], itens: [] };
         vendas.push(cur);
         continue;
       }

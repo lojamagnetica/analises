@@ -77,7 +77,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
         ...(cs ? [{ href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark" }] : []),
-        ...(cs ? [{ href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" }] : []),
         { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },
         ...(cs ? [
           { href: "/equipe/aprovar", rotulo: "Esperando a Camilla", icone: "check" },

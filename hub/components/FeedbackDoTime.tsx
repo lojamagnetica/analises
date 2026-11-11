@@ -35,6 +35,7 @@ function CartaoPessoa({ p }: { p: PessoaFeedback }) {
               ))}
             </div>
           ) : <div className="mudo" style={{ border: "1.5px dashed var(--line)", borderRadius: 10, padding: "8px 10px", marginTop: 6, fontSize: 14 }}>A combinar com ela na conversa: o quê, quanto e até quando.</div>}
+          {p.link && <a className="btn p peq" style={{ marginTop: 10 }} href={p.link} target="_blank" rel="noopener">{p.linkRotulo || "Abrir o material de apoio"} →</a>}
         </div>
       </div>
     </div>
@@ -70,6 +71,10 @@ export function FeedbackEditor({ pessoas, mudar }: { pessoas: PessoaFeedback[]; 
             <input type="text" placeholder="O quê" value={p.oque} onChange={(e) => troca(i, { oque: e.target.value })} style={{ flex: "2 1 200px" }} />
             <input type="text" placeholder="Quanto" value={p.quanto} onChange={(e) => troca(i, { quanto: e.target.value })} style={{ flex: "1 1 140px" }} />
             <input type="text" placeholder="Até quando" value={p.ate} onChange={(e) => troca(i, { ate: e.target.value })} style={{ flex: "1 1 140px" }} />
+          </div>
+          <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+            <input type="url" aria-label="Link de apoio" placeholder="Link de apoio (opcional): a lista, o material…" value={p.link ?? ""} onChange={(e) => troca(i, { link: e.target.value })} style={{ flex: "2 1 240px" }} />
+            <input type="text" aria-label="Nome do botão do link" placeholder="Nome do botão (ex.: Abrir a lista)" value={p.linkRotulo ?? ""} onChange={(e) => troca(i, { linkRotulo: e.target.value })} style={{ flex: "1 1 160px" }} />
           </div>
         </div>
       ))}

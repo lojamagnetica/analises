@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { aulaPorId, linkAula } from "@/lib/guias";
 import { Titulo } from "@/components/Titulo";
+import { PontosGestao } from "@/components/PontosGestao";
 import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { quemVende } from "@/lib/pessoas";
@@ -234,6 +235,7 @@ export default function ListaDaVez() {
           <PainelDaLoja loja={l} dia={dia} ehHoje={ehHoje} />
         </section>
       ))}
+      <PontosGestao />
     </>
   );
 }

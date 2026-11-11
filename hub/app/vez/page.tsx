@@ -6,7 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { metasDoTime } from "@/lib/plano-mes";
 import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFila, resumoDoDia } from "@/lib/vez-calculo";
-import { vezAbrir, vezAtender, vezCorrigir, vezEncerrar, vezEntrar, vezMissaoMarcar, vezPassar, vezSair, type Painel } from "@/lib/vez";
+import { vezAbrir, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel } from "@/lib/vez";
+import { PontosDaVez } from "@/components/PontosDaVez";
+import { ClientesParaChamar } from "@/components/ClientesParaChamar";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const n1 = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -54,9 +56,11 @@ function Vez() {
   const [outro, setOutro] = useState("");
   const [cliente, setCliente] = useState("");
   const [corrigir, setCorrigir] = useState<string | null>(null);
+  const [extras, setExtras] = useState<Extras | null>(null);
+  const [indicou, setIndicou] = useState<string | null>(null);
   const [agora, setAgora] = useState(() => Date.now());
 
-  const carregar = useCallback(async () => { if (valido) setP(await vezAbrir(token)); else setP(null); }, [token, valido]);
+  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); } else setP(null); }, [token, valido]);
   useEffect(() => {
     document.title = "Lista da vez · magnética.hub";
     carregar();
@@ -93,8 +97,8 @@ function Vez() {
 
   const salvar = async () => {
     if (!fechando) return;
-    await agir(() => vezEncerrar(token, fechando, fechando === "nao_vendeu" ? motivoFinal : "", cliente.trim(), fechando === "nao_vendeu" ? obs.trim() : ""));
-    setFechando(null); setMotivos([]); setOutro(""); setCliente(""); setObs("");
+    await agir(() => vezEncerrar(token, fechando, fechando === "nao_vendeu" ? motivoFinal : "", cliente.trim(), fechando === "nao_vendeu" ? obs.trim() : "", fechando === "vendeu" ? indicou : null));
+    setIndicou(null); setFechando(null); setMotivos([]); setOutro(""); setCliente(""); setObs("");
   };
   const motivoMsg = md
     ? md.batida ? "Meta do mês batida! 🎉 Agora cada venda é a mais."
@@ -158,6 +162,15 @@ function Vez() {
                     <textarea placeholder="O que a cliente queria? (se quiser anotar. Ex.: casaco P de lã)" value={obs} onChange={(e) => setObs(e.target.value)} maxLength={300} rows={2} style={{ width: "100%", marginTop: 10, fontSize: 16, fontFamily: "inherit" }} />
                   </>
                 )}
+                {fechando === "vendeu" && (extras?.colegas.length ?? 0) > 0 && p.hoje >= "2026-11-01" && p.hoje <= "2026-12-31" && (
+                  <div style={{ marginTop: 10 }}>
+                    <b>Alguém indicou essa cliente para você?</b> <small className="mudo">Quem indicou ganha +20 pontos</small>
+                    <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                      <button type="button" className={`vez-chip ${indicou === null ? "on" : ""}`} onClick={() => setIndicou(null)}>Ninguém</button>
+                      {extras?.colegas.map((c) => <button key={c.id} type="button" className={`vez-chip ${indicou === c.id ? "on" : ""}`} onClick={() => setIndicou(c.id)}>{c.nome}</button>)}
+                    </div>
+                  </div>
+                )}
                 <input type="text" placeholder="Nome da cliente (se quiser anotar)" value={cliente} onChange={(e) => setCliente(e.target.value)} maxLength={60} style={{ width: "100%", marginTop: 10, fontSize: 16 }} />
                 <div className="linha" style={{ gap: 8, marginTop: 10 }}>
                   <button type="button" className="btn s" style={{ flex: 1 }} onClick={() => { setFechando(null); setMotivos([]); setObs(""); }}>Voltar</button>
@@ -209,10 +222,13 @@ function Vez() {
                 <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} /></span>
               </label>
             ))}
-            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏</p>}
+            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏 +1 estrela ⭐</p>}
           </div>
         )}
       </div>
+
+      {extras && <PontosDaVez p={extras.pontos} />}
+      {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
 
       {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}
       <div className="card mb">

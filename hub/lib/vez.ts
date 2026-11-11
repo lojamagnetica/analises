@@ -27,8 +27,19 @@ export const vezEntrar = (token: string) => sb().rpc("vez_entrar", { p_token: to
 export const vezSair = (token: string) => sb().rpc("vez_sair", { p_token: token });
 export const vezPassar = (token: string) => sb().rpc("vez_passar", { p_token: token });
 export const vezAtender = (token: string) => sb().rpc("vez_atender", { p_token: token });
-export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", motivo: string, cliente: string, obs: string) =>
-  sb().rpc("vez_encerrar", { p_token: token, p_resultado: resultado, p_motivo: motivo, p_cliente: cliente, p_obs: obs });
+export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", motivo: string, cliente: string, obs: string, indicou: string | null = null) =>
+  sb().rpc("vez_encerrar", { p_token: token, p_resultado: resultado, p_motivo: motivo, p_cliente: cliente, p_obs: obs, p_indicou: indicou });
+
+// ───── Pontos (gamificação) e clientes para chamar ─────
+export type PontosDaPessoa = {
+  saldo: number; acumulado: number; vouchers: number; estrelas: number; estrela_hoje: boolean;
+  semana: { atend: number; feitos: number; bonus: boolean };
+  hist: { dia: string; tipo: string; pontos: number; texto: string }[];
+};
+export type ClienteChamar = { id: string; nome: string; whatsapp: string; resumo: string; comprou: string; mensagem: string; feito: boolean };
+export type Extras = { pontos: PontosDaPessoa; chamar: ClienteChamar[]; colegas: { id: string; nome: string }[] };
+export const vezExtras = async (token: string) => ((await sb().rpc("vez_extras", { p_token: token })).data as Extras | null) ?? null;
+export const vezChamarMarcar = (token: string, id: string, feito: boolean) => sb().rpc("vez_chamar_marcar", { p_token: token, p_id: id, p_feito: feito });
 export const vezCorrigir = (token: string, id: string, resultado: "vendeu" | "nao_vendeu", motivo: string) =>
   sb().rpc("vez_corrigir", { p_token: token, p_id: id, p_resultado: resultado, p_motivo: motivo });
 export const vezMissaoMarcar = (token: string, id: string, feito: boolean) => sb().rpc("vez_missao_marcar", { p_token: token, p_id: id, p_feito: feito });
@@ -90,3 +101,19 @@ export async function buscarFluxo(portalId: string, loja: string | null, ate: st
 }
 
 export const hojeVez = hoje;
+
+/** Pontos de todas as pessoas do portal (gestora): saldo, estrelas e vouchers a entregar. */
+export type ResumoPontos = { pessoa_id: string; saldo: number; acumulado: number; estrelas: number; vouchers: number };
+export async function buscarPontos(portalId: string): Promise<ResumoPontos[]> {
+  const { data } = await sb().from("loja_pontos").select("pessoa_id, tipo, pontos").eq("portal_id", portalId);
+  const m = new Map<string, ResumoPontos>();
+  for (const l of (data ?? []) as { pessoa_id: string; tipo: string; pontos: number }[]) {
+    const r = m.get(l.pessoa_id) ?? { pessoa_id: l.pessoa_id, saldo: 0, acumulado: 0, estrelas: 0, vouchers: 0 };
+    r.saldo += l.pontos; if (l.pontos > 0) r.acumulado += l.pontos; if (l.tipo === "estrela") r.estrelas += 1;
+    m.set(l.pessoa_id, r);
+  }
+  return [...m.values()].map((r) => ({ ...r, vouchers: Math.floor(r.saldo / 500) }));
+}
+/** Entrega um voucher de R$ 500: tira 500 pontos do saldo. */
+export const voucherEntregar = (portalId: string, pessoaId: string) =>
+  sb().from("loja_pontos").insert({ portal_id: portalId, pessoa_id: pessoaId, dia: hoje(), tipo: "resgate", pontos: -500, ref: crypto.randomUUID(), texto: "Voucher de R$ 500 em compras entregue" });

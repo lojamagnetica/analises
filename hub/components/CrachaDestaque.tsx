@@ -1,6 +1,6 @@
 "use client";
 
-// Crachá do destaque absoluto do mês, no estilo do crachá de boas-vindas da magnética: fita com o padrão de ímãs e cartão azul-noite.
+// Crachá do destaque da loja no mês, no estilo do crachá de boas-vindas da magnética: fita com o padrão de ímãs e cartão azul-noite.
 // Sem valor do prêmio: serve de base para o post do Instagram.
 import { fotoDoPremio } from "@/lib/lojinha";
 
@@ -38,7 +38,7 @@ export function CrachaDestaque({ mes, nome, loja, estrelas, foto, anterior }: { 
               {!aberto && foto ? <img src={fotoDoPremio(foto)!} alt={nome ?? ""} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : aberto ? "?" : nome!.charAt(0).toUpperCase()}
             </div>
           </div>
-          <div style={{ fontSize: 11, letterSpacing: ".16em", fontWeight: 800, color: AMBAR, textAlign: "center" }}>DESTAQUE ABSOLUTO</div>
+          <div style={{ fontSize: 11, letterSpacing: ".16em", fontWeight: 800, color: AMBAR, textAlign: "center" }}>DESTAQUE DA LOJA</div>
           <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.1, textAlign: "center", margin: "4px 0" }}>{aberto ? "Quem vai ser?" : nome}</div>
           <div style={{ textAlign: "center", fontSize: 15, color: "#C9BFB4" }}>{aberto ? "Ainda ninguém somou estrelas neste mês." : `${loja ? `${loja} · ` : ""}${nomeDoMes(mes)} ${mes.slice(3)}`}</div>
           <div style={{ textAlign: "center", fontSize: 40, marginTop: 8 }} aria-hidden>🏆</div>

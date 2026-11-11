@@ -172,3 +172,17 @@ export async function buscarRankingMentoria(mesISO: string) {
 }
 export const premioMentoraPago = (mes: string, portalId: string, pago: boolean) => sb().from("loja_premio_mentora").update({ pago }).eq("mes", mes).eq("portal_id", portalId);
 export const salvarMetaMinimaMentoria = (pct: number) => sb().from("gamificacao_mentoria").update({ meta_minima_pct: pct }).eq("id", true);
+
+// ───── Destaque Absoluto Brasil (estrelas entre todas as lojas do programa) ─────
+export type LinhaEstrelas = { pessoa_id: string; portal_id: string; nome: string; loja: string | null; estrelas: number };
+export async function buscarDestaqueBrasil(mesISO: string) {
+  const [r, p] = await Promise.all([
+    sb().rpc("ranking_estrelas_equipe", { p_mes: mesISO }),
+    sb().from("destaque_brasil").select("mes, pessoa_id, portal_id, estrelas, valor, pago, loja_equipe(nome, loja)").order("mes", { ascending: false }).limit(12),
+  ]);
+  return {
+    ranking: (r.data ?? []) as LinhaEstrelas[],
+    premios: (p.data ?? []) as unknown as { mes: string; pessoa_id: string; portal_id: string; estrelas: number; valor: number; pago: boolean; loja_equipe: { nome: string; loja: string | null } | null }[],
+  };
+}
+export const destaqueBrasilPago = (mes: string, pessoaId: string, pago: boolean) => sb().from("destaque_brasil").update({ pago }).eq("mes", mes).eq("pessoa_id", pessoaId);

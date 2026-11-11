@@ -48,7 +48,7 @@ export function PontosGestao() {
       </div>
       <DesafiosGestao />
       <LojinhaGestao />
-      <div className="secao">Destaque absoluto do mês</div>
+      <div className="secao">Destaque da loja no mês</div>
       {(() => {
         const l = dados.find((d) => d.loja && d.r.estrelasMes > 0);
         return (

@@ -16,6 +16,7 @@ export function RegrasDosPontos() {
         <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
         <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Nome, WhatsApp e aniversário de todas as clientes que você cadastrou.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
+        <li><b>Desafio do dia 🔥:</b> todo dia um desafio novo, que vale pontos para todo mundo. Ele aparece no topo do link: cada vez que você cumpre, é só marcar.</li>
         <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha o prêmio de destaque e já começa o mês seguinte com <b>100 pontos</b>.</li>
         <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>
       </ul>

@@ -64,6 +64,9 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
   Os pontos de desenvolvimento falam do jeito do perfil, nunca da pessoa, para ela refletir sem se sentir apontada. Textos em `hub/lib/perfil-pessoa.ts`.
 - Fuso: America/Recife.
 
+## Gamificação Brasil
+Processo e agente em `.claude/skills/gamificacao-brasil/SKILL.md`: depois do diagnóstico e do plano de ação, transforma os principais desafios em processo medido pelo Hub e termina com a loja no ranking Brasil. A Lista da vez fica só nas lojas piloto.
+
 ## Linha de gestão (feedback, cobrança, reuniões, roteiros para o time)
 Diretriz da Camilla: auto-responsabilidade e maturidade do time. Detalhes em `.claude/skills/linha-de-gestao/SKILL.md`.
 - Fala sempre na segunda pessoa, com a responsabilidade com a pessoa: "você está vendendo as peças mais baratas", nunca "as clientes estão levando".

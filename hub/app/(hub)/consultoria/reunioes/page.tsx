@@ -8,6 +8,7 @@ import { Copiar } from "@/components/Copiar";
 import { Carregando, useLojaFoco, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje, moeda } from "@/lib/formato";
 import { segundaDa } from "@/lib/rotina";
+import { FeedbackEditor, FeedbackVisual } from "@/components/FeedbackDoTime";
 import {
   CAMPOS_ANALISE, CAMPOS_FEEDBACK, porLojaESemana, CAMPOS_PLANO, CAMPOS_SEMANA, TIPOS_COMBINADO, buscarReunioesGestao, nomeMes, numerosDaSemana, reuniaoGestaoExcluir, reuniaoGestaoSalvar, somarMes, textoDaReuniao,
   type Combinado, type DadosGestao, type ReuniaoGestao, type TipoGestao,
@@ -85,9 +86,13 @@ function Editor({ portalId, lojas, lojaFoco, tipo, r, aoFim }: { portalId: strin
         </div>
       )}
 
-      {tipo === "analise_semana" && d.semana && <NumerosDaSemana portalId={portalId} loja={d.loja ?? ""} semana={d.semana} />}
+      {porLojaESemana(tipo) && d.semana && <NumerosDaSemana portalId={portalId} loja={d.loja ?? ""} semana={d.semana} />}
 
-      {campos.map((c) => (
+      {tipo === "feedback_time" && <FeedbackEditor pessoas={d.pessoas ?? []} mudar={(pessoas) => setD({ ...d, pessoas })} />}
+      {tipo === "feedback_time" && !!d.campos.feedback?.trim() && !d.pessoas?.length && (
+        <div className="mt"><label className="rotulo">Texto antigo (passe para os cartões acima)</label><textarea rows={4} value={d.campos.feedback} onChange={(e) => setD({ ...d, campos: { ...d.campos, feedback: e.target.value } })} /></div>
+      )}
+      {(tipo === "feedback_time" ? [] : campos).map((c) => (
         <div key={c.chave} className="mt">
           <label className="rotulo">{c.titulo}</label>
           <p className="ajuda" style={{ margin: "0 0 4px" }}>{c.ajuda}</p>
@@ -139,6 +144,7 @@ function Registro({ r, equipe, aoEditar, aoMudar }: { r: ReuniaoGestao; equipe: 
       {aberto && (
         <div className="mt">
           {r.tipo === "planejamento" && !!r.dados.meta && <p><b>Meta:</b> {moeda(r.dados.meta)}{r.dados.meta_ano_passado ? <span className="mudo"> · ano passado {moeda(r.dados.meta_ano_passado)}</span> : null}</p>}
+          {r.tipo === "feedback_time" && !!r.dados.pessoas?.length && <FeedbackVisual pessoas={r.dados.pessoas} />}
           {campos.filter((c) => r.dados.campos[c.chave]?.trim()).map((c) => (
             <div key={c.chave} className="mb"><b>{c.titulo}</b><p style={{ margin: "2px 0 0", whiteSpace: "pre-line" }}>{r.dados.campos[c.chave]}</p></div>
           ))}

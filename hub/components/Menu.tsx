@@ -56,7 +56,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       id: "empresa", rotulo: "Nossa empresa", icone: "home",
       itens: [
         // Só o que é da empresa; o trabalho com as lojas fica na Central do Cliente.
-        { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/empresa", rotulo: "Painel da empresa", icone: "chart" },
         { href: "/empresa/equipe", rotulo: "Equipe", icone: "team" },
         { href: "/empresa/marca", rotulo: "Marca", icone: "tag" },
@@ -73,8 +72,11 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         // Do que mais se usa no dia a dia para o que menos. Para a CS (monta, sem aprovar), o que a Camilla tem na
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         { href: "/equipe/controle", rotulo: "Controle de clientes", icone: "relacionamento" },
+        { href: "/equipe/contatos", rotulo: "Contatos das lojas", icone: "phone" },
         ...(conversas ? [{ href: "/equipe/conversas", rotulo: "Conversas da equipe", icone: "chat" }] : []),
         { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
+        { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
+        { href: "/equipe", rotulo: "Painel dos portais", icone: "folder" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
@@ -91,6 +93,10 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
           { href: "/equipe/gincanas", rotulo: "Gincanas", icone: "gift" },
           { href: "/empresa/agentes", rotulo: "Agentes", icone: "robot" },
         ] : []),
+        { href: "/equipe/guias", rotulo: "Guias em vídeo", icone: "play" },
+        { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
+        { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
+        { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
       ],
     });
     g.push({
@@ -100,17 +106,6 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         { href: "/equipe/comercial/leads", rotulo: "Leads e funil", icone: "funnel" },
         { href: "/empresa/iscas", rotulo: "Radar das iscas", icone: "search" },
         { href: "/equipe/comercial/venda", rotulo: "Nova venda", icone: "plus" },
-      ],
-    });
-    g.push({
-      id: "equipe", rotulo: "Portais", icone: "folder",
-      itens: [
-        { href: "/equipe", rotulo: "Painel dos portais", icone: "kanban" },
-        { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
-        { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
-        { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
-        { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
-        { href: "/equipe/guias", rotulo: "Guias em vídeo", icone: "play" },
       ],
     });
   }

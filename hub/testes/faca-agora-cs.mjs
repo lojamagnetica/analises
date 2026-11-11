@@ -18,7 +18,8 @@ const banco = await simular(page, { usuario: { id: "u-cs", email: "cs@teste.com"
   cs_contatos: [], loja_caixa: [], reunioes: [], contratos: [], loja_plano_mes: [],
 } });
 await page.goto(`${BASE}/empresa/cs/`);
-await page.getByText("Faça agora").first().waitFor();
+await page.getByRole("button", { name: /Por loja/ }).click();
+await page.getByText("Sem entrar no portal").or(page.getByText("A Camilla liberou")).first().waitFor({ timeout: 10000 });
 const t = await page.locator("main").innerText();
 ok(/A Camilla liberou a análise da semana/.test(t), "a análise liberada vira um check para a CS");
 ok(/Ainda não entrou no Hub desde a liberação|Já entrou no Hub depois/.test(t), "mostra se a loja já entrou depois da liberação");

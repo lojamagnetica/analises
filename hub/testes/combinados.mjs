@@ -45,7 +45,8 @@ const browser = await chromium.launch();
     cs_contatos: [], loja_caixa: [], reunioes: [], contratos: [], loja_leituras: [], loja_plano_mes: [],
   } });
   await page.goto(`${BASE}/empresa/cs/`);
-  await page.getByText("Faça agora").first().waitFor();
+  await page.getByRole("button", { name: /Por loja/ }).click();
+  await page.getByText("fechou os combinados").first().waitFor({ timeout: 10000 });
   const t = await page.locator("main").innerText();
   ok(/fechou os combinados com a loja/.test(t) && !/boas-vindas/.test(t), "a CS confirma os combinados, sem boas-vindas");
   ok(/Combinado vencido/.test(t), "o combinado vencido vira pergunta para a CS");

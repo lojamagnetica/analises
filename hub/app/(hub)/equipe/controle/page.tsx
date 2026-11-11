@@ -18,6 +18,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
     titulo: "Todo dia", sub: "A rotina da manhã e da tarde, nesta ordem.",
     atalhos: [
       { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
+      { href: "/equipe/contatos", rotulo: "Contatos das lojas", icone: "phone" },
       { href: "/equipe/duvidas", rotulo: "Fale com a Camilla", icone: "chat" },
       { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "heart" },
       { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "bolt" },
@@ -29,7 +30,8 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
       { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
       { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
       { href: "/equipe/planos", rotulo: "Planos do mês", icone: "note", so: "monta" },
-      { href: "/equipe/reunioes", rotulo: "Reuniões", icone: "cal" },
+      { href: "/equipe/agenda", rotulo: "Agenda e reuniões", icone: "cal" },
+      { href: "/equipe", rotulo: "Painel dos portais", icone: "folder" },
       { href: "/equipe/aprovar", rotulo: "Esperando a Camilla", icone: "send", so: "monta" },
     ],
   },
@@ -38,6 +40,9 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
     atalhos: [
       { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
       { href: "/equipe/guias", rotulo: "Guias em vídeo", icone: "play" },
+      { href: "/equipe/biblioteca", rotulo: "Biblioteca", icone: "book" },
+      { href: "/equipe/portais/novo", rotulo: "Novo portal", icone: "plus" },
+      { href: "/equipe/importar", rotulo: "Importar dados", icone: "plus" },
       { href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark", so: "monta" },
       { href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "compass", so: "monta" },
       { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },

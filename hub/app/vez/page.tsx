@@ -167,7 +167,7 @@ function Vez() {
                 )}
                 {fechando === "vendeu" && (extras?.colegas.length ?? 0) > 0 && p.hoje >= "2026-11-01" && p.hoje <= "2026-12-31" && (
                   <div style={{ marginTop: 10 }}>
-                    <b>Alguém indicou essa cliente para você?</b> <small className="mudo">Quem indicou ganha +20 pontos</small>
+                    <b>Alguém da outra loja indicou essa cliente para você?</b> <small className="mudo">Quem indicou ganha +20 pontos e 20 estrelas</small>
                     <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
                       <button type="button" className={`vez-chip ${indicou === null ? "on" : ""}`} onClick={() => setIndicou(null)}>Ninguém</button>
                       {extras?.colegas.map((c) => <button key={c.id} type="button" className={`vez-chip ${indicou === c.id ? "on" : ""}`} onClick={() => setIndicou(c.id)}>{c.nome}</button>)}

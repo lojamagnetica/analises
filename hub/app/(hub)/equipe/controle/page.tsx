@@ -8,6 +8,8 @@ import { Titulo } from "@/components/Titulo";
 import { Icone } from "@/components/Icone";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { painelCs } from "@/lib/cs";
+import { dataHora } from "@/lib/formato";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Atalho = { href: string; rotulo: string; icone: string; so?: "monta" };
 const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
@@ -48,7 +50,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 
 export default function ControleDeClientes() {
   const { nome, monta } = useEquipe();
-  const { dados } = useDados(() => painelCs(), []);
+  const { dados, recarregar } = useDados(() => painelCs(), []);
   useEffect(() => { document.title = "Controle de clientes · magnética.hub"; }, []);
   if (!dados) return <Carregando />;
   const hoje = dados.lojas.filter((l) => l.nivel === "vermelho").length;
@@ -56,7 +58,7 @@ export default function ControleDeClientes() {
   const aviso = (href: string) => (href === "/empresa/cs" && hoje > 0 ? `${hoje} ${hoje === 1 ? "loja precisa" : "lojas precisam"} de você` : href === "/empresa/acompanhamento" && atencao > 0 ? `${atencao} em atenção` : null);
   return (
     <>
-      <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub={`Controle de clientes: ${dados.lojas.length} lojas acompanhadas. ${hoje ? `${hoje} ${hoje === 1 ? "precisa" : "precisam"} de você hoje.` : "Todas em dia por enquanto."}`} />
+      <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub={`Controle de clientes: ${dados.lojas.length} ${dados.lojas.length === 1 ? "loja acompanhada" : "lojas acompanhadas"}${dados.aCaminho.length ? `, ${dados.aCaminho.length} a caminho` : ""}. ${hoje ? `${hoje} ${hoje === 1 ? "precisa" : "precisam"} de você hoje.` : "Todas em dia por enquanto."}`} />
       {BLOCOS.map((b) => (
         <section key={b.titulo}>
           <div className="secao">{b.titulo}</div>
@@ -75,6 +77,25 @@ export default function ControleDeClientes() {
           </div>
         </section>
       ))}
+
+      {dados.aCaminho.length > 0 && (
+        <>
+          <div className="secao">A caminho do acompanhamento</div>
+          <p className="ajuda" style={{ marginTop: 0 }}>Estas lojas ainda estão na reunião de entrega e não entram nos alertas nem nas pendências. Quando a reunião acontecer, passe a loja para o acompanhamento.</p>
+          <div className="card mb">
+            {dados.aCaminho.map((l, i) => (
+              <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: i ? "1px solid var(--line)" : 0 }}>
+                <span><b>{l.loja}</b> <span className="mudo">· {l.proxReuniao ? `reunião ${dataHora(l.proxReuniao)}` : "sem reunião marcada"}</span></span>
+                {monta && <button type="button" className="btn s peq" onClick={async () => {
+                  if (!confirm(`Passar ${l.loja} para o acompanhamento da CS?`)) return;
+                  const { error } = await supabaseBrowser().from("portais").update({ cs_acompanha: true }).eq("id", l.id);
+                  if (error) alert(error.message); else recarregar();
+                }}>Passar para o acompanhamento</button>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </>
   );
 }

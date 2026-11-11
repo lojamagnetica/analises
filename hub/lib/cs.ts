@@ -16,13 +16,17 @@ export type AlertaCs = {
   destino?: string;
   /** Mensagem pronta para mandar à loja pelo WhatsApp. */
   msg?: string;
+  /** Se preenchido, a CS fecha o alerta registrando a conversa (tipo e referência do registro em cs_contatos). */
+  registro?: { tipo: string; ref: string };
 };
 export type Nivel = "vermelho" | "amarelo" | "verde";
 export type LojaCs = {
   id: string; loja: string; tipo: string; whatsapp: string | null; responsavel: string | null;
   ultimo: string | null; proxReuniao: string | null; alertas: AlertaCs[]; nivel: Nivel; caixaCompleto: boolean | null;
+  /** A última conversa registrada da CS com a loja. */
+  contato: { feito_em: string; resumo: string | null; precisa_ajuda: boolean } | null;
 };
-export type PainelCs = { lojas: LojaCs[]; reunioes: { portal_id: string; loja: string; data: string; titulo: string | null }[]; semana: string };
+export type PainelCs = { lojas: LojaCs[]; aCaminho: { id: string; loja: string; tipo: string; proxReuniao: string | null }[]; reunioes: { portal_id: string; loja: string; data: string; titulo: string | null }[]; semana: string };
 
 const primeiro = (n: string | null) => (n ?? "").trim().split(/\s+/)[0] || "tudo bem";
 const abertura = (l: { responsavel: string | null }) => `Oi, ${primeiro(l.responsavel)}! Aqui é a Claudia, da Loja Magnética.`;
@@ -34,23 +38,33 @@ function diasDaSemanaAteOntem(semana: string) {
   return out;
 }
 
+/** O dia útil seguinte à liberação da análise, em palavras ("terça"): o prazo de a CS confirmar com a loja. */
+function prazoDoCheck(publicadaEm: string) {
+  let d = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).format(new Date(publicadaEm));
+  do { d = somaDias(d, 1); } while ([0, 6].includes(new Date(`${d}T12:00:00Z`).getUTCDay()));
+  return new Date(`${d}T12:00:00Z`).toLocaleDateString("pt-BR", { weekday: "long", timeZone: "UTC" }).replace("-feira", "");
+}
+
 export async function painelCs(): Promise<PainelCs> {
   const sb = supabaseBrowser();
   const semana = semanaDe();
   const prox = mesesDoInicio().proximo;
-  const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: contratos }, { data: numeros }, jornada, pend] = await Promise.all([
-    sb.from("portais").select("id, loja, tipo, whatsapp, responsavel, menu_oculto").eq("ativo", true).order("loja"),
+  const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: contratos }, { data: numeros }, jornada, pend, { data: contatos }] = await Promise.all([
+    sb.from("portais").select("id, loja, tipo, whatsapp, responsavel, menu_oculto, cs_acompanha").eq("ativo", true).order("loja"),
     sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
     sb.from("loja_caixa").select("portal_id, dia").gte("dia", semana),
-    sb.from("loja_leituras").select("portal_id, publicada, pronta").eq("semana", semana),
+    sb.from("loja_leituras").select("portal_id, publicada, pronta, publicada_em").eq("semana", semana),
     sb.from("reunioes").select("portal_id, data, titulo").gte("data", new Date().toISOString()).order("data"),
     sb.from("loja_plano_mes").select("portal_id, status").eq("mes", prox),
     sb.from("contratos").select("portal_id, fim, status").eq("status", "Ativo"),
     sb.from("loja_numeros_semana").select("portal_id").eq("semana", semanaPassada()),
     buscarJornada().catch(() => []),
     buscarPendencias().catch(() => []),
+    sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
   ]);
-  const lista = (portais ?? []).filter((p) => p.tipo !== "Curso");
+  const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && p.cs_acompanha);
+  // As demais lojas ainda estão na reunião de entrega: só passam para o acompanhamento quando a gestora liberar.
+  const aCaminho = (portais ?? []).filter((p) => p.tipo !== "Curso" && !p.cs_acompanha).map((p) => ({ id: p.id as string, loja: p.loja as string, tipo: p.tipo as string, proxReuniao: ((reunioes ?? []).find((r) => r.portal_id === p.id)?.data as string | undefined) ?? null }));
   const diaDoMes = Number(hoje().slice(8));
   const passados = diasDaSemanaAteOntem(semana);
   const lojas: LojaCs[] = lista.map((p) => {
@@ -80,6 +94,23 @@ export async function painelCs(): Promise<PainelCs> {
     else if (!leit.publicada && leit.pronta) al.push({ chave: "leitura_pronta", txt: "Leitura encaminhada: falta a Camilla publicar", grave: false });
     else if (!leit.publicada) al.push({ chave: "leitura_rascunho", txt: "Rascunho da leitura pronto: revisar e encaminhar", grave: true, destino: "/inicio" });
 
+    const contatosLoja = (contatos ?? []).filter((c) => c.portal_id === p.id);
+    const contato = (contatosLoja[0] ?? null) as LojaCs["contato"];
+    // A Camilla liberou a análise da semana: a CS confirma em 1 dia útil que a loja viu, entendeu e se precisa de ajuda.
+    if (leit?.publicada && leit.publicada_em && !contatosLoja.some((c) => c.tipo === "leitura" && c.ref === semana)) {
+      const entrou = !!ultimo && ultimo > (leit.publicada_em as string);
+      al.push({ chave: "leitura_check", txt: `A Camilla liberou a análise da semana: confirme que a loja viu e entendeu (até ${prazoDoCheck(leit.publicada_em as string)}). ${entrou ? "Já entrou no Hub depois da liberação." : "Ainda não entrou no Hub desde a liberação."}`, grave: true, destino: "/inicio",
+        registro: { tipo: "leitura", ref: semana },
+        msg: `Oi, ${primeiro(p.responsavel)}! Aqui é a Claudia, da Loja Magnética. Vi que a Camilla já liberou a sua análise da semana. Você já conseguiu ver? Ficou alguma dúvida ou algo em que eu possa te ajudar?` });
+    }
+    // A loja precisa se sentir acompanhada: sem conversa registrada há mais de 7 dias vira um lembrete leve (14 dias, grave).
+    if (acessos.length) {
+      const dias = contato ? Math.floor(diasDesde(contato.feito_em)) : null;
+      if (dias === null || dias >= 7) al.push({ chave: "sem_contato", txt: dias === null ? "Ainda sem conversa registrada com a loja" : `Sem conversar com a loja há ${dias} dias`, grave: dias !== null && dias >= 14,
+        registro: { tipo: "geral", ref: hoje() },
+        msg: `${abertura(p)} Passando para saber como foi a sua semana na ${p.loja}. Está tudo bem? Tem algo em que eu possa te ajudar?` });
+    }
+
     if (!proxR && p.tipo !== "Curso") al.push({ chave: "reuniao", txt: "Sem próxima reunião marcada", grave: false, destino: "/equipe/reunioes",
       msg: `${abertura(p)} Vamos marcar a nossa próxima reunião da ${p.loja}. Te proponho terça às 10h ou quinta às 15h. Qual dos dois fica melhor?` });
 
@@ -106,15 +137,16 @@ export async function painelCs(): Promise<PainelCs> {
     if (abertas) al.push({ chave: "pendencias", txt: `${abertas} ${abertas === 1 ? "pendência" : "pendências"} com a loja`, grave: abertas >= 5, destino: "/equipe/pendencias",
       msg: `${abertura(p)} Faltam ${abertas} ${abertas === 1 ? "item" : "itens"} para o portal da ${p.loja} ficar completo. Te mando a lista agora e você me devolve até amanhã. Combinado?` });
 
-    const nivel: Nivel = al.some((a) => a.grave) ? "vermelho" : al.length ? "amarelo" : "verde";
-    return { id: p.id, loja: p.loja, tipo: p.tipo, whatsapp: p.whatsapp ?? null, responsavel: p.responsavel ?? null, ultimo, proxReuniao: proxR?.data ?? null, alertas: al, nivel, caixaCompleto };
+    const relevantes = al.filter((a) => a.chave !== "sem_contato" || a.grave);
+    const nivel: Nivel = relevantes.some((a) => a.grave) ? "vermelho" : relevantes.length ? "amarelo" : "verde";
+    return { id: p.id, loja: p.loja, tipo: p.tipo, whatsapp: p.whatsapp ?? null, responsavel: p.responsavel ?? null, ultimo, proxReuniao: proxR?.data ?? null, alertas: al, nivel, caixaCompleto, contato };
   });
   const ordem = { vermelho: 0, amarelo: 1, verde: 2 } as const;
   lojas.sort((a, b) => ordem[a.nivel] - ordem[b.nivel] || b.alertas.filter((x) => x.grave).length - a.alertas.filter((x) => x.grave).length || a.loja.localeCompare(b.loja));
   const nome = new Map(lojas.map((l) => [l.id, l.loja]));
   const semana7 = new Date(Date.now() + 7 * 86_400_000).toISOString();
   const rs = (reunioes ?? []).filter((r) => r.data <= semana7 && nome.has(r.portal_id as string)).map((r) => ({ portal_id: r.portal_id as string, loja: nome.get(r.portal_id as string) as string, data: r.data as string, titulo: (r.titulo as string | null) ?? null }));
-  return { lojas, reunioes: rs, semana };
+  return { lojas, aCaminho, reunioes: rs, semana };
 }
 
 /** Endereço do WhatsApp da loja com a mensagem pronta. */

@@ -91,6 +91,8 @@ function Cartao({ b, mudar, tirar, frentes }: { b: Bloco; mudar: (b: Bloco) => v
           <ol style={{ margin: "6px 0 0", paddingLeft: 20, fontSize: 13.5 }}>{lista.map((x, i) => <li key={i} style={{ marginBottom: 3 }}>{x}</li>)}</ol>
         </details>
       )}
+      {/* A conversa individual e o feedback do meio do mês levam ao Feedback do time (uma conversa por pessoa, separada da análise da semana). */}
+      {/^(s_individual|m_feedback)/.test(b.id) && <div style={{ marginTop: 6 }}><Link className="btn s peq" href="/consultoria/reunioes">Abrir o feedback do time →</Link></div>}
       <QuemFaz key={b.quem} b={b} mudar={mudar} />
       <EscolherDia b={b} mudar={mudar} />
     </div>

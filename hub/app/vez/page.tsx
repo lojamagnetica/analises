@@ -6,12 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { metasDoTime } from "@/lib/plano-mes";
 import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFila, resumoDoDia } from "@/lib/vez-calculo";
-import { vezAbrir, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel } from "@/lib/vez";
+import { vezAbrir, vezRankingLojas, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel, type RankingDaLoja } from "@/lib/vez";
 import { PontosDaVez } from "@/components/PontosDaVez";
 import { ClientesParaChamar } from "@/components/ClientesParaChamar";
 import { DesafioDoDia } from "@/components/DesafioDoDia";
 import { vezDesafios, type DesafioDoDia as DesafioHoje } from "@/lib/desafios";
 import { LojinhaDaVez } from "@/components/LojinhaDaVez";
+import { RankingDasLojas } from "@/components/RankingDasLojas";
 import { CrachaDestaque } from "@/components/CrachaDestaque";
 import { vezLojinha, type LojinhaDaPessoa } from "@/lib/lojinha";
 
@@ -64,10 +65,11 @@ function Vez() {
   const [extras, setExtras] = useState<Extras | null>(null);
   const [indicou, setIndicou] = useState<string | null>(null);
   const [lojinha, setLojinha] = useState<LojinhaDaPessoa | null>(null);
+  const [ranking, setRanking] = useState<RankingDaLoja | null>(null);
   const [desafios, setDesafios] = useState<DesafioHoje[]>([]);
   const [agora, setAgora] = useState(() => Date.now());
 
-  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); vezLojinha(token).then(setLojinha).catch(() => {}); vezDesafios(token).then(setDesafios).catch(() => {}); } else setP(null); }, [token, valido]);
+  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); vezLojinha(token).then(setLojinha).catch(() => {}); vezDesafios(token).then(setDesafios).catch(() => {}); vezRankingLojas(token).then(setRanking).catch(() => {}); } else setP(null); }, [token, valido]);
   useEffect(() => {
     document.title = "Lista da vez · magnética.hub";
     carregar();
@@ -237,6 +239,7 @@ function Vez() {
       </div>
 
       {extras && <PontosDaVez p={extras.pontos} />}
+      {ranking && <RankingDasLojas r={ranking} />}
       {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
       {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}
       {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}

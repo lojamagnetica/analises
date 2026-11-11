@@ -152,3 +152,23 @@ export async function buscarCustoDoMes(portalId: string): Promise<CustoDoMes> {
 }
 export const salvarConfigCusto = (portalId: string, c: ConfigCusto) =>
   sb().from("loja_gamificacao_config").upsert({ portal_id: portalId, orcamento: c.orcamento, custo_ponto: c.custo_ponto, updated_at: new Date().toISOString() });
+
+// ───── Ranking das lojas da mentoria ─────
+export type RankingDaLoja = { posicao: number; pontos: number; lojas: number; elegivel: boolean; meta_pct: number | null; minimo_pct: number; lider: number };
+export const vezRankingLojas = async (token: string) => ((await sb().rpc("vez_ranking_lojas", { p_token: token })).data as RankingDaLoja | null) ?? null;
+
+export type LinhaRanking = { portal_id: string; loja: string; pontos: number; meta: number | null; realizado: number; elegivel: boolean };
+export async function buscarRankingMentoria(mesISO: string) {
+  const [r, p, c] = await Promise.all([
+    sb().rpc("ranking_lojas_equipe", { p_mes: mesISO }),
+    sb().from("loja_premio_mentora").select("mes, portal_id, pontos, valor, pago, portais(loja)").order("mes", { ascending: false }).limit(12),
+    sb().from("gamificacao_mentoria").select("meta_minima_pct, premio").maybeSingle(),
+  ]);
+  return {
+    ranking: ((r.data ?? []) as LinhaRanking[]),
+    premios: ((p.data ?? []) as unknown as { mes: string; portal_id: string; pontos: number; valor: number; pago: boolean; portais: { loja: string } | null }[]),
+    config: { meta_minima_pct: Number(c.data?.meta_minima_pct ?? 100), premio: Number(c.data?.premio ?? 200) },
+  };
+}
+export const premioMentoraPago = (mes: string, portalId: string, pago: boolean) => sb().from("loja_premio_mentora").update({ pago }).eq("mes", mes).eq("portal_id", portalId);
+export const salvarMetaMinimaMentoria = (pct: number) => sb().from("gamificacao_mentoria").update({ meta_minima_pct: pct }).eq("id", true);

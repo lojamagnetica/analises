@@ -8,7 +8,8 @@ import { Titulo } from "@/components/Titulo";
 import { Icone } from "@/components/Icone";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { painelCs } from "@/lib/cs";
-import { dataHora } from "@/lib/formato";
+import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
+import { dataHora, hoje as hojeStr } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Atalho = { href: string; rotulo: string; icone: string; so?: "monta" };
@@ -47,8 +48,9 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 ];
 
 export default function ControleDeClientes() {
-  const { nome, monta } = useEquipe();
+  const { nome, monta, conversas, userId } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
+  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, userId]);
   useEffect(() => { document.title = "Controle de clientes · magnética.hub"; }, []);
   if (!dados) return <Carregando />;
   const hoje = dados.lojas.filter((l) => l.nivel === "vermelho").length;
@@ -57,6 +59,18 @@ export default function ControleDeClientes() {
   return (
     <>
       <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub={`Controle de clientes: ${dados.lojas.length} ${dados.lojas.length === 1 ? "loja acompanhada" : "lojas acompanhadas"}${dados.aCaminho.length ? `, ${dados.aCaminho.length} a caminho` : ""}. ${hoje ? `${hoje} ${hoje === 1 ? "precisa" : "precisam"} de você hoje.` : "Todas em dia por enquanto."}`} />
+      {lembretes && lembretes.length > 0 && (
+        <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)" }}>
+          <b>Lembretes de hoje · {lembretes.length}</b>
+          {lembretes.map((l) => (
+            <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+              <span style={{ flex: "1 1 300px" }}>{l.texto}</span>
+              <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {BLOCOS.map((b) => (
         <section key={b.titulo}>
           <div className="secao">{b.titulo}</div>

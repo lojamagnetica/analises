@@ -5,6 +5,7 @@ import { useRef } from "react";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { CrachaDestaque } from "@/components/CrachaDestaque";
+import { DestaqueInstagram } from "@/components/DestaqueInstagram";
 import { CustoDaCampanha } from "@/components/CustoDaCampanha";
 import { DesafiosGestao } from "@/components/DesafiosGestao";
 import { hoje } from "@/lib/formato";
@@ -45,12 +46,12 @@ export function PontosGestao() {
       </div>
       <DesafiosGestao />
       <LojinhaGestao />
-      <div className="secao">Magnética do mês</div>
+      <div className="secao">Destaque absoluto do mês</div>
       {(() => {
         const l = dados.find((d) => d.loja && d.r.estrelasMes > 0);
         return (
           <>
-            <CrachaDestaque mes={`${hoje().slice(5, 7)}/${hoje().slice(0, 4)}`} nome={l?.nome.split(" ")[0] ?? null} estrelas={l?.r.estrelasMes ?? 0} foto={l?.foto ?? null} />
+            <CrachaDestaque mes={`${hoje().slice(5, 7)}/${hoje().slice(0, 4)}`} nome={l?.nome.split(" ")[0] ?? null} loja={l?.loja ?? null} estrelas={l?.r.estrelasMes ?? 0} foto={l?.foto ?? null} />
             {l && (
               <div className="linha mb" style={{ gap: 8, alignItems: "center" }}>
                 <input ref={arqFoto} type="file" accept="image/*" hidden onChange={async (e) => {
@@ -61,6 +62,8 @@ export function PontosGestao() {
                 <button type="button" className="btn s peq" onClick={() => arqFoto.current?.click()}>{l.foto ? "Trocar a foto" : "Subir a foto"} de {l.nome.split(" ")[0]}</button>
               </div>
             )}
+            <div className="secao">Imagem para o Instagram</div>
+            <div className="card mb"><DestaqueInstagram pessoas={dados.filter((d) => d.loja).map((d) => ({ id: d.id, nome: d.nome.split(" ")[0], loja: d.loja, foto: d.foto }))} sugerida={l?.id} /></div>
           </>
         );
       })()}

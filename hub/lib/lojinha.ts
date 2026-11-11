@@ -8,7 +8,7 @@ const sb = () => supabaseBrowser();
 
 export type Premio = { id: string; nome: string; descricao: string; pontos: number; foto: string | null };
 export type PedidoMeu = { id: string; nome: string; pontos: number; status: "pedido" | "entregue"; em: string };
-export type DestaqueDoMes = { mes: string; lider: string | null; foto: string | null; estrelas: number; anterior: { nome: string; mes: string; foto: string | null } | null };
+export type DestaqueDoMes = { mes: string; lider: string | null; foto: string | null; loja: string | null; estrelas: number; anterior: { nome: string; mes: string; foto: string | null; loja: string | null } | null };
 export type LojinhaDaPessoa = { saldo: number; premios: Premio[]; meus: PedidoMeu[]; destaque?: DestaqueDoMes };
 
 export const fotoDoPremio = (caminho: string | null) => (caminho ? urlFotoMarca(caminho) : null);

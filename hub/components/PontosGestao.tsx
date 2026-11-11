@@ -4,6 +4,7 @@ import { RegrasDosPontos } from "@/components/PontosDaVez";
 import { useRef } from "react";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { RankingMentoria } from "@/components/RankingMentoria";
 import { CrachaDestaque } from "@/components/CrachaDestaque";
 import { DestaqueInstagram } from "@/components/DestaqueInstagram";
 import { CustoDaCampanha } from "@/components/CustoDaCampanha";
@@ -15,7 +16,7 @@ import { buscarPontos, responsavelCaixa } from "@/lib/vez";
 
 /** Pontos, estrelas e vouchers de cada pessoa da equipe (visão da gestora). A entrega do voucher tira 500 pontos do saldo. */
 export function PontosGestao() {
-  const { portal } = usePortal();
+  const { portal, equipe } = usePortal();
   const arqFoto = useRef<HTMLInputElement>(null);
   const { dados, recarregar } = useDados(async () => {
     const [pontos, e] = await Promise.all([buscarPontos(portal.id), supabaseBrowser().from("loja_equipe").select("id, nome, loja, responsavel_caixa, foto").eq("portal_id", portal.id).eq("ativo", true).order("nome")]);
@@ -27,6 +28,7 @@ export function PontosGestao() {
   return (
     <>
       <CustoDaCampanha />
+      {equipe && <RankingMentoria />}
       <div className="secao">Pontos e vouchers</div>
       <div className="card mb">
         <RegrasDosPontos />

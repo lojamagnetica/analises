@@ -197,8 +197,8 @@ p { margin: 0 0 .8em; }
   text-decoration: none; color: var(--ink); font-size: 13px; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 9px;
 }
 .atalho:hover { border-color: var(--red); transform: translateY(-1px); }
-.atalho.novo { border: 2px solid var(--feito); background: var(--feito-soft); }
-.atalho .novidade { color: var(--feito); font-weight: 800; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
+.atalho.novo { border: 2px solid var(--orange); background: var(--orange-soft); }
+.atalho .novidade { color: var(--orange); font-weight: 800; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .atalho .quadrado, .tudo h3 .quadrado { background: var(--soft); color: var(--ink); }
 .atalho:hover .quadrado { color: var(--red); }
 

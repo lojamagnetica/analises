@@ -13,7 +13,7 @@ export async function buscarNovidades(portalId: string, equipe: boolean): Promis
     sb().from("loja_leituras").select("publicada, publicada_em, updated_at").eq("portal_id", portalId).order("semana", { ascending: false }).limit(2),
     sb().from("solicitacoes").select("updated_at").eq("portal_id", portalId).eq("status", "Respondida").order("updated_at", { ascending: false }).limit(1),
     sb().from("loja_plano_mes").select("retorno_em").eq("portal_id", portalId).not("retorno_em", "is", null).order("retorno_em", { ascending: false }).limit(1),
-    sb().from("loja_reunioes").select("created_at").eq("portal_id", portalId).in("tipo", ["analise", "planejamento", "analise_semana"]).order("created_at", { ascending: false }).limit(1),
+    sb().from("loja_reunioes").select("created_at").eq("portal_id", portalId).in("tipo", ["analise", "planejamento", "analise_semana", "feedback_time"]).order("created_at", { ascending: false }).limit(1),
   ]);
   const l = (leitura.data ?? []) as { publicada: boolean; publicada_em: string | null; updated_at: string }[];
   const n: Record<string, string> = {};

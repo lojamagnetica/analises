@@ -29,4 +29,23 @@ ok((banco.tabelas.equipe_lembretes ?? []).some((l) => l.texto === "Confirmar o p
 ok(banco.tabelas.reunioes_gravadas[0].status === "aprovada", "a reunião fica aprovada");
 t = await page.locator("main").innerText();
 ok(/sem reunião no Hub nessa data/.test(t), "avisa quando não há reunião no Hub para liberar o resumo");
+
+// Reunião interna (sem loja): aprovar cria só os lembretes da CS.
+{
+  const page2 = await browser.newPage({ viewport: { width: 1100, height: 1400 } });
+  page2.on("dialog", (d) => d.accept());
+  const banco2 = await simular(page2, { usuario: { id: "u-cam", email: "c@c.com" }, tabelas: {
+    perfis: [{ id: "u-cam", nome: "Camilla Ribeiro", email: "c@c.com", papel: "equipe", aprova: true, monta: true, conversas_equipe: true }, { id: "u-cs", nome: "Claudia CS", papel: "equipe", aprova: false, monta: true, conversas_equipe: true }],
+    portais: [{ id: "A", loja: "Loja Alfa", tipo: "Mentoria", ativo: true, menu_oculto: [] }],
+    reunioes_gravadas: [{ id: "g2", tactiq_id: "t2", portal_id: null, titulo: "Interna: alinhamento", data: "2026-11-07", status: "sem_loja", resumo_loja: null, interno: "x", combinados: [], para_claudia: [{ texto: "Pedir o relatório de outubro", prazo: "2026-11-12" }], criado_em: new Date().toISOString() }],
+    loja_combinados: [], equipe_lembretes: [], reunioes: [],
+  } });
+  await page2.addInitScript(() => { try { localStorage.setItem("lm_conversa_aberta", "0"); } catch {} });
+  await page2.goto(`${BASE}/equipe/reunioes-revisar/`);
+  await page2.getByText("Interna: alinhamento").first().waitFor({ timeout: 15000 });
+  await page2.getByRole("button", { name: "Aprovar" }).click();
+  await page2.waitForTimeout(900);
+  ok((banco2.tabelas.equipe_lembretes ?? []).some((l) => l.texto === "Pedir o relatório de outubro" && l.portal_id === null && l.responsavel === "u-cs"), "reunião interna aprovada vira lembrete da CS, sem loja");
+  await page2.close();
+}
 await browser.close();

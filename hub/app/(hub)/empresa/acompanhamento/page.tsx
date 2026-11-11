@@ -53,7 +53,7 @@ export default function Acompanhamento() {
     const al: Alerta[] = [];
     if (!acessos.length) al.push({ txt: "Acesso ao Hub ainda não criado", grave: false });
     else if (!ultimo) al.push({ txt: "Recebeu o acesso e nunca entrou", grave: true });
-    else if (diasDesde(ultimo) >= 7) al.push({ txt: `Sem entrar no Hub há ${diasDesde(ultimo)} dias`, grave: true });
+    else if (diasDesde(ultimo) >= 7) al.push({ txt: `Sem entrar no Hub há ${Math.floor(diasDesde(ultimo))} dias`, grave: true });
     // Loja sem a Gestão no menu manda os números da semana; as outras lançam o caixa.
     if (acessos.length && (p.menu_oculto ?? []).includes("gestao")) {
       if (!dados.numeros.some((x) => x.portal_id === p.id)) al.push({ txt: "Não mandou os números da semana passada", grave: true });

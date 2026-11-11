@@ -8,6 +8,7 @@ import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
+import { painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 
 const COR: Record<Nivel, string> = { vermelho: "var(--red)", amarelo: "var(--orange)", verde: "var(--feito)" };
 const ROTULO: Record<Nivel, string> = { vermelho: "Precisa de você hoje", amarelo: "Atenção", verde: "Em dia" };
@@ -81,11 +82,45 @@ function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; a
   );
 }
 
+const COR_GRUPO = { laranja: "var(--orange)", vermelho: "var(--red)", verde: "var(--feito)" } as const;
+
+/** Um assunto, várias lojas: a CS fala com todas de uma vez, com a mesma mensagem, e marca "falei com todas". */
+function CartaoAssunto({ g, nome, recarregar }: { g: GrupoAlerta; nome: string; recarregar: () => void }) {
+  const [copiada, setCopiada] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const verde = g.cor === "verde";
+  const copiar = async (id: string, msg: string) => { try { await navigator.clipboard.writeText(msg); setCopiada(id); setTimeout(() => setCopiada(""), 2000); } catch { /* sem permissão */ } };
+  if (!g.lojas.length) return verde ? null : <div className="card mb mudo">✓ {g.titulo}: nenhuma loja agora ({g.ok} em dia).</div>;
+  return (
+    <div className="card card-borda mb" style={{ ["--c" as string]: COR_GRUPO[g.cor] }}>
+      <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
+        <b style={{ fontSize: 16 }}>{verde ? "🎉 " : ""}{g.lojas.length} {g.lojas.length === 1 ? "loja" : "lojas"} · {g.titulo}</b>
+        <span className={`selo ${verde ? "feito" : g.cor === "vermelho" ? "erro" : "alerta"}`}>{verde ? `${g.ok} de ${g.total} fizeram` : `${g.ok} de ${g.total} em dia`}</span>
+      </div>
+      <p className="mudo" style={{ margin: "4px 0 8px" }}>{g.detalhe}</p>
+      {g.lojas.map((l) => (
+        <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+          <b>{l.loja}</b>
+          <span className="linha" style={{ gap: 6 }}>
+            <a className="btn p peq" href={linkZap(l.whatsapp, l.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>
+            <button type="button" className="btn s peq" onClick={() => copiar(`${g.chave}-${l.id}`, l.msg)}>{copiada === `${g.chave}-${l.id}` ? "Copiada ✓" : "Copiar"}</button>
+          </span>
+        </div>
+      ))}
+      <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+        {g.grupo && <button type="button" className="btn s peq" onClick={() => copiar(`${g.chave}-grupo`, g.grupo as string)}>{copiada === `${g.chave}-grupo` ? "Copiado ✓" : "Copiar o parabéns para o grupo"}</button>}
+        <button type="button" className="btn p peq" disabled={salvando} onClick={async () => { setSalvando(true); try { await registrarEmLote(g, nome); recarregar(); } catch (e) { alert((e as Error).message); } setSalvando(false); }}>{verde ? "Parabenizei todas" : "Falei com todas"}</button>
+      </div>
+    </div>
+  );
+}
+
 /** Faça agora da CS: uma loja, um cartão, os mais urgentes primeiro. Cada alerta some sozinho quando o dado entra ou a conversa é registrada. */
 export default function InicioCs() {
   const { nome, abrirPortal } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
-  const [ver, setVer] = useState<"agora" | "depois" | "todas">("agora");
+  const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas">("painel");
+  const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
   if (!dados) return <Carregando />;
 
   const { lojas, reunioes } = dados;
@@ -108,12 +143,24 @@ export default function InicioCs() {
       </div>
 
       <div className="chips mb">
-        <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Faça agora · {vermelhas.length}</button>
+        <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>
+        <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Por loja · {vermelhas.length}</button>
         <button type="button" className={`chip${ver === "depois" ? " escolhido" : ""}`} onClick={() => setVer("depois")}>Depois · {depois.length}</button>
         <button type="button" className={`chip${ver === "todas" ? " escolhido" : ""}`} onClick={() => setVer("todas")}>Todas as lojas · {lojas.length}</button>
         <button type="button" className="chip" onClick={recarregar}>Atualizar</button>
       </div>
 
+      {ver === "painel" && (
+        !pd ? <Carregando /> : (
+          <>
+            {pd.acompanhadas === 0 && <div className="card mudo">Nenhuma loja no acompanhamento ainda.</div>}
+            <p className="ajuda" style={{ marginTop: 0 }}>{pd.acompanhadas} {pd.acompanhadas === 1 ? "loja acompanhada" : "lojas acompanhadas"}. Cada alerta junta as lojas com o mesmo assunto: fale com todas de uma vez.</p>
+            {pd.grupos.filter((g) => g.cor !== "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
+            {pd.grupos.some((g) => g.cor === "verde" && g.lojas.length) && <div className="secao">Parabéns da semana passada</div>}
+            {pd.grupos.filter((g) => g.cor === "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
+          </>
+        )
+      )}
       {ver === "agora" && (
         <>
           {!vermelhas.length && <div className="card mudo">Nada urgente agora. Todas as lojas estão em dia. 🎉</div>}

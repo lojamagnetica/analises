@@ -25,14 +25,14 @@ function Cartao({ g0, lojas, csId, recarregar, aoResultado }: { g0: Gravada; loj
     <div className="card card-borda mb" style={{ ["--c" as string]: g.status === "aprovada" ? "var(--feito)" : g.status === "descartada" ? "var(--muted)" : g.status === "sem_loja" ? "var(--orange)" : "var(--red)" }}>
       <div className="linha entre" style={{ gap: 8, flexWrap: "wrap", cursor: "pointer" }} onClick={() => setAberto(!aberto)}>
         <span><b>{g.titulo ?? "Reunião"}</b> <span className="mudo">· {g.data ? dataCurta(g.data) : ""}{g.duracao_min ? ` · ${g.duracao_min} min` : ""}</span></span>
-        <span className={`selo ${g.status === "aprovada" ? "feito" : g.status === "descartada" ? "espera" : "alerta"}`}>{g.status === "sem_loja" ? "escolher a loja" : g.status === "rascunho" ? "para revisar" : g.status}</span>
+        <span className={`selo ${g.status === "aprovada" ? "feito" : g.status === "descartada" ? "espera" : "alerta"}`}>{g.status === "sem_loja" ? "interna ou escolher a loja" : g.status === "rascunho" ? "para revisar" : g.status}</span>
       </div>
       {aberto && (
         <>
           <div className="linha mt" style={{ gap: 8, flexWrap: "wrap", alignItems: "end" }}>
             <div><label className="rotulo">Loja</label>
               <select value={g.portal_id ?? ""} disabled={decidida} onChange={(e) => setG({ ...g, portal_id: e.target.value || null })}>
-                <option value="">Escolha a loja</option>{lojas.map((l) => <option key={l.id} value={l.id}>{l.loja}</option>)}
+                <option value="">Sem loja (reunião interna)</option>{lojas.map((l) => <option key={l.id} value={l.id}>{l.loja}</option>)}
               </select></div>
             {g.tactiq_url && <a className="btn s peq" href={g.tactiq_url} target="_blank" rel="noopener">Abrir no Tactiq</a>}
           </div>

@@ -11,8 +11,11 @@ export function RegrasDosPontos() {
         <li><b>Cada missão do dia vale 10 pontos</b>, em média. Marque no mesmo dia.</li>
         <li><b>Missões do dia completas = 1 estrela</b> ⭐</li>
         <li><b>A cada 500 pontos, um voucher de R$ 500 em compras.</b> Com 1.000 pontos são dois vouchers, e eles se acumulam.</li>
-        <li><b>Semana em dia = +50 pontos.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
-        <li><b>Indique e ganhe, em novembro e dezembro:</b> indicou uma cliente para a vendedora da vez e ela comprou, você ganha <b>+20 pontos</b>.</li>
+        <li><b>Semana em dia = +50 pontos e 20 estrelas ⭐.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
+        <li><b>Indique e ganhe, em novembro e dezembro:</b> indicou uma cliente para a vendedora da vez e ela comprou, você ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
+        <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Nome, WhatsApp e aniversário de todas as clientes que você cadastrou.</li>
+        <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
+        <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>
       </ul>
     </div>
   );
@@ -45,7 +48,7 @@ export function PontosDaVez({ p }: { p: PontosDaPessoa }) {
           <small className="mudo">Últimos pontos</small>
           {p.hist.slice(0, 4).map((h, i) => (
             <div key={i} className="linha entre" style={{ fontSize: 14, marginTop: 4, gap: 8 }}>
-              <span style={{ flex: 1 }}>{h.texto}</span><b style={{ color: h.pontos < 0 ? "var(--muted)" : "#2E9D57" }}>{h.pontos > 0 ? "+" : ""}{h.pontos}</b>
+              <span style={{ flex: 1 }}>{h.texto}</span><b style={{ color: h.pontos < 0 ? "var(--muted)" : "#2E9D57" }}>{h.pontos !== 0 ? `${h.pontos > 0 ? "+" : ""}${h.pontos}` : ""}{h.estrelas > 1 ? ` · +${h.estrelas} ⭐` : h.estrelas === 1 && h.pontos === 0 ? "+1 ⭐" : ""}</b>
             </div>
           ))}
         </div>

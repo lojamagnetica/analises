@@ -34,7 +34,7 @@ export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", m
 export type PontosDaPessoa = {
   saldo: number; acumulado: number; vouchers: number; estrelas: number; estrela_hoje: boolean;
   semana: { atend: number; feitos: number; bonus: boolean };
-  hist: { dia: string; tipo: string; pontos: number; texto: string }[];
+  hist: { dia: string; tipo: string; pontos: number; estrelas: number; texto: string }[];
 };
 export type ClienteChamar = { id: string; nome: string; whatsapp: string; resumo: string; comprou: string; mensagem: string; feito: boolean };
 export type Extras = { pontos: PontosDaPessoa; chamar: ClienteChamar[]; colegas: { id: string; nome: string }[] };
@@ -105,11 +105,11 @@ export const hojeVez = hoje;
 /** Pontos de todas as pessoas do portal (gestora): saldo, estrelas e vouchers a entregar. */
 export type ResumoPontos = { pessoa_id: string; saldo: number; acumulado: number; estrelas: number; vouchers: number };
 export async function buscarPontos(portalId: string): Promise<ResumoPontos[]> {
-  const { data } = await sb().from("loja_pontos").select("pessoa_id, tipo, pontos").eq("portal_id", portalId);
+  const { data } = await sb().from("loja_pontos").select("pessoa_id, tipo, pontos, estrelas").eq("portal_id", portalId);
   const m = new Map<string, ResumoPontos>();
-  for (const l of (data ?? []) as { pessoa_id: string; tipo: string; pontos: number }[]) {
+  for (const l of (data ?? []) as { pessoa_id: string; tipo: string; pontos: number; estrelas: number }[]) {
     const r = m.get(l.pessoa_id) ?? { pessoa_id: l.pessoa_id, saldo: 0, acumulado: 0, estrelas: 0, vouchers: 0 };
-    r.saldo += l.pontos; if (l.pontos > 0) r.acumulado += l.pontos; if (l.tipo === "estrela") r.estrelas += 1;
+    r.saldo += l.pontos; if (l.pontos > 0) r.acumulado += l.pontos; r.estrelas += l.estrelas;
     m.set(l.pessoa_id, r);
   }
   return [...m.values()].map((r) => ({ ...r, vouchers: Math.floor(r.saldo / 500) }));
@@ -117,3 +117,6 @@ export async function buscarPontos(portalId: string): Promise<ResumoPontos[]> {
 /** Entrega um voucher de R$ 500: tira 500 pontos do saldo. */
 export const voucherEntregar = (portalId: string, pessoaId: string) =>
   sb().from("loja_pontos").insert({ portal_id: portalId, pessoa_id: pessoaId, dia: hoje(), tipo: "resgate", pontos: -500, ref: crypto.randomUUID(), texto: "Voucher de R$ 500 em compras entregue" });
+
+/** Marca ou desmarca quem cuida do caixa da loja (ganha os pontos de caixa e relatórios da semana). */
+export const responsavelCaixa = (pessoaId: string, sim: boolean) => sb().from("loja_equipe").update({ responsavel_caixa: sim }).eq("id", pessoaId);

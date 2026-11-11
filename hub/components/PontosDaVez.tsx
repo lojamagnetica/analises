@@ -13,7 +13,7 @@ export function RegrasDosPontos() {
         <li><b>Lojinha de resgate:</b> a cada 100 pontos você já troca por um mimo (garrafinha, maquiagem, skincare, brindes das marcas). Roupa não entra.</li>
         <li><b>Voucher de R$ 500 em compras com 500 pontos.</b> Com 1.000 pontos são dois vouchers, e eles se acumulam.</li>
         <li><b>Semana em dia = +50 pontos e 20 estrelas ⭐.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
-        <li><b>Indique e ganhe, em novembro e dezembro:</b> indicou uma cliente para a vendedora da vez e ela comprou, você ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
+        <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
         <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Nome, WhatsApp e aniversário de todas as clientes que você cadastrou.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
         <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>

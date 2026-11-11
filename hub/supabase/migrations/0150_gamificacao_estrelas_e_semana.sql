@@ -116,3 +116,4 @@ begin
     'colegas', coalesce((select jsonb_agg(jsonb_build_object('id', e.id, 'nome', split_part(e.nome, ' ', 1)) order by e.nome)
       from loja_equipe e where e.portal_id = q.portal_id and coalesce(e.ativo, true) and e.id <> q.id and (coalesce(e.loja, '') in ('', q.loja))), '[]'::jsonb));
 end $$;
+

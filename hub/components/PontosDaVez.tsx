@@ -14,7 +14,7 @@ export function RegrasDosPontos() {
         <li><b>Voucher de R$ 500 em compras com 500 pontos.</b> Com 1.000 pontos são dois vouchers, e eles se acumulam.</li>
         <li><b>Semana em dia = +50 pontos e 20 estrelas ⭐.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
         <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
-        <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Nome, WhatsApp e aniversário de todas as clientes que você cadastrou.</li>
+        <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Vale para quem cadastra, normalmente a Sther na Morena e a Thamy na For Men: nome, WhatsApp e aniversário de todas as clientes cadastradas na semana.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
         <li><b>Desafio do dia 🔥:</b> todo dia um desafio novo, que vale pontos para todo mundo. Ele aparece no topo do link: cada vez que você cumpre, é só marcar.</li>
         <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha o prêmio de destaque e já começa o mês seguinte com <b>100 pontos</b>.</li>

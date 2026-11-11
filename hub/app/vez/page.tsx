@@ -12,6 +12,7 @@ import { ClientesParaChamar } from "@/components/ClientesParaChamar";
 import { DesafioDoDia } from "@/components/DesafioDoDia";
 import { vezDesafios, type DesafioDoDia as DesafioHoje } from "@/lib/desafios";
 import { LojinhaDaVez } from "@/components/LojinhaDaVez";
+import { CrachaDestaque } from "@/components/CrachaDestaque";
 import { vezLojinha, type LojinhaDaPessoa } from "@/lib/lojinha";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -237,6 +238,7 @@ function Vez() {
 
       {extras && <PontosDaVez p={extras.pontos} />}
       {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
+      {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} anterior={lojinha.destaque.anterior} />}
       {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
 
       {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}

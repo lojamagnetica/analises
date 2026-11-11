@@ -122,3 +122,33 @@ export const voucherEntregar = (portalId: string, pessoaId: string) =>
 
 /** Marca ou desmarca quem cuida do caixa da loja (ganha os pontos de caixa e relatórios da semana). */
 export const responsavelCaixa = (pessoaId: string, sim: boolean) => sb().from("loja_equipe").update({ responsavel_caixa: sim }).eq("id", pessoaId);
+
+// ───── Custo da gamificação (gestão) ─────
+export type ConfigCusto = { orcamento: number; custo_ponto: number };
+export type CustoDoMes = {
+  config: ConfigCusto; mes: string; dia: number; diasNoMes: number; emitidos: number; resgatados: number; emAberto: number;
+  porTipo: Record<string, number>; pessoas: number; faturamento: number;
+};
+export async function buscarCustoDoMes(portalId: string): Promise<CustoDoMes> {
+  const d = hoje(); const mi = `${d.slice(0, 7)}-01`;
+  const [c, p, tudo, cx, e] = await Promise.all([
+    sb().from("loja_gamificacao_config").select("orcamento, custo_ponto").eq("portal_id", portalId).maybeSingle(),
+    sb().from("loja_pontos").select("tipo, pontos").eq("portal_id", portalId).gte("dia", mi),
+    sb().from("loja_pontos").select("pontos").eq("portal_id", portalId),
+    sb().from("loja_caixa").select("faturamento").eq("portal_id", portalId).gte("dia", mi),
+    sb().from("loja_equipe").select("id").eq("portal_id", portalId).eq("ativo", true).neq("loja", ""),
+  ]);
+  const config = { orcamento: Number(c.data?.orcamento ?? 1500), custo_ponto: Number(c.data?.custo_ponto ?? 0.3) };
+  const linhas = (p.data ?? []) as { tipo: string; pontos: number }[];
+  const porTipo: Record<string, number> = {};
+  let emitidos = 0, resgatados = 0;
+  for (const l of linhas) { if (l.pontos > 0) { emitidos += l.pontos; porTipo[l.tipo] = (porTipo[l.tipo] ?? 0) + l.pontos; } else if (l.tipo === "resgate") resgatados += -l.pontos; }
+  const [a, m] = d.split("-").map(Number);
+  return {
+    config, mes: `${String(m).padStart(2, "0")}/${a}`, dia: Number(d.slice(8)), diasNoMes: new Date(a, m, 0).getDate(), emitidos, resgatados,
+    emAberto: ((tudo.data ?? []) as { pontos: number }[]).reduce((s, x) => s + x.pontos, 0), porTipo, pessoas: (e.data ?? []).length,
+    faturamento: ((cx.data ?? []) as { faturamento: number }[]).reduce((s, x) => s + Number(x.faturamento), 0),
+  };
+}
+export const salvarConfigCusto = (portalId: string, c: ConfigCusto) =>
+  sb().from("loja_gamificacao_config").upsert({ portal_id: portalId, orcamento: c.orcamento, custo_ponto: c.custo_ponto, updated_at: new Date().toISOString() });

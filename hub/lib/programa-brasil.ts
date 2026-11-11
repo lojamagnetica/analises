@@ -39,3 +39,12 @@ export const PROVAS: Record<AcaoMissao["prova"], { selo: string; texto: string }
 };
 
 export const totalMissao = () => MISSAO_DO_MES.reduce((s, p) => s + p.total, 0);
+
+/** Resgates de prêmio que todas as lojas da mentoria podem ver. */
+export const RESGATES: { quando: string; premio: string }[] = [
+  { quando: "Todo mês", premio: "A loja Destaque do mês ganha +1 mês de mentoria, com 1 reunião." },
+  { quando: "2 meses", premio: "Quem for destaque duas vezes ganha o título de Embaixador Loja Magnética e uma oportunidade premium." },
+  { quando: "200 pontos", premio: "Análise individual dos atendimentos da loja, online, com plano de correção personalizado." },
+  { quando: "300 pontos", premio: "Uma campanha 100% feita por uma estrategista digital magnética." },
+  { quando: "2027", premio: "Quem renovar concorre a Melhor do Ano em evolução: 1 dia na loja com a Camilla, sem custo." },
+];

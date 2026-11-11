@@ -73,6 +73,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         { href: "/empresa/cs", rotulo: "Início da CS", icone: "target" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
+        { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
         { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         ...(cs ? [{ href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark" }] : []),

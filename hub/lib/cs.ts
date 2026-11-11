@@ -8,6 +8,8 @@ import { somarDias as somaDias } from "@/lib/acoes-mes";
 import { semanaDe, semanaPassada } from "@/lib/leitura";
 import { mesesDoInicio } from "@/lib/plano-mes";
 import { buscarPendencias } from "@/lib/pendencias";
+import type { Combinado } from "@/lib/combinados";
+import { dataCurta } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export type AlertaCs = {
@@ -25,6 +27,8 @@ export type LojaCs = {
   ultimo: string | null; proxReuniao: string | null; alertas: AlertaCs[]; nivel: Nivel; caixaCompleto: boolean | null;
   /** A última conversa registrada da CS com a loja. */
   contato: { feito_em: string; resumo: string | null; precisa_ajuda: boolean } | null;
+  /** Os combinados da loja (da reunião de entrega ou de outras reuniões). */
+  combinados: Combinado[];
 };
 export type PainelCs = { lojas: LojaCs[]; aCaminho: { id: string; loja: string; tipo: string; proxReuniao: string | null }[]; reunioes: { portal_id: string; loja: string; data: string; titulo: string | null }[]; semana: string };
 
@@ -49,7 +53,7 @@ export async function painelCs(): Promise<PainelCs> {
   const sb = supabaseBrowser();
   const semana = semanaDe();
   const prox = mesesDoInicio().proximo;
-  const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: contratos }, { data: numeros }, jornada, pend, { data: contatos }] = await Promise.all([
+  const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: contratos }, { data: numeros }, jornada, pend, { data: contatos }, { data: combinadosTodos }] = await Promise.all([
     sb.from("portais").select("id, loja, tipo, whatsapp, responsavel, menu_oculto, cs_acompanha").eq("ativo", true).order("loja"),
     sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
     sb.from("loja_caixa").select("portal_id, dia").gte("dia", semana),
@@ -61,6 +65,7 @@ export async function painelCs(): Promise<PainelCs> {
     buscarJornada().catch(() => []),
     buscarPendencias().catch(() => []),
     sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
+    sb.from("loja_combinados").select("*").order("prazo", { ascending: true }),
   ]);
   const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && p.cs_acompanha);
   // As demais lojas ainda estão na reunião de entrega: só passam para o acompanhamento quando a gestora liberar.
@@ -103,6 +108,19 @@ export async function painelCs(): Promise<PainelCs> {
         registro: { tipo: "leitura", ref: semana },
         msg: `Oi, ${primeiro(p.responsavel)}! Aqui é a Claudia, da Loja Magnética. Vi que a Camilla já liberou a sua análise da semana. Você já conseguiu ver? Ficou alguma dúvida ou algo em que eu possa te ajudar?` });
     }
+    // Combinados: a conversa de boas-vindas depois da reunião de entrega e a pergunta "como foi?" no prazo de cada um.
+    const combinados = ((combinadosTodos ?? []) as Combinado[]).filter((c) => c.portal_id === p.id);
+    const lista = combinados.filter((c) => c.status === "aberto" && c.quem !== "camilla");
+    if (lista.length && !contatosLoja.some((c) => c.tipo === "boas_vindas")) {
+      const itens = lista.map((c) => `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)})` : ""}`).join("; ");
+      al.push({ chave: "boas_vindas", txt: `Depois da reunião de entrega: dar as boas-vindas e confirmar os combinados (${lista.length})`, grave: true, destino: "/inicio", registro: { tipo: "boas_vindas", ref: "entrega" },
+        msg: `${abertura(p)} Adorei a reunião de entrega com a Camilla! Combinamos: ${itens}. Estou aqui para ajudar em cada passo. Qual desses você começa hoje?` });
+    }
+    for (const c of lista) {
+      if (!c.prazo || c.prazo > hoje() || contatosLoja.some((x) => x.tipo === "combinado" && x.ref === c.id)) continue;
+      al.push({ chave: `combinado_${c.id}`, txt: `Combinado ${c.prazo < hoje() ? "vencido" : "para hoje"} (${dataCurta(c.prazo)}): "${c.texto}". Pergunte como foi e se precisa de ajuda.`, grave: c.prazo < hoje(), destino: "/inicio", registro: { tipo: "combinado", ref: c.id },
+        msg: `${abertura(p)} Passando para saber como foi o combinado "${c.texto}". Conseguiu? Se travou em algo, me conta que eu te ajudo.` });
+    }
     // A loja precisa se sentir acompanhada: sem conversa registrada há mais de 7 dias vira um lembrete leve (14 dias, grave).
     if (acessos.length) {
       const dias = contato ? Math.floor(diasDesde(contato.feito_em)) : null;
@@ -139,7 +157,7 @@ export async function painelCs(): Promise<PainelCs> {
 
     const relevantes = al.filter((a) => a.chave !== "sem_contato" || a.grave);
     const nivel: Nivel = relevantes.some((a) => a.grave) ? "vermelho" : relevantes.length ? "amarelo" : "verde";
-    return { id: p.id, loja: p.loja, tipo: p.tipo, whatsapp: p.whatsapp ?? null, responsavel: p.responsavel ?? null, ultimo, proxReuniao: proxR?.data ?? null, alertas: al, nivel, caixaCompleto, contato };
+    return { id: p.id, loja: p.loja, tipo: p.tipo, whatsapp: p.whatsapp ?? null, responsavel: p.responsavel ?? null, ultimo, proxReuniao: proxR?.data ?? null, alertas: al, nivel, caixaCompleto, contato, combinados };
   });
   const ordem = { vermelho: 0, amarelo: 1, verde: 2 } as const;
   lojas.sort((a, b) => ordem[a.nivel] - ordem[b.nivel] || b.alertas.filter((x) => x.grave).length - a.alertas.filter((x) => x.grave).length || a.loja.localeCompare(b.loja));

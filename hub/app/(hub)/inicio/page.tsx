@@ -17,6 +17,7 @@ import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
 import { AvisosDaLoja } from "@/components/AvisosDaLoja";
 import { CaixaDaSemana } from "@/components/LeituraDaSemana";
+import { SeusCombinados } from "@/components/SeusCombinados";
 import { chaveDoAtalho, lerVisto, marcarVisto, temNovidade } from "@/lib/atalho-novo";
 import { buscarNovidades } from "@/lib/novidades-atalhos";
 import { RankingDoMes } from "@/components/RankingVendedoras";
@@ -241,6 +242,8 @@ export default function Inicio() {
       )}
 
       {fimContrato && contrato && <Renovacao portalId={portal.id} faltam={fimContrato.faltam} consultoria={consultoria} pedida={contrato.pedida} />}
+
+      {!onboarding && <SeusCombinados portalId={portal.id} />}
 
       {!onboarding && <>
       <div className="secao">Seus atalhos</div>

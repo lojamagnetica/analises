@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
+import { CombinadosDaEntrega } from "@/components/CombinadosDaEntrega";
 import { antesDaReuniao, buscarEntrega, roteiroEntrega, roteiroTexto } from "@/lib/entrega";
 
 /** O roteiro da reunião de entrega do Hub, montado com os dados do portal. */
@@ -35,6 +36,7 @@ function Entrega() {
           {b.falas.map((x, i) => <p key={i} style={{ margin: "4px 0", fontSize: 16 }}>{x}</p>)}
         </div>
       ))}
+      <CombinadosDaEntrega portalId={id} loja={dados.p.loja} />
     </>
   );
 }

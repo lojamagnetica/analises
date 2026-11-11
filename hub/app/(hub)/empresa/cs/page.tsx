@@ -70,6 +70,9 @@ function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; a
         <small className="mudo">{l.ultimo ? `acesso ${haQuanto(l.ultimo)}` : "nunca entrou"}{l.contato ? ` · conversamos ${haQuanto(l.contato.feito_em)}` : ""}{l.contato?.precisa_ajuda ? " · pediu ajuda" : ""}</small>
       </div>
       {l.contato?.resumo && <small className="mudo" style={{ display: "block", marginTop: 2 }}>Última conversa: {l.contato.resumo}</small>}
+      {l.combinados.length > 0 && (
+        <small className="mudo" style={{ display: "block", marginTop: 4 }}>Combinados: {l.combinados.map((c) => `${c.status === "feito" ? "✓ " : ""}${c.texto}`).join(" · ")}</small>
+      )}
       {alertas.map(item)}
       <div className="linha mt"><button type="button" className="btn s peq" onClick={() => abrir(l.id, "/inicio")}>Abrir a loja</button></div>
     </div>

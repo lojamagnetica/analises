@@ -10,6 +10,8 @@ self.addEventListener("push", (e) => {
     icon: "/analises/portal/icon-192.png",
     badge: "/analises/portal/icon-192.png",
     data: { url: d.url || "/analises/portal/empresa/novidades/" },
+    // Conversas da equipe: cada mensagem avisa de novo (som e vibração do aparelho), com o ícone do app das Conversas.
+    ...(d.titulo === "Conversas" ? { icon: "/analises/portal/icon-conversas-192.png", tag: "conversas", renotify: true, vibrate: [200, 100, 200] } : {}),
   }));
 });
 

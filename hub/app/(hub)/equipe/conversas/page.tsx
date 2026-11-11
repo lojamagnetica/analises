@@ -1,12 +1,14 @@
 "use client";
 
 // Conversas da equipe: o canal interno só da Camilla e da CS, por loja. Cada mensagem vira lembrete, pendência, combinado ou contato.
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta, dataHora, hoje } from "@/lib/formato";
 import { AcoesDaMensagem } from "@/components/AcoesDaMensagem";
+import { AnexoDaMensagem } from "@/components/AnexoDaMensagem";
 import { TIPOS_CONVERSA, abertasPorLoja, buscarLembretes, buscarMensagens, buscarPessoas, enviarMensagem, marcarLembrete, type TipoConversa } from "@/lib/conversas";
 
 type LojaLista = { id: string; loja: string };
@@ -37,6 +39,12 @@ export default function ConversasDaEquipe() {
   return (
     <>
       <Titulo titulo="Conversas da equipe" sub="O canal só da Camilla e da CS. Cada conversa fica ligada a uma loja e vira lembrete, pendência, combinado ou contato com 1 toque." />
+
+      <div className="card mb">
+        <b>📱 App no celular</b>
+        <p className="mudo" style={{ margin: "4px 0 0" }}>Abra <b>/conversas</b> deste Hub no celular e use "Adicionar à tela inicial": vira um app separado, só desta conversa, com o seu próprio ícone. Dá para falar a mensagem (🎙) e anexar fotos e arquivos (📎).</p>
+        <Link className="btn s peq mt" href="/conversas">Abrir o app</Link>
+      </div>
 
       {lembretes.length > 0 && (
         <>
@@ -70,6 +78,7 @@ export default function ConversasDaEquipe() {
               <span className="linha" style={{ gap: 6 }}><span className={`selo ${m.tipo === "Urgente" ? "erro" : m.tipo === "Pedido" ? "andamento" : "espera"}`}>{m.tipo}</span>{m.status === "concluida" && <span className="selo feito">concluída</span>}</span>
             </div>
             <p style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}>{m.texto}</p>
+            {(m.arquivos ?? []).map((x) => <AnexoDaMensagem key={x.caminho} a={x} />)}
             <AcoesDaMensagem m={m} pessoas={base.pessoas} por={nome.split(" ")[0]} aoFeito={tudo} />
           </div>
         ))}

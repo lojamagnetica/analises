@@ -21,7 +21,18 @@ export type DadosGestao = {
   validado?: boolean;
   /** Análise da semana: a loja e a segunda-feira da semana. */
   loja?: string; semana?: string;
+  /** Feedback do time: uma conversa por pessoa. */
+  pessoas?: PessoaFeedback[];
 };
+export type PessoaFeedback = { nome: string; funcao: string; problema: string; forca: string; solucao: string; dificuldade: string; oque: string; quanto: string; ate: string };
+export const novaPessoaFeedback = (): PessoaFeedback => ({ nome: "", funcao: "", problema: "", forca: "", solucao: "", dificuldade: "", oque: "", quanto: "", ate: "" });
+/** Os 4 passos da conversa, na ordem da linha de gestão (o 5º, o combinado, sai da pessoa). */
+export const PASSOS_FEEDBACK: { chave: "problema" | "forca" | "solucao" | "dificuldade"; n: number; titulo: string; ajuda: string; cor: string }[] = [
+  { chave: "problema", n: 1, titulo: "O problema, com número", ajuda: "Fale na segunda pessoa, com o número: \"você vendeu...\". A responsabilidade é dela.", cor: "var(--red)" },
+  { chave: "forca", n: 2, titulo: "O que ela já faz bem", ajuda: "Reconheça algo verdadeiro e a força do perfil dela.", cor: "var(--feito)" },
+  { chave: "solucao", n: 3, titulo: "A solução, mostrada na prática", ajuda: "Um exemplo real: a peça que ela vende e a opção maior que poderia ter oferecido, e como argumentar.", cor: "var(--purple)" },
+  { chave: "dificuldade", n: 4, titulo: "A dificuldade de execução", ajuda: "O que pode atrapalhar. Pergunte antes de sugerir.", cor: "var(--orange)" },
+];
 export type ReuniaoGestao = { id: string; tipo: TipoGestao; data: string; dados: DadosGestao };
 
 /** Reunião 1: entender em que momento a loja está. */
@@ -95,6 +106,11 @@ export function textoDaReuniao(tipo: TipoGestao, d: DadosGestao) {
     : `${tipo === "analise" ? "Análise" : "Planejamento"} · ${nomeMes(d.mes)}`];
   if (tipo === "planejamento" && d.meta) l.push(`Meta: ${d.meta}`);
   for (const c of campos) if (d.campos[c.chave]?.trim()) l.push("", c.titulo, d.campos[c.chave].trim());
+  for (const p of d.pessoas ?? []) {
+    l.push("", `${p.nome}${p.funcao ? ` (${p.funcao})` : ""}`);
+    PASSOS_FEEDBACK.forEach((x) => { if (p[x.chave]?.trim()) l.push(`${x.n}) ${x.titulo}: ${p[x.chave].trim()}`); });
+    if (p.oque || p.quanto || p.ate) l.push(`5) O combinado, que sai dela: ${p.oque || "—"} · quanto: ${p.quanto || "—"} · até quando: ${p.ate || "—"}`);
+  }
   if (d.combinados.length) {
     l.push("", "Combinados");
     for (const c of d.combinados) l.push(`- ${TIPOS_COMBINADO.find((t) => t.tipo === c.tipo)?.titulo}: ${c.oque}${c.quem ? ` (${c.quem}` : ""}${c.ate ? `${c.quem ? ", " : " ("}até ${c.ate}` : ""}${c.quem || c.ate ? ")" : ""}`);

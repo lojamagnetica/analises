@@ -17,7 +17,7 @@ export function RegrasDosPontos() {
         <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Vale para quem cadastra, normalmente a Sther na Morena e a Thamy na For Men: nome, WhatsApp e aniversário de todas as clientes cadastradas na semana.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
         <li><b>Desafio do dia 🔥:</b> todo dia um desafio novo, que vale pontos para todo mundo. Ele aparece no topo do link: cada vez que você cumpre, é só marcar.</li>
-        <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha o prêmio de destaque e já começa o mês seguinte com <b>100 pontos</b>.</li>
+        <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha <b>R$ 200 em dinheiro</b> e já começa o mês seguinte com <b>100 pontos</b>.</li>
         <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>
       </ul>
     </div>

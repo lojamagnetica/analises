@@ -30,6 +30,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
       { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
       { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
       { href: "/equipe/planos", rotulo: "Planos do mês", icone: "note", so: "monta" },
+      { href: "/equipe/reunioes-revisar", rotulo: "Reuniões para revisar", icone: "video" },
       { href: "/equipe/agenda", rotulo: "Agenda e reuniões", icone: "cal" },
       { href: "/equipe", rotulo: "Painel dos portais", icone: "folder" },
       { href: "/equipe/aprovar", rotulo: "Esperando a Camilla", icone: "send", so: "monta" },
@@ -55,12 +56,13 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 export default function ControleDeClientes() {
   const { nome, monta, conversas, userId } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
+  const { dados: paraRevisar } = useDados(async () => (await supabaseBrowser().from("reunioes_gravadas").select("id", { count: "exact", head: true }).in("status", ["rascunho", "sem_loja"])).count ?? 0, []);
   const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, userId]);
   useEffect(() => { document.title = "Controle de clientes · magnética.hub"; }, []);
   if (!dados) return <Carregando />;
   const hoje = dados.lojas.filter((l) => l.nivel === "vermelho").length;
   const atencao = dados.lojas.filter((l) => l.nivel === "amarelo").length;
-  const aviso = (href: string) => (href === "/empresa/cs" && hoje > 0 ? `${hoje} ${hoje === 1 ? "loja precisa" : "lojas precisam"} de você` : href === "/empresa/acompanhamento" && atencao > 0 ? `${atencao} em atenção` : null);
+  const aviso = (href: string) => (href === "/equipe/reunioes-revisar" && (paraRevisar ?? 0) > 0 ? `${paraRevisar} para revisar` : href === "/empresa/cs" && hoje > 0 ? `${hoje} ${hoje === 1 ? "loja precisa" : "lojas precisam"} de você` : href === "/empresa/acompanhamento" && atencao > 0 ? `${atencao} em atenção` : null);
   return (
     <>
       <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub={`Controle de clientes: ${dados.lojas.length} ${dados.lojas.length === 1 ? "loja acompanhada" : "lojas acompanhadas"}${dados.aCaminho.length ? `, ${dados.aCaminho.length} a caminho` : ""}. ${hoje ? `${hoje} ${hoje === 1 ? "precisa" : "precisam"} de você hoje.` : "Todas em dia por enquanto."}`} />

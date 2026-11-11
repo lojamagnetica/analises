@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { urlFotoMarca } from "@/lib/marcas";
 
-// Imagem do destaque absoluto do mês para postar no Instagram (1080x1350), no estilo do crachá de boas-vindas.
+// Imagem do destaque da loja ou do Destaque Absoluto Brasil para postar no Instagram (1080x1350), no estilo do crachá de boas-vindas.
 // Sem valor de prêmio: só o título, o nome, a loja, o mês e o troféu.
 const C = { noite: "#0B1A3A", ferrugem: "#BC4914", ambar: "#E08A3C", off: "#F5F0EA", areia: "#E6DCD0" };
 const FONTES = "https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,400;0,600;0,800;1,800&family=Outfit:wght@400&display=swap";
@@ -20,7 +20,7 @@ function ima(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, cor
 }
 const espaco = (ctx: CanvasRenderingContext2D, px: number) => { if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${px}px`; };
 
-function desenhar(ctx: CanvasRenderingContext2D, nome: string, loja: string, mesAno: string, foto: HTMLImageElement | null) {
+function desenhar(ctx: CanvasRenderingContext2D, nome: string, loja: string, mesAno: string, foto: HTMLImageElement | null, brasil: boolean) {
   ctx.setTransform(1, 0, 0, 1, 0, 0); espaco(ctx, 0); ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
   ctx.fillStyle = C.areia; ctx.fillRect(0, 0, 1080, 1350);
   // fita com os ímãs e a presilha
@@ -44,11 +44,11 @@ function desenhar(ctx: CanvasRenderingContext2D, nome: string, loja: string, mes
   ctx.strokeStyle = C.ambar; ctx.lineWidth = 10; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
   // textos
   ctx.textAlign = "center";
-  ctx.fillStyle = C.ambar; ctx.font = "800 34px Archivo, sans-serif"; espaco(ctx, 10); ctx.fillText("DESTAQUE ABSOLUTO", 390 + 5, 576);
+  ctx.fillStyle = C.ambar; ctx.font = "800 34px Archivo, sans-serif"; espaco(ctx, 10); ctx.fillText(brasil ? "DESTAQUE ABSOLUTO" : "DESTAQUE DA LOJA", 390 + 5, 576);
   espaco(ctx, -1); ctx.fillStyle = C.off; ctx.font = "800 96px Archivo, sans-serif";
   let tam = 96; while (ctx.measureText(nome).width > 700 && tam > 48) { tam -= 4; ctx.font = `800 ${tam}px Archivo, sans-serif`; }
   ctx.fillText(nome, 390, 672);
-  espaco(ctx, 0); ctx.fillStyle = "#C9BFB4"; ctx.font = "400 44px Archivo, sans-serif"; ctx.fillText(loja, 390, 736);
+  espaco(ctx, 0); ctx.fillStyle = "#C9BFB4"; ctx.font = "400 44px Archivo, sans-serif"; ctx.fillText(brasil ? "BRASIL · Programa Loja Magnética" : loja, 390, 736);
   ctx.fillStyle = C.ambar; ctx.font = "600 34px Archivo, sans-serif"; espaco(ctx, 8); ctx.fillText(mesAno, 390 + 4, 792); espaco(ctx, 0);
   ctx.font = "110px 'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif"; ctx.fillStyle = C.off; ctx.fillText("🏆", 390, 912);
   ctx.restore();
@@ -63,6 +63,7 @@ export function DestaqueInstagram({ pessoas, sugerida }: { pessoas: Pessoa[]; su
   const [ano, setAno] = useState(String(hojeData.getFullYear()));
   const [foto, setFoto] = useState<HTMLImageElement | null>(null);
   const [fontes, setFontes] = useState(false);
+  const [tipo, setTipo] = useState<"loja" | "brasil">("loja");
   const p = pessoas.find((x) => x.id === pessoaId) ?? null;
 
   useEffect(() => {
@@ -76,19 +77,22 @@ export function DestaqueInstagram({ pessoas, sugerida }: { pessoas: Pessoa[]; su
   }, [p?.foto]);
   useEffect(() => {
     const ctx = tela.current?.getContext("2d"); if (!ctx) return;
-    desenhar(ctx, p?.nome ?? "Nome", p?.loja ?? "Pitanga", `${MESES[Number(mes) - 1]} ${ano}`, foto);
-  }, [p, mes, ano, foto, fontes]);
+    desenhar(ctx, p?.nome ?? "Nome", p?.loja ?? "Pitanga", `${MESES[Number(mes) - 1]} ${ano}`, foto, tipo === "brasil");
+  }, [p, mes, ano, foto, fontes, tipo]);
 
   const baixar = () => tela.current?.toBlob((b) => {
     if (!b) return;
     const a = document.createElement("a"); a.href = URL.createObjectURL(b);
-    a.download = `destaque-absoluto-${(p?.nome ?? "pessoa").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-")}-${ano}-${mes}.png`;
+    a.download = `destaque-${tipo}-${(p?.nome ?? "pessoa").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-")}-${ano}-${mes}.png`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }, "image/png");
 
   return (
     <div className="grade g2" style={{ alignItems: "start" }}>
       <div>
+        <label className="ajuda" style={{ display: "block" }}>Qual destaque
+          <select value={tipo} onChange={(e) => setTipo(e.target.value as "loja" | "brasil")}><option value="loja">Destaque da loja</option><option value="brasil">Destaque Absoluto Brasil · Programa Loja Magnética</option></select>
+        </label>
         <label className="ajuda" style={{ display: "block" }}>Quem foi o destaque
           <select value={pessoaId} onChange={(e) => setPessoaId(e.target.value)}>{pessoas.map((x) => <option key={x.id} value={x.id}>{x.nome}{x.loja ? ` · ${x.loja}` : ""}</option>)}</select>
         </label>

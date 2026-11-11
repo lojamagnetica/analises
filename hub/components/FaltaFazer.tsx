@@ -14,7 +14,7 @@ export function FaltaFazer({ missoes, desafios, chamar, semana }: { missoes: num
   if (aChamar > 0) itens.push({ icone: "💬", texto: <>Chame suas clientes e marque <b>Chamei</b>: {aChamar} esperando por você.</> });
   if (semana && semana.atend > 0 && !semana.bonus) {
     const precisa = Math.max(0, Math.ceil(semana.atend * 0.8) - semana.feitos);
-    if (precisa > 0) itens.push({ icone: "📋", texto: <>Marque o resultado de mais <b>{precisa} {precisa === 1 ? "atendimento" : "atendimentos"}</b> e garanta <b>+50 pontos e 20 ⭐</b> da semana.</> });
+    if (precisa > 0) itens.push({ icone: "📋", texto: <>Marque o resultado de mais <b>{precisa} {precisa === 1 ? "atendimento" : "atendimentos"}</b> e garanta <b>+5 ⭐</b> da semana.</> });
   }
   if (itens.length === 0) {
     return <div className="card mb" style={{ border: "2px solid #2E9D57", background: "rgba(46,157,87,.1)" }}><b>Tudo em dia hoje! 🎉</b><div className="mudo" style={{ fontSize: 14 }}>Você completou o que dá para ganhar agora. Volte quando chegar um novo desafio.</div></div>;

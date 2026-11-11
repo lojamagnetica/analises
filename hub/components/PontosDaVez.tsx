@@ -12,13 +12,13 @@ export function RegrasDosPontos() {
         <li><b>Missões do dia completas = 1 estrela</b> ⭐</li>
         <li><b>Lojinha de resgate:</b> a cada 100 pontos você já troca por um mimo (garrafinha, maquiagem, skincare, brindes das marcas). Roupa não entra.</li>
         <li><b>Voucher de R$ 500 em compras com 500 pontos.</b> Com 1.000 pontos são dois vouchers, e eles se acumulam.</li>
-        <li><b>Semana em dia = +50 pontos e 20 estrelas ⭐.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
-        <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
+        <li><b>Semana em dia = 5 estrelas ⭐.</b> Preencha o resultado de pelo menos 80% dos atendimentos da lista da vez (a partir de 5 atendimentos na semana).</li>
+        <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 5 estrelas ⭐</b>.</li>
         <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Vale para quem cadastra, normalmente a Sther na Morena e a Thamy na For Men: nome, WhatsApp e aniversário de todas as clientes cadastradas na semana.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
         <li><b>Entre as lojas da mentoria 🏅:</b> a loja que somar mais pontos no mês (a soma dos pontos de cada pessoa) ganha <b>R$ 200 extra da mentora</b>, se bater a meta do mês. Empate entre 2: as duas ganham. Mais de 2: as 2 que chegaram primeiro.</li>
         <li><b>Desafio do dia 🔥:</b> todo dia um desafio novo, que vale pontos para todo mundo. Ele aparece no topo do link: cada vez que você cumpre, é só marcar.</li>
-        <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha <b>R$ 200 em dinheiro</b> e já começa o mês seguinte com <b>100 pontos</b>.</li>
+        <li><b>Estrelas valem prêmio 🏆:</b> quem somar mais estrelas no mês é o <b>Destaque da loja</b> (<b>R$ 200</b> e 100 pontos no mês seguinte). Quem somar mais estrelas entre todas as lojas do programa é o <b>Destaque Absoluto Brasil · Programa Loja Magnética</b> (<b>mais R$ 200</b>). Pode ganhar os dois: R$ 200 + R$ 200.</li>
         <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>
       </ul>
     </div>
@@ -45,13 +45,13 @@ export function PontosDaVez({ p, vibrar = false }: { p: PontosDaPessoa; vibrar?:
       </div>
       <small className="mudo">Faltam <b>{falta}</b> pontos para um voucher de R$ 500 em compras.</small>
       <div style={{ marginTop: 10, background: "var(--soft)", borderRadius: 12, padding: "8px 12px", fontSize: 14 }}>
-        <b>🏆 Destaque do mês:</b> você tem <b>{p.destaque.estrelas} ⭐</b> em {p.destaque.mes}.{" "}
+        <b>🏆 Destaque da loja:</b> você tem <b>{p.destaque.estrelas} ⭐</b> em {p.destaque.mes}.{" "}
         {p.destaque.lider_estrelas === 0 ? "Ninguém somou estrelas ainda. Dá para ser a primeira!"
           : p.destaque.posicao === 1 ? "Você está em 1º lugar! 🥇"
           : `${p.destaque.lider} lidera com ${p.destaque.lider_estrelas} ⭐.`}
       </div>
       <p style={{ margin: "10px 0 0", fontSize: 14 }}>
-        Esta semana: {p.semana.atend === 0 ? "nenhum atendimento registrado ainda." : <>{p.semana.feitos} de {p.semana.atend} atendimentos com resultado ({sem}%). {p.semana.bonus ? "Bônus de +50 garantido! 🎉" : "Com 80% ou mais, são +50 pontos."}</>}
+        Esta semana: {p.semana.atend === 0 ? "nenhum atendimento registrado ainda." : <>{p.semana.feitos} de {p.semana.atend} atendimentos com resultado ({sem}%). {p.semana.bonus ? "Bônus de 5 estrelas garantido! 🎉" : "Com 80% ou mais, são 5 estrelas."}</>}
       </p>
       {p.hist.length > 0 && (
         <div style={{ marginTop: 10, borderTop: "1px solid var(--line)", paddingTop: 6 }}>

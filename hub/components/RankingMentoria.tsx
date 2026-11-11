@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Carregando, useDados } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
-import { buscarRankingMentoria, premioMentoraPago, salvarMetaMinimaMentoria } from "@/lib/vez";
+import { buscarDestaqueBrasil, buscarRankingMentoria, destaqueBrasilPago, premioMentoraPago, salvarMetaMinimaMentoria } from "@/lib/vez";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 
@@ -11,6 +11,7 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 export function RankingMentoria() {
   const mesISO = `${hoje().slice(0, 7)}-01`;
   const { dados, recarregar } = useDados(() => buscarRankingMentoria(mesISO), [mesISO]);
+  const { dados: br, recarregar: recarregarBr } = useDados(() => buscarDestaqueBrasil(mesISO), [mesISO]);
   const [pct, setPct] = useState<string | null>(null);
   if (!dados) return <Carregando />;
   const { ranking, premios, config } = dados;
@@ -37,6 +38,27 @@ export function RankingMentoria() {
           <label className="ajuda">Meta mínima para concorrer (%)<input type="number" min={0} max={200} value={pct ?? String(config.meta_minima_pct)} onChange={(e) => setPct(e.target.value)} style={{ width: 90 }} /></label>
           {pct !== null && <button type="button" className="btn p peq" onClick={async () => { await salvarMetaMinimaMentoria(Math.max(0, Math.min(200, Number(pct) || 0))); setPct(null); recarregar(); }}>Salvar</button>}
         </div>
+      </div>
+      <div className="secao">Destaque Absoluto Brasil · Programa Loja Magnética</div>
+      <div className="card mb">
+        <p className="ajuda" style={{ marginTop: 0 }}>A pessoa que somar mais estrelas no mês, entre todas as lojas do programa, ganha <b>{brl(200)} extra da mentora</b>. Empate: as 2 que chegaram primeiro.</p>
+        {!br ? <Carregando /> : br.ranking.length === 0 ? <p className="mudo">Ninguém somou estrelas neste mês ainda.</p>
+          : br.ranking.map((r, i) => (
+            <div key={r.pessoa_id} className="linha entre" style={{ gap: 8, padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+              <span><b>{i + 1}º {r.nome}</b> <span className="mudo">· {r.loja ?? "loja"}</span></span><b>{r.estrelas} ⭐</b>
+            </div>
+          ))}
+        {br && br.premios.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            <small className="mudo">Prêmios a pagar</small>
+            {br.premios.map((p) => (
+              <div key={`${p.mes}-${p.pessoa_id}`} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+                <span><b>{p.loja_equipe?.nome.split(" ")[0] ?? "Pessoa"}</b> <span className="mudo">· {p.loja_equipe?.loja ?? ""} · {p.mes.slice(5)}/{p.mes.slice(0, 4)} · {p.estrelas} ⭐ · {brl(p.valor)}</span></span>
+                <button type="button" className={`btn ${p.pago ? "s" : "p"} peq`} onClick={async () => { await destaqueBrasilPago(p.mes, p.pessoa_id, !p.pago); recarregarBr(); }}>{p.pago ? "Pago ✓ (desfazer)" : "Marcar como pago"}</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       {premios.length > 0 && (
         <div className="card mb">

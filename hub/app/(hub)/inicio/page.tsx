@@ -250,7 +250,7 @@ export default function Inicio() {
             onClick={() => { const k = chaveDoAtalho(a.href); setVistos((v) => ({ ...v, [k]: marcarVisto(portal.id, a.href) })); }}>
             <span className="quadrado"><Icone nome={a.icone} /></span>
             {a.rotulo}{trancado(a.href) ? " 🔒" : ""}
-            {comNovidade(a.href) && <small className="novidade">novidade</small>}
+            {comNovidade(a.href) && <small className="novidade">tem novidade</small>}
             {/* Lista da vez: os atendimentos de cada vendedora, hoje e no mês. */}
             {/* PLANEJE do mês seguinte: o prazo de envio para a Camilla (dia 20) à vista, ou o enviado ✓. */}
             {a.href.startsWith("/planeje/mes") && !trancado(a.href) && (

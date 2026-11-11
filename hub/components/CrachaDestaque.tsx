@@ -39,10 +39,11 @@ export function CrachaDestaque({ mes, nome, loja, estrelas, foto, anterior }: { 
             </div>
           </div>
           <div style={{ fontSize: 11, letterSpacing: ".16em", fontWeight: 800, color: AMBAR, textAlign: "center" }}>DESTAQUE DA LOJA</div>
-          <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.1, textAlign: "center", margin: "4px 0" }}>{aberto ? "Quem vai ser?" : nome}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1.1, textAlign: "center", margin: "4px 0" }}>{aberto ? "Será que é você?" : nome}</div>
           <div style={{ textAlign: "center", fontSize: 15, color: "#C9BFB4" }}>{aberto ? "Ainda ninguém somou estrelas neste mês." : `${loja ? `${loja} · ` : ""}${nomeDoMes(mes)} ${mes.slice(3)}`}</div>
           <div style={{ textAlign: "center", fontSize: 40, marginTop: 8 }} aria-hidden>🏆</div>
         </div>
+        <div style={{ marginTop: 12, fontSize: 15, fontWeight: 700, color: FERRUGEM }}>{aberto ? "Some estrelas e entre na disputa." : "Ou pode ser você: some estrelas e dispute."}</div>
         {anterior && <div style={{ marginTop: 14, fontSize: 14, color: "#5C534D" }}>🏆 Destaque de {nomeDoMes(`${anterior.mes.slice(5, 7)}`)}: <b>{anterior.nome}</b></div>}
       </div>
     </div>

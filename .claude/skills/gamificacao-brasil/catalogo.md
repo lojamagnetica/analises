@@ -77,18 +77,22 @@ O que o Hub **não** mede: atendimento fora da Lista da vez, presença, limpeza 
 ## Missão do Mês Brasil: Gestão · Execução · Resultado · Brasil
 Índice de **0 a 500 pontos**, com a mesma chance para todas as lojas. Três pilares, e o Brasil é o ranking entre todas as lojas do programa.
 
-**Gestão (140)**
-- 5 tarefas de 20 pontos, conferidas pela data salva no Hub: planejamento do mês seguinte (até o dia 20), análise do mês que fechou (até o dia 5), reunião do mês com o time (até o dia 10), análise da semana (4 de 4) e feedback individual (até o dia 15).
-- Comunicação pelo Hub (40): 5 pontos por conversa ou pedido pelo Fale com a Camilla (não pelo WhatsApp), até 8 no mês.
+**Gestão (130)**
+- Caixa da semana lançado até o sábado (80): 20 pontos por semana; até a segunda, 10.
+- Planejamento do mês feito e meta cadastrada até o dia 5 (30).
+- Feedback individual do time registrado no meio do mês (20).
 
-**Execução (160)**
-- Uso diário do Hub (80): proporcional aos dias de loja aberta com caixa lançado e rotina do dia marcada.
-- Alimentar o Hub (80): caixa em 90% dos dias (30), conferência semanal 4 de 4 (20), cadastro completo (15), estoque e crediário atualizados (15).
+**Execução (170)**
+- Missão da semana enviada todos os dias pelo Hub (80): 20 pontos por semana (10 se mandar em 4 ou 5 dias).
+- Mensagens pelo Hub (60): pós-venda em até 24h, aniversariantes e clientes que sumiram, 15 por semana. Print por amostragem.
+- Cadastros completos (telefone e aniversário) 20% acima do mês anterior (30).
 
 **Resultado (200)**
-- Trilha de desenvolvimento (180): a mentora escolhe 2 ou 3 itens, pelo diagnóstico, medidos contra a própria história da loja: P.A. e ticket (o P.A. do mês anterior mais 0,3), resgate de clientes, base de clientes, estoque e giro, time (missões cumpridas) e financeiro.
-- Compartilhar a vitória (20): o Hub gera o **Card de Resultado** da loja; ela posta e marca o programa (comprovação: link ou print do post). As melhores vitórias entram no Card do Mês.
+- Meta do mês batida, com post e marcação da mentoria (80); sem o post, 40. Comprovação: link do post.
+- Crescimento sobre o mesmo mês do ano anterior (40).
+- Clientes que sumiram e voltaram a comprar pela mensagem (60). Comprovação: print da conversa e compra em até 15 dias, conferido pela gestora.
+- Compartilhar a vitória (20): segundo post, com o **Card de Resultado** gerado no Hub (link ou print). As melhores entram no Card do Mês.
 
 **Brasil:** placar entre todas as lojas. Para concorrer: 350 pontos ou mais. Empate: maior % da meta do mês; depois, quem chegou primeiro. O placar fecha no último dia do mês.
-**Prêmios (proposta):** 1º lugar, Loja Magnética do Mês: mais 1 mês de programa, destaque no Brasil e 1 livro de gestão escolhido pela mentora e entregue na loja; 2º lugar: 1 encontro individual na hora que a loja quiser; 3º lugar: 1 treinamento individual online para o time.
+**Prêmios (ainda em definição, não lançados):** 1º lugar, Loja Magnética do Mês: mais 1 mês de programa, destaque no Brasil e 1 livro de gestão escolhido pela mentora e entregue na loja; 2º lugar: 1 encontro individual na hora que a loja quiser; 3º lugar: 1 treinamento individual online para o time.
 **Regra:** vale só o que o Hub confere; feito fora do prazo não conta.

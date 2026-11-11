@@ -73,3 +73,25 @@ O que o Hub **não** mede: atendimento fora da Lista da vez, presença, limpeza 
 - [ ] Apresentação da campanha feita com o time (online) e data de largada combinada.
 - [ ] Lista da vez: só se a loja for piloto.
 - [ ] Revisão de 30 dias agendada com os indicadores e o custo.
+
+## Missão do Mês Brasil (premiação mensal entre as lojas da mentoria)
+Índice de **0 a 500 pontos**, com a mesma chance para todas as lojas: o teto e o núcleo são iguais, e a trilha muda de loja para loja pelo diagnóstico.
+
+**Núcleo comum (300), igual para todas**
+- **Uso diário do Hub (80):** proporcional aos dias de loja aberta com caixa lançado e rotina do dia marcada.
+- **Alimentar o Hub (80):** caixa em 90% dos dias (30), conferência semanal 4 de 4 (20), cadastro completo (15), estoque e crediário atualizados (15).
+- **Comunicação pelo Hub (40):** 5 pontos por conversa ou pedido pelo Fale com a Camilla (não pelo WhatsApp), até 8 no mês.
+- **Gestão no prazo (100):** 5 tarefas de 20 pontos, conferidas pela data salva no Hub: planejamento do mês seguinte (até o dia 20), análise do mês que fechou (até o dia 5), reunião do mês com o time (até o dia 10), análise da semana (4 de 4) e feedback individual (até o dia 15).
+
+**Trilha de desenvolvimento (200), escolhida pelo diagnóstico**
+A mentora escolhe 2 ou 3 itens que somam 200, medidos contra a própria história da loja (nunca contra a de outra loja):
+- P.A. e ticket (meta própria: o P.A. do mês anterior mais 0,3).
+- Resgate de clientes (clientes que sumiram e voltaram a comprar).
+- Base de clientes (percentual de cadastro completo).
+- Estoque e giro (linha parada que girou).
+- Time (missões do time cumpridas).
+- Financeiro (boletos e contas em dia).
+
+**Para concorrer:** 350 pontos ou mais. Empate: maior % da meta do mês; depois, quem chegou primeiro. O placar fecha no último dia do mês.
+**Prêmios (proposta):** 1º lugar, Loja Magnética do Mês: mais 1 mês de programa, destaque no Brasil e 1 livro de gestão escolhido pela mentora e entregue na loja; 2º lugar: 1 encontro individual na hora que a loja quiser; 3º lugar: 1 treinamento individual online para o time.
+**Regra:** vale só o que o Hub confere; feito fora do prazo não conta.

@@ -201,6 +201,7 @@ p { margin: 0 0 .8em; }
 .atalho .novidade { color: var(--orange); font-weight: 800; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .atalho .quadrado, .tudo h3 .quadrado { background: var(--soft); color: var(--ink); }
 .atalho:hover .quadrado { color: var(--red); }
+.atalho.novo .quadrado, .atalho.novo:hover .quadrado { background: var(--orange); color: #fff; }
 
 /* Tudo aqui */
 .tudo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 26px; }

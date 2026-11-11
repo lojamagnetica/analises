@@ -9,6 +9,8 @@ import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFi
 import { vezAbrir, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel } from "@/lib/vez";
 import { PontosDaVez } from "@/components/PontosDaVez";
 import { ClientesParaChamar } from "@/components/ClientesParaChamar";
+import { DesafioDoDia } from "@/components/DesafioDoDia";
+import { vezDesafios, type DesafioDoDia as DesafioHoje } from "@/lib/desafios";
 import { LojinhaDaVez } from "@/components/LojinhaDaVez";
 import { vezLojinha, type LojinhaDaPessoa } from "@/lib/lojinha";
 
@@ -61,9 +63,10 @@ function Vez() {
   const [extras, setExtras] = useState<Extras | null>(null);
   const [indicou, setIndicou] = useState<string | null>(null);
   const [lojinha, setLojinha] = useState<LojinhaDaPessoa | null>(null);
+  const [desafios, setDesafios] = useState<DesafioHoje[]>([]);
   const [agora, setAgora] = useState(() => Date.now());
 
-  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); vezLojinha(token).then(setLojinha).catch(() => {}); } else setP(null); }, [token, valido]);
+  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); vezLojinha(token).then(setLojinha).catch(() => {}); vezDesafios(token).then(setDesafios).catch(() => {}); } else setP(null); }, [token, valido]);
   useEffect(() => {
     document.title = "Lista da vez · magnética.hub";
     carregar();
@@ -122,6 +125,8 @@ function Vez() {
         <small className="mudo">{dataTxt.charAt(0).toUpperCase() + dataTxt.slice(1)}{p.pessoa.loja ? ` · ${p.pessoa.loja}` : ""}</small>
         <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{saudacao}, {p.pessoa.nome}!</h1>
       </div>
+
+      <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
 
       {/* A lista da vez */}
       <div className="card mb">

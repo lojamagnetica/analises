@@ -3,6 +3,7 @@
 import { RegrasDosPontos } from "@/components/PontosDaVez";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { DesafiosGestao } from "@/components/DesafiosGestao";
 import { LojinhaGestao } from "@/components/LojinhaGestao";
 import { buscarPontos, responsavelCaixa } from "@/lib/vez";
 
@@ -35,6 +36,7 @@ export function PontosGestao() {
         ))}
         {dados.length === 0 && <p className="mudo" style={{ margin: 0 }}>Os pontos aparecem quando a equipe começar a cumprir as missões.</p>}
       </div>
+      <DesafiosGestao />
       <LojinhaGestao />
     </>
   );

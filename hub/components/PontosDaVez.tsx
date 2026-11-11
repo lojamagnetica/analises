@@ -16,6 +16,7 @@ export function RegrasDosPontos() {
         <li><b>Indique e ganhe, em novembro e dezembro:</b> a vendedora do feminino indica uma cliente para o masculino, ou a do masculino para o feminino (a Sther, no caixa, também vale). Se a cliente comprar, quem indicou ganha <b>+20 pontos e 20 estrelas ⭐</b>.</li>
         <li><b>Clientes da semana cadastrados completos = +20 pontos.</b> Nome, WhatsApp e aniversário de todas as clientes que você cadastrou.</li>
         <li><b>Caixas e relatórios da semana preenchidos = +20 pontos</b>, para quem cuida do caixa da loja (segunda a sábado, mais a conferência da semana).</li>
+        <li><b>Destaque do mês 🏆:</b> quem somar mais estrelas no mês ganha o prêmio de destaque e já começa o mês seguinte com <b>100 pontos</b>.</li>
         <li><b>Em breve:</b> pontos das tarefas de rotina de cada pessoa.</li>
       </ul>
     </div>
@@ -41,6 +42,12 @@ export function PontosDaVez({ p }: { p: PontosDaPessoa }) {
         <div style={{ width: `${pct}%`, height: "100%", background: "var(--orange)", transition: "width .6s" }} />
       </div>
       <small className="mudo">Faltam <b>{falta}</b> pontos para um voucher de R$ 500 em compras.</small>
+      <div style={{ marginTop: 10, background: "var(--soft)", borderRadius: 12, padding: "8px 12px", fontSize: 14 }}>
+        <b>🏆 Destaque do mês:</b> você tem <b>{p.destaque.estrelas} ⭐</b> em {p.destaque.mes}.{" "}
+        {p.destaque.lider_estrelas === 0 ? "Ninguém somou estrelas ainda. Dá para ser a primeira!"
+          : p.destaque.posicao === 1 ? "Você está em 1º lugar! 🥇"
+          : `${p.destaque.lider} lidera com ${p.destaque.lider_estrelas} ⭐.`}
+      </div>
       <p style={{ margin: "10px 0 0", fontSize: 14 }}>
         Esta semana: {p.semana.atend === 0 ? "nenhum atendimento registrado ainda." : <>{p.semana.feitos} de {p.semana.atend} atendimentos com resultado ({sem}%). {p.semana.bonus ? "Bônus de +50 garantido! 🎉" : "Com 80% ou mais, são +50 pontos."}</>}
       </p>

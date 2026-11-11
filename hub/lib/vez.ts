@@ -34,6 +34,7 @@ export const vezEncerrar = (token: string, resultado: "vendeu" | "nao_vendeu", m
 export type PontosDaPessoa = {
   saldo: number; acumulado: number; vouchers: number; estrelas: number; estrela_hoje: boolean;
   semana: { atend: number; feitos: number; bonus: boolean };
+  destaque: { mes: string; estrelas: number; posicao: number; lider: string; lider_estrelas: number };
   hist: { dia: string; tipo: string; pontos: number; estrelas: number; texto: string }[];
 };
 export type ClienteChamar = { id: string; nome: string; whatsapp: string; resumo: string; comprou: string; mensagem: string; feito: boolean };
@@ -103,13 +104,14 @@ export async function buscarFluxo(portalId: string, loja: string | null, ate: st
 export const hojeVez = hoje;
 
 /** Pontos de todas as pessoas do portal (gestora): saldo, estrelas e vouchers a entregar. */
-export type ResumoPontos = { pessoa_id: string; saldo: number; acumulado: number; estrelas: number; vouchers: number };
+export type ResumoPontos = { pessoa_id: string; saldo: number; acumulado: number; estrelas: number; estrelasMes: number; vouchers: number };
 export async function buscarPontos(portalId: string): Promise<ResumoPontos[]> {
-  const { data } = await sb().from("loja_pontos").select("pessoa_id, tipo, pontos, estrelas").eq("portal_id", portalId);
+  const { data } = await sb().from("loja_pontos").select("pessoa_id, tipo, pontos, estrelas, dia").eq("portal_id", portalId);
+  const mesIni = `${hoje().slice(0, 7)}-01`;
   const m = new Map<string, ResumoPontos>();
-  for (const l of (data ?? []) as { pessoa_id: string; tipo: string; pontos: number; estrelas: number }[]) {
-    const r = m.get(l.pessoa_id) ?? { pessoa_id: l.pessoa_id, saldo: 0, acumulado: 0, estrelas: 0, vouchers: 0 };
-    r.saldo += l.pontos; if (l.pontos > 0) r.acumulado += l.pontos; r.estrelas += l.estrelas;
+  for (const l of (data ?? []) as { pessoa_id: string; tipo: string; pontos: number; estrelas: number; dia: string }[]) {
+    const r = m.get(l.pessoa_id) ?? { pessoa_id: l.pessoa_id, saldo: 0, acumulado: 0, estrelas: 0, estrelasMes: 0, vouchers: 0 };
+    r.saldo += l.pontos; if (l.pontos > 0) r.acumulado += l.pontos; r.estrelas += l.estrelas; if (l.dia >= mesIni) r.estrelasMes += l.estrelas;
     m.set(l.pessoa_id, r);
   }
   return [...m.values()].map((r) => ({ ...r, vouchers: Math.floor(r.saldo / 500) }));

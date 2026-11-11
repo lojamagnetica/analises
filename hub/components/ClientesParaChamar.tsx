@@ -18,7 +18,7 @@ export function ClientesParaChamar({ lista, marcar }: { lista: ClienteChamar[]; 
         <small className="mudo">{feitas} de {lista.length} chamadas</small>
       </div>
       <div style={{ height: 8, borderRadius: 6, background: "var(--line)", margin: "8px 0 4px", overflow: "hidden" }}>
-        <div style={{ width: `${(feitas / lista.length) * 100}%`, height: "100%", background: "var(--green, #2E9D57)", transition: "width .4s" }} />
+        <div style={{ width: `${(feitas / lista.length) * 100}%`, height: "100%", background: "#2E9D57", transition: "width .4s" }} />
       </div>
       <p className="ajuda" style={{ margin: "0 0 4px" }}>Clientes suas que não voltam há mais de 60 dias. A mensagem já está pronta.</p>
       {lista.map((c) => {

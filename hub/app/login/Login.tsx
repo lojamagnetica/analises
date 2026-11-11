@@ -18,7 +18,10 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
     const { error } = await supabaseBrowser().auth.signInWithPassword({ email, password: senha });
     setEnviando(false);
     if (error) return setMsg({ ok: false, texto: "E-mail ou senha incorretos." });
-    router.replace("/");
+    // Quem veio do app das Conversas volta para ele, não para o Hub.
+    let volta = "/";
+    try { const v = localStorage.getItem("lm_depois_login"); if (v && v.startsWith("/") && !v.startsWith("//")) volta = v; localStorage.removeItem("lm_depois_login"); } catch { /* sem armazenamento */ }
+    router.replace(volta);
   }
 
   async function receberLink() {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { Excluir } from "@/components/Excluir";
+import { PrecisaDeAcao } from "@/components/PrecisaDeAcao";
 import { Carregando, useDados } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -42,6 +43,9 @@ export default function CaixaDoDia() {
   return (
     <>
       <Titulo titulo="Caixa do dia" sub="O que os agentes deixaram pronto: resumo da reunião para o grupo, respostas sugeridas do WhatsApp e os combinados delegados para a Claudia. Tudo o que ainda não está realizado continua aparecendo todos os dias, até você ou a Claudia marcarem como realizado. Nada é enviado sozinho: você copia, ajusta e manda." />
+      {data === hoje() && <PrecisaDeAcao />}
+
+      <div className="secao">Caixa do dia</div>
       <div className="linha mb" style={{ gap: 10, flexWrap: "wrap" }}>
         <button type="button" className="btn s peq" onClick={() => setData(passarDia(data, -1))}>‹</button>
         <b>{data === hoje() ? "Hoje" : dia(data)}</b>

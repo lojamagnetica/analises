@@ -15,6 +15,7 @@ import { dadosCompletos, liberado, prazoDiagnostico, requisito, emOnboarding } f
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
 import { MeuDia } from "@/components/MeuDia";
+import { AvisosDaLoja } from "@/components/AvisosDaLoja";
 import { CaixaDaSemana } from "@/components/LeituraDaSemana";
 import { chaveDoAtalho, lerVisto, marcarVisto, temNovidade } from "@/lib/atalho-novo";
 import { buscarNovidades } from "@/lib/novidades-atalhos";
@@ -180,6 +181,7 @@ export default function Inicio() {
         )}
       </div>
 
+      {!onboarding && !equipe && <AvisosDaLoja />}
       {!onboarding && <CaixaDaSemana />}
 
       {entradaAberta && ent && (

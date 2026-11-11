@@ -5,7 +5,7 @@ import { urlFotoMarca } from "@/lib/marcas";
 
 // Imagem do destaque da loja ou do Destaque Absoluto Brasil para postar no Instagram (1080x1350), no estilo do crachá de boas-vindas.
 // Sem valor de prêmio: só o título, o nome, a loja, o mês e o troféu.
-const C = { noite: "#0B1A3A", ferrugem: "#BC4914", ambar: "#E08A3C", off: "#F5F0EA", areia: "#E6DCD0" };
+const C = { noite: "#141210", ferrugem: "#BC4914", ambar: "#D6AA54", off: "#F5F0EA", areia: "#E6DCD0" };
 const FONTES = "https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,400;0,600;0,800;1,800&family=Outfit:wght@400&display=swap";
 const MESES = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 
@@ -37,7 +37,7 @@ function desenhar(ctx: CanvasRenderingContext2D, nome: string, loja: string, mes
   // foto grande em círculo
   const cx = 390, cy = 340, r = 165;
   ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = "#2A3757"; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  ctx.fillStyle = "#2B2622"; ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
   if (foto) { const s = Math.max((r * 2) / foto.width, (r * 2) / foto.height); ctx.drawImage(foto, cx - (foto.width * s) / 2, cy - (foto.height * s) / 2, foto.width * s, foto.height * s); }
   else { ctx.fillStyle = C.ambar; ctx.font = "800 180px Archivo, sans-serif"; ctx.textAlign = "center"; ctx.fillText((nome[0] ?? "?").toUpperCase(), cx, cy + 62); ctx.textAlign = "left"; }
   ctx.restore();

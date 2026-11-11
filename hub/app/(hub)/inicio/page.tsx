@@ -181,7 +181,7 @@ export default function Inicio() {
         )}
       </div>
 
-      {!onboarding && !equipe && <AvisosDaLoja />}
+      {!equipe && <AvisosDaLoja />}
       {!onboarding && <CaixaDaSemana />}
 
       {entradaAberta && ent && (

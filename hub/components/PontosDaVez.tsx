@@ -45,7 +45,7 @@ export function PontosDaVez({ p }: { p: PontosDaPessoa }) {
           <small className="mudo">Últimos pontos</small>
           {p.hist.slice(0, 4).map((h, i) => (
             <div key={i} className="linha entre" style={{ fontSize: 14, marginTop: 4, gap: 8 }}>
-              <span style={{ flex: 1 }}>{h.texto}</span><b style={{ color: h.pontos < 0 ? "var(--muted)" : "var(--green, #2E9D57)" }}>{h.pontos > 0 ? "+" : ""}{h.pontos}</b>
+              <span style={{ flex: 1 }}>{h.texto}</span><b style={{ color: h.pontos < 0 ? "var(--muted)" : "#2E9D57" }}>{h.pontos > 0 ? "+" : ""}{h.pontos}</b>
             </div>
           ))}
         </div>

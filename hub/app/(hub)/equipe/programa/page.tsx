@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
 import { RankingMentoria } from "@/components/RankingMentoria";
-import { MISSAO_DO_MES, PROVAS, totalMissao } from "@/lib/programa-brasil";
+import { MISSAO_DO_MES, PROVAS, RESGATES, totalMissao } from "@/lib/programa-brasil";
 
 export default function ProgramaBrasil() {
   useEffect(() => { document.title = "Programa Brasil · magnética.hub"; }, []);
@@ -39,7 +39,17 @@ export default function ProgramaBrasil() {
       <div className="secao">Card do Mês</div>
       <div className="card mb">
         <p style={{ marginTop: 0 }}>Todo mês, na reunião em grupo, apresentamos o Card do Mês: destaque do mês anterior, placar Brasil, quem mais cresceu, vitórias compartilhadas, quem já recebeu o troféu e a missão do mês seguinte.</p>
-        <p className="mudo" style={{ marginBottom: 0 }}>Os prêmios do Destaque do mês e da lojinha ainda estão em definição e não aparecem para as lojas.</p>
+      </div>
+
+      <div className="secao">Resgates de prêmio</div>
+      <div className="card mb">
+        {RESGATES.map((r) => (
+          <div key={r.quando} className="linha" style={{ gap: 10, padding: "8px 0", borderTop: "1px solid var(--line)" }}>
+            <span className="selo andamento" style={{ flex: "0 0 auto" }}>{r.quando}</span>
+            <span>{r.premio}</span>
+          </div>
+        ))}
+        <p className="ajuda" style={{ marginBottom: 0 }}>Todas as lojas da mentoria podem ganhar, todo mês.</p>
       </div>
 
       <RankingMentoria />

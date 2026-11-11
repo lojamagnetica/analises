@@ -157,6 +157,8 @@ export default function InicioCs() {
         </div>
       )}
 
+      <p className="mb" style={{ marginTop: 0 }}><Link className="btn p peq" href="/equipe/contatos#novo">+ Registrar contato</Link></p>
+
       <div className="chips mb">
         <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>
         <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Por loja · {vermelhas.length}</button>

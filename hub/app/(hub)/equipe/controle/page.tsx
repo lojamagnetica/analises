@@ -18,6 +18,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
     titulo: "Todo dia", sub: "A rotina da manhã e da tarde, nesta ordem.",
     atalhos: [
       { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
+      { href: "/equipe/contatos", rotulo: "Contatos das lojas", icone: "phone" },
       { href: "/equipe/duvidas", rotulo: "Fale com a Camilla", icone: "chat" },
       { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "heart" },
       { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "bolt" },

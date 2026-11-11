@@ -9,6 +9,8 @@ import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFi
 import { vezAbrir, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel } from "@/lib/vez";
 import { PontosDaVez } from "@/components/PontosDaVez";
 import { ClientesParaChamar } from "@/components/ClientesParaChamar";
+import { LojinhaDaVez } from "@/components/LojinhaDaVez";
+import { vezLojinha, type LojinhaDaPessoa } from "@/lib/lojinha";
 
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 const n1 = (n: number) => n.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -58,9 +60,10 @@ function Vez() {
   const [corrigir, setCorrigir] = useState<string | null>(null);
   const [extras, setExtras] = useState<Extras | null>(null);
   const [indicou, setIndicou] = useState<string | null>(null);
+  const [lojinha, setLojinha] = useState<LojinhaDaPessoa | null>(null);
   const [agora, setAgora] = useState(() => Date.now());
 
-  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); } else setP(null); }, [token, valido]);
+  const carregar = useCallback(async () => { if (valido) { setP(await vezAbrir(token)); vezExtras(token).then(setExtras).catch(() => {}); vezLojinha(token).then(setLojinha).catch(() => {}); } else setP(null); }, [token, valido]);
   useEffect(() => {
     document.title = "Lista da vez · magnética.hub";
     carregar();
@@ -228,6 +231,7 @@ function Vez() {
       </div>
 
       {extras && <PontosDaVez p={extras.pontos} />}
+      {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
       {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
 
       {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}

@@ -3,7 +3,8 @@
 import { RegrasDosPontos } from "@/components/PontosDaVez";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { buscarPontos, responsavelCaixa, voucherEntregar } from "@/lib/vez";
+import { LojinhaGestao } from "@/components/LojinhaGestao";
+import { buscarPontos, responsavelCaixa } from "@/lib/vez";
 
 /** Pontos, estrelas e vouchers de cada pessoa da equipe (visão da gestora). A entrega do voucher tira 500 pontos do saldo. */
 export function PontosGestao() {
@@ -28,14 +29,12 @@ export function PontosGestao() {
             <span className="linha" style={{ gap: 10, alignItems: "center", flexWrap: "wrap" }}>
               <label className="ajuda" style={{ display: "flex", gap: 4, alignItems: "center", margin: 0 }}><input type="checkbox" checked={!!responsavel_caixa} onChange={async (e) => { await responsavelCaixa(id, e.target.checked); recarregar(); }} />cuida do caixa</label>
               <span>⭐ {r.estrelas}</span><b>{r.saldo} pontos</b>
-              {r.vouchers > 0 && <span className="selo feito">{r.vouchers} {r.vouchers === 1 ? "voucher" : "vouchers"} de R$ 500</span>}
-              <button type="button" className="btn s peq" disabled={r.vouchers < 1}
-                onClick={async () => { if (confirm(`Entregar 1 voucher de R$ 500 em compras para ${nome.split(" ")[0]}? Tira 500 pontos do saldo.`)) { await voucherEntregar(portal.id, id); recarregar(); } }}>Entregar voucher</button>
             </span>
           </div>
         ))}
         {dados.length === 0 && <p className="mudo" style={{ margin: 0 }}>Os pontos aparecem quando a equipe começar a cumprir as missões.</p>}
       </div>
+      <LojinhaGestao />
     </>
   );
 }

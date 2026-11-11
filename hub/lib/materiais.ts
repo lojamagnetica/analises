@@ -7,7 +7,25 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 export type Material = {
   id: string; portal_id: string; titulo: string; mes: string | null; entrega_id: string | null;
   conteudo: string; arquivo: string | null; liberado: boolean; updated_at: string;
+  /** Com data e sem liberar: a loja vê o material com cadeado e "Liberado em DD/MM". */
+  liberado_em?: string | null;
 };
+
+/** O que a loja vê de um material com cadeado: só o título e a data, nunca o texto nem o arquivo. */
+export type MaterialTrancado = Pick<Material, "id" | "titulo" | "mes" | "entrega_id"> & { liberado_em: string };
+
+/** Os materiais com cadeado do portal (não liberados, com data). A leitura normal não traz essas linhas para a loja. */
+export async function buscarTrancados(portalId: string): Promise<MaterialTrancado[]> {
+  const { data } = await sb().rpc("materiais_com_cadeado", { p_portal: portalId });
+  return (Array.isArray(data) ? data : []) as MaterialTrancado[];
+}
+
+/** O texto do cadeado: a data combinada ou, se ela já passou, "em breve". */
+export function textoCadeado(liberadoEm: string) {
+  const [a, m, d] = liberadoEm.slice(0, 10).split("-");
+  const hoje = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).format(new Date());
+  return liberadoEm.slice(0, 10) < hoje ? "Liberado em breve" : `Liberado em ${d}/${m}${a !== hoje.slice(0, 4) ? `/${a}` : ""}`;
+}
 
 const sb = () => supabaseBrowser();
 const BALDE = "relatorios";

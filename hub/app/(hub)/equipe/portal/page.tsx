@@ -237,6 +237,30 @@ function EditarPortal() {
         </div>
       </div>
 
+      <details className="card mb">
+        <summary style={{ cursor: "pointer", fontWeight: 700 }}>Menu próprio desta loja: ordem e nomes (opcional)</summary>
+        <p className="ajuda">Só para consultorias com portal diferente. Em branco, o menu fica como o de todas as lojas. Use o código da área
+          ({["consultoria", ...AREAS_MENU.map(([id]) => id), "varejo", "atacado", "site"].join(", ")}) ou o endereço da página (ex.: /inicio, /assistente, /cursos, /indique, /guia, /gestao/canais).</p>
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Ordem do menu</b> (um por linha; o que não estiver aqui fica abaixo, na ordem de sempre. Uma página de dentro de uma área, escrita aqui, vira item do menu)
+          <textarea key={(p.menu_ordem ?? []).join("|")} aria-label="Ordem do menu" rows={6} defaultValue={(p.menu_ordem ?? []).join("\n")} style={{ fontFamily: "monospace", fontSize: 13 }} onBlur={async (e) => {
+            const lista = e.target.value.split("\n").map((x) => x.trim()).filter(Boolean);
+            if (lista.join("|") === (p.menu_ordem ?? []).join("|")) return;
+            const { error } = await supabaseBrowser().from("portais").update({ menu_ordem: lista }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: lista.length ? "Ordem do menu salva." : "O menu voltou para a ordem de sempre." });
+            recarregar();
+          }} />
+        </label>
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Nomes no menu</b> (um por linha, no formato código = novo nome. Ex.: gestao = Varejo)
+          <textarea key={JSON.stringify(p.menu_rotulos ?? {})} aria-label="Nomes no menu" rows={4} defaultValue={Object.entries(p.menu_rotulos ?? {}).map(([k, v]) => `${k} = ${v}`).join("\n")} style={{ fontFamily: "monospace", fontSize: 13 }} onBlur={async (e) => {
+            const nomes = Object.fromEntries(e.target.value.split("\n").map((x) => x.split("=")).filter((x) => x.length > 1 && x[0].trim() && x.slice(1).join("=").trim()).map((x) => [x[0].trim(), x.slice(1).join("=").trim()]));
+            if (JSON.stringify(nomes) === JSON.stringify(p.menu_rotulos ?? {})) return;
+            const { error } = await supabaseBrowser().from("portais").update({ menu_rotulos: nomes }).eq("id", p.id);
+            setAviso(error ? { erro: error.message } : { ok: "Nomes do menu salvos." });
+            recarregar();
+          }} />
+        </label>
+      </details>
+
       <div className="grade g2">
         <form className="card" action={async (f) => { setSalvo(false); try { await atualizarPortal(p.id, f); setSalvo(true); recarregar(); } catch (e) { alert(`Não salvou: ${(e as Error).message}`); } }}>
           <h2>Dados do portal</h2>

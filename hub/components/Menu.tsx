@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Icone } from "@/components/Icone";
 import { Simbolo } from "@/components/Simbolo";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -15,6 +15,9 @@ const NA_MAO: Item[] = [
   { href: "/gestao/minhas-compras", rotulo: "Compras", icone: "box" },
   { href: "/gestao/estoque-loja", rotulo: "Estoque", icone: "tag" },
 ];
+
+/** Itens fixos do menu (fora dos grupos), pelo endereço: entram na ordem do portal como estão. */
+const FIXOS = ["/inicio", "/consultoria/planner", "/comece", "/assistente", "/cursos", "/empresa/webinar", "/indique", "/guia"];
 
 type Item = { href: string; rotulo: string; icone: string; emBreve?: boolean; ponto?: boolean; soMentora?: boolean };
 export type Grupo = { id: string; rotulo: string; icone: string; itens: Item[] };
@@ -264,10 +267,11 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; conversas?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; conversas?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean; ordem?: string[]; rotulos?: Record<string, string> | null }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
+  const nome = (chave: string, padrao: string) => props.rotulos?.[chave]?.trim() || padrao;
   const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova, props.monta, props.conversas)
     .filter((g) => !props.ocultos?.includes(g.id))
     // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
@@ -280,7 +284,18 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
     .map((g) => (g.id === "conteudo" && props.apoioConteudo ? { ...g, rotulo: `Conteúdo · ${props.apoioConteudo}` } : g))
     // Onboarding: só as áreas onde a loja manda os arquivos e as informações.
     .filter((g) => !props.soEnvio || g.id === "loja" || (props.vendaDiaria && g.id === "gestao"))
-    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao") || LOJA_NA_MAO.includes(i.href)) } : g));
+    .map((g) => (props.soEnvio ? { ...g, itens: g.itens.filter((i) => i.href.startsWith("/personalizacao") || LOJA_NA_MAO.includes(i.href)) } : g))
+    // Nomes próprios deste portal (portais.menu_rotulos), pelo id do grupo ou pelo endereço da página.
+    .map((g) => (props.rotulos ? { ...g, rotulo: nome(g.id, g.rotulo), itens: g.itens.map((i) => ({ ...i, rotulo: nome(i.href, i.rotulo) })) } : g));
+  // Ordem própria deste portal (portais.menu_ordem): o que está na lista vem primeiro; o resto fica abaixo, na ordem de sempre.
+  const ordem = props.ordem ?? [];
+  // Página de dentro de um grupo que aparece na ordem sai do grupo e vira item do menu.
+  const soltos = ordem.filter((c) => !FIXOS.includes(c)).flatMap((c) => lista.flatMap((g) => g.itens).find((i) => i.href === c) ?? []);
+  const ordenar = (blocos: [string, React.ReactNode][]) => {
+    const lugar = (c: string) => (ordem.includes(c) ? ordem.indexOf(c) : ordem.length);
+    const fila = ordem.length ? blocos.map((b, n) => ({ b, n })).sort((x, y) => lugar(x.b[0]) - lugar(y.b[0]) || x.n - y.n).map((x) => x.b) : blocos;
+    return fila.map(([chave, no]) => <Fragment key={chave}>{no}</Fragment>);
+  };
   const ativo = (href: string) => caminho === href || (!["/equipe", "/empresa", "/pessoas", "/conteudo", "/clientes", "/personalizacao", "/atacado", "/site", "/varejo"].includes(href) && caminho.startsWith(href + "/")) || (href === "/pessoas" && /^\/pessoas\/(pessoa|teste)$/.test(caminho));
   const [abertos, setAbertos] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(lista.map((g) => [g.id, !!props.soEnvio || g.itens.some((i) => ativo(i.href))])),
@@ -320,16 +335,16 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
         </div>
 
         <nav className="nav">
-          {props.temPortal && !props.soCurso && (
+          {ordenar([
+          ["/inicio", props.temPortal && !props.soCurso && (<>
             <div className="nav-linha">
               <Link href="/inicio" className={`nav-item ${ativo("/inicio") ? "ativo" : ""}`}>
-                <Icone nome="home" /> INÍCIO
+                <Icone nome="home" /> {nome("/inicio", "INÍCIO")}
               </Link>
               <button className="nav-busca" aria-label="Buscar" onClick={() => setBusca(busca === null ? "" : null)}>
                 <Icone nome="search" tamanho={18} />
               </button>
             </div>
-          )}
 
           {busca !== null && (
             <div style={{ margin: "4px 0 10px" }}>
@@ -348,37 +363,38 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
               ))}
             </div>
           )}
+          </>)],
 
-          {/* O Planner de gestão diário (no lugar da antiga Bússola do gestor): a rotina de gestão com dia fixo. */}
-          {props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/consultoria/planner") && (
+          // O Planner de gestão diário (no lugar da antiga Bússola do gestor): a rotina de gestão com dia fixo.
+          ["/consultoria/planner", props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/consultoria/planner") && (
             <div className="nav-linha">
               <Link href="/consultoria/planner" className={`nav-item ${ativo("/consultoria/planner") ? "ativo" : ""}`}>
-                <Icone nome="cal" /> PLANNER DE GESTÃO{props.trava?.("/consultoria/planner") ? " 🔒" : ""}
+                <Icone nome="cal" /> {nome("/consultoria/planner", "PLANNER DE GESTÃO")}{props.trava?.("/consultoria/planner") ? " 🔒" : ""}
               </Link>
             </div>
-          )}
+          )],
 
-          {/* Depois que a loja termina a entrada (vídeo, dados da loja e da equipe), o Comece aqui sai da barra para ficar mais objetiva. */}
-          {props.temPortal && !props.soCurso && !props.semComece && (
+          // Depois que a loja termina a entrada (vídeo, dados da loja e da equipe), o Comece aqui sai da barra para ficar mais objetiva.
+          ["/comece", props.temPortal && !props.soCurso && !props.semComece && (
             <div className="nav-linha">
               <Link href="/comece" className={`nav-item ${ativo("/comece") ? "ativo" : ""}`}>
-                <Icone nome="play" /> COMECE AQUI
+                <Icone nome="play" /> {nome("/comece", "COMECE AQUI")}
               </Link>
             </div>
-          )}
+          )],
 
-          {props.temPortal && !props.soCurso && (
+          ["/assistente", props.temPortal && !props.soCurso && (
             <div className="nav-linha">
               <Link href="/assistente" className={`nav-item ia ${ativo("/assistente") ? "ativo" : ""}`}>
-                <Icone nome="chat" /> Fale com a Camilla
+                <Icone nome="chat" /> {nome("/assistente", "Fale com a Camilla")}
               </Link>
             </div>
-          )}
+          )],
 
-          {/* O que está com cadeado (liberado em outra etapa) vai sempre para baixo: as áreas trancadas no fim do menu
-              e, dentro de cada área, os itens trancados no fim. Deixa clara a ordem da jornada. */}
-          {[...lista.filter((g) => !props.trancados?.includes(g.id)), ...lista.filter((g) => props.trancados?.includes(g.id))].map((g) => (
-            <div key={g.id}>
+          // O que está com cadeado (liberado em outra etapa) vai sempre para baixo: as áreas trancadas no fim do menu
+          // e, dentro de cada área, os itens trancados no fim. Deixa clara a ordem da jornada.
+          ...[...lista.filter((g) => !props.trancados?.includes(g.id)), ...lista.filter((g) => props.trancados?.includes(g.id))].map((g): [string, React.ReactNode] => [g.id, (
+            <div>
               <button
                 className="nav-item nav-grupo"
                 aria-expanded={!!abertos[g.id]}
@@ -389,7 +405,7 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
               </button>
               {abertos[g.id] && (
                 <div className="nav-sub">
-                  {[...g.itens.filter((i) => !props.trava?.(i.href)), ...g.itens.filter((i) => props.trava?.(i.href))].map((i) => (
+                  {[...g.itens.filter((i) => !props.trava?.(i.href)), ...g.itens.filter((i) => props.trava?.(i.href))].filter((i) => !soltos.includes(i)).map((i) => (
                     <Link key={i.href} href={i.href} className={ativo(i.href) ? "ativo" : ""}>
                       <Icone nome={i.icone} /> {i.rotulo}
                       {props.trava?.(i.href) ? <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>
@@ -400,32 +416,40 @@ export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocul
                 </div>
               )}
             </div>
-          ))}
+          )]),
 
-          {(props.temPortal || props.equipe) && !props.soEnvio && (
-            <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
-              <Icone nome="play" /> CURSO{props.cursoFechado ? " 🔒" : ""}
+          // Página tirada de dentro de um grupo pela ordem do portal (ex.: "/gestao/canais"): vira item do menu.
+          ...soltos.map((i): [string, React.ReactNode] => [i.href, (
+            <Link href={i.href} className={`nav-item ${ativo(i.href) ? "ativo" : ""}`}>
+              <Icone nome={i.icone} /> {i.rotulo}{props.trava?.(i.href) ? " 🔒" : ""}
             </Link>
-          )}
+          )]),
 
-          {props.equipe && (
+          ["/cursos", (props.temPortal || props.equipe) && !props.soEnvio && (
+            <Link href="/cursos" className={`nav-item ${ativo("/cursos") ? "ativo" : ""}`}>
+              <Icone nome="play" /> {nome("/cursos", "CURSO")}{props.cursoFechado ? " 🔒" : ""}
+            </Link>
+          )],
+
+          ["/empresa/webinar", props.equipe && (
             <Link href="/empresa/webinar" className={`nav-item ${ativo("/empresa/webinar") ? "ativo" : ""}`}>
               <Icone nome="chart" /> WEBINAR
             </Link>
-          )}
+          )],
 
-          {props.temPortal && !props.soCurso && !props.soEnvio && (
+          ["/indique", props.temPortal && !props.soCurso && !props.soEnvio && !props.ocultos?.includes("/indique") && (
             <Link href="/indique" className={`nav-item ${ativo("/indique") ? "ativo" : ""}`}>
-              <Icone nome="gift" /> Indique uma loja 🎁
+              <Icone nome="gift" /> {nome("/indique", "Indique uma loja 🎁")}
               {props.trava?.("/indique") && <span className="em-breve" title="Abre depois da etapa anterior">🔒</span>}
             </Link>
-          )}
+          )],
 
-          {props.temPortal && !props.soCurso && (
+          ["/guia", props.temPortal && !props.soCurso && (
             <Link href="/guia" className={`nav-item ${ativo("/guia") ? "ativo" : ""}`}>
-              <Icone nome="help" /> Como usar o Hub
+              <Icone nome="help" /> {nome("/guia", "Como usar o Hub")}
             </Link>
-          )}
+          )],
+          ])}
         </nav>
 
         <div className="side-pe">

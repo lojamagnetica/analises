@@ -5,18 +5,24 @@ import { RascunhoComoLoja } from "@/components/RascunhoComoLoja";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
-import { buscarMateriais } from "@/lib/materiais";
+import { useState } from "react";
+import { buscarMateriais, buscarTrancados, textoCadeado } from "@/lib/materiais";
 import { buscarConsultoria } from "@/lib/consultoria";
 
 /** A pasta de materiais da consultoria: tudo o que foi entregue, separado por mês. */
 export default function Materiais() {
   const { portal, equipe } = usePortal();
+  const [avisado, setAvisado] = useState("");
   const { dados } = useDados(async () => {
-    const [materiais, c] = await Promise.all([buscarMateriais(portal.id), buscarConsultoria(portal.id)]);
-    return { materiais, meses: c.dados?.meses ?? [] };
+    const [materiais, trancados, c] = await Promise.all([buscarMateriais(portal.id), buscarTrancados(portal.id), buscarConsultoria(portal.id)]);
+    return { materiais, trancados, meses: c.dados?.meses ?? [] };
   }, [portal.id]);
   if (!dados) return <Carregando />;
-  const visiveis = dados.materiais.filter((m) => equipe || m.liberado);
+  // A loja vê o que foi liberado e, com cadeado, o que tem data para liberar (só o título e a data).
+  const visiveis = [
+    ...dados.materiais.filter((m) => equipe || m.liberado).map((m) => ({ ...m, cadeado: "" })),
+    ...(equipe ? [] : dados.trancados.map((m) => ({ ...m, liberado: false, arquivo: null, updated_at: "", cadeado: textoCadeado(m.liberado_em) }))),
+  ];
   // Os meses do plano primeiro, na ordem; depois o que não tem mês.
   const ordem = [...dados.meses.map((m) => m.mes), ""];
   const nomeMes = (mes: string) => dados.meses.find((m) => m.mes === mes)?.nome ?? "Outros materiais";
@@ -34,11 +40,18 @@ export default function Materiais() {
           <div key={mes || "outros"} className="mb">
             <div className="secao">{nomeMes(mes)}</div>
             <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-              {doMes.map((m) => (
+              {doMes.map((m) => m.cadeado ? (
+                <button key={m.id} type="button" className="card" aria-label={`${m.titulo}: ${m.cadeado}`} onClick={() => setAvisado(m.id)}
+                  style={{ textAlign: "left", font: "inherit", color: "inherit", cursor: "pointer", opacity: 0.75 }}>
+                  <b style={{ fontSize: 15, display: "block" }}>🔒 {m.titulo}</b>
+                  <small className="mudo">{m.cadeado}</small>
+                  {avisado === m.id && <div className="aviso mt" role="status">Este material ainda não abriu. {m.cadeado}.</div>}
+                </button>
+              ) : (
                 <Link key={m.id} href={`/consultoria/materiais/ver?id=${m.id}`} className="card" style={{ textDecoration: "none", color: "inherit" }}>
                   <div className="linha entre" style={{ alignItems: "flex-start", gap: 8 }}>
                     <b style={{ fontSize: 15 }}>📄 {m.titulo}</b>
-                    {equipe && !m.liberado && <span className="selo espera">rascunho</span>}
+                    {equipe && !m.liberado && <span className="selo espera">{m.liberado_em ? `🔒 loja vê em ${dia(m.liberado_em).slice(0, 5)}` : "rascunho"}</span>}
                   </div>
                   <small className="mudo">{m.arquivo ? "Com planilha ou arquivo anexo · " : ""}atualizado em {dia(m.updated_at.slice(0, 10))}</small>
                 </Link>

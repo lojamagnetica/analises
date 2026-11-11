@@ -26,6 +26,10 @@ export type Portal = {
   /** Grupos do menu que esta loja não vê (consultorias personalizadas). */
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
+  /** Ordem própria do menu desta loja: ids de grupo e endereços (vazio = a ordem de sempre). */
+  menu_ordem?: string[] | null;
+  /** Nomes próprios no menu desta loja: { "<id do grupo ou endereço>": "novo nome" }. */
+  menu_rotulos?: Record<string, string> | null;
   /** Código do link do formulário da rotina de gestão (sem login). */
   rotina_token?: string | null;
   plano_titulos?: Record<string, string> | null;

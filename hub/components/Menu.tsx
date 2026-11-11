@@ -72,11 +72,10 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         // Do que mais se usa no dia a dia para o que menos. Para a CS (monta, sem aprovar), o que a Camilla tem na
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         { href: "/equipe/controle", rotulo: "Controle de clientes", icone: "relacionamento" },
-        { href: "/empresa/cs", rotulo: "Faça agora (Início da CS)", icone: "target" },
+        { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         { href: "/empresa/acompanhamento", rotulo: "Lojas que precisam de atenção", icone: "target" },
-        { href: "/equipe/pendencias", rotulo: "Pendências por cliente", icone: "check" },
         ...(cs ? [{ href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark" }] : []),
         ...(cs ? [{ href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" }] : []),
         { href: "/empresa/novidades", rotulo: "Novidades das lojas", icone: "inbox" },

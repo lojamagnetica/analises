@@ -7,6 +7,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
 
 const COR: Record<Nivel, string> = { vermelho: "var(--red)", amarelo: "var(--orange)", verde: "var(--feito)" };
 const ROTULO: Record<Nivel, string> = { vermelho: "Precisa de você hoje", amarelo: "Atenção", verde: "Em dia" };
@@ -58,7 +59,8 @@ function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; a
         {a.msg && <a className="btn p peq" href={linkZap(l.whatsapp, a.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>}
         {a.msg && <button type="button" className="btn s peq" onClick={() => copiar(`${l.id}-${a.chave}`, a.msg as string)}>{copiada === `${l.id}-${a.chave}` ? "Copiada ✓" : "Copiar a mensagem"}</button>}
         {a.registro && <button type="button" className="btn s peq" onClick={() => setAberto(aberto === a.chave ? null : a.chave)}>Conversei</button>}
-        {a.destino && !a.msg && <button type="button" className="btn s peq" onClick={() => abrir(l.id, a.destino)}>Abrir</button>}
+        {a.chave === "pendencias" && <a className="btn s peq" href="#pendencias">Ver as pendências</a>}
+        {a.destino && !a.msg && a.chave !== "pendencias" && <button type="button" className="btn s peq" onClick={() => abrir(l.id, a.destino)}>Abrir</button>}
       </div>
       {a.registro && aberto === a.chave && <RegistrarConversa loja={l} registro={a.registro} nome={nome} feito={() => { setAberto(null); recarregar(); }} />}
     </div>
@@ -139,6 +141,10 @@ export default function InicioCs() {
           </div>
         </>
       )}
+
+      <div className="secao" id="pendencias">Pendências por cliente</div>
+      <p className="ajuda" style={{ marginTop: 0 }}>O que falta pedir a cada loja e o que falta a equipe fazer. Os itens automáticos somem sozinhos quando o dado entra no Hub.</p>
+      <PendenciasPorCliente />
 
       <p className="ajuda"><Link href="/equipe/controle">Voltar ao Controle de clientes</Link></p>
     </>

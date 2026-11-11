@@ -108,13 +108,13 @@ export async function painelCs(): Promise<PainelCs> {
         registro: { tipo: "leitura", ref: semana },
         msg: `Oi, ${primeiro(p.responsavel)}! Aqui é a Claudia, da Loja Magnética. Vi que a Camilla já liberou a sua análise da semana. Você já conseguiu ver? Ficou alguma dúvida ou algo em que eu possa te ajudar?` });
     }
-    // Combinados: a conversa de boas-vindas depois da reunião de entrega e a pergunta "como foi?" no prazo de cada um.
+    // Combinados: a confirmação logo depois da reunião (a loja já conhece a CS, do onboarding) e a pergunta "como foi?" no prazo de cada um.
     const combinados = ((combinadosTodos ?? []) as Combinado[]).filter((c) => c.portal_id === p.id);
     const lista = combinados.filter((c) => c.status === "aberto" && c.quem !== "camilla");
-    if (lista.length && !contatosLoja.some((c) => c.tipo === "boas_vindas")) {
+    if (lista.length && !contatosLoja.some((c) => c.tipo === "combinados_novos")) {
       const itens = lista.map((c) => `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)})` : ""}`).join("; ");
-      al.push({ chave: "boas_vindas", txt: `Depois da reunião de entrega: dar as boas-vindas e confirmar os combinados (${lista.length})`, grave: true, destino: "/inicio", registro: { tipo: "boas_vindas", ref: "entrega" },
-        msg: `${abertura(p)} Adorei a reunião de entrega com a Camilla! Combinamos: ${itens}. Estou aqui para ajudar em cada passo. Qual desses você começa hoje?` });
+      al.push({ chave: "combinados_novos", txt: `A Camilla fechou os combinados com a loja (${lista.length}): confirme por onde ela começa e se precisa de ajuda`, grave: true, destino: "/inicio", registro: { tipo: "combinados_novos", ref: "entrega" },
+        msg: `${abertura(p)} Vi os combinados que você fechou com a Camilla: ${itens}. Por qual deles você começa? Se travar em algo, me chama que eu te ajudo.` });
     }
     for (const c of lista) {
       if (!c.prazo || c.prazo > hoje() || contatosLoja.some((x) => x.tipo === "combinado" && x.ref === c.id)) continue;

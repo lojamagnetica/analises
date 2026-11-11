@@ -30,7 +30,7 @@ export function SeusCombinados({ portalId }: { portalId: string }) {
       </div>
       <div className="card mb linha" style={{ gap: 12, alignItems: "center" }}>
         <span aria-hidden style={{ fontSize: 28 }}>🤝</span>
-        <span><b>{cs.nome} acompanha você.</b><br /><span className="mudo">Ela vai olhar o seu Hub de perto e falar com você para ajudar em cada passo.</span></span>
+        <span><b>{cs.nome} é a sua CS e acompanha você de perto.</b><br /><span className="mudo">Ela olha o seu Hub e fala com você para ajudar a cumprir cada combinado.</span></span>
         {cs.whatsapp && <a className="btn s peq" href={`https://wa.me/55${cs.whatsapp.replace(/\D/g, "").replace(/^55/, "")}`} target="_blank" rel="noopener">Falar com a {cs.nome}</a>}
       </div>
     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import { TextoComLinks } from "@/components/TextoComLinks";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { metasDoTime } from "@/lib/plano-mes";
@@ -9,6 +9,7 @@ import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFi
 import { vezAbrir, vezRankingLojas, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel, type RankingDaLoja } from "@/lib/vez";
 import { PontosDaVez } from "@/components/PontosDaVez";
 import { ClientesParaChamar } from "@/components/ClientesParaChamar";
+import { FaltaFazer } from "@/components/FaltaFazer";
 import { DesafioDoDia } from "@/components/DesafioDoDia";
 import { vezDesafios, type DesafioDoDia as DesafioHoje } from "@/lib/desafios";
 import { LojinhaDaVez } from "@/components/LojinhaDaVez";
@@ -63,6 +64,8 @@ function Vez() {
   const [cliente, setCliente] = useState("");
   const [corrigir, setCorrigir] = useState<string | null>(null);
   const [extras, setExtras] = useState<Extras | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const saldoAnt = useRef<number | null>(null);
   const [indicou, setIndicou] = useState<string | null>(null);
   const [lojinha, setLojinha] = useState<LojinhaDaPessoa | null>(null);
   const [ranking, setRanking] = useState<RankingDaLoja | null>(null);
@@ -76,6 +79,12 @@ function Vez() {
     const a = setInterval(carregar, 7000), b = setInterval(() => setAgora(Date.now()), 30000);
     return () => { clearInterval(a); clearInterval(b); };
   }, [carregar]);
+
+  useEffect(() => {
+    const s = extras?.pontos.saldo; if (s === undefined) return;
+    if (saldoAnt.current !== null && s > saldoAnt.current) { setToast(`+${s - saldoAnt.current} pontos! 🎉`); const t = setTimeout(() => setToast(null), 2800); saldoAnt.current = s; return () => clearTimeout(t); }
+    saldoAnt.current = s;
+  }, [extras?.pontos.saldo]);
 
   const agir = async (f: () => PromiseLike<unknown>) => { setOcupado(true); try { await f(); await carregar(); } finally { setOcupado(false); } };
 
@@ -122,13 +131,28 @@ function Vez() {
         .vez-fila{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--bg-soft,rgba(127,127,127,.08));margin-top:6px}
         .vez-num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--text);color:var(--bg,#fff);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
         .vez-chip{border:1.5px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:9px 13px;font-size:15px;font-family:inherit;cursor:pointer}
-        .vez-chip.on{background:var(--text);color:var(--bg,#fff);border-color:var(--text)}`}</style>
+        .vez-chip.on{background:var(--text);color:var(--bg,#fff);border-color:var(--text)}
+        @keyframes vez-pisca{0%,100%{box-shadow:0 0 0 0 rgba(188,73,20,.6)}50%{box-shadow:0 0 0 9px rgba(188,73,20,0)}}
+        @keyframes vez-vibra{0%,100%{transform:translateX(0)}15%{transform:translateX(-3px) rotate(-1.5deg)}30%{transform:translateX(3px) rotate(1.5deg)}45%{transform:translateX(-2px)}60%{transform:translateX(2px)}75%{transform:translateX(-1px)}}
+        @keyframes vez-pop{0%{transform:scale(.7)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+        @keyframes vez-sobe{0%{opacity:0;transform:translate(-50%,14px) scale(.9)}12%{opacity:1;transform:translate(-50%,0) scale(1.05)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-18px)}}
+        @keyframes vez-balanca{0%,100%{transform:rotate(0)}25%{transform:rotate(-12deg)}75%{transform:rotate(12deg)}}
+        .vez-pisca{animation:vez-pisca 1.4s ease-out infinite;border-radius:5px}
+        .vez-pisca-btn{animation:vez-pisca 1.6s ease-out infinite}
+        .vez-vibra{display:inline-block;animation:vez-vibra .6s ease-in-out 3}
+        .vez-pop{animation:vez-pop .4s ease-out}
+        .vez-pisca-icone{display:inline-block;animation:vez-balanca 1.8s ease-in-out infinite}
+        .vez-tag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:var(--orange);color:#fff;font-size:12.5px;font-weight:800;animation:vez-pop 1.6s ease-in-out infinite}
+        .vez-toast{position:fixed;top:16px;left:50%;z-index:50;background:#2E9D57;color:#fff;font-weight:800;font-size:20px;padding:12px 22px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.25);animation:vez-sobe 2.8s ease-out forwards;pointer-events:none}
+        @media (prefers-reduced-motion: reduce){.vez-pisca,.vez-pisca-btn,.vez-vibra,.vez-pop,.vez-pisca-icone,.vez-tag{animation:none}}`}</style>
 
       <div style={{ marginBottom: 14 }}>
         <small className="mudo">{dataTxt.charAt(0).toUpperCase() + dataTxt.slice(1)}{p.pessoa.loja ? ` · ${p.pessoa.loja}` : ""}</small>
         <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{saudacao}, {p.pessoa.nome}!</h1>
       </div>
 
+      {toast && <div className="vez-toast" role="status">{toast}</div>}
+      <FaltaFazer missoes={p.missoes.filter((m) => !m.feito).length} desafios={desafios} chamar={extras?.chamar ?? []} semana={extras?.pontos.semana ?? null} />
       <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
 
       {/* A lista da vez */}
@@ -228,9 +252,9 @@ function Vez() {
             <small className="mudo">Missão do dia</small>
             {p.missoes.map((m) => (
               <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
-                <input type="checkbox" checked={m.feito} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
+                <input type="checkbox" checked={m.feito} className={m.feito ? "vez-pop" : "vez-pisca"} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
                   onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
-                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} /></span>
+                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} />{!m.feito && <span className="vez-tag">+10 pontos</span>}</span>
               </label>
             ))}
             {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏 +1 estrela ⭐</p>}
@@ -238,7 +262,7 @@ function Vez() {
         )}
       </div>
 
-      {extras && <PontosDaVez p={extras.pontos} />}
+      {extras && <PontosDaVez p={extras.pontos} vibrar={!!toast} />}
       {ranking && <RankingDasLojas r={ranking} />}
       {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
       {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}

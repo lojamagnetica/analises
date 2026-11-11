@@ -7,7 +7,8 @@ import { novaPendencia } from "@/lib/pendencias";
 
 export type TipoConversa = "Alinhamento" | "Pedido" | "Aviso" | "Urgente";
 export const TIPOS_CONVERSA: TipoConversa[] = ["Alinhamento", "Pedido", "Aviso", "Urgente"];
-export type Mensagem = { id: string; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
+export type Anexo = { caminho: string; nome: string; tipo: string; tamanho: number };
+export type Mensagem = { id: string; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
 export type Lembrete = { id: string; portal_id: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
 export type Pessoa = { id: string; nome: string };
 
@@ -36,8 +37,25 @@ export async function abertasPorLoja(): Promise<Record<string, number>> {
   return m;
 }
 
-export const enviarMensagem = (portalId: string | null, tipo: TipoConversa, texto: string, autor: { id: string; nome: string }, para: string | null) =>
-  ok(sb().from("equipe_conversas").insert({ portal_id: portalId, tipo, texto: texto.trim(), autor: autor.id, autor_nome: autor.nome, para: para || null }));
+export const LIMITE_ANEXO = 25 * 1024 * 1024;
+
+/** Sobe um arquivo para o bucket privado (só a Camilla e a CS leem) e devolve o que fica salvo na mensagem. */
+export async function subirAnexo(arquivo: File, autorId: string): Promise<Anexo> {
+  if (arquivo.size > LIMITE_ANEXO) throw new Error(`${arquivo.name} passa de 25 MB.`);
+  const limpo = arquivo.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.\-]+/g, "_");
+  const caminho = `${autorId}/${Date.now()}-${limpo}`;
+  const { error } = await sb().storage.from("equipe-conversas").upload(caminho, arquivo, { contentType: arquivo.type || undefined });
+  if (error) throw new Error(error.message);
+  return { caminho, nome: arquivo.name, tipo: arquivo.type, tamanho: arquivo.size };
+}
+/** Endereço temporário (1 hora) para abrir um anexo. */
+export async function linkAnexo(caminho: string): Promise<string | null> {
+  const { data } = await sb().storage.from("equipe-conversas").createSignedUrl(caminho, 3600);
+  return data?.signedUrl ?? null;
+}
+
+export const enviarMensagem = (portalId: string | null, tipo: TipoConversa, texto: string, autor: { id: string; nome: string }, para: string | null, arquivos: Anexo[] = []) =>
+  ok(sb().from("equipe_conversas").insert({ portal_id: portalId, tipo, texto: texto.trim(), autor: autor.id, autor_nome: autor.nome, para: para || null, arquivos }));
 export const concluirMensagem = (id: string, concluida: boolean) => ok(sb().from("equipe_conversas").update({ status: concluida ? "concluida" : "aberta" }).eq("id", id));
 
 // ───── O que uma mensagem vira ─────

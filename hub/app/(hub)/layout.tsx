@@ -123,7 +123,7 @@ function Casca({ children }: { children: React.ReactNode }) {
               : <>Próximo passo: cadastrar a sua equipe<Link href="/personalizacao/etapa?n=5">Cadastrar →</Link></>}
           </div>
         ) : null}
-        <Ferramentas temPortal={!!hub.portal} equipe={equipe} />
+        <Ferramentas temPortal={!!hub.portal} equipe={equipe} conversas={hub.conversas && !hub.comoLoja} />
         {hub.conversas && !hub.apresentacao && !hub.comoLoja && !caminho.startsWith("/equipe/conversas") && <ConversaAberta />}
         <main className="conteudo">
           {/* Portal com mais de uma loja: a loja escolhida aqui vale para o portal inteiro (planner, foco, caixa, clientes…). */}

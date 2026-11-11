@@ -29,7 +29,7 @@ function useCaixa(ligado: boolean) {
 }
 
 /** Botões redondos do topo: atualizar, largura, letra, modo escuro, notas e assistente. Para a equipe, a Caixa do Fale com a Camilla. */
-export function Ferramentas({ temPortal, equipe = false }: { temPortal: boolean; equipe?: boolean }) {
+export function Ferramentas({ temPortal, equipe = false, conversas = false }: { temPortal: boolean; equipe?: boolean; conversas?: boolean }) {
   const router = useRouter();
   const esperando = useCaixa(equipe);
 
@@ -59,6 +59,14 @@ export function Ferramentas({ temPortal, equipe = false }: { temPortal: boolean;
     gravar("lm_fs", novo);
   };
 
+  // Conversas da equipe (só Camilla e CS): o ícone abre e fecha o chat, com o número de mensagens novas.
+  const [novasConversa, setNovasConversa] = useState(0);
+  useEffect(() => {
+    const ouvir = (e: Event) => setNovasConversa((e as CustomEvent<number>).detail ?? 0);
+    window.addEventListener("lm-conversa-novas", ouvir);
+    return () => window.removeEventListener("lm-conversa-novas", ouvir);
+  }, []);
+
   return (
     <div className="topo">
       <button className="redondo hamb" aria-label="Abrir menu" onClick={() => window.dispatchEvent(new Event("abrir-menu"))}>
@@ -69,6 +77,11 @@ export function Ferramentas({ temPortal, equipe = false }: { temPortal: boolean;
           <Link className={`caixa-topo${esperando ? " pendente" : ""}`} href="/equipe/duvidas" title="Caixa do Fale com a Camilla">
             <Icone nome="inbox" /><span>Fale com a Camilla</span>{esperando > 0 && <b>{esperando}</b>}
           </Link>
+        )}
+        {conversas && (
+          <button type="button" className={`caixa-topo${novasConversa ? " pendente" : ""}`} title="Conversas da equipe" onClick={() => window.dispatchEvent(new Event("lm-conversa-alternar"))}>
+            <Icone nome="relacionamento" /><span>Conversas</span>{novasConversa > 0 && <b>{novasConversa}</b>}
+          </button>
         )}
         <button className="redondo" title="Atualizar" onClick={() => router.refresh()}><Icone nome="refresh" /></button>
         <button className="redondo esconde-mobile" title="Largura da tela" onClick={alternarLargura}><Icone nome="width" /></button>

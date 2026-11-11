@@ -1,5 +1,6 @@
 "use client";
 
+import { TextoComLinks } from "@/components/TextoComLinks";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
@@ -205,7 +206,7 @@ function Vez() {
               <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
                 <input type="checkbox" checked={m.feito} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
                   onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
-                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}>{m.texto}</span>
+                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} /></span>
               </label>
             ))}
             {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏</p>}

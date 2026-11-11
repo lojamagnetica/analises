@@ -24,7 +24,7 @@ export type DadosGestao = {
   /** Feedback do time: uma conversa por pessoa. */
   pessoas?: PessoaFeedback[];
 };
-export type PessoaFeedback = { nome: string; funcao: string; problema: string; forca: string; solucao: string; dificuldade: string; oque: string; quanto: string; ate: string };
+export type PessoaFeedback = { nome: string; funcao: string; problema: string; forca: string; solucao: string; dificuldade: string; oque: string; quanto: string; ate: string; link?: string; linkRotulo?: string };
 export const novaPessoaFeedback = (): PessoaFeedback => ({ nome: "", funcao: "", problema: "", forca: "", solucao: "", dificuldade: "", oque: "", quanto: "", ate: "" });
 /** Os 4 passos da conversa, na ordem da linha de gestão (o 5º, o combinado, sai da pessoa). */
 export const PASSOS_FEEDBACK: { chave: "problema" | "forca" | "solucao" | "dificuldade"; n: number; titulo: string; ajuda: string; cor: string }[] = [
@@ -109,6 +109,7 @@ export function textoDaReuniao(tipo: TipoGestao, d: DadosGestao) {
   for (const p of d.pessoas ?? []) {
     l.push("", `${p.nome}${p.funcao ? ` (${p.funcao})` : ""}`);
     PASSOS_FEEDBACK.forEach((x) => { if (p[x.chave]?.trim()) l.push(`${x.n}) ${x.titulo}: ${p[x.chave].trim()}`); });
+    if (p.link) l.push(`Link: ${p.link}`);
     if (p.oque || p.quanto || p.ate) l.push(`5) O combinado, que sai dela: ${p.oque || "—"} · quanto: ${p.quanto || "—"} · até quando: ${p.ate || "—"}`);
   }
   if (d.combinados.length) {

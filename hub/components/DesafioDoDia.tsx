@@ -19,7 +19,7 @@ export function DesafioDoDia({ token, lista, aoMudar }: { token: string; lista: 
           <div className="linha" style={{ gap: 10, alignItems: "center", marginTop: 10 }}>
             <button type="button" className="btn s" style={{ flex: "0 0 52px", fontSize: 20 }} disabled={ocupado === d.id || d.feitos === 0} onClick={() => marcar(d.id, -1)} aria-label="Tirar uma">−</button>
             <div style={{ flex: 1, textAlign: "center" }}><div style={{ fontSize: 28, fontWeight: 800, lineHeight: 1 }}>{d.feitos}</div><small className="mudo">{d.feitos * d.pontos} pontos hoje</small></div>
-            <button type="button" className="vez-btn" style={{ flex: 2, padding: "12px 8px", fontSize: 16 }} disabled={ocupado === d.id || (d.limite !== null && d.feitos >= d.limite)} onClick={() => marcar(d.id, 1)}>Cumpri +1</button>
+            <button type="button" className="vez-btn vez-pisca-btn" style={{ flex: 2, padding: "12px 8px", fontSize: 16 }} disabled={ocupado === d.id || (d.limite !== null && d.feitos >= d.limite)} onClick={() => marcar(d.id, 1)}>Cumpri +1</button>
           </div>
         </div>
       ))}

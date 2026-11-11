@@ -26,7 +26,7 @@ export function RegrasDosPontos() {
 }
 
 /** O card de pontos no link pessoal da Lista da vez. */
-export function PontosDaVez({ p }: { p: PontosDaPessoa }) {
+export function PontosDaVez({ p, vibrar = false }: { p: PontosDaPessoa; vibrar?: boolean }) {
   const falta = 500 - (p.saldo % 500);
   const pct = Math.min(100, ((p.saldo % 500) / 500) * 100);
   const sem = p.semana.atend > 0 ? Math.round((p.semana.feitos / p.semana.atend) * 100) : null;
@@ -37,7 +37,7 @@ export function PontosDaVez({ p }: { p: PontosDaPessoa }) {
         <span title="Estrelas" style={{ fontSize: 16, fontWeight: 700 }}>⭐ {p.estrelas}{p.estrela_hoje ? " · hoje ✓" : ""}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 6 }}>
-        <span style={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>{p.saldo}</span><span className="mudo">pontos</span>
+        <span className={vibrar ? "vez-vibra" : undefined} style={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>{p.saldo}</span><span className="mudo">pontos</span>
         {p.vouchers > 0 && <span className="selo feito" style={{ marginLeft: "auto" }}>{p.vouchers} {p.vouchers === 1 ? "voucher" : "vouchers"} de R$ 500</span>}
       </div>
       <div style={{ height: 12, borderRadius: 6, background: "var(--line)", marginTop: 10, overflow: "hidden" }}>

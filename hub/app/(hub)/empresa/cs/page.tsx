@@ -9,6 +9,8 @@ import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
 import { painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
+import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
+import { hoje } from "@/lib/formato";
 
 const COR: Record<Nivel, string> = { vermelho: "var(--red)", amarelo: "var(--orange)", verde: "var(--feito)" };
 const ROTULO: Record<Nivel, string> = { vermelho: "Precisa de você hoje", amarelo: "Atenção", verde: "Em dia" };
@@ -117,10 +119,11 @@ function CartaoAssunto({ g, nome, recarregar }: { g: GrupoAlerta; nome: string; 
 
 /** Faça agora da CS: uma loja, um cartão, os mais urgentes primeiro. Cada alerta some sozinho quando o dado entra ou a conversa é registrada. */
 export default function InicioCs() {
-  const { nome, abrirPortal } = useEquipe();
+  const { nome, abrirPortal, userId, conversas } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
   const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas">("painel");
   const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
+  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hoje())) : []), [conversas, userId]);
   if (!dados) return <Carregando />;
 
   const { lojas, reunioes } = dados;
@@ -141,6 +144,18 @@ export default function InicioCs() {
         <div className="kpi"><small>Caixa da semana completo</small><b style={{ fontSize: 28 }}>{caixaOk}<span className="mudo" style={{ fontSize: 16 }}> de {comCaixa.length}</span></b></div>
         <div className="kpi"><small>Reuniões nos próximos 7 dias</small><b style={{ fontSize: 28 }}>{reunioes.length}</b></div>
       </div>
+
+      {lembretes && lembretes.length > 0 && (
+        <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)" }}>
+          <b>Lembretes de hoje · {lembretes.length}</b>
+          {lembretes.map((l) => (
+            <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+              <span>{l.texto}{l.quando && l.quando < hoje() ? <span className="selo alerta" style={{ marginLeft: 6 }}>atrasado</span> : null}</span>
+              <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="chips mb">
         <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>

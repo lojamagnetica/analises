@@ -68,6 +68,8 @@ export type Hub = {
   aprova: boolean;
   /** Monta diagnósticos, gestão, ações e gincanas das lojas (a Camilla e a CS). Liberar continua com quem aprova. */
   monta: boolean;
+  /** Entra nas Conversas da equipe: só a Camilla e a CS. */
+  conversas: boolean;
   equipe: boolean;
   portal: Portal | null;
   pers: Map<number, { respostas: Respostas; concluida: boolean }>;
@@ -156,7 +158,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, ve_conteudo, aprova, monta, loja_padrao, loja_acesso").eq("id", user.id).maybeSingle();
+    const { data: perfil } = await sb.from("perfis").select("nome, email, papel, portal_id, foto, estudio, so_caixa, ve_conteudo, aprova, monta, conversas_equipe, loja_padrao, loja_acesso").eq("id", user.id).maybeSingle();
     const equipe = perfil?.papel === "equipe";
     const portalId = equipe ? lerPortalEscolhido() : perfil?.portal_id;
 
@@ -217,6 +219,7 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
       },
       aprova: equipe && !!perfil?.aprova,
       monta: equipe && (!!perfil?.aprova || !!perfil?.monta),
+      conversas: equipe && !!perfil?.conversas_equipe,
       equipe,
       portal,
       pers,
@@ -305,7 +308,7 @@ export const ACESSO_ENVIOS = ["/envios", "/gestao/caixa", "/mural", "/assistente
 export const DE_TIME = /^\/(pessoas|mural|clientes\/missoes)(\/|$)/;
 
 /** Para onde mandar quem abriu uma página que não pode ver (null = pode ver). */
-export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; veConteudo?: boolean; aprova?: boolean; monta?: boolean }) {
+export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { soCaixa?: boolean; veConteudo?: boolean; aprova?: boolean; monta?: boolean; conversas?: boolean }) {
   const livre = caminho === "/" || caminho.startsWith("/conta") || caminho.startsWith("/sem-portal");
   // Página escondida da loja (guardada pelo endereço em menu_oculto): a loja não abre nem pelo link.
   if (!hub.equipe && hub.portal && (hub.portal.menu_oculto ?? []).includes(caminho.replace(/(.)\/$/, "$1"))) return "/inicio";
@@ -319,6 +322,8 @@ export function desvio(caminho: string, hub: Pick<Hub, "equipe" | "portal"> & { 
   if (hub.soCaixa && !hub.equipe) return [...ACESSO_ENVIOS, ...(hub.veConteudo ? ["/conteudo"] : [])].some((p) => caminho === p || caminho.startsWith(p + "/")) ? null : "/envios";
   // Quem monta (Camilla e CS): preparar diagnóstico, planos, ações, gincanas e agentes. Liberar fica com a Camilla.
   if (hub.equipe && !hub.monta && ["/equipe/aprovar", "/equipe/planos", "/equipe/acoes", "/equipe/acao", "/equipe/gincanas", "/empresa/minha-central/diagnostico", "/empresa/agentes", "/empresa/caixa-do-dia"].some((p) => caminho.startsWith(p))) return "/equipe/central";
+  // Conversas da equipe: só a Camilla e a CS.
+  if (caminho.startsWith("/equipe/conversas") && !hub.conversas) return hub.equipe ? "/equipe/central" : "/inicio";
   // Só da Camilla: conteúdo (estúdio, conteúdo da casa, análises do Instagram) e a central dela.
   if (hub.equipe && !hub.aprova && caminho.startsWith("/equipe/analise")) return "/equipe/central";
   if (caminho.startsWith("/empresa/minha-central/diagnostico") || caminho.startsWith("/empresa/agentes")) return hub.equipe ? null : "/inicio";

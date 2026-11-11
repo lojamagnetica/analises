@@ -1,0 +1,67 @@
+"use client";
+
+// Conversas da equipe: o canal interno só da Camilla e da CS. Cada mensagem é ligada a uma loja (ou "geral") e vira,
+// com 1 toque, lembrete, pendência da loja, combinado ou contato registrado. Só quem tem perfis.conversas_equipe entra (RLS).
+import { supabaseBrowser } from "@/lib/supabase/client";
+import { novaPendencia } from "@/lib/pendencias";
+
+export type TipoConversa = "Alinhamento" | "Pedido" | "Aviso" | "Urgente";
+export const TIPOS_CONVERSA: TipoConversa[] = ["Alinhamento", "Pedido", "Aviso", "Urgente"];
+export type Mensagem = { id: string; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
+export type Lembrete = { id: string; portal_id: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
+export type Pessoa = { id: string; nome: string };
+
+const sb = () => supabaseBrowser();
+const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
+
+/** Quem entra nas conversas (Camilla e CS), para marcar "para quem é". */
+export async function buscarPessoas(): Promise<Pessoa[]> {
+  const { data } = await sb().from("perfis").select("id, nome").eq("conversas_equipe", true).order("nome");
+  return (data ?? []) as Pessoa[];
+}
+
+/** As mensagens de uma loja (ou da conversa geral, com portalId null), da mais antiga para a mais nova. */
+export async function buscarMensagens(portalId: string | null): Promise<Mensagem[]> {
+  let q = sb().from("equipe_conversas").select("*").order("created_at", { ascending: true }).limit(300);
+  q = portalId ? q.eq("portal_id", portalId) : q.is("portal_id", null);
+  const { data } = await q;
+  return (data ?? []) as Mensagem[];
+}
+
+/** Quantas mensagens abertas há em cada loja (para o selo na lista). */
+export async function abertasPorLoja(): Promise<Record<string, number>> {
+  const { data } = await sb().from("equipe_conversas").select("portal_id").eq("status", "aberta");
+  const m: Record<string, number> = {};
+  (data ?? []).forEach((x: { portal_id: string | null }) => { const k = x.portal_id ?? "geral"; m[k] = (m[k] ?? 0) + 1; });
+  return m;
+}
+
+export const enviarMensagem = (portalId: string | null, tipo: TipoConversa, texto: string, autor: { id: string; nome: string }, para: string | null) =>
+  ok(sb().from("equipe_conversas").insert({ portal_id: portalId, tipo, texto: texto.trim(), autor: autor.id, autor_nome: autor.nome, para: para || null }));
+export const concluirMensagem = (id: string, concluida: boolean) => ok(sb().from("equipe_conversas").update({ status: concluida ? "concluida" : "aberta" }).eq("id", id));
+
+// ───── O que uma mensagem vira ─────
+export const criarLembrete = (m: Mensagem, quando: string | null, responsavel: string | null, por: string, texto?: string) =>
+  ok(sb().from("equipe_lembretes").insert({ portal_id: m.portal_id, texto: (texto ?? m.texto).trim(), quando: quando || null, responsavel: responsavel || null, conversa_id: m.id, criado_por: por }));
+export async function virarPendencia(m: Mensagem, por: string) {
+  if (!m.portal_id) throw new Error("A pendência é de uma loja: escolha a loja da conversa.");
+  await novaPendencia(m.portal_id, m.texto, "Loja", por);
+}
+export const virarCombinado = (m: Mensagem, prazo: string | null, por: string) => {
+  if (!m.portal_id) throw new Error("O combinado é de uma loja: escolha a loja da conversa.");
+  return ok(sb().from("loja_combinados").insert({ portal_id: m.portal_id, texto: m.texto.trim(), quem: "loja", prazo: prazo || null, origem: "conversa", criado_por: por }));
+};
+export const virarContato = (m: Mensagem, por: string) => {
+  if (!m.portal_id) throw new Error("O contato é de uma loja: escolha a loja da conversa.");
+  return ok(sb().from("cs_contatos").insert({ portal_id: m.portal_id, tipo: "geral", ref: m.id, feito_em: new Date().toISOString(), feito_por: por, resumo: m.texto.trim() }));
+};
+
+// ───── Lembretes ─────
+export async function buscarLembretes(responsavel: string | null, abertos = true): Promise<Lembrete[]> {
+  let q = sb().from("equipe_lembretes").select("*").order("quando", { ascending: true, nullsFirst: false });
+  if (abertos) q = q.eq("feito", false);
+  if (responsavel) q = q.eq("responsavel", responsavel);
+  const { data } = await q;
+  return (data ?? []) as Lembrete[];
+}
+export const marcarLembrete = (id: string, feito: boolean) => ok(sb().from("equipe_lembretes").update({ feito }).eq("id", id));

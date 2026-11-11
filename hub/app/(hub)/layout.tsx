@@ -1,5 +1,6 @@
 "use client";
 
+import { ConversaAberta } from "@/components/ConversaAberta";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -96,7 +97,7 @@ function Casca({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app">
-      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding} semEquipe={!!hub.portal?.sem_equipe} apoioConteudo={hub.portal?.apoio_conteudo} vendaDiaria={!!hub.portal?.venda_diaria}
+      <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} conversas={hub.conversas} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding} semEquipe={!!hub.portal?.sem_equipe} apoioConteudo={hub.portal?.apoio_conteudo} vendaDiaria={!!hub.portal?.venda_diaria}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
         {demo ? null : hub.apresentacao ? (
@@ -123,6 +124,7 @@ function Casca({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
         <Ferramentas temPortal={!!hub.portal} equipe={equipe} />
+        {hub.conversas && !hub.apresentacao && !hub.comoLoja && !caminho.startsWith("/equipe/conversas") && <ConversaAberta />}
         <main className="conteudo">
           {/* Portal com mais de uma loja: a loja escolhida aqui vale para o portal inteiro (planner, foco, caixa, clientes…). */}
           {(hub.portal?.lojas ?? []).length > 1 && (

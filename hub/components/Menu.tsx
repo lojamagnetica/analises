@@ -29,7 +29,7 @@ export function grupoDaPagina(lista: Grupo[], caminho: string) {
   return melhor?.g;
 }
 
-export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = [], aprova = false, monta = aprova): Grupo[] {
+export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, consultoria: boolean, estudio = false, soCurso = false, canais: string[] = [], aprova = false, monta = aprova, conversas = false): Grupo[] {
   const g: Grupo[] = [];
   const cs = equipe && monta && !aprova;
   // Área da mentora: só da Camilla (quem aprova).
@@ -37,6 +37,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
     g.push({
       id: "mentora", rotulo: "Área da mentora", icone: "spark",
       itens: [
+        ...(conversas ? [{ href: "/equipe/conversas", rotulo: "Conversas da equipe", icone: "chat" }] : []),
         { href: "/empresa/minha-central", rotulo: "Minha central", icone: "target" },
         { href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" },
         { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check", soMentora: true },
@@ -72,6 +73,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         // Do que mais se usa no dia a dia para o que menos. Para a CS (monta, sem aprovar), o que a Camilla tem na
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         { href: "/equipe/controle", rotulo: "Controle de clientes", icone: "relacionamento" },
+        ...(conversas ? [{ href: "/equipe/conversas", rotulo: "Conversas da equipe", icone: "chat" }] : []),
         { href: "/empresa/cs", rotulo: "Faça agora e pendências", icone: "target" },
         { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
@@ -264,11 +266,11 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
   return g;
 }
 
-export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean }) {
+export function Menu(props: { trancados?: string[]; cursoFechado?: boolean; ocultos?: string[]; equipe: boolean; temPortal: boolean; consultoria: boolean; persFaltam: number; trava?: (href: string) => boolean; nome: string; email: string; foto: string | null; estudio?: boolean; soCurso?: boolean; canais?: string[]; aprova?: boolean; monta?: boolean; conversas?: boolean; semComece?: boolean; soEnvio?: boolean; semEquipe?: boolean; apoioConteudo?: string | null; vendaDiaria?: boolean }) {
   const caminho = usePathname().replace(/(.)\/$/, "$1");
   const [aberta, setAberta] = useState(false);
   const [busca, setBusca] = useState<string | null>(null);
-  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova, props.monta)
+  const lista = grupos(props.equipe, props.temPortal, props.persFaltam, props.consultoria, props.estudio, props.soCurso, props.canais, props.aprova, props.monta, props.conversas)
     .filter((g) => !props.ocultos?.includes(g.id))
     // Também dá para esconder uma página só, guardando o endereço dela (ex.: "/gestao/canais").
     .map((g) => ({ ...g, itens: g.itens.filter((i) => !props.ocultos?.includes(i.href)) }))

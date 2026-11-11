@@ -27,6 +27,7 @@ const ATALHOS = [
   { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
   { href: "/leitura", rotulo: "Leitura da semana", icone: "chart", cor: "var(--purple)" },
   { href: "/gestao/vez", rotulo: "Lista da vez", icone: "users", cor: "var(--orange)" },
+  { href: "/gestao/pontos", rotulo: "Gamificação", icone: "target", cor: "var(--orange)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
   // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
@@ -106,7 +107,7 @@ export default function Inicio() {
     .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
     // Loja sem equipe não tem fila de atendimento.
-    .filter((a) => !(a.href === "/gestao/vez" && portal.sem_equipe))
+    .filter((a) => !((a.href === "/gestao/vez" || a.href === "/gestao/pontos") && portal.sem_equipe))
     .filter((a) => !escondido(a.href));
   const comNovidade = (href: string) => {
     const k = chaveDoAtalho(href);

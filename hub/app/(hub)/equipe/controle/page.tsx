@@ -81,16 +81,17 @@ export default function ControleDeClientes() {
       {dados.aCaminho.length > 0 && (
         <>
           <div className="secao">A caminho do acompanhamento</div>
-          <p className="ajuda" style={{ marginTop: 0 }}>Estas lojas ainda estão na reunião de entrega e não entram nos alertas nem nas pendências. Quando a reunião acontecer, passe a loja para o acompanhamento.</p>
+          <p className="ajuda" style={{ marginTop: 0 }}>Estas lojas ainda estão na reunião de entrega e não entram nos alertas nem nas pendências. Depois da reunião, registre os combinados: a loja passa para o acompanhamento sozinha.</p>
           <div className="card mb">
             {dados.aCaminho.map((l, i) => (
               <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: i ? "1px solid var(--line)" : 0 }}>
                 <span><b>{l.loja}</b> <span className="mudo">· {l.proxReuniao ? `reunião ${dataHora(l.proxReuniao)}` : "sem reunião marcada"}</span></span>
+                <span className="linha" style={{ gap: 8, flexWrap: "wrap" }}><Link className="btn s peq" href={`/equipe/entrega?id=${l.id}`}>Combinados da reunião</Link>
                 {monta && <button type="button" className="btn s peq" onClick={async () => {
                   if (!confirm(`Passar ${l.loja} para o acompanhamento da CS?`)) return;
                   const { error } = await supabaseBrowser().from("portais").update({ cs_acompanha: true }).eq("id", l.id);
                   if (error) alert(error.message); else recarregar();
-                }}>Passar para o acompanhamento</button>}
+                }}>Passar sem combinados</button>}</span>
               </div>
             ))}
           </div>

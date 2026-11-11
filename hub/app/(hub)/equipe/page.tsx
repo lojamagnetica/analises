@@ -73,7 +73,7 @@ export default function Painel() {
                   <Link className="btn s peq" href={`/equipe/portal?id=${l.id}`}>Editar</Link>
                 </div>
                 {/* Portal pronto: o roteiro da reunião de entrega, montado com os dados da loja. */}
-                {l.entrega === "entregue" && <Link className="link-loja" style={{ fontSize: 12.5 }} href={`/equipe/entrega?id=${l.id}`}>📋 Roteiro da entrega</Link>}
+                <Link className="link-loja" style={{ fontSize: 12.5 }} href={`/equipe/entrega?id=${l.id}`}>{l.entrega === "entregue" ? "📋 Roteiro da entrega e combinados" : "📋 Combinados"}</Link>
                 <div className="mudo" style={{ fontSize: 12.5 }}>{l.tipo}{l.pendentes ? <> · <span className="selo alerta">{l.pendentes} {l.pendentes === 1 ? "dúvida" : "dúvidas"}</span></> : null}</div>
               </td>
               <td>

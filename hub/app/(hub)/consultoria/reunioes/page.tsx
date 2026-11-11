@@ -5,20 +5,20 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Excluir } from "@/components/Excluir";
 import { Copiar } from "@/components/Copiar";
-import { Carregando, useDados, usePortal } from "@/lib/hub";
+import { Carregando, useLojaFoco, useDados, usePortal } from "@/lib/hub";
 import { dataCurta, hoje, moeda } from "@/lib/formato";
 import { segundaDa } from "@/lib/rotina";
 import {
-  CAMPOS_ANALISE, CAMPOS_PLANO, CAMPOS_SEMANA, TIPOS_COMBINADO, buscarReunioesGestao, nomeMes, numerosDaSemana, reuniaoGestaoExcluir, reuniaoGestaoSalvar, somarMes, textoDaReuniao,
+  CAMPOS_ANALISE, CAMPOS_FEEDBACK, porLojaESemana, CAMPOS_PLANO, CAMPOS_SEMANA, TIPOS_COMBINADO, buscarReunioesGestao, nomeMes, numerosDaSemana, reuniaoGestaoExcluir, reuniaoGestaoSalvar, somarMes, textoDaReuniao,
   type Combinado, type DadosGestao, type ReuniaoGestao, type TipoGestao,
 } from "@/lib/reunioes-gestao";
 
-const NOME: Record<TipoGestao, string> = { analise: "Análise do mês", planejamento: "Planejamento do mês", analise_semana: "Análise da semana" };
-const CAMPOS_DO: Record<TipoGestao, typeof CAMPOS_ANALISE> = { analise: CAMPOS_ANALISE, planejamento: CAMPOS_PLANO, analise_semana: CAMPOS_SEMANA };
-const COR: Record<TipoGestao, string> = { analise: "var(--blue)", planejamento: "var(--green)", analise_semana: "var(--red)" };
+const NOME: Record<TipoGestao, string> = { analise: "Análise do mês", planejamento: "Planejamento do mês", analise_semana: "Análise da semana", feedback_time: "Feedback do time" };
+const CAMPOS_DO: Record<TipoGestao, typeof CAMPOS_ANALISE> = { analise: CAMPOS_ANALISE, planejamento: CAMPOS_PLANO, analise_semana: CAMPOS_SEMANA, feedback_time: CAMPOS_FEEDBACK };
+const COR: Record<TipoGestao, string> = { analise: "var(--blue)", planejamento: "var(--green)", analise_semana: "var(--red)", feedback_time: "var(--purple)" };
 const ddmm = (iso: string) => `${iso.slice(8)}/${iso.slice(5, 7)}`;
 /** O nome da reunião no registro: o mês, ou a loja e a semana. */
-const rotuloDe = (t: TipoGestao, d: DadosGestao) => (t === "analise_semana" ? `${NOME[t]}${d.loja ? ` · ${d.loja}` : ""} · semana de ${ddmm(d.semana ?? "")}` : `${NOME[t]} · ${nomeMes(d.mes)}`);
+const rotuloDe = (t: TipoGestao, d: DadosGestao) => (porLojaESemana(t) ? `${NOME[t]}${d.loja ? ` · ${d.loja}` : ""} · semana de ${ddmm(d.semana ?? "")}` : `${NOME[t]} · ${nomeMes(d.mes)}`);
 
 /** Os números da semana da loja, do Fechamento de caixa. */
 function NumerosDaSemana({ portalId, loja, semana }: { portalId: string; loja: string; semana: string }) {
@@ -41,11 +41,11 @@ function NumerosDaSemana({ portalId, loja, semana }: { portalId: string; loja: s
 }
 
 /** Preencher (ou editar) uma reunião de gestão. */
-function Editor({ portalId, lojas, tipo, r, aoFim }: { portalId: string; lojas: string[]; tipo: TipoGestao; r: ReuniaoGestao | null; aoFim: (salvou: boolean) => void }) {
+function Editor({ portalId, lojas, lojaFoco, tipo, r, aoFim }: { portalId: string; lojas: string[]; lojaFoco: string; tipo: TipoGestao; r: ReuniaoGestao | null; aoFim: (salvou: boolean) => void }) {
   const mesHoje = hoje().slice(0, 7);
   const [data, setData] = useState(r?.data ?? hoje());
-  const [d, setD] = useState<DadosGestao>(r?.dados ?? (tipo === "analise_semana"
-    ? { mes: segundaDa(hoje()).slice(0, 7), loja: lojas[0] ?? "", semana: segundaDa(hoje()), campos: {}, combinados: [] }
+  const [d, setD] = useState<DadosGestao>(r?.dados ?? (porLojaESemana(tipo)
+    ? { mes: segundaDa(hoje()).slice(0, 7), loja: lojaFoco || lojas[0] || "", semana: segundaDa(hoje()), campos: {}, combinados: [] }
     : { mes: tipo === "analise" ? somarMes(mesHoje, -1) : mesHoje, campos: {}, combinados: [], conferencia: "" }));
   const [erro, setErro] = useState("");
   const campos = CAMPOS_DO[tipo];
@@ -58,7 +58,7 @@ function Editor({ portalId, lojas, tipo, r, aoFim }: { portalId: string; lojas: 
     }}>
       <h2 style={{ marginTop: 0 }}>{NOME[tipo]}</h2>
       <div className="grade g3">
-        {tipo === "analise_semana" ? (
+        {porLojaESemana(tipo) ? (
           <>
             {lojas.length > 1 && <div><label className="rotulo" htmlFor="as-loja">Loja</label>
               <select id="as-loja" value={d.loja ?? ""} onChange={(e) => setD({ ...d, loja: e.target.value })}>{lojas.map((l) => <option key={l}>{l}</option>)}</select></div>}
@@ -167,7 +167,10 @@ function Registro({ r, equipe, aoEditar, aoMudar }: { r: ReuniaoGestao; equipe: 
 
 export default function ReunioesGestao() {
   const { portal, equipe } = usePortal();
-  const { dados, recarregar } = useDados(() => buscarReunioesGestao(portal.id), [portal.id]);
+  const [lojaFoco] = useLojaFoco();
+  const { dados: todas, recarregar } = useDados(() => buscarReunioesGestao(portal.id), [portal.id]);
+  // A análise da semana é de uma loja: com a loja escolhida no topo, mostra só a dela.
+  const dados = todas?.filter((r) => !porLojaESemana(r.tipo) || !lojaFoco || (r.dados.loja ?? "") === lojaFoco);
   const [editando, setEditando] = useState<{ tipo: TipoGestao; r: ReuniaoGestao | null } | null>(null);
   if (!dados) return <Carregando />;
 
@@ -195,12 +198,13 @@ export default function ReunioesGestao() {
       </div>
 
       {editando
-        ? <Editor portalId={portal.id} lojas={portal.lojas ?? []} tipo={editando.tipo} r={editando.r} aoFim={(s) => { setEditando(null); if (s) recarregar(); }} />
+        ? <Editor portalId={portal.id} lojas={portal.lojas ?? []} lojaFoco={lojaFoco} tipo={editando.tipo} r={editando.r} aoFim={(s) => { setEditando(null); if (s) recarregar(); }} />
         : (
           <div className="linha mb" style={{ gap: 8, flexWrap: "wrap" }}>
             <button type="button" className="btn p" onClick={() => setEditando({ tipo: "analise", r: null })}>+ Análise do mês</button>
             <button type="button" className="btn p" onClick={() => setEditando({ tipo: "planejamento", r: null })}>+ Planejamento do mês</button>
             <button type="button" className="btn p" onClick={() => setEditando({ tipo: "analise_semana", r: null })}>+ Análise da semana</button>
+            <button type="button" className="btn p" onClick={() => setEditando({ tipo: "feedback_time", r: null })}>+ Feedback do time</button>
           </div>
         )}
 

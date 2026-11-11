@@ -7,7 +7,9 @@ import { MESES } from "@/lib/conteudo";
 import { buscarCaixa } from "@/lib/caixa";
 import { somarDias } from "@/lib/acoes-mes";
 
-export type TipoGestao = "analise" | "planejamento" | "analise_semana";
+export type TipoGestao = "analise" | "planejamento" | "analise_semana" | "feedback_time";
+/** Reuniões que são de uma loja e de uma semana (a análise da semana e o feedback do time). */
+export const porLojaESemana = (t: TipoGestao) => t === "analise_semana" || t === "feedback_time";
 export type Campo = { chave: string; titulo: string; ajuda: string };
 export type Combinado = { tipo: "erro" | "potencializar" | "atencao"; oque: string; quem: string; ate: string };
 export type DadosGestao = {
@@ -49,9 +51,13 @@ export const CAMPOS_SEMANA: Campo[] = [
   { chave: "resultado", titulo: "O resultado da semana", ajuda: "Venda × meta, PA, ticket e preço médio. Os números do caixa estão acima." },
   { chave: "funcionou", titulo: "O que funcionou e o que não funcionou", ajuda: "Reconheça o que deu certo e diga com clareza o que não deu." },
   { chave: "estoque", titulo: "O estoque e a decisão de cada linha", ajuda: "O que vendeu, o que está parado e o que fazer com cada linha: girar, destacar ou mudar de lugar." },
-  { chave: "feedback", titulo: "Feedback do gestor e do time", ajuda: "Uma conversa por pessoa, na ordem: o problema com número, o que ela já faz bem, a solução mostrada na prática, a dificuldade de execução e o combinado que sai dela. Inclua quem faz conteúdo e marketing, ligando o conteúdo ao estoque que precisa girar." },
   { chave: "direcao", titulo: "A direção da semana seguinte", ajuda: "O foco (desejo e giro), a meta da semana, a missão da carteira e o VM. Fica escrita para a semana começar pronta." },
   { chave: "combinado", titulo: "O combinado", ajuda: "O que a pessoa vai fazer, quanto e até quando. O combinado sai dela." },
+];
+
+/** Feedback do time: a conversa com cada pessoa, separada da análise da semana (que é dos gestores). */
+export const CAMPOS_FEEDBACK: Campo[] = [
+  { chave: "feedback", titulo: "Feedback do gestor e do time", ajuda: "Uma conversa por pessoa, na ordem: o problema com número, o que ela já faz bem, a solução mostrada na prática, a dificuldade de execução e o combinado que sai dela. Inclua quem faz conteúdo e marketing, ligando o conteúdo ao estoque que precisa girar." },
 ];
 
 export const TIPOS_COMBINADO: { tipo: Combinado["tipo"]; titulo: string }[] = [
@@ -76,16 +82,16 @@ async function ok<T extends { error: { message: string } | null }>(p: PromiseLik
 }
 
 export async function buscarReunioesGestao(portalId: string) {
-  const { data, error } = await sb().from("loja_reunioes").select("id, tipo, data, dados").eq("portal_id", portalId).in("tipo", ["analise", "planejamento", "analise_semana"]).order("data", { ascending: false });
+  const { data, error } = await sb().from("loja_reunioes").select("id, tipo, data, dados").eq("portal_id", portalId).in("tipo", ["analise", "planejamento", "analise_semana", "feedback_time"]).order("data", { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as ReuniaoGestao[];
 }
 
 /** O texto da reunião, para guardar junto (e copiar). */
 export function textoDaReuniao(tipo: TipoGestao, d: DadosGestao) {
-  const campos = tipo === "analise" ? CAMPOS_ANALISE : tipo === "planejamento" ? CAMPOS_PLANO : CAMPOS_SEMANA;
-  const l = [tipo === "analise_semana"
-    ? `Análise da semana${d.loja ? ` · ${d.loja}` : ""} · semana de ${d.semana ? `${d.semana.slice(8)}/${d.semana.slice(5, 7)}` : ""}`
+  const campos = tipo === "analise" ? CAMPOS_ANALISE : tipo === "planejamento" ? CAMPOS_PLANO : tipo === "feedback_time" ? CAMPOS_FEEDBACK : CAMPOS_SEMANA;
+  const l = [porLojaESemana(tipo)
+    ? `${tipo === "feedback_time" ? "Feedback do time" : "Análise da semana"}${d.loja ? ` · ${d.loja}` : ""} · semana de ${d.semana ? `${d.semana.slice(8)}/${d.semana.slice(5, 7)}` : ""}`
     : `${tipo === "analise" ? "Análise" : "Planejamento"} · ${nomeMes(d.mes)}`];
   if (tipo === "planejamento" && d.meta) l.push(`Meta: ${d.meta}`);
   for (const c of campos) if (d.campos[c.chave]?.trim()) l.push("", c.titulo, d.campos[c.chave].trim());

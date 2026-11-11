@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Titulo } from "@/components/Titulo";
 import { RankingMentoria } from "@/components/RankingMentoria";
+import { CardsDaCampanha } from "@/components/CardsDaCampanha";
 import { MISSAO_DO_MES, PROVAS, RESGATES, totalMissao } from "@/lib/programa-brasil";
 
 export default function ProgramaBrasil() {
@@ -51,6 +52,8 @@ export default function ProgramaBrasil() {
         ))}
         <p className="ajuda" style={{ marginBottom: 0 }}>Todas as lojas da mentoria podem ganhar, todo mês.</p>
       </div>
+
+      <CardsDaCampanha />
 
       <RankingMentoria />
 

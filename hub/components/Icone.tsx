@@ -1,4 +1,5 @@
 const PATHS: Record<string, string> = {
+  relacionamento: '<path d="M12 10C9 8 8.5 5.5 10.2 4.8 11.2 4.4 12 5 12 5.8 12 5 12.8 4.4 13.8 4.8 15.5 5.5 15 8 12 10Z"/><circle cx="6.5" cy="13.5" r="2.6"/><path d="M2 21a4.5 4.5 0 0 1 9 0"/><circle cx="17.5" cy="13.5" r="2.6"/><path d="M13 21a4.5 4.5 0 0 1 9 0"/>',
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
   robot: '<rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/>',

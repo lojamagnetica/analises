@@ -49,6 +49,7 @@ export const CAMPOS_SEMANA: Campo[] = [
   { chave: "resultado", titulo: "O resultado da semana", ajuda: "Venda × meta, PA, ticket e preço médio. Os números do caixa estão acima." },
   { chave: "funcionou", titulo: "O que funcionou e o que não funcionou", ajuda: "Reconheça o que deu certo e diga com clareza o que não deu." },
   { chave: "estoque", titulo: "O estoque e a decisão de cada linha", ajuda: "O que vendeu, o que está parado e o que fazer com cada linha: girar, destacar ou mudar de lugar." },
+  { chave: "feedback", titulo: "Feedback do gestor e do time", ajuda: "Uma conversa por pessoa, na ordem: o problema com número, o que ela já faz bem, a solução mostrada na prática, a dificuldade de execução e o combinado que sai dela. Inclua quem faz conteúdo e marketing, ligando o conteúdo ao estoque que precisa girar." },
   { chave: "direcao", titulo: "A direção da semana seguinte", ajuda: "O foco (desejo e giro), a meta da semana, a missão da carteira e o VM. Fica escrita para a semana começar pronta." },
   { chave: "combinado", titulo: "O combinado", ajuda: "O que a pessoa vai fazer, quanto e até quando. O combinado sai dela." },
 ];

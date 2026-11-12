@@ -89,12 +89,7 @@ export default function AgendaEquipe() {
   return (
     <>
       <Titulo titulo="Agenda" sub="As reuniões das lojas e os Google Agendas da equipe num lugar só. Para marcar um compromisso, use o botão abaixo: ele abre o Google Agenda já preenchido." />
-      <div className="secao">Reuniões das lojas</div>
-      <ReunioesDasLojas />
-      <div className="secao">Agendas da equipe</div>
       <div className="mb"><NovoCompromisso /></div>
-
-      <ConectarGoogle aoSalvar={recarregar} />
 
       {dados.calendarios.length === 0 && (
         <div className="aviso mb">Ainda não há agenda conectada. Quando as agendas forem compartilhadas com a conta de serviço do Google e cadastradas, os eventos aparecem aqui.</div>
@@ -188,6 +183,12 @@ export default function AgendaEquipe() {
           </div>
         )}
       </div>
+
+      {/* Abaixo da agenda: as reuniões das lojas e a conexão com o Google. */}
+      <div className="secao">Reuniões das lojas</div>
+      <ReunioesDasLojas />
+      <div className="secao">Conectar agendas</div>
+      <ConectarGoogle aoSalvar={recarregar} />
     </>
   );
 }

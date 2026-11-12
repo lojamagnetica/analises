@@ -8,12 +8,18 @@ import { novaPendencia } from "@/lib/pendencias";
 export type TipoConversa = "Alinhamento" | "Pedido" | "Aviso" | "Urgente";
 export const TIPOS_CONVERSA: TipoConversa[] = ["Alinhamento", "Pedido", "Aviso", "Urgente"];
 export type Anexo = { caminho: string; nome: string; tipo: string; tamanho: number };
-export type Mensagem = { id: string; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
+/** A pergunta da Assistente Magnética para confirmar uma reunião (ver a migração 0169). */
+export type AcaoReuniao = { tipo: "confirmar_reuniao"; reuniao_id: string; estado: "pendente" | "confirmada" | "nao"; minutos?: number; texto?: string; whatsapp?: string | null };
+export type Mensagem = { id: string; acao?: AcaoReuniao | null; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
 export type Lembrete = { id: string; portal_id: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
 export type Pessoa = { id: string; nome: string };
 
 const sb = () => supabaseBrowser();
 const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
+
+/** Resposta da Camilla: minutos 0 = no horário, > 0 = começa depois, null = não mandar nada para a cliente. */
+export const confirmarReuniao = (conversaId: string, minutos: number | null) =>
+  ok(sb().rpc("reuniao_confirmar", { p_conversa: conversaId, p_minutos: minutos }));
 
 /** Quem entra nas conversas (Camilla e CS), para marcar "para quem é". */
 export async function buscarPessoas(): Promise<Pessoa[]> {

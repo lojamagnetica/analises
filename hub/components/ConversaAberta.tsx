@@ -9,6 +9,7 @@ import { useEquipe } from "@/lib/hub";
 import { buscarMensagens, buscarPessoas, enviarMensagem, subirAnexo, type Mensagem, type Pessoa } from "@/lib/conversas";
 import { AnexoDaMensagem } from "@/components/AnexoDaMensagem";
 import { AcoesDaMensagem } from "@/components/AcoesDaMensagem";
+import { ConfirmarReuniao } from "@/components/ConfirmarReuniao";
 import { suportaDitado, useDitado } from "@/lib/ditado";
 import { ativarAvisos, situacaoAvisos, type SituacaoAvisos } from "@/lib/novidades";
 
@@ -116,6 +117,7 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
                   {!minha && <div style={{ fontSize: 11, fontWeight: 800, color: "var(--red)" }}>{m.autor_nome}</div>}
                   {m.texto && <div style={{ whiteSpace: "pre-wrap", fontSize: 14 }}>{m.tipo === "Urgente" ? "❗ " : ""}{m.texto}</div>}
                   {(m.arquivos ?? []).map((a) => <AnexoDaMensagem key={a.caminho} a={a} />)}
+                  {m.acao?.tipo === "confirmar_reuniao" && <ConfirmarReuniao id={m.id} acao={m.acao} aoFeito={carregar} />}
                   <div style={{ fontSize: 10.5, color: "var(--muted)", textAlign: "right" }}>{hora(m.created_at)}{m.status === "concluida" ? " · concluída" : ""}</div>
                   {acoes === m.id && <div onClick={(e) => e.stopPropagation()}><AcoesDaMensagem m={m} pessoas={pessoas} por={nome.split(" ")[0]} aoFeito={carregar} /></div>}
                 </div>

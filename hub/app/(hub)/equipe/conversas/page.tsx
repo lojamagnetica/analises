@@ -8,6 +8,7 @@ import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { dataCurta, dataHora, hoje } from "@/lib/formato";
 import { AcoesDaMensagem } from "@/components/AcoesDaMensagem";
+import { ConfirmarReuniao } from "@/components/ConfirmarReuniao";
 import { AnexoDaMensagem } from "@/components/AnexoDaMensagem";
 import { TIPOS_CONVERSA, abertasPorLoja, buscarLembretes, buscarMensagens, buscarPessoas, enviarMensagem, marcarLembrete, type TipoConversa } from "@/lib/conversas";
 
@@ -79,6 +80,7 @@ export default function ConversasDaEquipe() {
             </div>
             <p style={{ margin: "4px 0", whiteSpace: "pre-wrap" }}>{m.texto}</p>
             {(m.arquivos ?? []).map((x) => <AnexoDaMensagem key={x.caminho} a={x} />)}
+            {m.acao?.tipo === "confirmar_reuniao" && <ConfirmarReuniao id={m.id} acao={m.acao} aoFeito={tudo} />}
             <AcoesDaMensagem m={m} pessoas={base.pessoas} por={nome.split(" ")[0]} aoFeito={tudo} />
           </div>
         ))}

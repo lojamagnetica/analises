@@ -12,6 +12,8 @@ export type MissaoDia = { id: string; texto: string; feito: boolean };
 export type Painel = {
   pessoa: { id: string; nome: string; loja: string };
   hoje: string;
+  /** A loja não usa a fila (Lista da vez escondida no menu): o link mostra só meta, missão, desafio e pontos. */
+  sem_fila?: boolean;
   fila: FilaItem[];
   atend: Atend[];
   missoes: MissaoDia[];

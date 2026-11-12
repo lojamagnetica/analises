@@ -155,8 +155,8 @@ function Vez() {
       <FaltaFazer missoes={p.missoes.filter((m) => !m.feito).length} desafios={desafios} chamar={extras?.chamar ?? []} semana={extras?.pontos.semana ?? null} />
       <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
 
-      {/* A lista da vez */}
-      <div className="card mb">
+      {/* A lista da vez (some quando a loja não usa a fila: Lista da vez escondida no menu da loja) */}
+      {!p.sem_fila && <div className="card mb">
         <div className="linha entre"><b style={{ fontSize: 18 }}>Lista da vez</b><small className="mudo">{espera.length} na fila{p.fila.some((f) => f.status === "atendendo") ? ` · ${p.fila.filter((f) => f.status === "atendendo").length} atendendo` : ""}</small></div>
 
         {!eu && <button type="button" className="vez-btn mt" disabled={ocupado} onClick={() => agir(() => vezEntrar(token))}>Cheguei! Entrar na vez</button>}
@@ -232,7 +232,7 @@ function Vez() {
         )}
         {ordenarFila(p.fila).length === 0 && <p className="mudo" style={{ margin: "12px 0 0" }}>Ninguém na lista ainda. Quem chega primeiro entra na vez.</p>}
         <p className="ajuda" style={{ marginBottom: 0 }}>Quem chega primeiro entra na vez e é a primeira a atender. Quem atendeu volta para o final da lista.</p>
-      </div>
+      </div>}
 
       {/* O objetivo do dia: o que fazer hoje para chegar na meta */}
       <div className="card mb" style={{ borderLeft: `6px solid ${cor}` }}>
@@ -288,7 +288,7 @@ function Vez() {
       </div>
 
       {/* Os atendimentos de hoje */}
-      <div className="card mb">
+      {!p.sem_fila && <div className="card mb">
         <b style={{ fontSize: 18 }}>Hoje na loja</b>
         <div className="linha" style={{ gap: 10, marginTop: 10, textAlign: "center" }}>
           {[["Atendimentos", String(resumo.total)], ["Vendas", String(resumo.vendeu)], ["Conversão", resumo.conversao === null ? "—" : `${Math.round(resumo.conversao * 100)}%`]].map(([r, v]) => (
@@ -314,8 +314,8 @@ function Vez() {
             ))}
           </div>
         )}
-      </div>
-      <p className="ajuda" style={{ textAlign: "center" }}>Dica: no celular, toque em Compartilhar e em “Adicionar à tela inicial” para abrir a lista com um toque.</p>
+      </div>}
+      <p className="ajuda" style={{ textAlign: "center" }}>Dica: no celular, toque em Compartilhar e em “Adicionar à tela inicial” para abrir {p.sem_fila ? "o seu link" : "a lista"} com um toque.</p>
     </>
   );
 }

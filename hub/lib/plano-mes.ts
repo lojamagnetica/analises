@@ -45,6 +45,9 @@ export type DadosPlano = {
 export type FaixaMeta = { valor: number; comissao: number; gerente: number };
 export type MetaCanal = { canal: string; base: number | null; faixas: FaixaMeta[] };
 export const NOMES_FAIXA = ["Meta 1", "Meta 2", "Meta 3"];
+/** A loja pode abrir uma 4ª meta (ex.: R$ 34, 39, 44 e 49 mil). */
+export const MAX_FAIXAS = 4;
+export const nomeFaixa = (k: number) => `Meta ${k + 1}`;
 const NOME_CANAL: Record<string, string> = { loja: "Loja", site: "Site", atacado: "Atacado" };
 /** Os canais do plano: os já salvos e, se faltar, um em branco para cada canal da loja (a loja física sempre). */
 export function canaisDoPlano(d: Partial<DadosPlano>, canaisDaLoja: string[]): MetaCanal[] {

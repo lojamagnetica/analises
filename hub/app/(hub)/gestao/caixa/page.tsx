@@ -8,7 +8,7 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
-  somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
+  juntar, problemasDoCaixa, somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
@@ -81,6 +81,8 @@ function FechamentoCaixa() {
   const equipe = tudo.equipe;
   // Com time cadastrado, o dia é lançado por vendedora e o total da loja é a soma.
   const porPessoa = equipe.length > 0 && !f.soTotal;
+  // Dias do mês com número faltando ou que não bate (a loja corrige daqui).
+  const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
   const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
   const linhasVend: LinhaVendedora[] = pessoas.map((p) => ({
     pessoa_id: p.chave === OUTRAS ? null : p.chave, nome: p.chave === OUTRAS ? "Outras vendas" : p.nome,
@@ -165,7 +167,8 @@ function FechamentoCaixa() {
       const ate = antes.filter((x) => x.dia <= f.dia && x.dia.slice(0, 7) === f.dia.slice(0, 7) && (x.loja ?? "") === (loja ?? ""));
       const s = somar(ate);
       setEnviar(linkWhats(salvo, { faturamento: s.faturamento + faturamento, dias: s.dias + 1, meta: f.dia.slice(0, 7) === mes ? tudo!.meta : null }));
-      setAviso(`Fechamento de ${dia(f.dia)} salvo.`);
+      const falta = problemasDoCaixa(salvo, equipe.length > 0);
+      setAviso(falta.length ? `⚠️ O caixa de ${dia(f.dia)} foi salvo, mas ${juntar(falta)}. Corrija agora: é com esse número que sai a sua análise da semana.` : `Fechamento de ${dia(f.dia)} salvo.`);
       setF(novo(f.loja, f.soTotal));
       if (f.dia.slice(0, 7) !== mes) setMes(f.dia.slice(0, 7));
       else recarregar();
@@ -203,6 +206,17 @@ function FechamentoCaixa() {
     <>
       <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: o que cada vendedora vendeu e as formas de pagamento. Depois é só mandar no WhatsApp. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
       <AulaDoCaixa />
+      {comErro.length > 0 && (
+        <div className="aviso mb" role="alert">
+          <b style={{ fontSize: 15.5 }}>⚠️ {comErro.length === 1 ? "1 dia do caixa precisa de correção" : `${comErro.length} dias do caixa precisam de correção`}</b>
+          {comErro.map(({ c, p }) => (
+            <div key={c.id} className="linha entre mt" style={{ gap: 8, flexWrap: "wrap" }}>
+              <span><b>{dia(c.dia)}{c.loja ? ` · ${c.loja}` : ""}</b>: {juntar(p)}.</span>
+              <button type="button" className="btn p peq" onClick={() => { editar(c); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Corrigir</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <form className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }} onSubmit={salvar}>
         <div className="linha entre">
@@ -306,7 +320,7 @@ function FechamentoCaixa() {
         {valor.vendas > 0 && <div className="ajuda mt">Este dia: <Indicadores {...valor} faturamento={valor.faturamento || somaPag} /></div>}
         {erro && <div className="aviso mt" role="alert">{erro}</div>}
         {aviso && (
-          <div className="aviso ok mt linha entre" role="status">
+          <div className={`aviso ${aviso.startsWith("⚠️") ? "" : "ok "}mt linha entre`} role={aviso.startsWith("⚠️") ? "alert" : "status"} style={aviso.startsWith("⚠️") ? { fontWeight: 700, fontSize: 15.5 } : undefined}>
             <span>{aviso}</span>
             {enviar && <a className="btn p peq" href={enviar} target="_blank" rel="noopener">📲 Enviar no WhatsApp</a>}
           </div>

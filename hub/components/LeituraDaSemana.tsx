@@ -67,12 +67,13 @@ export function CaixaDaSemana() {
   if (!tudo) return null;
   const dados = tudo.dias;
   const faltam = dados.filter((d) => d.passou && !d.lancado).length;
+  const comErro = dados.filter((d) => d.problemas.length);
   const relFaltam = RELATORIOS_SEMANA.filter((r) => !tudo.slots.has(r.chave));
   // Sexta e sábado: a semana fecha no sábado; depois disso a análise só vem na semana seguinte.
   const dow = new Date(`${hoje()}T12:00:00Z`).getUTCDay();
-  const fecha = (dow === 5 || dow === 6) && (faltam > 0 || relFaltam.length > 0);
+  const fecha = (dow === 5 || dow === 6) && (faltam > 0 || relFaltam.length > 0 || comErro.length > 0);
   return (
-    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam || fecha ? "var(--red)" : "var(--feito)" }}>
+    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam || fecha || comErro.length ? "var(--red)" : "var(--feito)" }}>
       {fecha && (
         <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
           ⏰ {dow === 6 ? "Hoje é o último dia" : "Amanhã (sábado) é o último dia"} para mandar o caixa e os relatórios da semana. Mandando até sábado, a sua análise da semana chega na segunda. Sem isso, ela só vem na próxima semana.
@@ -85,8 +86,8 @@ export function CaixaDaSemana() {
             {dados.map((d, i) => (
               <span key={d.dia} title={dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
                 <span style={{ display: "block", width: 22, height: 22, margin: "0 auto 2px", borderRadius: 11, lineHeight: "22px", fontSize: 12,
-                  background: d.lancado ? "var(--feito)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || d.passou ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
-                  {d.lancado ? "✓" : d.passou ? "!" : ""}
+                  background: d.problemas.length ? "var(--orange)" : d.lancado ? "var(--feito)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || d.passou ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
+                  {d.problemas.length ? "?" : d.lancado ? "✓" : d.passou ? "!" : ""}
                 </span>{DIAS[i]}
               </span>
             ))}
@@ -94,6 +95,15 @@ export function CaixaDaSemana() {
         </div>
         <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
+      {comErro.length > 0 && (
+        <div className="aviso mt" role="alert" style={{ fontWeight: 600 }}>
+          ⚠️ Caixa com número para corrigir:
+          <ul style={{ margin: "4px 0 6px", paddingLeft: 18, fontWeight: 400 }}>
+            {comErro.map((d) => <li key={d.dia}><b>{dia(d.dia)}</b>: {d.problemas.join("; ")}</li>)}
+          </ul>
+          <Link className="btn p peq" href="/gestao/caixa">Corrigir agora</Link>
+        </div>
+      )}
       <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
         <small className="mudo">Relatórios da semana:</small>
         {RELATORIOS_SEMANA.map((r) => (

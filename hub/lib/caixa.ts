@@ -28,8 +28,10 @@ export type Caixa = {
   pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null; malinha: Malinha | null;
   /** Clientes novas cadastradas no dia (null = não informou). */
   cadastros: number | null;
+  /** "canais": o dia foi montado pelas vendas do link da equipe. */
+  origem?: string | null;
 };
-export type NovoCaixa = Omit<Caixa, "id" | "cadastros"> & { id?: string; cadastros?: number | null };
+export type NovoCaixa = Omit<Caixa, "id" | "cadastros" | "origem"> & { id?: string; cadastros?: number | null };
 
 /** Peças por atendimento ideal do método. */
 export const PA_IDEAL = 2.5;
@@ -61,7 +63,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros, origem")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -102,6 +104,26 @@ export function numeroDe(v: unknown) {
 
 /** Soma das formas de pagamento (0 se nenhuma foi informada). */
 export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduce((s, f) => s + (p?.[f.chave] ?? 0), 0);
+
+/** O que está faltando ou não bate num dia de caixa, em frases curtas para a loja.
+ * comEquipe: a loja tem time cadastrado no Hub (aí a venda por vendedora é obrigatória). */
+export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null }, comEquipe: boolean): string[] {
+  const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
+  const pag = somaPagamentos(c.pagamentos);
+  const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);
+  const out: string[] = [];
+  if (fat > 0 && vendas === 0) out.push("falta o número de vendas");
+  if (vendas > 0 && pecas === 0) out.push("falta o número de peças");
+  if (pecas > 0 && pecas < vendas) out.push(`tem menos peças (${pecas}) que vendas (${vendas})`);
+  // O dia montado pelas vendas do link da equipe (canais) não traz as formas: lá não se pergunta.
+  if (fat > 0 && pag === 0 && c.origem !== "canais") out.push("faltam as formas de pagamento");
+  if (pag > 0 && Math.abs(pag - fat) > 1) out.push(`as formas de pagamento somam ${moeda(pag)} e o faturamento é ${moeda(fat)}`);
+  if (comEquipe && fat > 0 && !(c.vendedoras ?? []).length) out.push("falta a venda por vendedora");
+  if ((c.vendedoras ?? []).length && Math.abs(vend - fat) > 1) out.push(`a soma das vendedoras (${moeda(vend)}) é diferente do faturamento (${moeda(fat)})`);
+  return out;
+}
+/** Junta as frases: "a, b e c". */
+export const juntar = (l: string[]) => (l.length <= 1 ? l.join("") : `${l.slice(0, -1).join(", ")} e ${l[l.length - 1]}`);
 
 /** Total de cada forma no período. */
 export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos {

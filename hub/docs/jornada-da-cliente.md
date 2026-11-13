@@ -12,6 +12,12 @@ Status: **desenho fechado, ainda não construído.** Substitui os seis marcadore
 4. **Todo aviso sai pelas Conversas e pelo celular**, já na conversa da loja.
 5. Pesquisas de satisfação (30 dias e encerramento) ficam para 2027.
 
+## Tempo e entrega (decidido em 13/11)
+A etapa olha duas réguas: **pela entrega** (o que a loja de fato já recebeu) e **pelo tempo** (o dia do contrato).
+- Tempo de cada etapa: Primeiros passos, dias 0 a 7 · Diagnóstico, até o dia 15 · Rota, até o dia 21 · Implementação, até o dia 79 · Revisão, dias 80 a 90 · Ciclos, depois do dia 90 · Encerramento, nos últimos 45 dias do contrato.
+- A loja fica na etapa da entrega. Quando o tempo passa da entrega, o Hub avisa com o que **correr** (a entrega que falta para ela ir para a próxima). Para a Camilla, quando a entrega é dela (Diagnóstico, Rota, Revisão); para a Claudia, quando depende da loja ou de agenda.
+- Loja adiantada (entrega antes do tempo) segue normal.
+
 ## Etapa 1 · Venda e passagem
 - Comercial (Aline ou Yan) registra a venda. Obrigatórios: e-mail, WhatsApp, responsável, plano, valor, data do pagamento, Instagram. Sem eles a venda não fecha.
 - Na hora: **Claudia (ação)** "Cliente nova: receber a passagem" + item no Hoje com o botão Receber; a conversa da loja nasce nas Conversas. **Camilla (ciência)** "Chegou cliente nova".

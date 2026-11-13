@@ -72,6 +72,16 @@ O foco curto do Início junta processo e resultado.
 - Logo depois: **Aline e Yan (ação)** "continuidade: falar em até 48h"; **Camilla (ciência)**. Sem contato registrado em 48h: aviso de novo, cópia para a Camilla.
 - Renovou → novo ciclo. Não renovou → Concluída, e **perde o acesso ao portal no último dia do contrato**.
 
-## Ainda a desenhar
-- Telas: Hoje (um da Camilla, um da Claudia), Clientes, Ficha da cliente; o que sai do menu da Central do Cliente.
+## Telas da Central do Cliente (decidido em 13/11)
+Simulação: artifact "O dia da Claudia no Hub".
+- **Entrada (opção B):** a página de quadradinhos continua, mas enxuta, com o **Hoje** em destaque e o número de coisas para fazer.
+  - Claudia: Hoje · Clientes · Agenda · Conversas · Programa Brasil · Mais (Guias, Biblioteca, Novo portal).
+  - Camilla: Hoje (só decisões dela + "Para você saber") · Reuniões para revisar · Novidades das lojas · Clientes · Agenda · Conversas · Programa Brasil · Mais.
+- **Hoje:** uma lista única, atrasadas primeiro, um cartão por ação (loja, o que fazer, por quê, botão com texto pronto). Substitui Faça agora, Lojas que precisam de atenção e o "precisa de atenção" da Gestão de Clientes.
+- **Clientes:** as lojas pelas 8 etapas, com busca. Substitui Jornada das clientes, Painel dos portais e Gestão de Clientes.
+- **Ficha da loja:** etapa (barra das 8), "o seu próximo passo nesta loja", Equipe no app (abriu, marcou, último erro; gerar link novo, ver como ela vê, mensagem de apoio), combinados, linha do tempo (Contatos das lojas vem para cá), abas de contrato, acesso, reuniões e conversa.
+- **Ficam como estão hoje, como telas próprias:** Reuniões para revisar, Novidades das lojas e Programa Brasil. A Camilla recebe os alertas delas.
+- Pedido de ajuste técnico da Claudia: pelas Conversas, para a Camilla (sem canal novo).
+
+## Ainda a fazer
 - Reclassificar as lojas atuais pela jornada nova antes de publicar (mostrar para a Camilla antes).

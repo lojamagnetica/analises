@@ -127,7 +127,6 @@ function FechamentoCaixa() {
     if (f.dia > hoje()) return setErro("Esse dia ainda não chegou.");
     if (varias && !f.loja) return setErro("Escolha a loja.");
     if (faturamento < 0 || vendas < 0 || pecas < 0 || FORMAS.some((x) => (pag[x.chave] ?? 0) < 0)) return setErro("Os números não podem ser negativos.");
-    if (difere && !confirm(`A soma das formas de pagamento (${moeda(somaPag)}) está diferente do faturamento (${moeda(faturamento)}). Salvar assim mesmo?`)) return;
     if (!Number.isInteger(vendas) || !Number.isInteger(pecas)) return setErro("Vendas e peças são números inteiros.");
     if (porPessoa) {
       for (const v of linhasVend) {
@@ -148,6 +147,9 @@ function FechamentoCaixa() {
     if (f.cad.trim() !== "" && (cadastros == null || cadastros < 0 || !Number.isInteger(cadastros))) return setErro("Clientes novas cadastradas: use um número inteiro (0 se nenhuma).");
     if (faturamento > 0 && vendas === 0) return setErro("Teve faturamento: informe quantas vendas foram.");
     if (vendas > 0 && pecas === 0) return setErro("Informe quantas peças saíram nessas vendas.");
+    // O caixa só fecha completo e batendo: o que falta ou não bate aparece aqui e não deixa salvar.
+    const falta = problemasDoCaixa({ faturamento, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0);
+    if (falta.length) return setErro(`O caixa ainda não pode fechar: ${juntar(falta)}. Corrija e salve de novo.`);
     const loja = varias ? f.loja : null;
     let id = f.id;
     if (!id) {
@@ -167,8 +169,7 @@ function FechamentoCaixa() {
       const ate = antes.filter((x) => x.dia <= f.dia && x.dia.slice(0, 7) === f.dia.slice(0, 7) && (x.loja ?? "") === (loja ?? ""));
       const s = somar(ate);
       setEnviar(linkWhats(salvo, { faturamento: s.faturamento + faturamento, dias: s.dias + 1, meta: f.dia.slice(0, 7) === mes ? tudo!.meta : null }));
-      const falta = problemasDoCaixa(salvo, equipe.length > 0);
-      setAviso(falta.length ? `⚠️ O caixa de ${dia(f.dia)} foi salvo, mas ${juntar(falta)}. Corrija agora: é com esse número que sai a sua análise da semana.` : `Fechamento de ${dia(f.dia)} salvo.`);
+      setAviso(`Fechamento de ${dia(f.dia)} salvo.`);
       setF(novo(f.loja, f.soTotal));
       if (f.dia.slice(0, 7) !== mes) setMes(f.dia.slice(0, 7));
       else recarregar();
@@ -288,10 +289,8 @@ function FechamentoCaixa() {
         <div className="ajuda">
           Vendas = atendimentos que viraram venda (cupons). Peças = total de peças dessas vendas.
           {porPessoa && " \"Outras vendas\" é o que não foi de nenhuma vendedora (a dona, o online)."}
-          {equipe.length > 0 && (
-            <> <button type="button" className="link-loja" onClick={() => setF({ ...f, soTotal: !f.soTotal })}>
-              {f.soTotal ? "Lançar por vendedora" : "Lançar só o total da loja"}
-            </button></>
+          {equipe.length > 0 && f.soTotal && (
+            <> <button type="button" className="link-loja" onClick={() => setF({ ...f, soTotal: false })}>Lançar por vendedora</button></>
           )}
           {!equipe.length && !soCaixa && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
         </div>
@@ -318,9 +317,9 @@ function FechamentoCaixa() {
         <label className="rotulo" htmlFor="cx-obs">Observação</label>
         <input id="cx-obs" type="text" maxLength={500} placeholder="Ex.: chuva forte, ação de sábado, vitrine nova" value={f.obs} onChange={mudar("obs")} />
         {valor.vendas > 0 && <div className="ajuda mt">Este dia: <Indicadores {...valor} faturamento={valor.faturamento || somaPag} /></div>}
-        {erro && <div className="aviso mt" role="alert">{erro}</div>}
+        {erro && <div className="aviso mt" role="alert" style={{ fontWeight: 700, fontSize: 15.5 }}>⚠️ {erro}</div>}
         {aviso && (
-          <div className={`aviso ${aviso.startsWith("⚠️") ? "" : "ok "}mt linha entre`} role={aviso.startsWith("⚠️") ? "alert" : "status"} style={aviso.startsWith("⚠️") ? { fontWeight: 700, fontSize: 15.5 } : undefined}>
+          <div className="aviso ok mt linha entre" role="status">
             <span>{aviso}</span>
             {enviar && <a className="btn p peq" href={enviar} target="_blank" rel="noopener">📲 Enviar no WhatsApp</a>}
           </div>

@@ -81,6 +81,7 @@ Simulação: artifact "O dia da Claudia no Hub".
 - **Clientes:** as lojas pelas 8 etapas, com busca. Substitui Jornada das clientes, Painel dos portais e Gestão de Clientes.
 - **Ficha da loja:** etapa (barra das 8), "o seu próximo passo nesta loja", Equipe no app (abriu, marcou, último erro; gerar link novo, ver como ela vê, mensagem de apoio), combinados, linha do tempo (Contatos das lojas vem para cá), abas de contrato, acesso, reuniões e conversa.
 - **Ficam como estão hoje, como telas próprias:** Reuniões para revisar, Novidades das lojas e Programa Brasil. A Camilla recebe os alertas delas.
+- **Nome da fase sempre explicado:** onde aparecer o nome de uma etapa (Clientes, Ficha, Hoje, avisos de mudança de fase), ele é clicável e abre uma descrição curta da fase (o que acontece, quem faz, quando termina). Vale para a Camilla e para a Claudia.
 - Pedido de ajuste técnico da Claudia: pelas Conversas, para a Camilla (sem canal novo).
 
 ## Rotina da CS (decidido em 13/11)

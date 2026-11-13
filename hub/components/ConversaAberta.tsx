@@ -2,6 +2,7 @@
 
 // A conversa da equipe sempre aberta na Central do Cliente, como um chat de WhatsApp no canto da tela.
 // Só a Camilla e a CS veem. Dá para recolher, e ela lembra se estava aberta ou fechada.
+import { TextoComLinks } from "@/components/TextoComLinks";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -187,7 +188,7 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
               <div style={{ display: "flex", justifyContent: minha ? "flex-end" : "flex-start", margin: "4px 0" }}>
                 <div onClick={() => setAcoes(acoes === m.id ? null : m.id)} style={{ maxWidth: "85%", background: minha ? "var(--orange-soft)" : "var(--card)", border: m.tipo === "Urgente" ? "1px solid var(--red)" : "1px solid var(--line)", borderRadius: 12, padding: "6px 10px", cursor: "pointer", opacity: m.status === "concluida" ? 0.6 : 1 }}>
                   {!minha && <div style={{ fontSize: 11, fontWeight: 800, color: "var(--red)" }}>{m.autor_nome}</div>}
-                  {m.texto && <div style={{ whiteSpace: "pre-wrap", fontSize: 14 }}>{m.tipo === "Urgente" ? "❗ " : ""}{m.texto}</div>}
+                  {m.texto && <div style={{ whiteSpace: "pre-wrap", fontSize: 14 }}>{m.tipo === "Urgente" ? "❗ " : ""}<TextoComLinks texto={m.texto} /></div>}
                   {(m.arquivos ?? []).map((a) => <AnexoDaMensagem key={a.caminho} a={a} />)}
                   {m.acao?.tipo === "confirmar_reuniao" && <ConfirmarReuniao id={m.id} acao={m.acao} aoFeito={carregar} />}
                   <div style={{ fontSize: 10.5, color: "var(--muted)", textAlign: "right" }}>{hora(m.created_at)}{m.status === "concluida" ? " · concluída" : ""}</div>

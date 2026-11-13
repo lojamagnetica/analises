@@ -28,13 +28,13 @@ function diasDeLoja(de: string, ate: string) {
 }
 const fimDoMes = (mes: string) => { const [a, m] = mes.split("-").map(Number); return new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10); };
 
-type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; vendedoras: { nome: string; faturamento: number }[] | null };
+type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; vendedoras: { nome: string; faturamento: number }[] | null; justificativa: string | null };
 
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(h), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
   const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }] = await Promise.all([
-    admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
+    admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras, justificativa").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
     admin.from("loja_plano_mes").select("dados, status").eq("portal_id", portalId).eq("mes", mes).maybeSingle(),
     admin.from("loja_leituras").select("semana, texto, acoes").eq("portal_id", portalId).eq("publicada", true).lt("semana", esta).order("semana", { ascending: false }).limit(1).maybeSingle(),
     admin.from("loja_numeros_semana").select("semana, faturamento, vendas, pecas, obs").eq("portal_id", portalId).gte("semana", retrasada),
@@ -53,7 +53,9 @@ async function numeros(admin: SupabaseClient, portalId: string) {
     const porVendedora: Record<string, number> = {};
     l.forEach((c) => (c.vendedoras ?? []).forEach((v) => { porVendedora[v.nome] = (porVendedora[v.nome] ?? 0) + Number(v.faturamento); }));
     return { faturamento: Math.round(fat), vendas, pecas, ticket: vendas ? Math.round(fat / vendas) : null, pa: vendas ? +(pecas / vendas).toFixed(2) : null,
-      dias_lancados: new Set(l.map((c) => c.dia)).size, dias_de_loja: diasDeLoja(de, ate), por_dia: l.map((c) => ({ dia: c.dia, faturamento: Math.round(Number(c.faturamento)) })), por_vendedora: porVendedora };
+      dias_lancados: new Set(l.map((c) => c.dia)).size, dias_de_loja: diasDeLoja(de, ate), por_dia: l.map((c) => ({ dia: c.dia, faturamento: Math.round(Number(c.faturamento)) })), por_vendedora: porVendedora,
+      // Dias que a loja fechou com algo faltando ou que não bate, e o motivo que ela escreveu.
+      fechados_com_motivo: l.filter((c) => c.justificativa?.trim()).map((c) => ({ dia: c.dia, motivo: c.justificativa as string })) };
   };
   const d = (plano?.dados ?? {}) as { base?: number; crescimento?: number; premiacao?: string; semanas?: { foco?: string }[]; acoes?: { titulo: string; inicio?: string }[]; datas?: { titulo: string; trabalhar: boolean }[] };
   const meta = d.base ? Math.round((d.base * (1 + (d.crescimento ?? 20) / 100)) / 100) * 100 : null;
@@ -128,6 +130,10 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false) 
   ]);
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
   const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
+  // A Camilla sempre vê os dias fechados com motivo antes de aprovar.
+  const motivos = ((nums.semana_passada as { fechados_com_motivo?: { dia: string; motivo: string }[] }).fechados_com_motivo ?? [])
+    .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
+  if (motivos.length) out.para_camilla = [out.para_camilla, `Caixa fechado com motivo (${motivos.length} ${motivos.length === 1 ? "dia" : "dias"}): ${motivos.join(" · ")}`].filter(Boolean).join("\n");
   const acoes = out.acoes.slice(0, 3).map((t) => ({ t, feita: false }));
   const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: false, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);

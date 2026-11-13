@@ -11,7 +11,6 @@ import { buscarPendencias } from "@/lib/pendencias";
 import type { Combinado } from "@/lib/combinados";
 import { dataCurta } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { juntar, problemasDoCaixa, type Caixa } from "@/lib/caixa";
 
 export type AlertaCs = {
   chave: string; txt: string; grave: boolean;
@@ -57,7 +56,7 @@ export async function painelCs(): Promise<PainelCs> {
   const [{ data: portais }, { data: perfis }, { data: caixa }, { data: leituras }, { data: reunioes }, { data: planos }, { data: contratos }, { data: numeros }, jornada, pend, { data: contatos }, { data: combinadosTodos }] = await Promise.all([
     sb.from("portais").select("id, loja, tipo, whatsapp, responsavel, menu_oculto, cs_acompanha").eq("ativo", true).order("loja"),
     sb.from("perfis").select("portal_id, ultimo_acesso").not("portal_id", "is", null),
-    sb.from("loja_caixa").select("portal_id, dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem").gte("dia", somaDias(hoje(), -7) < semana ? somaDias(hoje(), -7) : semana),
+    sb.from("loja_caixa").select("portal_id, dia").gte("dia", semana),
     sb.from("loja_leituras").select("portal_id, publicada, pronta, publicada_em").eq("semana", semana),
     sb.from("reunioes").select("portal_id, data, titulo").gte("data", new Date().toISOString()).order("data"),
     sb.from("loja_plano_mes").select("portal_id, status").eq("mes", prox),
@@ -68,8 +67,6 @@ export async function painelCs(): Promise<PainelCs> {
     sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
     sb.from("loja_combinados").select("*").order("prazo", { ascending: true }),
   ]);
-  const { data: comTime } = await sb.from("loja_equipe").select("portal_id").eq("ativo", true);
-  const temTime = new Set((comTime ?? []).map((x) => x.portal_id as string));
   const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && p.cs_acompanha);
   // As demais lojas ainda estão na reunião de entrega: só passam para o acompanhamento quando a gestora liberar.
   const aCaminho = (portais ?? []).filter((p) => p.tipo !== "Curso" && !p.cs_acompanha).map((p) => ({ id: p.id as string, loja: p.loja as string, tipo: p.tipo as string, proxReuniao: ((reunioes ?? []).find((r) => r.portal_id === p.id)?.data as string | undefined) ?? null }));
@@ -93,17 +90,6 @@ export async function painelCs(): Promise<PainelCs> {
       caixaCompleto = faltam.length === 0;
       if (faltam.length) al.push({ chave: "caixa", txt: faltam.length === 1 ? "Falta 1 dia de caixa nesta semana" : `Faltam ${faltam.length} dias de caixa nesta semana`, grave: faltam.length >= 2, destino: "/gestao/caixa",
         msg: `${abertura(p)} Vi que ${faltam.length === 1 ? "falta 1 dia" : `faltam ${faltam.length} dias`} de caixa no portal da ${p.loja}. Lança agora (leva 2 minutos) e me avisa por aqui. Lembra que na segunda a Camilla analisa a semana das lojas com o caixa 100%, e a sua análise já vem personalizada.` });
-      // Caixa lançado com algo faltando ou que não bate, e não corrigido até o dia seguinte.
-      const errados = ((caixa ?? []) as (Pick<Caixa, "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { portal_id: string; origem: string | null })[])
-        .filter((c) => c.portal_id === p.id && c.dia < hoje()).map((c) => ({ c, pr: problemasDoCaixa(c, temTime.has(p.id)) })).filter((x) => x.pr.length)
-        .sort((a, b) => b.c.dia.localeCompare(a.c.dia));
-      if (errados.length) {
-        const { c, pr } = errados[0];
-        const ond = `${dataCurta(c.dia)}${c.loja ? ` (${c.loja})` : ""}`;
-        al.push({ chave: "caixa_erro", grave: true, destino: "/gestao/caixa",
-          txt: `Lançou o caixa de ${ond} com ${pr.length === 1 ? "1 problema" : `${pr.length} problemas`}: ${juntar(pr)}${errados.length > 1 ? ` (e mais ${errados.length - 1} ${errados.length === 2 ? "dia" : "dias"})` : ""}. Verifique no lançamento e depois com a loja se precisa corrigir.`,
-          msg: `${abertura(p)} Vi no portal da ${p.loja} que no caixa de ${ond} ${juntar(pr)}. Confere no sistema e corrige no Fechamento de caixa: é só tocar em Corrigir no dia. Me avisa por aqui quando ajustar, porque é com esse número que sai a sua análise da semana.` });
-      }
     } else if (acessos.length && semGestao && !(numeros ?? []).some((x) => x.portal_id === p.id)) {
       al.push({ chave: "numeros", txt: "Não mandou os números da semana passada", grave: true, msg: `${abertura(p)} Faltam os números da semana passada da ${p.loja}. Abre o portal, manda agora e me avisa. É com eles que a Camilla monta a sua análise.` });
     }

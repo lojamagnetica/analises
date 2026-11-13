@@ -83,5 +83,11 @@ Simulação: artifact "O dia da Claudia no Hub".
 - **Ficam como estão hoje, como telas próprias:** Reuniões para revisar, Novidades das lojas e Programa Brasil. A Camilla recebe os alertas delas.
 - Pedido de ajuste técnico da Claudia: pelas Conversas, para a Camilla (sem canal novo).
 
+## Rotina da CS (decidido em 13/11)
+- **Anotar:** no Hoje da Claudia, um campo para escrever do jeito dela (ex.: "12-11 falei com a Luciana, pedi o estoque, ela envia segunda (lembre para segunda)" ou "Pitanga enviou o crediário"). O Hub mostra o que entendeu (loja, dia, o que foi, combinado, quando lembrar), ela confere e salva na linha do tempo da ficha. O lembrete volta no Hoje no dia certo; "enviou X" fecha a pendência de X.
+- **Contato ativo:** 2 vezes por semana com as lojas das etapas 1 a 3; 1 vez por semana a partir da etapa 4. Loja sem contato anotado no prazo entra no Hoje da Claudia.
+- **Placar de sexta (17h):** contatos anotados, pendências fechadas, o que passou do prazo, quantas lojas já fecharam caixa e relatórios da semana, o que ficou para segunda e o que a Camilla precisa saber. Aparece no Hoje da Claudia e no da Camilla e vai também como aviso no celular das duas. Nada para preencher.
+- **Fechamento da semana das lojas:** caixa de todo dia + estoque e crediário até sábado; aviso no celular sábado às 10h e 16h para quem ainda tem algo faltando (já no ar, migração 0174). Na segunda o agente monta a análise, a Camilla revisa e libera.
+
 ## Ainda a fazer
 - Reclassificar as lojas atuais pela jornada nova antes de publicar (mostrar para a Camilla antes).

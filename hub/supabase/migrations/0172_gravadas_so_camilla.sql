@@ -13,8 +13,7 @@ begin
   end if;
   return new;
 end $$;
-drop trigger if exists gravada_so_quem_aprova on public.reunioes_gravadas;
-create trigger gravada_so_quem_aprova before update on public.reunioes_gravadas for each row execute function public.gravada_so_quem_aprova();
+create or replace trigger gravada_so_quem_aprova before update on public.reunioes_gravadas for each row execute function public.gravada_so_quem_aprova();
 
 -- Aviso no celular para uma lista de pessoas da equipe (mesma chave das Conversas).
 create or replace function public.avisar_equipe(p_para uuid[], p_texto text, p_link text) returns void
@@ -49,5 +48,4 @@ begin
   return null;
 end $$;
 revoke all on function public.gravada_avisar() from public, anon, authenticated;
-drop trigger if exists gravada_avisar on public.reunioes_gravadas;
-create trigger gravada_avisar after insert or update on public.reunioes_gravadas for each row execute function public.gravada_avisar();
+create or replace trigger gravada_avisar after insert or update on public.reunioes_gravadas for each row execute function public.gravada_avisar();

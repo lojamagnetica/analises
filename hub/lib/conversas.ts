@@ -35,6 +35,14 @@ export async function buscarMensagens(portalId: string | null): Promise<Mensagem
   return (data ?? []) as Mensagem[];
 }
 
+export type Resumo = Pick<Mensagem, "portal_id" | "texto" | "autor" | "autor_nome" | "status" | "created_at">;
+/** As mensagens dos últimos 90 dias, da mais nova para a mais antiga: a lista de conversas sai daqui (última, novas e em aberto). */
+export async function buscarResumo(): Promise<Resumo[]> {
+  const desde = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const { data } = await sb().from("equipe_conversas").select("portal_id, texto, autor, autor_nome, status, created_at").gte("created_at", desde).order("created_at", { ascending: false }).limit(2000);
+  return (data ?? []) as Resumo[];
+}
+
 /** Quantas mensagens abertas há em cada loja (para o selo na lista). */
 export async function abertasPorLoja(): Promise<Record<string, number>> {
   const { data } = await sb().from("equipe_conversas").select("portal_id").eq("status", "aberta");

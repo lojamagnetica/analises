@@ -2,7 +2,7 @@
 
 // A leitura da semana: toda segunda às 12h o Hub monta o rascunho de cada loja com os números (o agente);
 // a equipe revisa e encaminha, a Camilla publica (o banco garante). Cada publicação guarda o par rascunho → versão final para o agente aprender.
-import { fimDoMes } from "@/lib/caixa";
+import { fimDoMes, problemasDoCaixa, type Caixa } from "@/lib/caixa";
 import { hoje } from "@/lib/formato";
 import { diasComArquivoDoCaixa } from "@/lib/rotina";
 import { buscarPlano, metaDoPlano } from "@/lib/plano-mes";
@@ -117,11 +117,20 @@ export async function salvarNumerosSemana(n: NumerosSemana) {
 /** Dias da semana atual (segunda a sábado) com e sem caixa lançado. */
 export async function caixaDaSemana(portalId: string) {
   const semana = semanaDe();
-  const { data } = await sb().from("loja_caixa").select("dia").eq("portal_id", portalId).gte("dia", semana);
+  const [{ data }, { count }] = await Promise.all([
+    sb().from("loja_caixa").select("dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem").eq("portal_id", portalId).gte("dia", semana),
+    sb().from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),
+  ]);
   const lancados = new Set((data ?? []).map((c) => c.dia as string));
+  // O que falta ou não bate em cada dia lançado (com o nome da loja, no portal com mais de uma).
+  const problemas = new Map<string, string[]>();
+  for (const c of (data ?? []) as (Pick<Caixa, "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem: string | null })[]) {
+    const p = problemasDoCaixa(c, (count ?? 0) > 0).map((x) => (c.loja ? `${c.loja}: ${x}` : x));
+    if (p.length) problemas.set(c.dia, [...(problemas.get(c.dia) ?? []), ...p]);
+  }
   const h = hoje();
   // Dia sem número digitado mas com os arquivos do caixa enviados também conta como lançado.
   const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d));
   const comArquivo = await diasComArquivoDoCaixa(portalId, semNumero).catch(() => new Set<string>());
-  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h }; });
+  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h, problemas: problemas.get(d) ?? [] }; });
 }

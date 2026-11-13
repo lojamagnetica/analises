@@ -115,7 +115,8 @@ export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "peca
   // Dia fechado com o motivo escrito pela loja: não volta para a lista de correção.
   if (c.justificativa?.trim()) return [];
   const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
-  const pag = somaPagamentos(c.pagamentos);
+  // Soma todas as formas gravadas (inclusive as que vêm do sistema com outro nome, como "cartão" ou "espécie").
+  const pag = Object.values(c.pagamentos ?? {}).reduce((s: number, v) => s + (Number(v) || 0), 0);
   const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);
   const out: string[] = [];
   if (fat > 0 && vendas === 0) out.push("falta o número de vendas");
@@ -315,4 +316,15 @@ export function fraseFoco(f: Foco, mesFechado: boolean) {
     return `Seu TKM hoje é ${moeda(f.tkmHoje)}. Só levando o PA de ${fmtPa(f.de)} para ${fmtPa(f.para)}, com o mesmo preço médio, ele vai para ${moeda(f.tkmNovo)} (${pct}). ${fim}`;
   }
   return `Seu preço médio vendido é ${moeda(f.de)} e o do estoque é ${moeda(f.para)}. Vendendo no preço médio do estoque, com o mesmo PA, o TKM vai de ${moeda(f.tkmHoje)} para ${moeda(f.tkmNovo)} (${pct}). ${fim}`;
+}
+
+/** O que o agente achou nos arquivos do caixa que a loja anexou no dia (null: sem arquivo ou sem leitura). */
+export type LidoDoArquivo = {
+  achou: boolean; faturamento: number | null; vendas: number | null; pecas: number | null;
+  pagamentos: Partial<Record<Forma, number>> | null; vendedoras: { nome: string; faturamento: number; vendas: number; pecas: number }[] | null; observacao: string;
+};
+export async function lerArquivosDoCaixa(portalId: string, dia: string, loja: string): Promise<LidoDoArquivo | null> {
+  const { data, error } = await sb().functions.invoke("caixa-arquivos", { body: { portal_id: portalId, dia, loja } });
+  if (error) return null;
+  return (data?.lido ?? null) as LidoDoArquivo | null;
 }

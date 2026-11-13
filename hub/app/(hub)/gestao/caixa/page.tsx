@@ -8,7 +8,7 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
-  juntar, problemasDoCaixa, somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
+  juntar, lerArquivosDoCaixa, problemasDoCaixa, somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
@@ -66,6 +66,8 @@ function FechamentoCaixa() {
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [enviar, setEnviar] = useState<string | null>(null);
+  // Dias em que o agente já procurou nos arquivos (para não procurar de novo a cada toque).
+  const [buscou, setBuscou] = useState<Record<string, string>>({});
   const { dados: tudo, recarregar } = useDados(async () => {
     const [caixa, { data: equipe }, plano] = await Promise.all([
       buscarCaixa(portal.id, mes),
@@ -150,6 +152,36 @@ function FechamentoCaixa() {
     }
     const cadastros = f.cad.trim() === "" ? null : numeroDe(f.cad);
     if (f.cad.trim() !== "" && (cadastros == null || cadastros < 0 || !Number.isInteger(cadastros))) return setErro("Clientes novas cadastradas: use um número inteiro (0 se nenhuma).");
+    // Antes de dizer que falta, o agente procura nos arquivos do caixa que a loja anexou e preenche o que estiver vazio.
+    const chaveBusca = `${f.dia}|${varias ? f.loja : ""}`;
+    if (faltaAgora(faturamento, vendas, pecas).length && !f.just.trim() && !(chaveBusca in buscou)) {
+      setSalvando(true); setAviso("Procurando nos arquivos do caixa deste dia…");
+      const lido = await lerArquivosDoCaixa(portal.id, f.dia, varias ? f.loja : "").catch(() => null);
+      setSalvando(false);
+      if (lido?.achou) {
+        const vazio = (x?: string) => !x || !x.trim();
+        const nf: Form = { ...f };
+        if (!porPessoa && vazio(f.faturamento) && lido.faturamento) nf.faturamento = texto(lido.faturamento);
+        if (!porPessoa && vazio(f.vendas) && lido.vendas) nf.vendas = String(lido.vendas);
+        if (!porPessoa && vazio(f.pecas) && lido.pecas) nf.pecas = String(lido.pecas);
+        if (!Object.values(f.pag).some((v) => !vazio(v)) && lido.pagamentos)
+          nf.pag = Object.fromEntries(FORMAS.filter((x) => (lido.pagamentos?.[x.chave] ?? 0) > 0).map((x) => [x.chave, texto(lido.pagamentos![x.chave]!)]));
+        if (porPessoa && !Object.values(f.vend).some((v) => !vazio(v.faturamento)) && lido.vendedoras?.length) {
+          const prim = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().split(/\s+/)[0];
+          const vend: Form["vend"] = {};
+          for (const v of lido.vendedoras) {
+            const p = equipe.find((e) => prim(e.nome) === prim(v.nome));
+            const k = p?.id ?? OUTRAS; const a = vend[k];
+            vend[k] = { faturamento: texto((numeroDe(a?.faturamento) ?? 0) + v.faturamento), vendas: String((numeroDe(a?.vendas) ?? 0) + v.vendas), pecas: String((numeroDe(a?.pecas) ?? 0) + v.pecas) };
+          }
+          nf.vend = vend;
+        }
+        setF(nf); setBuscou({ ...buscou, [chaveBusca]: lido.observacao });
+        setAviso(`Completei com os arquivos do caixa deste dia (${lido.observacao}) Confira os números e toque em salvar.`);
+        return;
+      }
+      setBuscou({ ...buscou, [chaveBusca]: "" }); setAviso("");
+    }
     if (faturamento > 0 && vendas === 0 && !f.just.trim()) return setErro("Teve faturamento: informe quantas vendas foram, ou escreva abaixo o motivo.");
     if (vendas > 0 && pecas === 0 && !f.just.trim()) return setErro("Informe quantas peças saíram nessas vendas, ou escreva abaixo o motivo.");
     // O caixa só fecha completo e batendo: o que falta ou não bate aparece aqui e não deixa salvar.
@@ -324,6 +356,7 @@ function FechamentoCaixa() {
         {faltaNoForm.length > 0 && (valor.faturamento || somaPag) > 0 && (
           <div className="aviso mt" role="status">
             <b>Para fechar assim, falta corrigir: {juntar(faltaNoForm)}.</b>
+            <div className="ajuda" style={{ margin: "4px 0 0" }}>Anexou os arquivos do caixa do dia aqui embaixo? Ao salvar, o Hub procura neles primeiro e preenche o que faltar.</div>
             <label className="rotulo" htmlFor="cx-just" style={{ marginTop: 8 }}>Não dá para corrigir agora? Escreva o motivo e feche assim mesmo</label>
             <textarea id="cx-just" rows={2} maxLength={500} placeholder="O motivo foi… Ex.: a maquininha não separa por forma de pagamento; a vendedora não anotou as peças" value={f.just} onChange={(e) => setF({ ...f, just: e.target.value })} />
           </div>

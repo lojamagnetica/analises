@@ -41,7 +41,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
-- Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
+- Notion não é mais usado para nada novo (desde 08/11/2026): nada se grava no Notion e tudo fica no Hub. Os portais e áreas antigas do Notion podem ser consultados (só leitura), para trazer o histórico das lojas para o Hub antes de desativar.
 - Áreas do portal liberadas por etapa: as áreas novas nascem com cadeado (`portais.menu_trancado`; hoje `conteudo` e `marca`) e a Camilla libera uma área coerente com a etapa da loja a cada 15 dias, sempre bem feita antes de abrir.
   - "Nossa marca" (Nossa história + Guia das marcas) abre na semana depois do Diagnóstico.
 - Rotina de gestão = Planner de gestão (`/consultoria/planner`, no lugar da antiga Bússola), montado com o formulário da rotina de gestão (`/consultoria/planner/rotina`, etapa 20, fora dos Dados da loja): o que a loja já faz, quando e como, compras e estoque. Cada demanda leva a situação (já faz, sem constância, começar):

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { dia, moeda } from "@/lib/formato";
+import { dia, hoje, moeda } from "@/lib/formato";
+import { listarEnvios, RELATORIOS_SEMANA, semanaAtual } from "@/lib/rotina";
 import {
   buscarLeitura, buscarNumerosSemana, caixaDaSemana, salvarNumerosSemana, semanaPassada, despublicar, encaminharLeitura, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
 } from "@/lib/leitura";
@@ -55,12 +56,28 @@ function NumerosDaSemana() {
 export function CaixaDaSemana() {
   const { portal, soCaixa } = usePortal();
   const semGestao = (portal.menu_oculto ?? []).includes("gestao");
-  const { dados } = useDados(() => (semGestao ? Promise.resolve([]) : caixaDaSemana(portal.id)), [portal.id, semGestao]);
+  const { dados: tudo } = useDados(async () => {
+    if (semGestao) return null;
+    // Os relatórios da semana (estoque e crediário), de qualquer loja do portal.
+    const lojas = portal.lojas?.length > 1 ? portal.lojas : [""];
+    const [dias, ...envios] = await Promise.all([caixaDaSemana(portal.id), ...lojas.map((l) => listarEnvios(portal.id, l, semanaAtual()).catch(() => []))]);
+    return { dias, slots: new Set(envios.flat().map((e) => e.slot)) };
+  }, [portal.id, semGestao]);
   if (semGestao) return <NumerosDaSemana />;
-  if (!dados) return null;
+  if (!tudo) return null;
+  const dados = tudo.dias;
   const faltam = dados.filter((d) => d.passou && !d.lancado).length;
+  const relFaltam = RELATORIOS_SEMANA.filter((r) => !tudo.slots.has(r.chave));
+  // Sexta e sábado: a semana fecha no sábado; depois disso a análise só vem na semana seguinte.
+  const dow = new Date(`${hoje()}T12:00:00Z`).getUTCDay();
+  const fecha = (dow === 5 || dow === 6) && (faltam > 0 || relFaltam.length > 0);
   return (
-    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam ? "var(--red)" : "var(--feito)" }}>
+    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam || fecha ? "var(--red)" : "var(--feito)" }}>
+      {fecha && (
+        <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
+          ⏰ {dow === 6 ? "Hoje é o último dia" : "Amanhã (sábado) é o último dia"} para mandar o caixa e os relatórios da semana. Mandando até sábado, a sua análise da semana chega na segunda. Sem isso, ela só vem na próxima semana.
+        </p>
+      )}
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div>
           <b>🧾 Caixa desta semana</b>
@@ -77,7 +94,14 @@ export function CaixaDaSemana() {
         </div>
         <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>Na segunda, a Camilla analisa a semana das lojas que fecharam o caixa 100% e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado. Caixa incompleto na segunda: a análise vem só na segunda seguinte.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
+      <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+        <small className="mudo">Relatórios da semana:</small>
+        {RELATORIOS_SEMANA.map((r) => (
+          <span key={r.chave} className={`selo ${tudo.slots.has(r.chave) ? "feito" : "espera"}`}>{tudo.slots.has(r.chave) ? "✓" : "falta"} {r.titulo}</span>
+        ))}
+        {relFaltam.length > 0 && <Link className="btn s peq" href="/envios">Enviar os relatórios</Link>}
+      </div>
+      <p className="ajuda" style={{ margin: "8px 0 0" }}>Na segunda, a Camilla analisa a semana das lojas que fecharam o caixa 100% e mandaram os relatórios até sábado, e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado. Caixa incompleto na segunda: a análise vem só na segunda seguinte.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
     </div>
   );
 }

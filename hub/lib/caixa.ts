@@ -30,6 +30,8 @@ export type Caixa = {
   cadastros: number | null;
   /** "canais": o dia foi montado pelas vendas do link da equipe. */
   origem?: string | null;
+  /** O motivo que a loja escreveu para fechar o dia com algo faltando ou que não bate. */
+  justificativa?: string | null;
 };
 export type NovoCaixa = Omit<Caixa, "id" | "cadastros" | "origem"> & { id?: string; cadastros?: number | null };
 
@@ -63,7 +65,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros, origem")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros, origem, justificativa")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -78,6 +80,8 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     vendedoras: c.vendedoras?.length ? c.vendedoras : null,
     malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas || c.malinha.saidas) ? c.malinha : null,
     cadastros: c.cadastros ?? null,
+    // Só mexe no motivo quando o lançamento manda (o relatório do sistema não manda).
+    ...(c.justificativa !== undefined ? { justificativa: c.justificativa?.trim().slice(0, 500) || null } : {}),
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -107,7 +111,9 @@ export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduc
 
 /** O que está faltando ou não bate num dia de caixa, em frases curtas para a loja.
  * comEquipe: a loja tem time cadastrado no Hub (aí a venda por vendedora é obrigatória). */
-export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null }, comEquipe: boolean): string[] {
+export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null }, comEquipe: boolean): string[] {
+  // Dia fechado com o motivo escrito pela loja: não volta para a lista de correção.
+  if (c.justificativa?.trim()) return [];
   const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
   const pag = somaPagamentos(c.pagamentos);
   const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);

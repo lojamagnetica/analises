@@ -32,8 +32,10 @@ type Form = {
   mal: Numeros & { saidas: string };
   /** Clientes novas cadastradas no dia. */
   cad: string;
+  /** O motivo de fechar com algo faltando ou que não bate. */
+  just: string;
 };
-const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "" });
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "", just: "" });
 const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
@@ -81,6 +83,8 @@ function FechamentoCaixa() {
   const equipe = tudo.equipe;
   // Com time cadastrado, o dia é lançado por vendedora e o total da loja é a soma.
   const porPessoa = equipe.length > 0 && !f.soTotal;
+  // O que falta ou não bate no que está digitado agora (o motivo só aparece quando precisa).
+  const faltaAgora = (fat: number, vendas: number, pecas: number) => problemasDoCaixa({ faturamento: fat, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0);
   // Dias do mês com número faltando ou que não bate (a loja corrige daqui).
   const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
   const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
@@ -110,6 +114,7 @@ function FechamentoCaixa() {
   const malinha = { faturamento: numeroDe(f.mal.faturamento) ?? 0, vendas: numeroDe(f.mal.vendas) ?? 0, pecas: numeroDe(f.mal.pecas) ?? 0, saidas: numeroDe(f.mal.saidas) ?? 0 };
   const temMalinha = malinha.faturamento > 0 || malinha.vendas > 0 || malinha.pecas > 0 || malinha.saidas > 0;
   const somaPag = somaPagamentos(pag);
+  const faltaNoForm = faltaAgora(valor.faturamento || somaPag, valor.vendas, valor.pecas);
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const malMes = somarMalinha(lista);
   const formasMes = somarPagamentos(lista);
@@ -145,11 +150,11 @@ function FechamentoCaixa() {
     }
     const cadastros = f.cad.trim() === "" ? null : numeroDe(f.cad);
     if (f.cad.trim() !== "" && (cadastros == null || cadastros < 0 || !Number.isInteger(cadastros))) return setErro("Clientes novas cadastradas: use um número inteiro (0 se nenhuma).");
-    if (faturamento > 0 && vendas === 0) return setErro("Teve faturamento: informe quantas vendas foram.");
-    if (vendas > 0 && pecas === 0) return setErro("Informe quantas peças saíram nessas vendas.");
+    if (faturamento > 0 && vendas === 0 && !f.just.trim()) return setErro("Teve faturamento: informe quantas vendas foram, ou escreva abaixo o motivo.");
+    if (vendas > 0 && pecas === 0 && !f.just.trim()) return setErro("Informe quantas peças saíram nessas vendas, ou escreva abaixo o motivo.");
     // O caixa só fecha completo e batendo: o que falta ou não bate aparece aqui e não deixa salvar.
-    const falta = problemasDoCaixa({ faturamento, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0);
-    if (falta.length) return setErro(`O caixa ainda não pode fechar: ${juntar(falta)}. Corrija e salve de novo.`);
+    const falta = faltaAgora(faturamento, vendas, pecas);
+    if (falta.length && !f.just.trim()) return setErro(`O caixa ainda não pode fechar: ${juntar(falta)}. Corrija, ou escreva abaixo o motivo para fechar assim.`);
     const loja = varias ? f.loja : null;
     let id = f.id;
     if (!id) {
@@ -162,7 +167,7 @@ function FechamentoCaixa() {
     setSalvando(true);
     try {
       const vendedoras = porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null;
-      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null, cadastros };
+      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null, cadastros, justificativa: falta.length ? f.just.trim() : null };
       await salvarCaixa(portal.id, { id, ...salvo });
       // Mês até este dia, sem contar a versão antiga do mesmo dia.
       const antes = dados!.filter((x) => x.id !== id);
@@ -188,7 +193,7 @@ function FechamentoCaixa() {
       // Dia antigo lançado só no total continua só no total.
       soTotal: !c.vendedoras?.length && c.faturamento > 0,
       mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas), saidas: c.malinha.saidas ? String(c.malinha.saidas) : "" } : { faturamento: "", vendas: "", pecas: "", saidas: "" },
-      cad: c.cadastros != null ? String(c.cadastros) : "" });
+      cad: c.cadastros != null ? String(c.cadastros) : "", just: c.justificativa ?? "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -316,6 +321,13 @@ function FechamentoCaixa() {
         </div>
         <label className="rotulo" htmlFor="cx-obs">Observação</label>
         <input id="cx-obs" type="text" maxLength={500} placeholder="Ex.: chuva forte, ação de sábado, vitrine nova" value={f.obs} onChange={mudar("obs")} />
+        {faltaNoForm.length > 0 && (valor.faturamento || somaPag) > 0 && (
+          <div className="aviso mt" role="status">
+            <b>Para fechar assim, falta corrigir: {juntar(faltaNoForm)}.</b>
+            <label className="rotulo" htmlFor="cx-just" style={{ marginTop: 8 }}>Não dá para corrigir agora? Escreva o motivo e feche assim mesmo</label>
+            <textarea id="cx-just" rows={2} maxLength={500} placeholder="O motivo foi… Ex.: a maquininha não separa por forma de pagamento; a vendedora não anotou as peças" value={f.just} onChange={(e) => setF({ ...f, just: e.target.value })} />
+          </div>
+        )}
         {valor.vendas > 0 && <div className="ajuda mt">Este dia: <Indicadores {...valor} faturamento={valor.faturamento || somaPag} /></div>}
         {erro && <div className="aviso mt" role="alert" style={{ fontWeight: 700, fontSize: 15.5 }}>⚠️ {erro}</div>}
         {aviso && (
@@ -433,6 +445,7 @@ function FechamentoCaixa() {
               {c.vendedoras && <div className="mudo" style={{ fontSize: 13, ...NUM }}>{c.vendedoras.map((v) => `${v.nome} ${moeda(v.faturamento)}`).join(" · ")}</div>}
               {c.pagamentos && <div className="mudo" style={{ fontSize: 13, ...NUM }}><ListaFormas p={c.pagamentos} /></div>}
               {c.obs && <div className="ajuda" style={{ margin: 0 }}>{c.obs}</div>}
+              {c.justificativa && <div className="ajuda" style={{ margin: 0 }}>Fechado com motivo: {c.justificativa}</div>}
             </div>
             <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>
               <a className="btn s peq" href={linkWhats(c, mesAte(c))} target="_blank" rel="noopener" aria-label={`Enviar o fechamento de ${dia(c.dia)} no WhatsApp`}>📲</a>

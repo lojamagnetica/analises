@@ -118,13 +118,13 @@ export async function salvarNumerosSemana(n: NumerosSemana) {
 export async function caixaDaSemana(portalId: string) {
   const semana = semanaDe();
   const [{ data }, { count }] = await Promise.all([
-    sb().from("loja_caixa").select("dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem").eq("portal_id", portalId).gte("dia", semana),
+    sb().from("loja_caixa").select("dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem, justificativa").eq("portal_id", portalId).gte("dia", semana),
     sb().from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),
   ]);
   const lancados = new Set((data ?? []).map((c) => c.dia as string));
   // O que falta ou não bate em cada dia lançado (com o nome da loja, no portal com mais de uma).
   const problemas = new Map<string, string[]>();
-  for (const c of (data ?? []) as (Pick<Caixa, "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem: string | null })[]) {
+  for (const c of (data ?? []) as (Pick<Caixa, "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem: string | null; justificativa: string | null })[]) {
     const p = problemasDoCaixa(c, (count ?? 0) > 0).map((x) => (c.loja ? `${c.loja}: ${x}` : x));
     if (p.length) problemas.set(c.dia, [...(problemas.get(c.dia) ?? []), ...p]);
   }

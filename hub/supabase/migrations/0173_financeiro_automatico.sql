@@ -1,6 +1,6 @@
 -- Financeiro sem lançamento à mão para o que o Hub já sabe:
 -- 1. Venda registrada no Comercial (passagens) vira entrada no Financeiro, pelo valor total, no mês do pagamento.
---    O valor líquido começa igual ao bruto e "a confirmar" (pago = false): quem confere o que caiu na conta ajusta e marca pago.
+--    Entra pelo valor total, já como recebida (ajuste no fim do arquivo).
 --    Corrigir a venda atualiza a entrada; excluir a venda tira a entrada, se ela ainda não foi conferida.
 -- 2. As despesas fixas do mês entram sozinhas no dia 1º (a mesma regra do botão "Lançar as fixas do mês").
 set lock_timeout = '8s';
@@ -57,3 +57,23 @@ begin
 end $$;
 revoke all on function public.lancar_fixas(text) from public, anon, authenticated;
 select cron.schedule('financeiro-fixas', '7 6 1 * *', $$select public.lancar_fixas()$$);
+
+-- Ajuste (Camilla, 13/11): a venda entra pelo valor total, já como recebida, sem "confirmar o líquido".
+create or replace function public.venda_no_financeiro() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare d text; m text;
+begin
+  if tg_op = 'DELETE' then
+    delete from public.fin_lancamentos where venda_portal = old.portal_id;
+    return null;
+  end if;
+  select coalesce(nullif(split_part(trim(coalesce(p.responsavel, '')), ' ', 1), ''), p.loja) || ' · ' || p.loja
+         || coalesce(' (' || (select pl.nome from public.planos pl where pl.id = new.plano_id) || ')', '')
+    into d from public.portais p where p.id = new.portal_id;
+  m := to_char(coalesce(new.pagamento_em, (new.created_at at time zone 'America/Recife')::date), 'YYYY-MM');
+  insert into public.fin_lancamentos (mes, tipo, natureza, descricao, categoria, valor, bruto, pagador, parcela, pago, obs, venda_portal)
+  values (m, 'entrada', 'variavel', left(coalesce(d, 'Venda'), 200), 'Venda', coalesce(new.valor, 0), coalesce(new.valor, 0), 'Empresa', '', true,
+          'Do Comercial' || coalesce(' (' || new.vendido_por || ')', ''), new.portal_id)
+  on conflict (venda_portal) do update set mes = excluded.mes, descricao = excluded.descricao, bruto = excluded.bruto, valor = excluded.valor;
+  return null;
+end $$;

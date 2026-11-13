@@ -13,7 +13,7 @@ import {
 const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB`;
 type PorLoja = Record<string, { sem: Envio[]; mes: Envio[] }>;
 
-/** Os relatórios que alimentam a análise: da semana (sexta) e do mês que fechou. Sobem direto aqui, por loja. */
+/** Os relatórios que alimentam a análise: da semana (sábado) e do mês que fechou. Sobem direto aqui, por loja. */
 export function RelatoriosGestao({ portalId, lojas }: { portalId: string; lojas: string[] }) {
   const nomes = lojas.length ? lojas : [""];
   const [lojaSel, setLojaSel] = useState(nomes[0]);
@@ -84,7 +84,7 @@ export function RelatoriosGestao({ portalId, lojas }: { portalId: string; lojas:
           {nomes.map((l) => <button key={l} type="button" className={`chip ${l === lojaSel ? "escolhido" : ""}`} onClick={() => setLojaSel(l)}>{l}{faltam(l) ? ` · ${faltam(l)}` : ""}</button>)}
         </div>
       )}
-      <Grupo titulo="Da semana" sub="Vence na sexta, às 18h" slots={RELATORIOS_SEMANA} envios={atual.sem} periodo={semana} />
+      <Grupo titulo="Da semana" sub="Vence no sábado. Sem eles, a análise da semana só vem na semana seguinte" slots={RELATORIOS_SEMANA} envios={atual.sem} periodo={semana} />
       <Grupo titulo={`Do mês que fechou · ${nomeMes(mesFechado)}`} sub="Vence no dia 5" slots={RELATORIOS_MES} envios={atual.mes} periodo={mesFechado} />
       {erro && <div className="aviso mt">{erro}</div>}
     </div>

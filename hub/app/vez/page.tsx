@@ -152,6 +152,59 @@ function Vez() {
       </div>
 
       {toast && <div className="vez-toast" role="status">{toast}</div>}
+      {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}
+      <div className="card mb">
+        <b style={{ fontSize: 18 }}>Meus números do mês</b>
+        {d.meta ? (
+          <div className="linha" style={{ gap: 16, alignItems: "center", marginTop: 10 }}>
+            <Anel pct={md?.pct ?? 0} cor={cor} centro={`${Math.round((md?.pct ?? 0) * 100)}%`} legenda="da meta" />
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800 }}>{brl(d.real)}</div>
+              <div className="mudo">de {brl(d.meta)}</div>
+              {md && !md.batida && <div style={{ marginTop: 6 }}>Faltam <b>{brl(md.faltam)}</b> em {md.diasRestantes} {md.diasRestantes === 1 ? "dia" : "dias"} de loja.</div>}
+            </div>
+          </div>
+        ) : <p className="mudo">A sua meta do mês aparece aqui quando a gestora definir.</p>}
+        {motivoMsg && <p style={{ margin: "10px 0 0", fontWeight: 700 }}>{motivoMsg}</p>}
+        <Barra rotulo="P.A." valor={d.pa} meta={p.mural.pa} texto={d.pa === null ? "" : n1(d.pa)} />
+        {p.mural.tkm !== null && <Barra rotulo="Ticket médio" valor={d.tkm} meta={p.mural.tkm} texto={d.tkm === null ? "" : brl(d.tkm)} />}
+        <p className="ajuda" style={{ marginBottom: 0 }}>{p.mes?.ate ? `Atualizado com o caixa lançado até ${p.mes.ate.slice(8)}/${p.mes.ate.slice(5, 7)}.` : "Aparece quando o caixa do mês for lançado."}</p>
+      </div>
+
+      {/* O objetivo do dia: o que fazer hoje para chegar na meta */}
+      <div className="card mb" style={{ borderLeft: `6px solid ${cor}` }}>
+        <small className="mudo">Objetivo de hoje</small>
+        {md && !md.batida ? (
+          <>
+            <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15 }}>Vender {brl(md.porDia)}</div>
+            <p style={{ margin: "4px 0 0" }}>com <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
+          </>
+        ) : md ? (
+          <div style={{ fontSize: 24, fontWeight: 800 }}>Meta do mês batida! 🎉</div>
+        ) : (
+          <p style={{ margin: "4px 0 0" }}>Sua gestora ainda não definiu a sua meta do mês. Enquanto isso, o objetivo é <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
+        )}
+        {p.missoes.length > 0 && (
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
+            <small className="mudo">Missão do dia</small>
+            {p.missoes.map((m) => (
+              <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
+                <input type="checkbox" checked={m.feito} className={m.feito ? "vez-pop" : "vez-pisca"} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
+                  onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
+                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} />{!m.feito && <span className="vez-tag">+10 pontos</span>}</span>
+              </label>
+            ))}
+            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏 +1 estrela ⭐</p>}
+          </div>
+        )}
+      </div>
+
+      {extras && <PontosDaVez p={extras.pontos} vibrar={!!toast} />}
+      {ranking && <RankingDasLojas r={ranking} />}
+      {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
+      {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}
+      {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
+
       <FaltaFazer missoes={p.missoes.filter((m) => !m.feito).length} desafios={desafios} chamar={extras?.chamar ?? []} semana={extras?.pontos.semana ?? null} />
       <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
 
@@ -233,59 +286,6 @@ function Vez() {
         {ordenarFila(p.fila).length === 0 && <p className="mudo" style={{ margin: "12px 0 0" }}>Ninguém na lista ainda. Quem chega primeiro entra na vez.</p>}
         <p className="ajuda" style={{ marginBottom: 0 }}>Quem chega primeiro entra na vez e é a primeira a atender. Quem atendeu volta para o final da lista.</p>
       </div>}
-
-      {/* O objetivo do dia: o que fazer hoje para chegar na meta */}
-      <div className="card mb" style={{ borderLeft: `6px solid ${cor}` }}>
-        <small className="mudo">Objetivo de hoje</small>
-        {md && !md.batida ? (
-          <>
-            <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.15 }}>Vender {brl(md.porDia)}</div>
-            <p style={{ margin: "4px 0 0" }}>com <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
-          </>
-        ) : md ? (
-          <div style={{ fontSize: 24, fontWeight: 800 }}>Meta do mês batida! 🎉</div>
-        ) : (
-          <p style={{ margin: "4px 0 0" }}>Sua gestora ainda não definiu a sua meta do mês. Enquanto isso, o objetivo é <b>P.A. {n1(p.mural.pa)}</b>{p.mural.tkm ? <> e <b>ticket médio {brl(p.mural.tkm)}</b></> : null}.</p>
-        )}
-        {p.missoes.length > 0 && (
-          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid var(--line)" }}>
-            <small className="mudo">Missão do dia</small>
-            {p.missoes.map((m) => (
-              <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
-                <input type="checkbox" checked={m.feito} className={m.feito ? "vez-pop" : "vez-pisca"} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
-                  onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
-                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} />{!m.feito && <span className="vez-tag">+10 pontos</span>}</span>
-              </label>
-            ))}
-            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏 +1 estrela ⭐</p>}
-          </div>
-        )}
-      </div>
-
-      {extras && <PontosDaVez p={extras.pontos} vibrar={!!toast} />}
-      {ranking && <RankingDasLojas r={ranking} />}
-      {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
-      {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}
-      {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
-
-      {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}
-      <div className="card mb">
-        <b style={{ fontSize: 18 }}>Meus números do mês</b>
-        {d.meta ? (
-          <div className="linha" style={{ gap: 16, alignItems: "center", marginTop: 10 }}>
-            <Anel pct={md?.pct ?? 0} cor={cor} centro={`${Math.round((md?.pct ?? 0) * 100)}%`} legenda="da meta" />
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>{brl(d.real)}</div>
-              <div className="mudo">de {brl(d.meta)}</div>
-              {md && !md.batida && <div style={{ marginTop: 6 }}>Faltam <b>{brl(md.faltam)}</b> em {md.diasRestantes} {md.diasRestantes === 1 ? "dia" : "dias"} de loja.</div>}
-            </div>
-          </div>
-        ) : <p className="mudo">A sua meta do mês aparece aqui quando a gestora definir.</p>}
-        {motivoMsg && <p style={{ margin: "10px 0 0", fontWeight: 700 }}>{motivoMsg}</p>}
-        <Barra rotulo="P.A." valor={d.pa} meta={p.mural.pa} texto={d.pa === null ? "" : n1(d.pa)} />
-        {p.mural.tkm !== null && <Barra rotulo="Ticket médio" valor={d.tkm} meta={p.mural.tkm} texto={d.tkm === null ? "" : brl(d.tkm)} />}
-        <p className="ajuda" style={{ marginBottom: 0 }}>{p.mes?.ate ? `Atualizado com o caixa lançado até ${p.mes.ate.slice(8)}/${p.mes.ate.slice(5, 7)}.` : "Aparece quando o caixa do mês for lançado."}</p>
-      </div>
 
       {/* Os atendimentos de hoje */}
       {!p.sem_fila && <div className="card mb">

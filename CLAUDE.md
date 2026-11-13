@@ -37,6 +37,7 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Tudo o que a loja cadastra no Hub (pessoas, clientes, lançamentos, notas, arquivos) precisa ter **editar e excluir/remover**:
   a lojista pode errar ou precisar tirar alguém. Excluir sempre com confirmação.
 - Todo pedido de arquivo para a loja tem também um espaço para responder à mão (pode ser estimativa) ou marcar "Ainda não tenho". Nada trava por falta de arquivo.
+- Antes de apontar que falta um dado ou que algo não bate (caixa, relatórios, envios), o agente procura primeiro nos arquivos que a loja já anexou e preenche dali; só o que não estiver em nenhum arquivo vira aviso. A loja pode fechar com o motivo escrito ("O motivo foi…"), e a Camilla vê o motivo na análise.
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.

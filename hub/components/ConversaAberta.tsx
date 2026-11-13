@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { useEquipe } from "@/lib/hub";
-import { buscarMensagens, buscarPessoas, enviarMensagem, subirAnexo, type Mensagem, type Pessoa } from "@/lib/conversas";
+import { buscarMensagens, buscarPessoas, buscarResumo, enviarMensagem, subirAnexo, type Mensagem, type Pessoa, type Resumo } from "@/lib/conversas";
 import { AnexoDaMensagem } from "@/components/AnexoDaMensagem";
 import { AcoesDaMensagem } from "@/components/AcoesDaMensagem";
 import { ConfirmarReuniao } from "@/components/ConfirmarReuniao";
@@ -16,6 +16,12 @@ import { ativarAvisos, situacaoAvisos, type SituacaoAvisos } from "@/lib/novidad
 const guardar = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* sem armazenamento */ } };
 const ler = (k: string, padrao: string) => { try { return localStorage.getItem(k) ?? padrao; } catch { return padrao; } };
 const hora = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
+/** Hora se for hoje, "ontem", ou a data, como na lista do WhatsApp. */
+const quando = (iso: string) => {
+  const dia = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).format(d);
+  const hoje = dia(new Date()), ontem = dia(new Date(Date.now() - 86_400_000)), d = dia(new Date(iso));
+  return d === hoje ? hora(iso) : d === ontem ? "ontem" : new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", day: "2-digit", month: "2-digit" }).format(new Date(iso));
+};
 const diaRotulo = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "short", day: "2-digit", month: "2-digit" }).format(new Date(iso));
 
 /** `cheia`: a tela inteira do app do celular (sem recolher). Sem `cheia`: o chat no canto da tela do computador. */
@@ -23,7 +29,13 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
   const { userId, nome } = useEquipe();
   // Já nasce com o que ficou salvo (aberto ou recolhido): senão a primeira tela marcaria tudo como visto.
   const [aberto, setAberto] = useState(() => cheia || ler("lm_conversa_aberta", "1") === "1");
-  const [loja, setLoja] = useState(() => ler("lm_conversa_loja", "geral"));
+  // Aviso do celular abre direto na conversa da loja (?loja=); sem ele, o app abre na lista, como o WhatsApp.
+  const daUrl = (() => { try { return new URLSearchParams(window.location.search).get("loja"); } catch { return null; } })();
+  const [loja, setLoja] = useState(() => daUrl ?? ler("lm_conversa_loja", "geral"));
+  const [vendo, setVendo] = useState<"lista" | "chat">(() => (daUrl || (!cheia && ler("lm_conversa_vendo", "chat") === "chat") ? "chat" : "lista"));
+  const [resumo, setResumo] = useState<Resumo[]>([]);
+  const [filtro, setFiltro] = useState<"todas" | "novas" | "abertas">("todas");
+  const [busca, setBusca] = useState("");
   const [lojas, setLojas] = useState<{ id: string; loja: string }[]>([]);
   const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [msgs, setMsgs] = useState<Mensagem[]>([]);
@@ -40,6 +52,11 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
   const ditado = useDitado((t) => { setTexto(t); setFalado(true); });
   const fim = useRef<HTMLDivElement>(null);
   const chaveVisto = `lm_conversa_visto_${userId}`;
+  // O que já vi em cada conversa (neste aparelho). Conversa sem registro usa a marca antiga, geral.
+  const chaveVistos = `lm_conversa_vistos_${userId}`;
+  const vistos = (): Record<string, string> => { try { return JSON.parse(ler(chaveVistos, "{}")); } catch { return {}; } };
+  const vistoDe = (k: string) => vistos()[k] ?? ler(chaveVisto, "1970-01-01T00:00:00Z");
+  const marcarVisto = (k: string) => guardar(chaveVistos, JSON.stringify({ ...vistos(), [k]: new Date().toISOString() }));
 
   useEffect(() => {
     supabaseBrowser().from("portais").select("id, loja").eq("ativo", true).order("loja").then(({ data }) => setLojas((data ?? []) as { id: string; loja: string }[]));
@@ -47,15 +64,33 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
   }, []);
 
   const carregar = async () => {
-    const m = await buscarMensagens(loja === "geral" ? null : loja);
-    setMsgs(m);
-    // Mensagens da outra pessoa, de qualquer conversa, que ainda não vi.
-    const visto = ler(chaveVisto, "1970-01-01T00:00:00Z");
-    const { data } = await supabaseBrowser().from("equipe_conversas").select("id").neq("autor", userId).gt("created_at", visto);
-    setNovas((data ?? []).length);
+    const [m, r] = await Promise.all([vendo === "chat" ? buscarMensagens(loja === "geral" ? null : loja) : Promise.resolve(null), buscarResumo()]);
+    if (m) setMsgs(m);
+    setResumo(r);
   };
-  useEffect(() => { carregar(); const t = setInterval(carregar, 15000); return () => clearInterval(t); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [loja, userId]);
-  useEffect(() => { if (aberto) { guardar(chaveVisto, new Date().toISOString()); setNovas(0); fim.current?.scrollIntoView({ block: "end" }); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [aberto, msgs.length]);
+  useEffect(() => { carregar(); const t = setInterval(carregar, 15000); return () => clearInterval(t); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [loja, userId, vendo]);
+  // Conversa aberta na tela = conversa vista.
+  useEffect(() => { if (aberto && vendo === "chat") { marcarVisto(loja); fim.current?.scrollIntoView({ block: "end" }); } /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [aberto, vendo, loja, msgs.length]);
+
+  // A lista, como no WhatsApp: quem tem mensagem nova sobe; depois, a conversa mais recente.
+  const itens = [{ id: "geral", loja: "Conversa geral" }, ...lojas].map((l) => {
+    const daqui = resumo.filter((x) => (x.portal_id ?? "geral") === l.id);
+    const visto = vistoDe(l.id);
+    return {
+      ...l, ultima: daqui[0] ?? null,
+      novas: daqui.filter((x) => x.autor !== userId && x.created_at > visto).length,
+      abertas: daqui.filter((x) => x.status === "aberta").length,
+    };
+  });
+  const totalNovas = itens.reduce((t, i) => t + i.novas, 0);
+  useEffect(() => { setNovas(vendo === "chat" ? itens.filter((i) => i.id !== loja).reduce((t, i) => t + i.novas, 0) : totalNovas); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [resumo, vendo, loja]);
+  const termo = busca.trim().toLowerCase();
+  const lista = itens
+    .filter((i) => (filtro === "novas" ? i.novas > 0 : filtro === "abertas" ? i.abertas > 0 : true) && (!termo || i.loja.toLowerCase().includes(termo)))
+    .sort((a, b) => (b.novas > 0 ? 1 : 0) - (a.novas > 0 ? 1 : 0) || (b.ultima?.created_at ?? "").localeCompare(a.ultima?.created_at ?? "") || a.loja.localeCompare(b.loja));
+  const abrir = (k: string) => { setLoja(k); guardar("lm_conversa_loja", k); setMsgs([]); setAcoes(null); setVendo("chat"); guardar("lm_conversa_vendo", "chat"); };
+  const voltar = () => { setVendo("lista"); guardar("lm_conversa_vendo", "lista"); setAcoes(null); try { if (daUrl) window.history.replaceState(null, "", window.location.pathname); } catch { /* sem histórico */ } };
+  const nomeDe = (k: string) => (k === "geral" ? "Conversa geral" : lojas.find((l) => l.id === k)?.loja ?? "Conversa");
 
   const mudarAberto = (v: boolean) => { setAberto(v); guardar("lm_conversa_aberta", v ? "1" : "0"); };
   // O ícone do cabeçalho abre e fecha o chat; o número de novas mensagens vai para o ícone.
@@ -88,11 +123,14 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
   return (
     <div style={cheia ? { position: "fixed", inset: 0, zIndex: 60, display: "flex", flexDirection: "column", background: "var(--card)", overflow: "hidden" } : { position: "fixed", right: 16, bottom: 16, zIndex: 60, width: "min(380px, calc(100vw - 32px))", height: "min(560px, calc(100vh - 100px))", display: "flex", flexDirection: "column", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 16, boxShadow: "0 10px 34px rgba(0,0,0,.22)", overflow: "hidden" }}>
       <div style={{ background: "var(--ink)", color: "#fff", padding: "10px 12px", display: "flex", gap: 8, alignItems: "center" }}>
-        <span aria-hidden>💬</span>
-        <select value={loja} onChange={(e) => { setLoja(e.target.value); guardar("lm_conversa_loja", e.target.value); setAcoes(null); }} style={{ flex: 1, background: "transparent", color: "#fff", border: 0, fontWeight: 700 }}>
-          <option value="geral" style={{ color: "#000" }}>Conversa geral</option>
-          {lojas.map((l) => <option key={l.id} value={l.id} style={{ color: "#000" }}>{l.loja}</option>)}
-        </select>
+        {vendo === "chat"
+          ? <>
+              <button type="button" onClick={voltar} aria-label="Voltar para a lista de conversas" style={{ background: "transparent", border: 0, color: "#fff", fontSize: 22, cursor: "pointer", padding: "0 4px", position: "relative" }}>
+                ←{novas > 0 && <span style={{ position: "absolute", top: -6, right: -10, background: "var(--red)", color: "#fff", borderRadius: 10, fontSize: 11, fontWeight: 800, padding: "1px 6px" }}>{novas}</span>}
+              </button>
+              <b style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nomeDe(loja)}</b>
+            </>
+          : <><span aria-hidden>💬</span><b style={{ flex: 1 }}>Conversas{totalNovas > 0 ? ` (${totalNovas})` : ""}</b></>}
         {!cheia && <Link href="/equipe/conversas" style={{ color: "#fff", fontSize: 12, textDecoration: "underline" }}>abrir</Link>}
         {!cheia && <button type="button" onClick={() => mudarAberto(false)} aria-label="Recolher" style={{ background: "transparent", border: 0, color: "#fff", fontSize: 18, cursor: "pointer" }}>–</button>}
       </div>
@@ -103,6 +141,40 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
             : <><span>Receba o aviso com som quando chegar mensagem.</span><button type="button" className="btn p peq" onClick={async () => { try { await ativarAvisos(); setAvisos("ativo"); } catch (e) { alert((e as Error).message); } }}>Ativar avisos</button></>}
         </div>
       )}
+      {vendo === "lista" ? (
+        <>
+          <div style={{ padding: "8px 10px 4px", display: "grid", gap: 8 }}>
+            <input id="conversa-busca" type="search" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar loja" aria-label="Buscar loja" />
+            <div className="chips" role="group" aria-label="Filtrar conversas">
+              {([["todas", "Todas"], ["novas", `Não lidas${totalNovas ? ` ${totalNovas}` : ""}`], ["abertas", "Em aberto"]] as const).map(([k, r]) => (
+                <button key={k} type="button" className={`chip${filtro === k ? " escolhido" : ""}`} onClick={() => setFiltro(k)}>{r}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            {lista.length === 0 && <p className="mudo" style={{ textAlign: "center", marginTop: 20 }}>{filtro === "novas" ? "Nenhuma mensagem nova." : filtro === "abertas" ? "Nenhuma mensagem em aberto." : "Nenhuma loja encontrada."}</p>}
+            {lista.map((i) => (
+              <button key={i.id} type="button" onClick={() => abrir(i.id)}
+                style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", textAlign: "left", background: "transparent", border: 0, borderBottom: "1px solid var(--line)", padding: "10px 12px", cursor: "pointer", color: "inherit" }}>
+                <span aria-hidden style={{ flex: "0 0 42px", height: 42, borderRadius: "50%", background: i.id === "geral" ? "var(--ink)" : "var(--soft)", color: i.id === "geral" ? "#fff" : "var(--ink)", display: "grid", placeItems: "center", fontWeight: 800 }}>{i.id === "geral" ? "💬" : i.loja.trim().charAt(0).toUpperCase()}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                    <b style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{i.loja}</b>
+                    {i.ultima && <small style={{ color: i.novas ? "var(--green)" : "var(--muted)", fontWeight: i.novas ? 800 : 400 }}>{quando(i.ultima.created_at)}</small>}
+                  </span>
+                  <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <small className="mudo" style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {i.ultima ? `${i.ultima.autor === userId ? "Você" : i.ultima.autor_nome ?? "Equipe"}: ${i.ultima.texto || "📎 arquivo"}` : "Sem mensagens"}
+                    </small>
+                    {i.abertas > 0 && <small title="Mensagens em aberto" style={{ color: "var(--muted)" }}>📌 {i.abertas}</small>}
+                    {i.novas > 0 && <span style={{ background: "var(--green)", color: "#fff", borderRadius: 12, fontSize: 12, fontWeight: 800, padding: "1px 8px" }}>{i.novas}</span>}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (<>
       <div style={{ flex: 1, overflowY: "auto", padding: 12, background: "var(--soft)" }}>
         {msgs.length === 0 && <p className="mudo" style={{ textAlign: "center", marginTop: 20 }}>Nenhuma mensagem aqui ainda.</p>}
         {msgs.map((m) => {
@@ -141,6 +213,7 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
         <input type="text" value={texto} onChange={(e) => { setTexto(e.target.value); if (!e.target.value) setFalado(false); }} onKeyDown={(e) => e.key === "Enter" && enviar()} placeholder={ditado.gravando ? "Ouvindo… fale agora" : "Escreva uma mensagem"} style={{ flex: 1 }} />
         <button type="button" className="btn p peq" disabled={enviando} onClick={enviar}>{enviando ? "…" : "Enviar"}</button>
       </div>
+      </>)}
     </div>
   );
 }

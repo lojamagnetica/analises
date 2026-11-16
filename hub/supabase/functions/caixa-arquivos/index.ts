@@ -170,6 +170,54 @@ async function rodada(admin: SupabaseClient, desde?: string, portal?: string) {
   return feitos;
 }
 
+/** Conferência depois que a loja confirma as Regras do caixa: relê cada dia com arquivo e compara com o que está no Hub.
+ *  Não muda nenhum número: manda para a Camilla a lista do que bate e do que não bate, e monta de novo a análise da semana. */
+async function conferir(admin: SupabaseClient, portalId: string, desde: string, chave: string) {
+  const { data: p } = await admin.from("portais").select("loja, lojas").eq("id", portalId).single();
+  const lojas: string[] = (p?.lojas ?? []).length > 1 ? p!.lojas : [""];
+  const reais = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const dm = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`;
+  const bate: string[] = [], naoBate: string[] = [], semArquivo: string[] = [];
+  for (const loja of lojas) {
+    const { data: dias } = await admin.storage.from(BALDE).list(`${portalId}/gestao/${pastaDaLoja(loja)}`, { limit: 400 });
+    const comPasta = new Set((dias ?? []).map((x) => x.name).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x) && x >= desde && x < hoje()));
+    let q = admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, pagamentos").eq("portal_id", portalId).gte("dia", desde).lt("dia", hoje());
+    if (loja) q = q.eq("loja", loja);
+    const { data: lancados } = await q;
+    const todos = [...new Set([...comPasta, ...(lancados ?? []).map((x) => x.dia as string)])].sort();
+    for (const d of todos) {
+      const hub = (lancados ?? []).find((x) => x.dia === d);
+      let lido: Lido | null = null;
+      if (comPasta.has(d)) { try { lido = await ler(admin, portalId, loja, d); } catch (e) { console.error(d, (e as Error).message); } }
+      if (!lido?.achou) { if (hub) semArquivo.push(dm(d)); continue; }
+      const fatHub = Number(hub?.faturamento ?? 0), fatLido = Number(lido.faturamento ?? 0);
+      const recHub = Object.values((hub?.pagamentos ?? {}) as Record<string, number>).reduce((t, v) => t + (Number(v) || 0), 0);
+      const recLido = Object.values(lido.pagamentos ?? {}).reduce((t, v) => t + (Number(v) || 0), 0);
+      const dif: string[] = [];
+      if (!hub) dif.push(`não está lançado no Hub; pelos arquivos e as regras: ${reais(fatLido)}, ${lido.vendas ?? "?"} vendas, ${lido.pecas ?? "?"} peças`);
+      else {
+        if (Math.abs(fatHub - fatLido) > 1) dif.push(`faturamento no Hub ${reais(fatHub)}, pelas regras ${reais(fatLido)}`);
+        if (lido.vendas != null && Number(hub.vendas) !== lido.vendas) dif.push(`vendas ${hub.vendas} no Hub, ${lido.vendas} pelos arquivos`);
+        if (lido.pecas != null && Number(hub.pecas) !== lido.pecas) dif.push(`peças ${hub.pecas} no Hub, ${lido.pecas} pelos arquivos`);
+        if (recLido > 0 && Math.abs(recHub - recLido) > 1) dif.push(`recebido ${reais(recHub)} no Hub, ${reais(recLido)} pelas regras`);
+      }
+      const nome = `${dm(d)}${loja ? ` (${loja})` : ""}`;
+      if (dif.length) naoBate.push(`${nome}: ${dif.join("; ")}. ${lido.observacao}`); else bate.push(nome);
+    }
+  }
+  const texto = [`🧾 ${p?.loja}: a loja confirmou as Regras do caixa. Conferi os dias desde ${dm(desde)} com os arquivos e as regras dela. Nenhum número foi mudado.`,
+    naoBate.length ? `Não bate (${naoBate.length}):\n• ${naoBate.join("\n• ")}` : "Todos os dias com arquivo batem com o Hub.",
+    bate.length ? `Batem: ${bate.join(", ")}.` : "", semArquivo.length ? `Sem arquivo para conferir: ${semArquivo.join(", ")}.` : "",
+    "A análise da semana foi montada de novo com as regras: está em Minha central › Esperando a sua aprovação."].filter(Boolean).join("\n\n");
+  const { data: camilla } = await admin.from("perfis").select("id").eq("papel", "equipe").eq("aprova", true);
+  const ids = (camilla ?? []).map((x) => x.id as string);
+  await admin.from("equipe_conversas").insert(ids.map((id) => ({ portal_id: portalId, tipo: "Pedido", texto: texto.slice(0, 8000), autor: null, autor_nome: "Assistente Magnética", para: id })));
+  // A análise da semana de novo, já com as regras.
+  await fetch(`${URL}/functions/v1/leitura-rascunho`, { method: "POST", headers: { "Content-Type": "application/json", "x-aviso": chave }, body: JSON.stringify({ portal_id: portalId }) }).catch(() => null);
+  await admin.rpc("avisar_equipe", { p_para: ids, p_texto: `${p?.loja}: conferência do caixa com as regras pronta (${naoBate.length} ${naoBate.length === 1 ? "dia não bate" : "dias não batem"}). Detalhes nas Conversas.`, p_link: "/equipe/conversas" });
+  return naoBate.length;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ erro: "método não permitido" }, 405);
@@ -178,6 +226,14 @@ Deno.serve(async (req) => {
   const { data: cfg } = await admin.rpc("push_config");
   const peloAgendamento = !!cfg?.aviso_chave && req.headers.get("x-aviso") === cfg.aviso_chave;
 
+  if (corpo?.conferir) {
+    if (!peloAgendamento) return json({ erro: "Só o Hub pede a conferência." }, 403);
+    const portal = String(corpo?.portal_id ?? ""), desde = /^\d{4}-\d{2}-\d{2}$/.test(String(corpo?.desde)) ? String(corpo.desde) : `${hoje().slice(0, 7)}-01`;
+    if (!portal) return json({ erro: "Informe portal_id." }, 400);
+    // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
+    EdgeRuntime.waitUntil(conferir(admin, portal, desde, cfg.aviso_chave).then((n) => console.log("conferência", portal, n)).catch((e) => console.error(e)));
+    return json({ ok: true }, 202);
+  }
   if (corpo?.rodada) {
     if (!peloAgendamento) return json({ erro: "Só o agendamento roda a rodada." }, 403);
     // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase

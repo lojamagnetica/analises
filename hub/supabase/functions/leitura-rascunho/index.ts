@@ -132,7 +132,8 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
     numeros(admin, portalId),
   ]);
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
-  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
+  const conversas = await faleComCamilla(admin, portalId);
+  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums, conversas) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
   // A Camilla sempre vê os dias fechados com motivo antes de aprovar.
   const motivos = ((nums.semana_passada as { fechados_com_motivo?: { dia: string; motivo: string }[] }).fechados_com_motivo ?? [])
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
@@ -144,7 +145,21 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
   return { portal_id: portalId, ok: true, agente: !!CHAVE };
 }
 
-async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums): Promise<Saida> {
+/** O Fale com a Camilla da loja nas últimas 2 semanas: o que a loja contou, pediu ou combinou. */
+async function faleComCamilla(admin: SupabaseClient, portalId: string) {
+  const desde = new Date(Date.now() - 14 * 86_400_000).toISOString();
+  const [{ data: pedidos }, { data: respostas }] = await Promise.all([
+    admin.from("solicitacoes").select("created_at, autor_nome, texto, transcricao").eq("portal_id", portalId).gte("created_at", desde),
+    admin.from("solicitacao_respostas").select("created_at, autor_nome, equipe, texto, transcricao, automatica").eq("portal_id", portalId).gte("created_at", desde),
+  ]);
+  const linhas = [
+    ...(pedidos ?? []).map((x) => ({ em: x.created_at as string, quem: `${x.autor_nome ?? "Loja"} (loja)`, t: String(x.texto || x.transcricao || "") })),
+    ...(respostas ?? []).filter((x) => !x.automatica).map((x) => ({ em: x.created_at as string, quem: x.equipe ? `${x.autor_nome ?? "Equipe"} (equipe)` : `${x.autor_nome ?? "Loja"} (loja)`, t: String(x.texto || x.transcricao || "") })),
+  ].filter((x) => x.t.trim()).sort((a, b) => a.em.localeCompare(b.em));
+  return linhas.map((x) => `${x.em.slice(8, 10)}/${x.em.slice(5, 7)} · ${x.quem}: ${x.t.replace(/\s+/g, " ").slice(0, 400)}`).join("\n").slice(-8000);
+}
+
+async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = ""): Promise<Saida> {
   const client = new Anthropic({ apiKey: CHAVE });
   const r = await client.beta.messages.stream({
     model: MODELO, max_tokens: 4000,
@@ -157,6 +172,9 @@ async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; fina
       exemplos.length ? `Exemplos (rascunho do agente → versão final da Camilla):\n${exemplos.map((e) => `RASCUNHO: ${JSON.stringify(e.rascunho)}\nFINAL: ${JSON.stringify(e.final)}`).join("\n\n")}` : "Ainda não há exemplos aprovados.",
       `Loja: ${portal?.loja} (${portal?.tipo}). Lojista: ${portal?.responsavel ?? "—"}.`,
       `Números (R$; semana = segunda a domingo): ${JSON.stringify(nums)}`,
+      conversas
+        ? `Fale com a Camilla da loja (últimas 2 semanas, o que a loja contou, pediu ou combinou):\n${conversas}\n\nSe algum ponto dessas conversas fizer sentido para esta semana (uma dificuldade, um pedido, um combinado, uma ação que ela planejou), use-o nas ações sugeridas, com as palavras dela. Não repita pergunta que ela já respondeu ali. Em para_camilla, diga em uma frase qual ponto da conversa você usou (ou que nada dali entrou).`
+        : "A loja não escreveu no Fale com a Camilla nas últimas 2 semanas.",
       "Monte a leitura desta semana. Responda só com o JSON pedido.",
     ].join("\n\n") }],
   }).finalMessage();

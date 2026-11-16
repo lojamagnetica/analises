@@ -2,6 +2,7 @@
 
 // Fechamento de caixa: os números de cada dia da loja e o que o Resultado do mês calcula com eles.
 // PA = peças ÷ vendas · TKM (ticket médio) = faturamento ÷ vendas · PM (preço médio) = faturamento ÷ peças. TKM = PA × PM.
+import { diaDeLoja } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje, moeda } from "@/lib/formato";
 import { MESES, type Respostas } from "@/lib/conteudo";
@@ -119,9 +120,9 @@ export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "peca
   const pag = Object.values(c.pagamentos ?? {}).reduce((s: number, v) => s + (Number(v) || 0), 0);
   const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);
   const out: string[] = [];
-  // Dia salvo todo zerado (fora o domingo, quando a loja costuma fechar): esconde o dia sem número.
-  const domingo = !!c.dia && new Date(`${c.dia}T12:00:00Z`).getUTCDay() === 0;
-  if (fat === 0 && vendas === 0 && pecas === 0 && !domingo) out.push("o dia foi salvo zerado (sem faturamento, vendas e peças)");
+  // Dia salvo todo zerado (fora domingo e feriado, quando a loja costuma fechar): esconde o dia sem número.
+  const fechado = !!c.dia && !diaDeLoja(c.dia);
+  if (fat === 0 && vendas === 0 && pecas === 0 && !fechado) out.push("o dia foi salvo zerado (sem faturamento, vendas e peças)");
   if (fat > 0 && vendas === 0) out.push("falta o número de vendas");
   if (vendas > 0 && pecas === 0) out.push("falta o número de peças");
   if (pecas > 0 && pecas < vendas) out.push(`tem menos peças (${pecas}) que vendas (${vendas})`);

@@ -45,6 +45,8 @@ const INSTRUCOES = `Você lê os arquivos do fechamento de caixa de UM dia de um
 Tire só o que está escrito, sem estimar: faturamento do dia (R$), número de vendas (cupons/atendimentos), peças vendidas,
 quanto entrou em cada forma de pagamento (pix, credito, debito, dinheiro, crediario; crediário inclui promissória/fiado; 0 quando não houver)
 e, se o arquivo mostrar, a venda de cada vendedora (nome, faturamento, vendas, peças).
+Voucher, vale-troca, saldo de troca e crédito de devolução NÃO são recebimento: não entram em nenhuma forma de pagamento
+e saem do faturamento (se o relatório só mostrar o total com o voucher dentro, desconte o voucher e diga isso em observacao).
 Use null no que o arquivo não mostra. Se o arquivo não for do fechamento deste dia, responda achou=false.
 Em observacao, uma frase curta em português dizendo de onde tirou os números ou o que não deu para ler.`;
 

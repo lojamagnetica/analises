@@ -335,6 +335,7 @@ function FechamentoCaixa() {
           <div className="kpi"><small>Total do dia</small><b style={{ fontSize: 20 }}>{moeda(valor.faturamento || somaPag)}</b></div>
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
+        <p className="ajuda" style={{ marginTop: 0 }}>Voucher, vale-troca e saldo de troca não entram: não é dinheiro novo no caixa.</p>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
             <div key={x.chave}>

@@ -1,0 +1,12 @@
+// Cópia do Hub no Cloudflare (hub.ometodolojamagnetica.com.br), publicada sozinha a cada atualização do main.
+// O GitHub Pages continua no ar como reserva. O site é o mesmo portal/ gerado por `npm run publicar`:
+// o comando da build do Cloudflare copia portal/ para dist/analises/portal, no mesmo caminho do GitHub.
+{
+  "name": "hub-magnetica",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  }
+}

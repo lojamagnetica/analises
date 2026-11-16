@@ -112,7 +112,9 @@ export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduc
 
 /** O que está faltando ou não bate num dia de caixa, em frases curtas para a loja.
  * comEquipe: a loja tem time cadastrado no Hub (aí a venda por vendedora é obrigatória). */
-export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null; dia?: string }, comEquipe: boolean): string[] {
+/** formasSeparadas: a loja tem venda (relatório de vendas) e dinheiro que entrou (relatório de faturamento) diferentes
+ *  por regra dela (Regras do caixa: consórcio, vale-crédito); aí as formas de pagamento não precisam bater com a venda. */
+export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null; dia?: string }, comEquipe: boolean, formasSeparadas = false): string[] {
   // Dia fechado com o motivo escrito pela loja: não volta para a lista de correção.
   if (c.justificativa?.trim()) return [];
   const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
@@ -128,7 +130,7 @@ export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "peca
   if (pecas > 0 && pecas < vendas) out.push(`tem menos peças (${pecas}) que vendas (${vendas})`);
   // O dia montado pelas vendas do link da equipe (canais) não traz as formas: lá não se pergunta.
   if (fat > 0 && pag === 0 && c.origem !== "canais") out.push("faltam as formas de pagamento");
-  if (pag > 0 && Math.abs(pag - fat) > 1) out.push(`as formas de pagamento somam ${moeda(pag)} e o faturamento é ${moeda(fat)}`);
+  if (!formasSeparadas && pag > 0 && Math.abs(pag - fat) > 1) out.push(`as formas de pagamento somam ${moeda(pag)} e o faturamento é ${moeda(fat)}`);
   if (comEquipe && fat > 0 && !(c.vendedoras ?? []).length) out.push("falta a venda por vendedora");
   if ((c.vendedoras ?? []).length && Math.abs(vend - fat) > 1) out.push(`a soma das vendedoras (${moeda(vend)}) é diferente do faturamento (${moeda(fat)})`);
   return out;

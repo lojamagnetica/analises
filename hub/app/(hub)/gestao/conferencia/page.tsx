@@ -128,7 +128,7 @@ export default function ConferenciaDoCaixa() {
           </div>
         );
         return doDia.map((c) => {
-          const problemas = problemasDoCaixa(c, dados.comTime);
+          const problemas = problemasDoCaixa(c, dados.comTime, !!portal.regras_caixa);
           const formas = FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => `${x.nome} ${moeda(c.pagamentos![x.chave]!)}`);
           return (
             <div key={c.id} className="card card-borda mb" style={{ ["--c" as string]: problemas.length ? "var(--orange)" : "var(--feito)" }}>

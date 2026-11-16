@@ -132,7 +132,8 @@ function completar(atual: Record<string, unknown> | null, lido: Lido, equipe: { 
 }
 
 /** desde/portal: a equipe pode pedir para reler dias mais antigos de uma loja (ex.: um dia que ficou só com arquivo). */
-async function rodada(admin: SupabaseClient, desde?: string, portal?: string) {
+/** substituir: refaz os dias pelos arquivos e as Regras do caixa (pedido da equipe, depois que a loja confirmou as regras). */
+async function rodada(admin: SupabaseClient, desde?: string, portal?: string, substituir = false) {
   const de = desde && /^\d{4}-\d{2}-\d{2}$/.test(desde) ? desde : soma(hoje(), -7);
   let qp = admin.from("portais").select("id, lojas").eq("ativo", true).neq("tipo", "Curso");
   if (portal) qp = qp.eq("id", portal);
@@ -150,16 +151,22 @@ async function rodada(admin: SupabaseClient, desde?: string, portal?: string) {
         if (loja) q = q.eq("loja", loja);
         const { data: doDia } = await q.order("created_at").limit(1);
         const atual = (doDia ?? [])[0] ?? null;
-        if (atual?.justificativa) continue;
-        if (atual) {
+        if (!substituir && atual?.justificativa) continue;
+        if (!substituir && atual) {
           const { data: ruim } = await admin.rpc("caixa_id_com_problema", { p_id: atual.id });
           if (!ruim) continue;
         }
         try {
           const lido = await ler(admin, p.id, loja, d);
           if (!lido?.achou) continue;
-          const novo = completar(atual, lido, equipe ?? []);
-          const obs = [atual?.obs, `Completado pelo agente com os arquivos do caixa. ${lido.observacao}`].filter(Boolean).join(" ").slice(0, 500);
+          const novo = completar(substituir ? null : atual, lido, equipe ?? []);
+          // Refazendo: o que o arquivo não trouxe (vendedoras, formas) continua como estava.
+          if (substituir && atual) for (const k of ["vendedoras", "pagamentos", "vendas", "pecas"] as const) {
+            const v = (novo as Record<string, unknown>)[k];
+            if (v == null || (Array.isArray(v) && !v.length) || v === 0) (novo as Record<string, unknown>)[k] = atual[k];
+          }
+          const obs = (substituir ? `Refeito pelo agente com os relatórios do dia e as Regras do caixa da loja. ${lido.observacao}`
+            : [atual?.obs, `Completado pelo agente com os arquivos do caixa. ${lido.observacao}`].filter(Boolean).join(" ")).slice(0, 500);
           if (atual) await admin.from("loja_caixa").update({ ...novo, obs }).eq("id", atual.id);
           else await admin.from("loja_caixa").insert({ portal_id: p.id, loja: loja || null, dia: d, ...novo, obs });
           feitos++;
@@ -237,7 +244,7 @@ Deno.serve(async (req) => {
   if (corpo?.rodada) {
     if (!peloAgendamento) return json({ erro: "Só o agendamento roda a rodada." }, 403);
     // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
-    EdgeRuntime.waitUntil(rodada(admin, corpo?.desde, corpo?.portal_id).then((n) => console.log("dias completados", n)).catch((e) => console.error(e)));
+    EdgeRuntime.waitUntil(rodada(admin, corpo?.desde, corpo?.portal_id, !!corpo?.substituir && !!corpo?.portal_id).then((n) => console.log("dias completados", n)).catch((e) => console.error(e)));
     return json({ ok: true }, 202);
   }
   const portal = String(corpo?.portal_id ?? ""), dia = String(corpo?.dia ?? ""), loja = String(corpo?.loja ?? "");

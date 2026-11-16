@@ -66,7 +66,7 @@ export function CaixaDaSemana() {
   if (semGestao) return <NumerosDaSemana />;
   if (!tudo) return null;
   const dados = tudo.dias;
-  const faltam = dados.filter((d) => d.passou && !d.lancado).length;
+  const faltam = dados.filter((d) => d.passou && !d.lancado && !d.feriado).length;
   const comErro = dados.filter((d) => d.problemas.length);
   const relFaltam = RELATORIOS_SEMANA.filter((r) => !tudo.slots.has(r.chave));
   // Sexta e sábado: a semana fecha no sábado; depois disso a análise só vem na semana seguinte.
@@ -84,10 +84,10 @@ export function CaixaDaSemana() {
           <b>🧾 Caixa desta semana</b>
           <div className="linha" style={{ gap: 6, marginTop: 6 }}>
             {dados.map((d, i) => (
-              <span key={d.dia} title={dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
+              <span key={d.dia} title={d.feriado ? `${dia(d.dia)} · ${d.feriado} (não precisa lançar)` : dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
                 <span style={{ display: "block", width: 22, height: 22, margin: "0 auto 2px", borderRadius: 11, lineHeight: "22px", fontSize: 12,
-                  background: d.problemas.length ? "var(--orange)" : d.lancado ? "var(--feito)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || d.passou ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
-                  {d.problemas.length ? "?" : d.lancado ? "✓" : d.passou ? "!" : ""}
+                  background: d.problemas.length ? "var(--orange)" : d.lancado ? "var(--feito)" : d.feriado ? "var(--soft)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || (d.passou && !d.feriado) ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
+                  {d.problemas.length ? "?" : d.lancado ? "✓" : d.feriado ? "F" : d.passou ? "!" : ""}
                 </span>{DIAS[i]}
               </span>
             ))}

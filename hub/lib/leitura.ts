@@ -2,6 +2,7 @@
 
 // A leitura da semana: toda segunda às 12h o Hub monta o rascunho de cada loja com os números (o agente);
 // a equipe revisa e encaminha, a Camilla publica (o banco garante). Cada publicação guarda o par rascunho → versão final para o agente aprender.
+import { diaDeLoja, feriadoNacional } from "@/lib/feriados";
 import { fimDoMes, problemasDoCaixa, type Caixa } from "@/lib/caixa";
 import { hoje } from "@/lib/formato";
 import { diasComArquivoDoCaixa } from "@/lib/rotina";
@@ -130,7 +131,7 @@ export async function caixaDaSemana(portalId: string) {
   }
   const h = hoje();
   // Dia sem número digitado mas com os arquivos do caixa enviados também conta como lançado.
-  const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d));
+  const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d) && diaDeLoja(d));
   const comArquivo = await diasComArquivoDoCaixa(portalId, semNumero).catch(() => new Set<string>());
-  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h, problemas: problemas.get(d) ?? [] }; });
+  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h, problemas: problemas.get(d) ?? [], feriado: feriadoNacional(d) }; });
 }

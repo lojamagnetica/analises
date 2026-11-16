@@ -3,6 +3,7 @@
 // Painel do dia da CS: os alertas por assunto, só das lojas que já estão no acompanhamento. Cada alerta junta as lojas
 // com o mesmo problema (ou o mesmo parabéns) para a CS falar com todas de uma vez, com a mesma mensagem.
 import { diasDesde, hoje } from "@/lib/formato";
+import { diaDeLoja } from "@/lib/feriados";
 import { somarDias } from "@/lib/acoes-mes";
 import { semanaDe, semanaPassada } from "@/lib/leitura";
 import { dataCurta } from "@/lib/formato";
@@ -26,10 +27,10 @@ export type PainelDia = { grupos: GrupoAlerta[]; ontem: string; acompanhadas: nu
 const primeiro = (n: string | null) => (n ?? "").trim().split(/\s+/)[0] || "tudo bem";
 const abertura = (r: string | null) => `Oi, ${primeiro(r)}! Aqui é a Claudia, da Loja Magnética.`;
 const dow = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
-/** Dias de loja aberta (segunda a sábado) de uma semana que começa na segunda. */
-const diasDaSemana = (seg: string) => Array.from({ length: 6 }, (_, i) => somarDias(seg, i));
-/** O último dia de loja aberta antes de hoje (pula o domingo). */
-export function diaDeOntem(d = hoje()) { let x = somarDias(d, -1); while (dow(x) === 0) x = somarDias(x, -1); return x; }
+/** Dias de loja aberta (segunda a sábado, sem feriado nacional) de uma semana que começa na segunda. */
+const diasDaSemana = (seg: string) => Array.from({ length: 6 }, (_, i) => somarDias(seg, i)).filter(diaDeLoja);
+/** O último dia de loja aberta antes de hoje (pula domingo e feriado nacional). */
+export function diaDeOntem(d = hoje()) { let x = somarDias(d, -1); while (!diaDeLoja(x)) x = somarDias(x, -1); return x; }
 const lista = (nomes: string[]) => (nomes.length <= 1 ? nomes.join("") : `${nomes.slice(0, -1).join(", ")} e ${nomes[nomes.length - 1]}`);
 
 export async function painelDia(): Promise<PainelDia> {

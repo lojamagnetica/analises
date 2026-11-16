@@ -9,6 +9,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataHora, dia, hoje, moeda } from "@/lib/formato";
 import { FORMAS, diaDaSemana, fimDoMes, mesDeHoje, nomeMes, problemasDoCaixa, somarMes, type Caixa } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { diaDeLoja, feriadoNacional } from "@/lib/feriados";
 
 type Lancado = Caixa & { lancado_por: string | null; corrigido_por: string | null; created_at: string; atualizado_em: string | null };
 type VendaLink = { id: string; dia: string; canal: string; valor: number; pecas: number | null; quem: string | null; created_at: string };
@@ -39,7 +40,7 @@ export default function ConferenciaDoCaixa() {
   const dias: string[] = [];
   for (let d = ate; d >= `${mes}-01`; d = somarDias(d, -1)) dias.push(d);
   const total = dados.lancados.reduce((s, c) => s + c.faturamento, 0);
-  const faltando = dias.filter((d) => diaDaSemana(d) !== "dom" && d < hoje() && !dados.lancados.some((c) => c.dia === d)).length;
+  const faltando = dias.filter((d) => diaDeLoja(d) && d < hoje() && !dados.lancados.some((c) => c.dia === d)).length;
 
   return (
     <>
@@ -62,8 +63,8 @@ export default function ConferenciaDoCaixa() {
       {dias.map((d) => {
         const doDia = dados.lancados.filter((c) => c.dia === d);
         const vendasLink = dados.link.filter((v) => v.dia === d);
-        const domingo = diaDaSemana(d) === "dom";
-        if (!doDia.length && (domingo || d === hoje())) return null;
+        // Domingo e feriado nacional sem lançamento: a loja fechou, não falta nada.
+        if (!doDia.length && (!diaDeLoja(d) || d === hoje())) return null;
         if (!doDia.length) return (
           <div key={d} className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>
             <div className="linha entre"><b style={{ textTransform: "capitalize" }}>{diaDaSemana(d)} · {dia(d)}</b><span className="selo erro">sem lançamento</span></div>
@@ -76,7 +77,7 @@ export default function ConferenciaDoCaixa() {
           return (
             <div key={c.id} className="card card-borda mb" style={{ ["--c" as string]: problemas.length ? "var(--orange)" : "var(--feito)" }}>
               <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-                <b style={{ textTransform: "capitalize" }}>{diaDaSemana(d)} · {dia(d)}{c.loja ? ` · ${c.loja}` : ""}</b>
+                <b style={{ textTransform: "capitalize" }}>{diaDaSemana(d)} · {dia(d)}{c.loja ? ` · ${c.loja}` : ""}{feriadoNacional(d) ? ` · ${feriadoNacional(d)}` : ""}</b>
                 <b style={NUM}>{moeda(c.faturamento)}</b>
               </div>
               <div className="mudo" style={NUM}>{c.vendas} {c.vendas === 1 ? "venda" : "vendas"} · {c.pecas} {c.pecas === 1 ? "peça" : "peças"}</div>

@@ -11,6 +11,7 @@ import {
   juntar, lerArquivosDoCaixa, problemasDoCaixa, somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { feriadoNacional } from "@/lib/feriados";
 import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
@@ -138,6 +139,22 @@ function FechamentoCaixa() {
   const cadMes = somarCadastros(lista);
   const somaMes = somaPagamentos(formasMes);
   const mudar = (campo: "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "obs") => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [campo]: e.target.value });
+
+  /** Salva o dia como loja fechada (tudo zero e o motivo escrito). */
+  async function fecharDia(motivo: string) {
+    const texto = motivo === "Outro motivo" ? prompt("Qual foi o motivo de a loja ficar fechada?")?.trim() : motivo.toLowerCase();
+    if (!texto) return;
+    const loja = varias ? f.loja : null;
+    const ja = dados!.find((c) => c.dia === f.dia && (c.loja ?? "") === (loja ?? ""));
+    if (ja && !confirm(`Já tem fechamento em ${dia(f.dia)}${loja ? ` na ${loja}` : ""}. Trocar por "loja fechada"?`)) return;
+    setSalvando(true); setErro("");
+    try {
+      await salvarCaixa(portal.id, { id: f.id ?? ja?.id, loja, dia: f.dia, faturamento: 0, vendas: 0, pecas: 0, obs: null, pagamentos: null, vendedoras: null, malinha: null, justificativa: `Loja fechada: ${texto}` });
+      setAviso(`${dia(f.dia)} salvo como loja fechada (${texto}).`); setEnviar(null);
+      setF(novo(f.loja, f.soTotal));
+      recarregar();
+    } catch (x) { setErro((x as Error).message); } finally { setSalvando(false); }
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -385,9 +402,19 @@ function FechamentoCaixa() {
             {enviar && <a className="btn p peq" href={enviar} target="_blank" rel="noopener">📲 Enviar no WhatsApp</a>}
           </div>
         )}
-        <div className="linha mt">
+        <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
           <button className="btn p" type="submit" disabled={salvando}>{salvando ? "Salvando…" : f.id ? "Salvar correção" : "Salvar o dia"}</button>
         </div>
+        {/* Loja não abriu: salva o dia fechado com o motivo (não fica como caixa faltando nem para corrigir). */}
+        <details className="mt">
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>A loja não abriu em {dia(f.dia)}?{feriadoNacional(f.dia) ? ` (${feriadoNacional(f.dia)})` : ""}</summary>
+          <p className="ajuda">Domingo e feriado nacional já não contam como caixa faltando. Use aqui para registrar outro dia em que a loja ficou fechada.</p>
+          <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+            {["Feriado", "Domingo", "Outro motivo"].map((m) => (
+              <button key={m} type="button" className="btn s peq" disabled={salvando} onClick={() => fecharDia(m)}>Loja fechada: {m.toLowerCase()}</button>
+            ))}
+          </div>
+        </details>
       </form>
 
       <LerRelatorioDoCaixa portalId={portal.id} loja={varias ? f.loja : ""} equipe={equipe.filter((p) => !varias || !p.loja || p.loja === f.loja).map((p) => ({ id: p.id, nome: p.nome }))} aoLancar={recarregar} />

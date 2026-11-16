@@ -2,6 +2,7 @@
 
 // Início da CS: o que precisa da Claudia hoje, loja por loja. Junta acesso, caixa, leitura, reunião, plano, jornada,
 // pendências e contrato em alertas simples, cada um com a mensagem pronta para a loja.
+import { diaDeLoja } from "@/lib/feriados";
 import { diasDesde, hoje } from "@/lib/formato";
 import { ETAPAS, atrasado, buscarJornada } from "@/lib/jornada";
 import { somarDias as somaDias } from "@/lib/acoes-mes";
@@ -38,7 +39,7 @@ const abertura = (l: { responsavel: string | null }) => `Oi, ${primeiro(l.respon
 /** Dias de loja aberta da semana (segunda a sábado) que já passaram, até ontem. */
 function diasDaSemanaAteOntem(semana: string) {
   const h = hoje(); const out: string[] = [];
-  for (let i = 0; i < 6; i++) { const d = somaDias(semana, i); if (d < h) out.push(d); }
+  for (let i = 0; i < 6; i++) { const d = somaDias(semana, i); if (d < h && diaDeLoja(d)) out.push(d); }
   return out;
 }
 

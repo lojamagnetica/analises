@@ -104,12 +104,13 @@ async function regrasDaLoja(admin: SupabaseClient, portalId: string) {
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(refSemana()), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
-  const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }, { data: canais }] = await Promise.all([
+  const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }, { data: canais }, { data: cadastro }] = await Promise.all([
     admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras, justificativa").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
     admin.from("loja_plano_mes").select("dados, status").eq("portal_id", portalId).eq("mes", mes).maybeSingle(),
     admin.from("loja_leituras").select("semana, texto, acoes").eq("portal_id", portalId).eq("publicada", true).lt("semana", esta).order("semana", { ascending: false }).limit(1).maybeSingle(),
     admin.from("loja_numeros_semana").select("semana, faturamento, vendas, pecas, obs").eq("portal_id", portalId).gte("semana", retrasada),
     admin.from("loja_canais_registro").select("dia, canal, tipo, valor, pecas, minutos").eq("portal_id", portalId).gte("dia", retrasada).lt("dia", esta),
+    admin.from("loja_equipe").select("nome, funcao, entrada").eq("portal_id", portalId).eq("ativo", true),
   ]);
   const cx = (caixa ?? []) as Caixa[];
   const resumo = (de: string, ate: string) => {
@@ -158,6 +159,10 @@ async function numeros(admin: SupabaseClient, portalId: string) {
     mes_ate_ontem: { ...noMes, meta_do_mes: meta, deveria_ter_vendido_ate_ontem: ritmo },
     plano_do_mes: plano ? { status: plano.status, metas_individuais_do_mes: d.metas ?? null, premiacao: d.premiacao ?? "", foco_desta_semana: d.semanas?.[semanaDoMes]?.foco ?? "", acoes: (d.acoes ?? []).map((a) => a.titulo), datas: (d.datas ?? []).filter((x) => x.trabalhar).map((x) => x.titulo) } : null,
     leitura_anterior: anterior ?? null,
+    // O tempo de casa de cada pessoa: a comparação entre vendedoras sempre leva isso em conta.
+    equipe_tempo_de_casa: ((cadastro ?? []) as { nome: string; funcao: string | null; entrada: string | null }[]).map((p) => ({
+      nome: p.nome, funcao: p.funcao, entrou_em: p.entrada,
+      meses_de_casa: p.entrada ? Math.max(0, Math.round((Date.parse(h) - Date.parse(p.entrada)) / (30.4 * 86_400_000) * 10) / 10) : null })),
     canais_semana_passada: porCanal(passada, soma(esta, -1)),
     canais_semana_retrasada: porCanal(retrasada, soma(passada, -1)),
   };

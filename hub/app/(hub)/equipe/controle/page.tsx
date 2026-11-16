@@ -8,6 +8,7 @@ import { Titulo } from "@/components/Titulo";
 import { Icone } from "@/components/Icone";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { painelCs } from "@/lib/cs";
+import { aprovadasHoje, chaveAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
 import { dataHora, hoje as hojeStr } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -55,8 +56,13 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 ];
 
 export default function ControleDeClientes() {
-  const { nome, monta, conversas, userId } = useEquipe();
-  const { dados, recarregar } = useDados(() => painelCs(), []);
+  const { nome, monta, conversas, userId, aprova } = useEquipe();
+  // A Claudia só conta as demandas que a Camilla aprovou hoje.
+  const { dados, recarregar } = useDados(async () => {
+    const [p, ok] = await Promise.all([painelCs(), aprova ? Promise.resolve(null) : aprovadasHoje()]);
+    if (!ok) return p;
+    return { ...p, lojas: p.lojas.map((l) => { const alertas = l.alertas.filter((a) => ok.has(chaveAlerta(l.id, a.chave))); return { ...l, alertas, nivel: (alertas.some((a) => a.grave) ? "vermelho" : alertas.length ? "amarelo" : "verde") as typeof l.nivel }; }) };
+  }, [aprova]);
   const { dados: caixaAberta } = useDados(async () => (monta ? (await supabaseBrowser().from("caixa_dia").select("id", { count: "exact", head: true }).eq("perfil", "camilla").neq("status", "Feito")).count ?? 0 : 0), [monta]);
   const { dados: paraRevisar } = useDados(async () => (await supabaseBrowser().from("reunioes_gravadas").select("id", { count: "exact", head: true }).in("status", ["rascunho", "sem_loja"])).count ?? 0, []);
   const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, userId]);

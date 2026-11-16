@@ -22,6 +22,7 @@ import { dataHora, haQuanto, isoParaLocal } from "@/lib/formato";
 import { liberarTudo } from "@/lib/entrada";
 import {
   atualizarPortal, convidarPessoa, desligarPessoa, gerarLink, planoApagar, reuniaoApagar, reuniaoSalvar,
+  type Acesso,
 } from "@/lib/acoes";
 
 
@@ -94,7 +95,7 @@ function CamposReuniao({ r }: { r?: Reuniao }) {
 function EditarPortal() {
   const id = useSearchParams().get("id") ?? "";
   const hub = useEquipe();
-  const [aviso, setAviso] = useState<{ ok?: string; erro?: string; link?: string; pessoa?: boolean }>({});
+  const [aviso, setAviso] = useState<{ ok?: string; erro?: string; acesso?: Acesso; pessoa?: boolean }>({});
   const [salvo, setSalvo] = useState(false);
 
   useEffect(() => {
@@ -102,7 +103,7 @@ function EditarPortal() {
       const r = JSON.parse(sessionStorage.getItem(CHAVE_RESULTADO) ?? "null");
       if (r) {
         sessionStorage.removeItem(CHAVE_RESULTADO);
-        setAviso({ ok: r.criado ? "Portal criado." : undefined, link: r.link, erro: r.aviso });
+        setAviso({ ok: r.criado ? "Portal criado." : undefined, acesso: r.acesso, erro: r.aviso });
       }
     } catch { /* sem armazenamento */ }
   }, []);
@@ -129,9 +130,9 @@ function EditarPortal() {
   const p = dados.portal;
   if (!p) return <div className="card">Portal não encontrado.</div>;
 
-  const acesso = async (fazer: () => Promise<{ link?: string; aviso?: string }>) => {
+  const acesso = async (fazer: () => Promise<{ acesso?: Acesso; aviso?: string }>) => {
     const r = await fazer();
-    setAviso({ link: r.link, erro: r.aviso, pessoa: true });
+    setAviso({ acesso: r.acesso, erro: r.aviso, pessoa: true });
     recarregar();
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -140,7 +141,7 @@ function EditarPortal() {
     <>
       <Titulo voltar={{ href: "/empresa/carteira", rotulo: "Gestão de Clientes" }} titulo={p.loja} sub={`${p.tipo} · passo ${p.passo_atual} de 7`} />
       {aviso.ok && <div className="aviso ok mb">{aviso.ok}</div>}
-      {aviso.link && <LinkAcesso link={aviso.link} nome={aviso.pessoa ? "" : p.responsavel ?? ""} whatsapp={aviso.pessoa ? null : p.whatsapp} pessoaDoTime={!!aviso.pessoa} />}
+      {aviso.acesso && <LinkAcesso acesso={aviso.acesso} nome={aviso.pessoa ? "" : p.responsavel ?? ""} whatsapp={aviso.pessoa ? null : p.whatsapp} pessoaDoTime={!!aviso.pessoa} />}
       {aviso.erro && <div className="aviso mb">{aviso.erro}</div>}
       <div className="mb"><button className="btn p" type="button" onClick={() => hub.abrirPortal(p.id)}>Abrir o portal da loja</button></div>
 
@@ -297,8 +298,8 @@ function EditarPortal() {
               </div>
               <div className="linha" style={{ flexWrap: "nowrap" }}>
                 <button className="btn s peq" type="button" onClick={() => acesso(async () => {
-                  try { return { link: await gerarLink(u.email ?? "", u.nome ?? "") }; } catch (e) { return { aviso: (e as Error).message }; }
-                })}>Novo link</button>
+                  try { return { acesso: await gerarLink(u.email ?? "", u.nome ?? "") }; } catch (e) { return { aviso: (e as Error).message }; }
+                })}>Nova senha</button>
                 <button className="btn s peq" type="button" onClick={async () => { await desligarPessoa(p.id, u.id); recarregar(); }}>Remover</button>
               </div>
             </div>

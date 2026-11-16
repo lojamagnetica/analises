@@ -5,13 +5,13 @@ import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { convidarEquipe, equipeFuncao, equipeRemover } from "@/lib/acoes";
+import { convidarEquipe, equipeFuncao, equipeRemover, type Acesso } from "@/lib/acoes";
 import type { PessoaEquipe } from "@/lib/carteira";
 import { haQuanto } from "@/lib/formato";
 
 export default function Equipe() {
   const hub = useEquipe();
-  const [convite, setConvite] = useState<{ link?: string; nome?: string; erro?: string }>({});
+  const [convite, setConvite] = useState<{ acesso?: Acesso; nome?: string; erro?: string }>({});
   const [salvo, setSalvo] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const { data } = await supabaseBrowser().from("perfis").select("id, nome, email, funcao, ultimo_acesso").eq("papel", "equipe").order("nome");
@@ -19,18 +19,18 @@ export default function Equipe() {
   }, []);
   if (!dados) return <Carregando />;
 
-  const mensagem = (link: string, nome?: string) =>
-    `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! Este é o seu acesso ao magnética.hub.\n\nEntre por este link para criar a sua senha:\n${link}`;
+  const mensagem = (a: Acesso, nome?: string) =>
+    `Oi${nome ? `, ${nome.split(" ")[0]}` : ""}! Este é o seu acesso ao magnética.hub.\n\n1. Entre por este endereço (é sempre o mesmo):\n${a.link}\n\n2. E-mail: ${a.email}\nSenha: ${a.senha}\n\nDepois você pode trocar a senha em Conta.`;
 
   return (
     <>
       <Titulo titulo="Equipe" sub="Quem trabalha no Hub. Toda a equipe vê tudo; cada cliente vê só o próprio portal." />
-      {convite.link && (
+      {convite.acesso && (
         <div className="card card-borda mb" style={{ ["--c" as string]: "var(--green)" }}>
-          <h3>Link de acesso pronto</h3>
-          <p className="mudo" style={{ fontSize: 14 }}>Mande para a pessoa. O link é de uso único; se vencer, gere outro aqui.</p>
-          <input type="text" readOnly value={convite.link} />
-          <div className="linha mt"><Copiar texto={mensagem(convite.link, convite.nome)} rotulo="Copiar mensagem" /></div>
+          <h3>Acesso pronto</h3>
+          <p className="mudo" style={{ fontSize: 14 }}>Mande para a pessoa. O endereço é sempre o mesmo e a senha não vence.</p>
+          <input type="text" readOnly value={`${convite.acesso.email} · senha ${convite.acesso.senha}`} />
+          <div className="linha mt"><Copiar texto={mensagem(convite.acesso, convite.nome)} rotulo="Copiar mensagem" /></div>
         </div>
       )}
       {convite.erro && <div className="aviso mb">{convite.erro}</div>}
@@ -77,7 +77,7 @@ export default function Equipe() {
             setConvite({});
             try {
               const nome = String(f.get("nome") ?? "");
-              setConvite({ link: await convidarEquipe(f), nome });
+              setConvite({ acesso: await convidarEquipe(f), nome });
               recarregar();
             } catch (e) {
               setConvite({ erro: (e as Error).message });

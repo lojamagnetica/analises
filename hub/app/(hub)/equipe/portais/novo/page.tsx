@@ -24,7 +24,7 @@ export default function NovoPortal() {
           setErro("");
           try {
             const r = await criarPortal(f);
-            try { sessionStorage.setItem(CHAVE_RESULTADO, JSON.stringify({ criado: true, link: r.link, aviso: r.aviso })); } catch { /* sem armazenamento */ }
+            try { sessionStorage.setItem(CHAVE_RESULTADO, JSON.stringify({ criado: true, acesso: r.acesso, aviso: r.aviso })); } catch { /* sem armazenamento */ }
             router.push(`/equipe/portal?id=${r.id}`);
           } catch (e) {
             setErro((e as Error).message);
@@ -33,7 +33,7 @@ export default function NovoPortal() {
         }}
       >
         <CamposPortal />
-        <p className="ajuda mt">Com o e-mail preenchido, o Hub cria o acesso da mentorada e te dá um link para mandar pelo WhatsApp.</p>
+        <p className="ajuda mt">Com o e-mail preenchido, o Hub cria o acesso da mentorada (e-mail e senha, que não vencem) e te dá a mensagem pronta para o WhatsApp.</p>
         {erro && <div className="aviso mt">{erro}</div>}
         <div className="linha mt"><button className="btn p" type="submit" disabled={criando}>{criando ? "Criando…" : "Criar portal"}</button></div>
       </form>

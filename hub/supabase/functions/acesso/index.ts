@@ -1,5 +1,6 @@
-// Gera o link de acesso de uso único de uma mentorada e liga a conta dela ao portal.
-// Com equipe: true, gera o link de uma pessoa nova da equipe e já dá a ela o papel de equipe.
+// Cria (ou renova) o acesso de uma mentorada com e-mail e senha que não vencem, e liga a conta dela ao portal.
+// A loja entra sempre pelo mesmo endereço (a página de entrar do Hub): nada de link de uso único que expira.
+// Com equipe: true, cria o acesso de uma pessoa nova da equipe e já dá a ela o papel de equipe.
 // Roda dentro do Supabase (usa a chave de serviço que o próprio Supabase fornece) e só atende a equipe.
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -30,7 +31,7 @@ Deno.serve(async (req) => {
   if (!liberado) {
     const usuario = createClient(URL, ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } } });
     const { data: equipe } = await usuario.rpc("is_equipe");
-    if (equipe !== true) return json({ erro: "Só a equipe pode gerar links de acesso." }, 403);
+    if (equipe !== true) return json({ erro: "Só a equipe pode criar acessos." }, 403);
   }
 
   const { email, nome, portal_id, equipe: daEquipe, funcao } = await req.json().catch(() => ({}));
@@ -38,27 +39,34 @@ Deno.serve(async (req) => {
   if (!e.includes("@")) return json({ erro: "E-mail inválido." }, 400);
 
   const admin = createClient(URL, SERVICO, { auth: { persistSession: false, autoRefreshToken: false } });
-  // Conta nova recebe convite (cria a senha); quem já tem conta recebe link de entrada.
-  let tipo = "invite";
-  let r = await admin.auth.admin.generateLink({ type: "invite", email: e, options: { data: { nome: nome ?? "" } } });
-  if (!r.data?.properties?.hashed_token) {
-    tipo = "email";
-    r = await admin.auth.admin.generateLink({ type: "magiclink", email: e });
+  // Senha simples de ler e digitar no celular: "Loja" + 6 números. A pessoa pode trocar depois em Conta.
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000;
+  const senha = `Loja${n}`;
+  let userId: string | undefined;
+  const novo = await admin.auth.admin.createUser({ email: e, password: senha, email_confirm: true, user_metadata: { nome: nome ?? "" } });
+  if (novo.data?.user) userId = novo.data.user.id;
+  else {
+    // Já tem conta: acha pelo link de entrada (não manda e-mail) e troca a senha, já confirmando o e-mail.
+    const r = await admin.auth.admin.generateLink({ type: "magiclink", email: e });
+    userId = r.data?.user?.id;
+    if (!userId) return json({ erro: r.error?.message ?? novo.error?.message ?? "Não foi possível criar o acesso." }, 400);
+    // Pelo portal de uma loja, nunca troca a senha de alguém da equipe.
+    if (daEquipe !== true) {
+      const { data: perfil } = await admin.from("perfis").select("papel").eq("id", userId).maybeSingle();
+      if (perfil?.papel === "equipe") return json({ erro: `${e} é da equipe e não pode ser ligado a um portal.` }, 400);
+    }
+    const { error } = await admin.auth.admin.updateUserById(userId, { password: senha, email_confirm: true });
+    if (error) return json({ erro: error.message }, 400);
   }
-  const hash = r.data?.properties?.hashed_token;
-  const userId = r.data?.user?.id;
-  if (!hash || !userId) return json({ erro: r.error?.message ?? "Não foi possível gerar o link." }, 400);
 
   if (daEquipe === true) {
     const dados: Record<string, string | null> = { papel: "equipe", portal_id: null, funcao: funcao ? String(funcao).slice(0, 80) : null };
     if (nome) dados.nome = nome;
     await admin.from("perfis").update(dados).eq("id", userId);
   } else if (portal_id) {
-    const { data: perfil } = await admin.from("perfis").select("papel").eq("id", userId).maybeSingle();
-    if (perfil?.papel === "equipe") return json({ erro: `${e} é da equipe e não pode ser ligado a um portal.` }, 400);
     const dados: Record<string, string> = { portal_id };
     if (nome) dados.nome = nome;
     await admin.from("perfis").update(dados).eq("id", userId);
   }
-  return json({ hash, tipo });
+  return json({ email: e, senha });
 });

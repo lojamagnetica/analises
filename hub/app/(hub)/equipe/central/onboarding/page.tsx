@@ -7,7 +7,7 @@ import { LinkAcesso } from "@/components/LinkAcesso";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, hoje } from "@/lib/formato";
-import { gerarLink } from "@/lib/acoes";
+import { gerarLink, type Acesso } from "@/lib/acoes";
 import { ETAPAS } from "@/lib/conteudo";
 import { guia } from "@/lib/guias";
 import { buscarJornada, diasUteisDepois, marcarCheck, type ClienteJornada } from "@/lib/jornada";
@@ -37,26 +37,26 @@ function Passos({ itens }: { itens: [string, string][] }) {
 }
 
 function Acesso({ c }: { c: ClienteJornada }) {
-  const [link, setLink] = useState<string | null>(null);
+  const [link, setLink] = useState<Acesso | null>(null);
   const [erro, setErro] = useState("");
   const [gerando, setGerando] = useState(false);
   if (!c.email) return <div className="aviso">Sem e-mail no portal. Preencha em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> e volte aqui.</div>;
   return (
     <>
-      <p style={{ fontSize: 17 }}>O seu acesso é pelo e-mail <b>{c.email}</b>. Você recebe um link, clica e cria a sua senha.</p>
-      {link ? <LinkAcesso link={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
+      <p style={{ fontSize: 17 }}>O seu acesso é pelo e-mail <b>{c.email}</b>. Você entra sempre pelo mesmo endereço, com o seu e-mail e a sua senha.</p>
+      {link ? <LinkAcesso acesso={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
         <button type="button" className="btn p" disabled={gerando} onClick={async () => {
           setErro(""); setGerando(true);
           try { setLink(await gerarLink(c.email!, c.responsavel ?? "", c.id)); }
           catch (e) { setErro((e as Error).message); }
           setGerando(false);
-        }}>{gerando ? "Gerando…" : "Gerar o link de acesso agora"}</button>
+        }}>{gerando ? "Criando…" : "Criar o acesso agora"}</button>
       )}
       {erro && <div className="aviso mt">{erro}</div>}
       <ol className="mt" style={{ fontSize: 16, lineHeight: 1.7 }}>
-        <li>Abra o link no celular (é de uso único e vence em pouco tempo).</li>
-        <li>Crie a sua senha.</li>
-        <li>Pronto: você já está dentro do Hub da sua loja.</li>
+        <li>Abra o endereço no celular: o seu e-mail já aparece preenchido.</li>
+        <li>Digite a senha que mandamos e toque em Entrar.</li>
+        <li>Salve na tela inicial do celular: na próxima vez é só tocar no ícone.</li>
       </ol>
     </>
   );

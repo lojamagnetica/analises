@@ -228,8 +228,8 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
   const motivos = ((nums.semana_passada as { fechados_com_motivo?: { dia: string; motivo: string }[] }).fechados_com_motivo ?? [])
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
   if (motivos.length) out.para_camilla = [out.para_camilla, `Caixa fechado com motivo (${motivos.length} ${motivos.length === 1 ? "dia" : "dias"}): ${motivos.join(" · ")}`].filter(Boolean).join("\n");
-  const acoes = out.acoes.slice(0, 3).map((t) => ({ t, feita: false }));
-  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: encaminhar, updated_at: new Date().toISOString() };
+  const acoes = out.acoes.slice(0, 5).map((t) => ({ t, feita: false }));
+  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 5), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: encaminhar, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);
   else await admin.from("loja_leituras").insert({ ...linha, portal_id: portalId, semana, autor_nome: "", publicada: false });
   return { portal_id: portalId, ok: true, agente: !!CHAVE };

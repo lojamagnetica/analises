@@ -8,6 +8,7 @@ import { hoje } from "@/lib/formato";
 import { buscarComercial, registrarVenda } from "@/lib/comercial";
 import { buscarLead, fecharLead } from "@/lib/leads";
 import { buscarJornada } from "@/lib/jornada";
+import { ValoresNegociacao } from "@/components/ValoresNegociacao";
 
 // Nova venda: o que o Comercial passa para a CS. Cria o portal (sem mandar o acesso) e a passagem de bastão.
 // Vindo de um lead fechado (?lead=…), já vem com o que o lead tinha e, ao registrar, o lead guarda o portal criado.
@@ -64,6 +65,7 @@ function NovaVenda() {
         </div>
 
         <div className="secao">A venda</div>
+        <ValoresNegociacao />
         <div className="grade g2" style={{ gap: 12 }}>
           <div>
             <label className="rotulo">Plano</label>
@@ -81,6 +83,9 @@ function NovaVenda() {
         <label className="rotulo">Na call: &quot;Se a mentoria resolver uma coisa só em 90 dias, qual é?&quot;</label>
         <textarea name="resultado_90" rows={2} required />
         <label className="marcar" style={{ marginTop: 10 }}><input type="checkbox" name="alinhado" required /> Alinhei o que a mentoria faz e não faz (não atuamos no financeiro)</label>
+        {planos.filter((p) => p.meses_call).map((p) => (
+          <label key={p.id} className="marcar"><input type="checkbox" name="na_call" /> Fechou na call ({p.nome}: {p.meses_call} meses pelo mesmo valor, no lugar de {p.meses})</label>
+        ))}
         <label className="marcar"><input type="checkbox" name="bonus" /> Bônus comercial concedido (treinamento de vendas)</label>
         <label className="marcar"><input type="checkbox" name="garantia" /> Com a garantia de risco zero</label>
         <label className="rotulo">O que a CS precisa saber (combinados, perfil, cuidados)</label>

@@ -23,8 +23,10 @@ export async function registrarVenda(f: FormData, porNome: string, existente?: s
   const planoId = txt(f, "plano", 40);
   if (!planoId) throw new Error("Escolha o plano.");
   const pagamento = txt(f, "pagamento_em", 10) || hoje();
-  const { data: plano } = await sb().from("planos").select("id, tipo, meses").eq("id", planoId).single();
-  const meses = Number(plano?.meses ?? 6);
+  const { data: plano } = await sb().from("planos").select("id, tipo, meses, meses_call").eq("id", planoId).single();
+  // Fechou na call: o plano que tem duração de call (ex.: Start, 6 meses) vale por ela, pelo mesmo valor.
+  const naCall = f.get("na_call") === "on" && !!plano?.meses_call;
+  const meses = Number((naCall ? plano?.meses_call : plano?.meses) ?? 6);
   const dadosPortal = {
     loja,
     responsavel: txt(f, "responsavel", 200) || null,
@@ -82,7 +84,7 @@ export async function buscarComercial() {
   const [{ data: pas }, { data: portais }, { data: planos }] = await Promise.all([
     sb().from("passagens").select("portal_id, plano_id, valor, pagamento_em, vendido_por, recebida_em, recebida_por, created_at, portais(loja)").order("created_at", { ascending: false }).limit(200),
     sb().from("portais").select("id, loja, ativo, contratos(plano_id, inicio, fim, status)").eq("ativo", true),
-    sb().from("planos").select("id, nome, tipo, meses, valor, vendendo").order("ordem"),
+    sb().from("planos").select("id, nome, tipo, meses, valor, vendendo, valor_fecha, meses_call").order("ordem"),
   ]);
   const vendas: Venda[] = (pas ?? []).map((p) => ({ ...(p as unknown as Venda), loja: ((Array.isArray(p.portais) ? p.portais[0] : p.portais) as { loja?: string } | null)?.loja ?? "" }));
   // Oportunidades: contrato que termina nos próximos 30 dias (renovação), Start no fim (upgrade para Gold), Gold no fim (upgrade para Premium).
@@ -98,5 +100,5 @@ export async function buscarComercial() {
     }
   }
   oportunidades.sort((a, b) => a.data.localeCompare(b.data));
-  return { vendas, oportunidades, planos: (planos ?? []) as { id: string; nome: string; tipo: string; meses: number | null; valor: number | null; vendendo: boolean }[] };
+  return { vendas, oportunidades, planos: (planos ?? []) as { id: string; nome: string; tipo: string; meses: number | null; valor: number | null; vendendo: boolean; valor_fecha: number | null; meses_call: number | null }[] };
 }

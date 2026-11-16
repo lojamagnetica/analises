@@ -1,5 +1,6 @@
-// O agente da leitura da semana: lê os números da loja (caixa, meta, plano do mês, a leitura anterior) e monta o
-// rascunho (o que os números mostram + 3 ações). A equipe revisa e encaminha, a Camilla publica; cada publicação vira exemplo.
+// O agente da leitura da semana: lê os números da loja (caixa, time, canais, meta, plano do mês, a leitura anterior)
+// e os relatórios que a loja subiu na semana (vendas, estoque), e monta a análise nos pilares do método
+// (performance da equipe, performance de produtos, estoque x giro) com as ações da semana. A equipe revisa e encaminha, a Camilla publica; cada publicação vira exemplo.
 // Chamado pela equipe (um portal) ou pelo agendamento de domingo às 6h (uma chamada por loja que mandou tudo, com a chave x-aviso).
 // Sem a chave do Claude, monta o rascunho por regras (só com os números).
 import Anthropic from "npm:@anthropic-ai/sdk";
@@ -30,7 +31,64 @@ function diasDeLoja(de: string, ate: string) {
 }
 const fimDoMes = (mes: string) => { const [a, m] = mes.split("-").map(Number); return new Date(Date.UTC(a, m, 0)).toISOString().slice(0, 10); };
 
-type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; vendedoras: { nome: string; faturamento: number }[] | null; justificativa: string | null };
+type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; vendedoras: { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number }[] | null; justificativa: string | null };
+const BALDE = "relatorios";
+
+/** O time na semana: cada vendedora com venda, vendas, peças, P.A. e ticket. */
+function timeDa(l: Caixa[]) {
+  const m = new Map<string, { nome: string; pessoa_id: string | null; faturamento: number; vendas: number; pecas: number; dias: number }>();
+  for (const c of l) for (const v of c.vendedoras ?? []) {
+    const k = v.pessoa_id ?? v.nome;
+    const x = m.get(k) ?? { nome: v.nome, pessoa_id: v.pessoa_id ?? null, faturamento: 0, vendas: 0, pecas: 0, dias: 0 };
+    x.faturamento += Number(v.faturamento) || 0; x.vendas += Number(v.vendas) || 0; x.pecas += Number(v.pecas) || 0; x.dias++;
+    m.set(k, x);
+  }
+  return [...m.values()].map((x) => ({ ...x, faturamento: Math.round(x.faturamento), pa: x.vendas ? +(x.pecas / x.vendas).toFixed(2) : null, ticket: x.vendas ? Math.round(x.faturamento / x.vendas) : null }))
+    .sort((a, b) => b.faturamento - a.faturamento);
+}
+
+/** Os relatórios que a loja subiu para a semana (vendas do sistema, estoque, crediário, fotos do caixa): vão para o agente ler. */
+async function arquivosDaSemana(admin: SupabaseClient, portalId: string, de: string, ate: string) {
+  const blocos: unknown[] = []; const nomes: string[] = []; let bytes = 0;
+  const { data: lojas } = await admin.storage.from(BALDE).list(`${portalId}/gestao`);
+  const caminhos: string[] = [];
+  for (const l of (lojas ?? []).filter((x) => !x.id)) {
+    const base = `${portalId}/gestao/${l.name}`;
+    const { data: pastas } = await admin.storage.from(BALDE).list(base, { limit: 200 });
+    for (const p of (pastas ?? []).filter((x) => !x.id)) {
+      const dia = /^\d{4}-\d{2}-\d{2}$/.test(p.name) ? p.name : null;
+      const mes = /^\d{4}-\d{2}$/.test(p.name) ? p.name : null;
+      // A pasta da semana (estoque, crediário), os dias da semana (arquivos do caixa) e o mês (relatórios do mês subidos nesta semana).
+      if (!(dia && dia >= soma(de, -1) && dia <= ate) && !(mes && mes >= soma(de, -40).slice(0, 7))) continue;
+      const { data: fs } = await admin.storage.from(BALDE).list(`${base}/${p.name}`, { limit: 100 });
+      for (const f of fs ?? []) {
+        if (!f.id) continue;
+        const subiu = String(f.created_at ?? "").slice(0, 10);
+        if (mes && (subiu < de || subiu > soma(ate, 2))) continue;
+        caminhos.push(`${base}/${p.name}/${f.name}`);
+      }
+    }
+  }
+  // Primeiro os relatórios da semana (estoque e vendas), depois os do caixa do dia.
+  caminhos.sort((a, b) => Number(/\/caixa_/.test(a)) - Number(/\/caixa_/.test(b)));
+  for (const c of caminhos) {
+    if (blocos.length >= 10 || bytes > 18 * 1024 * 1024) break;
+    const { data: b } = await admin.storage.from(BALDE).download(c);
+    if (!b || b.size > 8 * 1024 * 1024) continue;
+    const nome = c.split("/").slice(-2).join("/"), baixo = nome.toLowerCase();
+    const buf = new Uint8Array(await b.arrayBuffer());
+    const b64 = () => { let x = ""; for (let i = 0; i < buf.length; i += 0x8000) x += String.fromCharCode(...buf.subarray(i, i + 0x8000)); return btoa(x); };
+    if (baixo.endsWith(".pdf")) blocos.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64() }, title: nome });
+    else if (/\.(png|jpe?g|webp)$/.test(baixo)) blocos.push({ type: "image", source: { type: "base64", media_type: baixo.endsWith(".png") ? "image/png" : baixo.endsWith(".webp") ? "image/webp" : "image/jpeg", data: b64() } });
+    else if (/\.(xlsx|xls|ods|csv)$/.test(baixo)) {
+      const XLSX = await import("npm:xlsx@0.18.5");
+      const wb = XLSX.read(buf, { type: "array" });
+      blocos.push({ type: "text", text: `Planilha ${nome}:\n${wb.SheetNames.map((n: string) => `# ${n}\n${XLSX.utils.sheet_to_csv(wb.Sheets[n])}`).join("\n\n").slice(0, 40000)}` });
+    } else continue;
+    nomes.push(nome); bytes += b.size;
+  }
+  return { blocos, nomes };
+}
 
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(refSemana()), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
@@ -56,7 +114,9 @@ async function numeros(admin: SupabaseClient, portalId: string) {
     const porVendedora: Record<string, number> = {};
     l.forEach((c) => (c.vendedoras ?? []).forEach((v) => { porVendedora[v.nome] = (porVendedora[v.nome] ?? 0) + Number(v.faturamento); }));
     return { faturamento: Math.round(fat), vendas, pecas, ticket: vendas ? Math.round(fat / vendas) : null, pa: vendas ? +(pecas / vendas).toFixed(2) : null,
-      dias_lancados: new Set(l.map((c) => c.dia)).size, dias_de_loja: diasDeLoja(de, ate), por_dia: l.map((c) => ({ dia: c.dia, faturamento: Math.round(Number(c.faturamento)) })), por_vendedora: porVendedora,
+      dias_lancados: new Set(l.map((c) => c.dia)).size, dias_de_loja: diasDeLoja(de, ate),
+      por_dia: l.map((c) => ({ dia: c.dia, faturamento: Math.round(Number(c.faturamento)), vendas: Number(c.vendas), pecas: Number(c.pecas) })), por_vendedora: porVendedora,
+      time: timeDa(l),
       // Dias que a loja fechou com algo faltando ou que não bate, e o motivo que ela escreveu.
       fechados_com_motivo: l.filter((c) => c.justificativa?.trim()).map((c) => ({ dia: c.dia, motivo: c.justificativa as string })) };
   };
@@ -74,7 +134,7 @@ async function numeros(admin: SupabaseClient, portalId: string) {
         horas_de_trabalho: +(min / 60).toFixed(1), vende_por_hora: min ? Math.round(valor / (min / 60)) : null };
     }).sort((a, b) => b.faturamento - a.faturamento);
   };
-  const d = (plano?.dados ?? {}) as { base?: number; crescimento?: number; premiacao?: string; semanas?: { foco?: string }[]; acoes?: { titulo: string; inicio?: string }[]; datas?: { titulo: string; trabalhar: boolean }[] };
+  const d = (plano?.dados ?? {}) as { metas?: Record<string, number>; base?: number; crescimento?: number; premiacao?: string; semanas?: { foco?: string }[]; acoes?: { titulo: string; inicio?: string }[]; datas?: { titulo: string; trabalhar: boolean }[] };
   const meta = d.base ? Math.round((d.base * (1 + (d.crescimento ?? 20) / 100)) / 100) * 100 : null;
   const ontem = soma(h, -1);
   const noMes = resumo(`${mes}-01`, ontem);
@@ -85,7 +145,7 @@ async function numeros(admin: SupabaseClient, portalId: string) {
     semana_passada: { de: passada, ate: soma(esta, -1), ...resumo(passada, soma(esta, -1)) },
     semana_retrasada: { de: retrasada, ate: soma(passada, -1), ...resumo(retrasada, soma(passada, -1)) },
     mes_ate_ontem: { ...noMes, meta_do_mes: meta, deveria_ter_vendido_ate_ontem: ritmo },
-    plano_do_mes: plano ? { status: plano.status, premiacao: d.premiacao ?? "", foco_desta_semana: d.semanas?.[semanaDoMes]?.foco ?? "", acoes: (d.acoes ?? []).map((a) => a.titulo), datas: (d.datas ?? []).filter((x) => x.trabalhar).map((x) => x.titulo) } : null,
+    plano_do_mes: plano ? { status: plano.status, metas_individuais_do_mes: d.metas ?? null, premiacao: d.premiacao ?? "", foco_desta_semana: d.semanas?.[semanaDoMes]?.foco ?? "", acoes: (d.acoes ?? []).map((a) => a.titulo), datas: (d.datas ?? []).filter((x) => x.trabalhar).map((x) => x.titulo) } : null,
     leitura_anterior: anterior ?? null,
     canais_semana_passada: porCanal(passada, soma(esta, -1)),
     canais_semana_retrasada: porCanal(retrasada, soma(passada, -1)),
@@ -93,9 +153,21 @@ async function numeros(admin: SupabaseClient, portalId: string) {
 }
 
 const ESQUEMA = {
-  type: "object", additionalProperties: false, required: ["texto", "acoes", "para_camilla"],
-  properties: { texto: { type: "string" }, acoes: { type: "array", items: { type: "string" } }, para_camilla: { type: "string" } },
+  type: "object", additionalProperties: false, required: ["resumo", "equipe", "produtos", "estoque_giro", "canais", "acoes", "para_camilla"],
+  properties: {
+    resumo: { type: "string" }, equipe: { type: "string" }, produtos: { type: "string" }, estoque_giro: { type: "string" }, canais: { type: "string" },
+    acoes: { type: "array", items: { type: "object", additionalProperties: false, required: ["pilar", "acao"], properties: { pilar: { type: "string" }, acao: { type: "string" } } } },
+    para_camilla: { type: "string" },
+  },
 };
+type Analise = { resumo: string; equipe: string; produtos: string; estoque_giro: string; canais: string; acoes: { pilar: string; acao: string }[]; para_camilla: string };
+/** A análise em blocos vira o texto que a loja lê (um bloco por pilar) e as ações da semana. */
+const juntar = (a: Analise): Saida => ({
+  texto: [a.resumo, a.equipe && `PERFORMANCE DA EQUIPE\n${a.equipe}`, a.produtos && `PERFORMANCE DE PRODUTOS\n${a.produtos}`,
+    a.estoque_giro && `ESTOQUE X GIRO\n${a.estoque_giro}`, a.canais && `CANAIS DE VENDA\n${a.canais}`].filter((x) => x && x.trim()).join("\n\n"),
+  acoes: a.acoes.map((x) => (x.pilar ? `${x.pilar}: ${x.acao}` : x.acao)),
+  para_camilla: a.para_camilla,
+});
 
 type Saida = { texto: string; acoes: string[]; para_camilla: string };
 type Nums = Awaited<ReturnType<typeof numeros>>;
@@ -150,7 +222,8 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
   ]);
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
   const conversas = await faleComCamilla(admin, portalId);
-  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums, conversas) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
+  const arquivos = CHAVE ? await arquivosDaSemana(admin, portalId, nums.semana_passada.de, nums.semana_passada.ate).catch(() => ({ blocos: [], nomes: [] })) : { blocos: [], nomes: [] };
+  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums, conversas, arquivos) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
   // A Camilla sempre vê os dias fechados com motivo antes de aprovar.
   const motivos = ((nums.semana_passada as { fechados_com_motivo?: { dia: string; motivo: string }[] }).fechados_com_motivo ?? [])
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
@@ -176,17 +249,20 @@ async function faleComCamilla(admin: SupabaseClient, portalId: string) {
   return linhas.map((x) => `${x.em.slice(8, 10)}/${x.em.slice(5, 7)} · ${x.quem}: ${x.t.replace(/\s+/g, " ").slice(0, 400)}`).join("\n").slice(-8000);
 }
 
-async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = ""): Promise<Saida> {
+async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = "", arquivos: { blocos: unknown[]; nomes: string[] } = { blocos: [], nomes: [] }): Promise<Saida> {
   const client = new Anthropic({ apiKey: CHAVE });
   const r = await client.beta.messages.stream({
-    model: MODELO, max_tokens: 4000,
+    model: MODELO, max_tokens: 12000,
     betas: ["server-side-fallback-2026-07-01"],
     // @ts-ignore: fallbacks "default" ainda pode não estar no tipo do SDK
     fallbacks: "default",
     output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMA } },
     system: instrucoes,
-    messages: [{ role: "user", content: [
-      exemplos.length ? `Exemplos (rascunho do agente → versão final da Camilla):\n${exemplos.map((e) => `RASCUNHO: ${JSON.stringify(e.rascunho)}\nFINAL: ${JSON.stringify(e.final)}`).join("\n\n")}` : "Ainda não há exemplos aprovados.",
+    messages: [{ role: "user", content: [...arquivos.blocos, { type: "text", text: [
+      arquivos.nomes.length
+        ? `Acima estão os relatórios que a loja subiu para esta semana (${arquivos.nomes.join(", ")}). Leia todos: é deles que saem os produtos que mais venderam, as categorias, as marcas, os tamanhos e o estoque de cada uma. Use só o que está escrito neles.`
+        : "A loja não subiu relatório de vendas por produto nem de estoque nesta semana: nos blocos de produtos e de estoque, diga o que dá para ler pelo caixa e peça o relatório que falta (vendas por produto ou o estoque por categoria).",
+      exemplos.length ? `Exemplos de tom (rascunho do agente → versão final da Camilla; a estrutura agora é a dos pilares, use os exemplos só para o tom):\n${exemplos.map((e) => `RASCUNHO: ${JSON.stringify(e.rascunho)}\nFINAL: ${JSON.stringify(e.final)}`).join("\n\n")}` : "Ainda não há exemplos aprovados.",
       `Loja: ${portal?.loja} (${portal?.tipo}). Lojista: ${portal?.responsavel ?? "—"}.`,
       `Números (R$; semana = segunda a domingo): ${JSON.stringify(nums)}`,
       conversas
@@ -195,12 +271,12 @@ async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; fina
       nums.canais_semana_passada
         ? "A loja mede as vendas por canal (canais_semana_passada e canais_semana_retrasada, lançadas pela equipe; cada lançamento é uma venda). Inclua na leitura o comparativo dos canais: qual mais vendeu, qual rende mais por hora de trabalho, o P.A. e o ticket de cada um, e qual toma tempo demais para o que traz. Diga com clareza em qual canal vale investir o tempo da equipe nesta semana e qual reduzir. Se a venda do link ficou bem abaixo do caixa da semana, avise que parte das vendas não foi lançada por canal (o comparativo fica parcial)."
         : "",
-      "Monte a leitura desta semana. Responda só com o JSON pedido.",
-    ].filter(Boolean).join("\n\n") }],
+      "Monte a análise desta semana nos pilares. Responda só com o JSON pedido.",
+    ].filter(Boolean).join("\n\n") }] }],
   }).finalMessage();
   const bloco = r.content.find((b) => b.type === "text");
   if (!bloco || bloco.type !== "text") throw new Error("O agente não devolveu a leitura.");
-  return JSON.parse(bloco.text) as Saida;
+  return juntar(JSON.parse(bloco.text) as Analise);
 }
 
 Deno.serve(async (req) => {

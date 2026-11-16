@@ -101,25 +101,28 @@ export async function salvarFoto(arquivo: File | null) {
 
 // ───── Equipe ─────
 
+/** O acesso da pessoa: sempre o mesmo endereço (a página de entrar), o e-mail e a senha. Não vence. */
+export type Acesso = { link: string; email: string; senha: string };
+const paginaDeEntrar = (email: string) => `${location.origin}${BASE}/login/?email=${encodeURIComponent(email)}`;
+
 /**
- * Link de acesso de uso único, sem depender de e-mail: convite para conta nova, link de entrada
- * para quem já tem. Quem gera é a função "acesso" do Supabase, que confere se quem pediu é da equipe
- * e, com portalId, já liga a pessoa ao portal.
+ * Cria ou renova o acesso de uma pessoa com e-mail e senha, sem depender de e-mail nem de link que expira.
+ * Quem cria é a função "acesso" do Supabase, que confere se quem pediu é da equipe e, com portalId, liga a pessoa ao portal.
  */
 export function gerarLink(email: string, nome: string, portalId?: string) {
   return umLinkPorVez(email, async () => {
     const { data, error } = await sb().functions.invoke("acesso", { body: { email, nome, portal_id: portalId ?? null } });
     if (error) throw new Error(await erroDaFuncao(error));
-    const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
-    return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
+    const r = data as { email: string; senha: string };
+    return { link: paginaDeEntrar(r.email), email: r.email, senha: r.senha };
   });
 }
 
 // Cada link novo anula o anterior da mesma pessoa. Clique repetido no botão (ou dois botões ao mesmo tempo)
 // gerava vários links no mesmo segundo e o que ia para a cliente já nascia morto. Aqui, enquanto um link
 // está sendo gerado para um e-mail, qualquer outro pedido para o mesmo e-mail recebe esse mesmo link.
-const gerandoLink = new Map<string, Promise<string>>();
-function umLinkPorVez(email: string, gerar: () => Promise<string>) {
+const gerandoLink = new Map<string, Promise<Acesso>>();
+function umLinkPorVez(email: string, gerar: () => Promise<Acesso>) {
   const chave = email.trim().toLowerCase();
   const emAndamento = gerandoLink.get(chave);
   if (emAndamento) return emAndamento;
@@ -130,7 +133,7 @@ function umLinkPorVez(email: string, gerar: () => Promise<string>) {
 
 async function linkOuAviso(email: string, nome: string, portalId: string) {
   try {
-    return { link: await gerarLink(email, nome, portalId) };
+    return { acesso: await gerarLink(email, nome, portalId) };
   } catch (e) {
     return { aviso: `Não foi possível criar o acesso de ${email}: ${(e as Error).message}` };
   }
@@ -163,7 +166,7 @@ export async function criarPortal(form: FormData) {
   const { data: modelo } = await sb().from("plano_modelo").select("mes, ordem, texto").order("mes").order("ordem");
   if (modelo?.length) await sb().from("plano_itens").insert(modelo.map((m) => ({ ...m, portal_id: portal.id })));
 
-  const acesso: { link?: string; aviso?: string } = email ? await linkOuAviso(email, responsavel, portal.id) : {};
+  const acesso: { acesso?: Acesso; aviso?: string } = email ? await linkOuAviso(email, responsavel, portal.id) : {};
   return { id: portal.id as string, ...acesso };
 }
 
@@ -186,7 +189,7 @@ export async function atualizarPortal(id: string, form: FormData) {
   if (error) throw new Error(error.message);
 }
 
-export async function convidarPessoa(portalId: string, form: FormData): Promise<{ link?: string; aviso?: string }> {
+export async function convidarPessoa(portalId: string, form: FormData): Promise<{ acesso?: Acesso; aviso?: string }> {
   const email = txt(form, "email", 200).toLowerCase();
   if (!email) return {};
   return linkOuAviso(email, txt(form, "nome", 200), portalId);
@@ -354,7 +357,7 @@ export async function contratoRemoverAnexo(id: string, caminho: string) {
   await sb().storage.from("relatorios").remove([caminho]);
 }
 
-/** Link de acesso para uma pessoa nova da equipe; a função "acesso" já dá a ela o papel de equipe. */
+/** Acesso (e-mail e senha) para uma pessoa nova da equipe; a função "acesso" já dá a ela o papel de equipe. */
 export async function convidarEquipe(form: FormData) {
   const email = txt(form, "email", 200).toLowerCase();
   if (!email) throw new Error("Preencha o e-mail.");
@@ -363,8 +366,8 @@ export async function convidarEquipe(form: FormData) {
   return umLinkPorVez(email, async () => {
     const { data, error } = await sb().functions.invoke("acesso", { body: { email, nome, funcao, equipe: true } });
     if (error) throw new Error(await erroDaFuncao(error));
-    const { hash, tipo } = data as { hash: string; tipo: "invite" | "email" };
-    return `${location.origin}${BASE}/auth/confirm/?token_hash=${hash}&type=${tipo}`;
+    const r = data as { email: string; senha: string };
+    return { link: paginaDeEntrar(r.email), email: r.email, senha: r.senha };
   });
 }
 

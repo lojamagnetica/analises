@@ -10,7 +10,7 @@ import { MensagensCS } from "@/components/MensagensCS";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/formato";
-import { contratoAnexar, contratoRemoverAnexo, gerarLink } from "@/lib/acoes";
+import { contratoAnexar, contratoRemoverAnexo, gerarLink, type Acesso } from "@/lib/acoes";
 import { abrirContratoAssinado } from "@/lib/contrato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { aberta, buscarPendencias, mensagemParaLoja } from "@/lib/pendencias";
@@ -119,7 +119,7 @@ function PerguntasGargalo({ portalId, loja, responsavel }: { portalId: string; l
 function Cliente() {
   const id = useSearchParams().get("id") ?? "";
   const { nome, abrirPortal } = useEquipe();
-  const [link, setLink] = useState<string | null>(null);
+  const [link, setLink] = useState<Acesso | null>(null);
   const [erro, setErro] = useState("");
   const { dados, recarregar } = useDados(async () => {
     const [j, p] = await Promise.all([buscarJornada(id), buscarPendencias(id)]);
@@ -156,8 +156,8 @@ function Cliente() {
     if (k.acao === "acesso") {
       const apresentar = <Link className="btn p peq" href={`/equipe/central/onboarding?id=${c.id}`} style={{ marginRight: 8 }}>▶ Apresentação do onboarding</Link>;
       if (!c.email) return <>{apresentar}<small className="mudo">Sem e-mail no portal: preencha o e-mail em <Link href={`/equipe/portal?id=${c.id}`}>Editar portal</Link> para gerar o acesso.</small></>;
-      return link ? <LinkAcesso link={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
-        <>{apresentar}<button type="button" className="btn s peq" onClick={async () => { setErro(""); try { setLink(await gerarLink(c.email!, c.responsavel ?? "", c.id)); } catch (e) { setErro((e as Error).message); } }}>Só gerar o link de acesso</button></>
+      return link ? <LinkAcesso acesso={link} nome={c.responsavel ?? ""} whatsapp={c.whatsapp} /> : (
+        <>{apresentar}<button type="button" className="btn s peq" onClick={async () => { setErro(""); try { setLink(await gerarLink(c.email!, c.responsavel ?? "", c.id)); } catch (e) { setErro((e as Error).message); } }}>Só criar o acesso (e-mail e senha)</button></>
       );
     }
     if (k.acao === "pendencias" && pend) return (

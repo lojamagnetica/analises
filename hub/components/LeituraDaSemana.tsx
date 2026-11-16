@@ -164,7 +164,7 @@ export function LeituraDaSemana() {
   const zap = (portal.whatsapp ?? "").replace(/\D/g, "");
   const avisar = zap && (
     <a className="btn p peq" target="_blank" rel="noopener"
-      href={`https://wa.me/55${zap.replace(/^55/, "")}?text=${encodeURIComponent(`Oi, ${portal.responsavel?.split(" ")[0] ?? ""}! A leitura da sua semana já está no Hub, com as 3 ações para esta semana: ${typeof window !== "undefined" ? window.location.origin : ""}${BASE}/inicio/`)}`}>
+      href={`https://wa.me/55${zap.replace(/^55/, "")}?text=${encodeURIComponent(`Oi, ${portal.responsavel?.split(" ")[0] ?? ""}! A leitura da sua semana já está no Hub, com as ações para esta semana: ${typeof window !== "undefined" ? window.location.origin : ""}${BASE}/inicio/`)}`}>
       Avisar a loja no WhatsApp
     </a>
   );
@@ -173,7 +173,7 @@ export function LeituraDaSemana() {
   if (equipe && (editando || !dados.publicadaNestaSemana)) {
     const r = dados.rascunho;
     const tx = texto ?? r?.texto ?? (editando ? l?.texto ?? "" : "");
-    const ac = acoes ?? [...(r?.acoes.map((a) => a.t) ?? (editando ? l?.acoes.map((a) => a.t) ?? [] : [])), "", "", ""].slice(0, 3);
+    const ac = acoes ?? [...(r?.acoes.map((a) => a.t) ?? (editando ? l?.acoes.map((a) => a.t) ?? [] : [])), "", "", "", "", ""].slice(0, 5);
     const n = dados.numeros;
     return (
       <div className="card card-borda mt" style={{ ["--c" as string]: "var(--purple)" }}>
@@ -192,12 +192,12 @@ export function LeituraDaSemana() {
         )}
         {n?.informados?.obs && <div className="aviso mb">💬 <b>A loja contou:</b> {n.informados.obs}</div>}
         {r?.rascunho?.para_camilla && <div className="aviso mb">🔎 <b>Para você conferir:</b> {r.rascunho.para_camilla}</div>}
-        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>O que os números mostram</b>
-          <textarea rows={4} value={tx} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: A semana fechou 18% abaixo do ritmo da meta. O ticket subiu, mas entraram menos clientes: o foco é trazer gente para a loja." />
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>A análise da semana (resumo, equipe, produtos, estoque x giro e canais)</b>
+          <textarea rows={tx.length > 600 ? 16 : 4} value={tx} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: A semana fechou 18% abaixo do ritmo da meta. O ticket subiu, mas entraram menos clientes: o foco é trazer gente para a loja." />
         </label>
-        <b style={{ fontSize: 14 }}>As 3 ações da semana</b>
+        <b style={{ fontSize: 14 }}>As ações da semana (até 5; a vazia não entra)</b>
         {ac.map((a, i) => (
-          <input key={i} type="text" value={a} placeholder={`Ação ${i + 1}`} onChange={(e) => setAcoes(ac.map((x, j) => (j === i ? e.target.value : x)))} />
+          <textarea key={i} rows={a.length > 120 ? 3 : 1} value={a} placeholder={`Ação ${i + 1}`} onChange={(e) => setAcoes(ac.map((x, j) => (j === i ? e.target.value : x)))} />
         ))}
         {erro && <div className="aviso mb">{erro}</div>}
         <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>

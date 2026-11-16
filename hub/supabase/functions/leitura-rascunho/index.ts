@@ -118,7 +118,8 @@ function porRegras(nome: string, n: Nums, semGestao: boolean): Saida {
   return { texto: frases.join(" "), acoes: acoes.slice(0, 3), para_camilla: "Rascunho automático por regras (o agente com IA ainda não está ligado): confira os números, ajuste o tom e as ações." };
 }
 
-async function rascunho(admin: SupabaseClient, portalId: string, todas = false) {
+/** encaminhar: o rascunho já vai para a Camilla aprovar (Minha central › Para aprovar). É o caso do agendamento de domingo. */
+async function rascunho(admin: SupabaseClient, portalId: string, todas = false, encaminhar = false) {
   const semana = segunda(refSemana());
   const { data: atual } = await admin.from("loja_leituras").select("id, publicada, pronta").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
   if (atual?.publicada) return { portal_id: portalId, pulou: "já publicada" };
@@ -137,7 +138,7 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false) 
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
   if (motivos.length) out.para_camilla = [out.para_camilla, `Caixa fechado com motivo (${motivos.length} ${motivos.length === 1 ? "dia" : "dias"}): ${motivos.join(" · ")}`].filter(Boolean).join("\n");
   const acoes = out.acoes.slice(0, 3).map((t) => ({ t, feita: false }));
-  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: false, updated_at: new Date().toISOString() };
+  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 3), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: encaminhar, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);
   else await admin.from("loja_leituras").insert({ ...linha, portal_id: portalId, semana, autor_nome: "", publicada: false });
   return { portal_id: portalId, ok: true, agente: !!CHAVE };
@@ -180,7 +181,7 @@ Deno.serve(async (req) => {
   }
 
   if (corpo?.portal_id) {
-    try { return json(await rascunho(admin, String(corpo.portal_id))); } catch (e) { return json({ erro: (e as Error).message }, 500); }
+    try { return json(await rascunho(admin, String(corpo.portal_id), false, peloAgendamento)); } catch (e) { return json({ erro: (e as Error).message }, 500); }
   }
   if (corpo?.todas) {
     // Lojas ativas com acesso ao Hub ou com caixa lançado nas últimas 2 semanas.

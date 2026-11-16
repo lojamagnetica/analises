@@ -119,9 +119,12 @@ function completar(atual: Record<string, unknown> | null, lido: Lido, equipe: { 
   };
 }
 
-async function rodada(admin: SupabaseClient) {
-  const de = soma(hoje(), -7);
-  const { data: portais } = await admin.from("portais").select("id, lojas").eq("ativo", true).neq("tipo", "Curso");
+/** desde/portal: a equipe pode pedir para reler dias mais antigos de uma loja (ex.: um dia que ficou só com arquivo). */
+async function rodada(admin: SupabaseClient, desde?: string, portal?: string) {
+  const de = desde && /^\d{4}-\d{2}-\d{2}$/.test(desde) ? desde : soma(hoje(), -7);
+  let qp = admin.from("portais").select("id, lojas").eq("ativo", true).neq("tipo", "Curso");
+  if (portal) qp = qp.eq("id", portal);
+  const { data: portais } = await qp;
   let feitos = 0;
   for (const p of portais ?? []) {
     const lojas: string[] = (p.lojas ?? []).length > 1 ? p.lojas : [""];
@@ -166,7 +169,7 @@ Deno.serve(async (req) => {
   if (corpo?.rodada) {
     if (!peloAgendamento) return json({ erro: "Só o agendamento roda a rodada." }, 403);
     // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
-    EdgeRuntime.waitUntil(rodada(admin).then((n) => console.log("dias completados", n)).catch((e) => console.error(e)));
+    EdgeRuntime.waitUntil(rodada(admin, corpo?.desde, corpo?.portal_id).then((n) => console.log("dias completados", n)).catch((e) => console.error(e)));
     return json({ ok: true }, 202);
   }
   const portal = String(corpo?.portal_id ?? ""), dia = String(corpo?.dia ?? ""), loja = String(corpo?.loja ?? "");

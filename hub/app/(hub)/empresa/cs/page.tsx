@@ -8,7 +8,7 @@ import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
-import { painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
+import { liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
 import { hoje } from "@/lib/formato";
 
@@ -119,7 +119,7 @@ function CartaoAssunto({ g, nome, recarregar }: { g: GrupoAlerta; nome: string; 
 
 /** Faça agora da CS: uma loja, um cartão, os mais urgentes primeiro. Cada alerta some sozinho quando o dado entra ou a conversa é registrada. */
 export default function InicioCs() {
-  const { nome, abrirPortal, userId, conversas } = useEquipe();
+  const { nome, abrirPortal, userId, conversas, aprova } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
   const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas">("painel");
   const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
@@ -175,6 +175,18 @@ export default function InicioCs() {
             {pd.grupos.filter((g) => g.cor !== "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
             {pd.grupos.some((g) => g.cor === "verde" && g.lojas.length) && <div className="secao">Parabéns da semana passada</div>}
             {pd.grupos.filter((g) => g.cor === "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
+            {aprova && pd.direcao.length > 0 && (
+              <details className="card mt">
+                <summary style={{ cursor: "pointer", fontWeight: 600 }}>Mensagem de direção do dia: liberar a cobrança da CS · {pd.direcao.filter((d) => d.ligada).length} de {pd.direcao.length}</summary>
+                <p className="ajuda">Só você vê. Libere a loja quando o time dela já estiver usando o Hub: a partir daí a Claudia passa a acompanhar se a mensagem foi marcada.</p>
+                {pd.direcao.map((d) => (
+                  <div key={d.id} className="linha entre" style={{ gap: 8, padding: "6px 0", borderTop: "1px solid var(--line)" }}>
+                    <span>{d.loja} {d.ligada ? <span className="selo feito">liberada</span> : <span className="selo espera">desligada</span>}</span>
+                    <button type="button" className={`btn ${d.ligada ? "s" : "p"} peq`} onClick={async () => { try { await liberarDirecao(d.id, !d.ligada); recarregarPd(); } catch (e) { alert((e as Error).message); } }}>{d.ligada ? "Desligar" : "Liberar"}</button>
+                  </div>
+                ))}
+              </details>
+            )}
           </>
         )
       )}

@@ -19,7 +19,9 @@ export type GrupoAlerta = {
   /** O registro que fecha o alerta quando a CS marca "falei com todas". */
   registro: { tipo: string; ref: string };
 };
-export type PainelDia = { grupos: GrupoAlerta[]; ontem: string; acompanhadas: number };
+export type PainelDia = { grupos: GrupoAlerta[]; ontem: string; acompanhadas: number;
+  /** Lojas com time: a Camilla libera a cobrança da mensagem de direção quando o time já usa o Hub. */
+  direcao: { id: string; loja: string; ligada: boolean }[] };
 
 const primeiro = (n: string | null) => (n ?? "").trim().split(/\s+/)[0] || "tudo bem";
 const abertura = (r: string | null) => `Oi, ${primeiro(r)}! Aqui é a Claudia, da Loja Magnética.`;
@@ -34,9 +36,9 @@ export async function painelDia(): Promise<PainelDia> {
   const sb = supabaseBrowser();
   const ontem = diaDeOntem();
   const passada = semanaPassada();
-  const { data: portais } = await sb.from("portais").select("id, loja, whatsapp, responsavel, menu_oculto, sem_equipe").eq("ativo", true).eq("cs_acompanha", true).order("loja");
+  const { data: portais } = await sb.from("portais").select("id, loja, whatsapp, responsavel, menu_oculto, sem_equipe, direcao_cs").eq("ativo", true).eq("cs_acompanha", true).order("loja");
   const ids = (portais ?? []).map((p) => p.id as string);
-  if (!ids.length) return { grupos: [], ontem, acompanhadas: 0 };
+  if (!ids.length) return { grupos: [], ontem, acompanhadas: 0, direcao: [] };
   const [{ data: perfis }, { data: caixa }, { data: rotina }, { data: analises }, { data: contatos }] = await Promise.all([
     sb.from("perfis").select("portal_id, ultimo_acesso").in("portal_id", ids),
     sb.from("loja_caixa").select("portal_id, dia").in("portal_id", ids).gte("dia", passada),
@@ -46,7 +48,7 @@ export async function painelDia(): Promise<PainelDia> {
   ]);
   const falouSobre = (id: string, tipo: string, ref: string) => (contatos ?? []).some((c) => c.portal_id === id && c.tipo === tipo && c.ref === ref);
 
-  type Info = { id: string; loja: string; whatsapp: string | null; responsavel: string | null; gestao: boolean; equipe: boolean;
+  type Info = { id: string; loja: string; whatsapp: string | null; responsavel: string | null; gestao: boolean; equipe: boolean; direcaoCs: boolean;
     caixaOntem: boolean; semAcesso: number | null; direcaoOntem: boolean; caixaPassada: boolean; direcaoPassada: boolean; analisePassada: boolean };
   const infos: Info[] = (portais ?? []).map((p) => {
     const id = p.id as string;
@@ -57,7 +59,7 @@ export async function painelDia(): Promise<PainelDia> {
     const semana = diasDaSemana(passada);
     const gestao = !((p.menu_oculto ?? []) as string[]).includes("gestao");
     const analise = (analises ?? []).some((a) => a.portal_id === id && ((a.dados as { semana?: string } | null)?.semana === passada || ((a.data as string) >= passada && (a.data as string) < semanaDe())));
-    return { id, loja: p.loja as string, whatsapp: (p.whatsapp as string | null) ?? null, responsavel: (p.responsavel as string | null) ?? null, gestao, equipe: !p.sem_equipe,
+    return { id, loja: p.loja as string, whatsapp: (p.whatsapp as string | null) ?? null, responsavel: (p.responsavel as string | null) ?? null, gestao, equipe: !p.sem_equipe, direcaoCs: !!p.direcao_cs,
       caixaOntem: dias.has(ontem), semAcesso: ultimo ? Math.floor(diasDesde(ultimo)) : null, direcaoOntem: direcao(ontem),
       caixaPassada: semana.every((d) => dias.has(d)), direcaoPassada: semana.every((d) => direcao(d)), analisePassada: analise };
   });
@@ -80,9 +82,10 @@ export async function painelDia(): Promise<PainelDia> {
     candidatas: infos, faltam: (i) => i.semAcesso === null || i.semAcesso > 2,
     msg: (i) => `${abertura(i.responsavel)} Faz ${i.semAcesso ?? "alguns"} dias que não vejo você no Hub da ${i.loja}. Abre o Início: lá já está o que fazer hoje. Está tudo bem por aí? Posso te ajudar em algo?` }));
 
-  // Mensagem de direção do dia sem marcar (laranja): a conversa mostra que a loja precisa dar o check.
-  grupos.push(nova({ chave: "direcao", cor: "laranja", titulo: "Mensagem de direção de ontem sem marcar", detalhe: "Se mandou no grupo, é só marcar o check no Meu dia. Se não mandou, mandar hoje: a mensagem já está pronta lá.", registro: { tipo: "direcao", ref: ontem },
-    candidatas: infos.filter((i) => i.equipe), faltam: (i) => !i.direcaoOntem,
+  // Mensagem de direção do dia sem marcar (laranja): só das lojas que a Camilla liberou (o time já usa o Hub).
+  const comDirecao = infos.filter((i) => i.equipe && i.direcaoCs);
+  if (comDirecao.length) grupos.push(nova({ chave: "direcao", cor: "laranja", titulo: "Mensagem de direção de ontem sem marcar", detalhe: "Se mandou no grupo, é só marcar o check no Meu dia. Se não mandou, mandar hoje: a mensagem já está pronta lá.", registro: { tipo: "direcao", ref: ontem },
+    candidatas: comDirecao, faltam: (i) => !i.direcaoOntem,
     msg: (i) => `${abertura(i.responsavel)} Vi que a mensagem de direção do dia de ontem da ${i.loja} não foi marcada no Hub. Se você mandou no grupo da equipe, marca o check no Meu dia para eu acompanhar. Se não mandou, manda hoje: ela já está pronta lá. Combinado?` }));
 
   // Parabéns da semana passada (verde): para puxar e motivar o time das outras lojas.
@@ -96,10 +99,16 @@ export async function painelDia(): Promise<PainelDia> {
     grupos.push({ ...g, ok: fizeram.length, total: cand.length, lojas });
   };
   parabens("caixa_completo", "lançaram o caixa todos os dias", "caixa lançado todos os dias", comCaixa, (i) => i.caixaPassada);
-  parabens("direcao_completa", "mandaram a mensagem de direção do dia todos os dias", "missão do dia todos os dias", infos.filter((i) => i.equipe), (i) => i.direcaoPassada);
+  if (comDirecao.length) parabens("direcao_completa", "mandaram a mensagem de direção do dia todos os dias", "missão do dia todos os dias", comDirecao, (i) => i.direcaoPassada);
   parabens("analise_semana", "fizeram a análise da semana", "análise da semana feita", infos, (i) => i.analisePassada);
 
-  return { grupos, ontem, acompanhadas: infos.length };
+  return { grupos, ontem, acompanhadas: infos.length, direcao: infos.filter((i) => i.equipe).map((i) => ({ id: i.id, loja: i.loja, ligada: i.direcaoCs })) };
+}
+
+/** A Camilla liga ou desliga a cobrança da mensagem de direção de uma loja no painel da CS. */
+export async function liberarDirecao(id: string, ligada: boolean) {
+  const { error } = await supabaseBrowser().from("portais").update({ direcao_cs: ligada }).eq("id", id);
+  if (error) throw new Error(error.message);
 }
 
 /** "Falei com todas": registra a conversa em cada loja do alerta (fecha o alerta). */

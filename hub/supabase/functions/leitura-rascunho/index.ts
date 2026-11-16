@@ -1,6 +1,6 @@
 // O agente da leitura da semana: lê os números da loja (caixa, meta, plano do mês, a leitura anterior) e monta o
 // rascunho (o que os números mostram + 3 ações). A equipe revisa e encaminha, a Camilla publica; cada publicação vira exemplo.
-// Chamado pela equipe (um portal) ou pelo agendamento de segunda às 12h (todas, com a chave x-aviso).
+// Chamado pela equipe (um portal) ou pelo agendamento de domingo às 6h (uma chamada por loja que mandou tudo, com a chave x-aviso).
 // Sem a chave do Claude, monta o rascunho por regras (só com os números).
 import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
@@ -20,6 +20,8 @@ const json = (corpo: unknown, status = 200) => new Response(JSON.stringify(corpo
 const hoje = () => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Recife" }).format(new Date());
 const soma = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const segunda = (d: string) => { const x = new Date(`${d}T12:00:00Z`); return soma(d, -((x.getUTCDay() + 6) % 7)); };
+/** A semana da leitura: no domingo (quando o agendamento roda) já é a semana que começa amanhã, lendo a que acabou de fechar. */
+const refSemana = () => { const h = hoje(); return new Date(`${h}T12:00:00Z`).getUTCDay() === 0 ? soma(h, 1) : h; };
 /** Dias de loja aberta (sem domingo) entre duas datas. */
 function diasDeLoja(de: string, ate: string) {
   let n = 0;
@@ -31,7 +33,7 @@ const fimDoMes = (mes: string) => { const [a, m] = mes.split("-").map(Number); r
 type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; vendedoras: { nome: string; faturamento: number }[] | null; justificativa: string | null };
 
 async function numeros(admin: SupabaseClient, portalId: string) {
-  const h = hoje(), esta = segunda(h), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
+  const h = hoje(), esta = segunda(refSemana()), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
   const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }] = await Promise.all([
     admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras, justificativa").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
@@ -117,7 +119,7 @@ function porRegras(nome: string, n: Nums, semGestao: boolean): Saida {
 }
 
 async function rascunho(admin: SupabaseClient, portalId: string, todas = false) {
-  const semana = segunda(hoje());
+  const semana = segunda(refSemana());
   const { data: atual } = await admin.from("loja_leituras").select("id, publicada, pronta").eq("portal_id", portalId).eq("semana", semana).maybeSingle();
   if (atual?.publicada) return { portal_id: portalId, pulou: "já publicada" };
   // Montando todas de uma vez, não passa por cima da leitura que a equipe já revisou e encaminhou.

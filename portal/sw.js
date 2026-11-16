@@ -12,6 +12,8 @@ self.addEventListener("push", (e) => {
     data: { url: d.url || "/analises/portal/empresa/novidades/" },
     // Conversas da equipe: cada mensagem avisa de novo (som e vibração do aparelho), com o ícone do app das Conversas.
     ...(d.titulo === "Conversas" ? { icon: "/analises/portal/icon-conversas-192.png", tag: "conversas", renotify: true, vibrate: [200, 100, 200] } : {}),
+    // Fale com a Camilla (lojas): cada resposta avisa de novo, com o ícone do app.
+    ...(d.titulo === "Fale com a Camilla" ? { icon: "/analises/portal/icon-conversas-192.png", tag: "fale", renotify: true, vibrate: [200, 100, 200] } : {}),
   }));
 });
 

@@ -21,7 +21,7 @@ const DIAS_VISIVEIS = 30;
 
 /** Conversa contínua no estilo WhatsApp. `equipe`: quem olha é a equipe (as bolhas da equipe ficam à direita).
  *  Mostra os últimos 30 dias; as mensagens mais antigas aparecem ao pedir. */
-export function Chat({ mensagens, equipe, rodape, topo }: { mensagens: Mensagem[]; equipe?: boolean; rodape: React.ReactNode; topo?: React.ReactNode }) {
+export function Chat({ mensagens, equipe, rodape, topo, cheia }: { mensagens: Mensagem[]; equipe?: boolean; rodape: React.ReactNode; topo?: React.ReactNode; cheia?: boolean }) {
   const [antigas, setAntigas] = useState(false);
   const fim = useRef<HTMLDivElement>(null);
   const corte = Date.now() - DIAS_VISIVEIS * 86_400_000;
@@ -35,7 +35,7 @@ export function Chat({ mensagens, equipe, rodape, topo }: { mensagens: Mensagem[
 
   let diaAnterior = "";
   return (
-    <div className="wa">
+    <div className={cheia ? "wa cheia" : "wa"}>
       {topo}
       <div className="wa-fundo">
         {escondidas > 0 && !antigas && (

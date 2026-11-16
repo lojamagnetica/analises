@@ -2,6 +2,7 @@
 
 // Vendas e tempo por canal: a loja mede, por um período (ex.: 2 semanas), quanto cada canal vende e quanto tempo
 // ele toma. A equipe lança pelo link do celular (sem entrar no Hub); no Hub, a loja e a mentoria veem a venda por hora.
+import { SITE_HUB } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export const CANAIS_SUGERIDOS = ["Loja física", "Stories", "Grupo VIP", "WhatsApp", "Live", "Evento", "Site ou marketplace"];
@@ -15,7 +16,7 @@ export type Linha = { canal: string; valor: number; pecas: number; minutos: numb
 const sb = () => supabaseBrowser();
 const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
 
-export const linkCanais = (token: string) => `${typeof window !== "undefined" ? window.location.origin : ""}/analises/portal/canais/?t=${token}`;
+export const linkCanais = (token: string) => `${SITE_HUB}/analises/portal/canais/?t=${token}`;
 
 export async function buscarMedicoes(portalId: string) {
   const { data } = await sb().from("loja_canais_medicao").select("*").eq("portal_id", portalId).order("inicio", { ascending: false });

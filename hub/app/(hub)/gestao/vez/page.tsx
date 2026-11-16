@@ -2,6 +2,7 @@
 
 // Lista da vez, na visão da gestora: a fila ao vivo, a missão do dia de cada pessoa, o resumo do dia
 // (fluxo por horário, conversão, motivos) e os links pessoais da equipe.
+import { SITE_HUB } from "@/lib/config";
 import { useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { aulaPorId, linkAula } from "@/lib/guias";
@@ -50,7 +51,7 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
   const espera = filaDeEspera(dados.fila);
   const maxHora = Math.max(1, ...resumo.porHora.map((h) => h.total));
   const maxMotivo = Math.max(1, ...resumo.motivos.map((m) => m.qtd));
-    const origem = typeof window !== "undefined" ? window.location.origin : "";
+    const origem = SITE_HUB; // os links do time sempre no endereço fixo do Hub
 
   const falha = (e: { message: string } | null) => { setErro(e ? `Não deu certo: ${e.message}` : ""); recarregar(); };
   const salvarAtend = async (x: AtendGestao) => falha((await atendEditar(x.id, { resultado: res || null, motivo: res === "nao_vendeu" ? mot : "", obs: res === "nao_vendeu" ? obsEd.trim() : "" })).error);

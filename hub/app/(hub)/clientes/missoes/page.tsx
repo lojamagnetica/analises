@@ -1,5 +1,6 @@
 "use client";
 
+import { SITE_HUB } from "@/lib/config";
 import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Titulo } from "@/components/Titulo";
@@ -11,7 +12,7 @@ import { buscarPessoas, quemVende, type Pessoa } from "@/lib/pessoas";
 import { buscarMeuDia, placar } from "@/lib/meu-dia";
 import { FOCOS, buscarMissoes, excluirMissao, focoSugerido, mensagemGrupo, salvarMissao, semanaAtual, tirarPessoa, type Missao, type MissaoPessoa } from "@/lib/missoes";
 
-const linkMissao = (token: string) => `${typeof window !== "undefined" ? window.location.origin : ""}/analises/portal/missao/?t=${token}`;
+const linkMissao = (token: string) => `${SITE_HUB}/analises/portal/missao/?t=${token}`;
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "—");
 
 type DadosMissoes = { time: Pessoa[]; missoes: Missao[]; pessoas: MissaoPessoa[]; abaixo: number | null };

@@ -1,5 +1,6 @@
 "use client";
 
+import { SITE_HUB } from "@/lib/config";
 import { useState } from "react";
 import Link from "next/link";
 import { Copiar } from "@/components/Copiar";
@@ -163,7 +164,7 @@ export default function PlannerGestao() {
           <span>{pers.get(20)?.concluida
             ? <><b>A loja respondeu o formulário da rotina.</b> <Link className="link-loja" href="/consultoria/planner/rotina">Ver as respostas</Link></>
             : <><b>A loja ainda não respondeu o formulário da rotina.</b> <span className="mudo">Mande o link da loja (abre sem login):</span></>}</span>
-          {portal.rotina_token && <Copiar texto={`https://lojamagnetica.github.io/analises/portal/rotina?t=${portal.rotina_token}`} rotulo="Copiar o link do formulário" />}
+          {portal.rotina_token && <Copiar texto={`${SITE_HUB}/analises/portal/rotina?t=${portal.rotina_token}`} rotulo="Copiar o link do formulário" />}
           {pers.get(20)?.concluida && <button type="button" className="btn s peq" onClick={() => {
             if (confirm("Montar o planner de novo com as respostas da loja? As demandas atuais são trocadas pelas da sugestão.")) salvar({ ...modelo(), liberado: atual.liberado, feitos: atual.feitos }, "Planner montado com as respostas da loja.");
           }}>Montar com as respostas da loja</button>}

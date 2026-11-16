@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
@@ -61,7 +61,12 @@ function FechamentoCaixa() {
   const varias = (portal.lojas ?? []).length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
   const [filtro, setFiltro] = useLojaFoco();
-  const [f, setF] = useState<Form>(() => novo(varias ? filtro || lojas[0] : ""));
+  const [f, setF] = useState<Form>(() => {
+    const n = novo(varias ? filtro || lojas[0] : "");
+    // Vindo da Conferência do caixa (?dia=): já abre no dia que ficou sem lançamento.
+    const d = params.get("dia");
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= hoje() ? { ...n, dia: d } : n;
+  });
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
@@ -80,6 +85,16 @@ function FechamentoCaixa() {
     const meta = plano ? metaDoPlano(plano.dados) : null;
     return { caixa, equipe: time, meta, planoDados: plano?.dados ?? null, premiacao: plano?.dados.premiacao?.trim() ?? "", metas: plano ? metasDasPessoas(plano.dados, time) : {} };
   }, [portal.id, mes]);
+  // Vindo da Conferência do caixa (?corrigir=<id>): já abre aquele dia para corrigir.
+  const [abriuDoLink, setAbriuDoLink] = useState(false);
+  useEffect(() => {
+    const id = params.get("corrigir");
+    if (abriuDoLink || !id || !tudo) return;
+    setAbriuDoLink(true);
+    const c = tudo.caixa.find((x) => x.id === id);
+    if (c) editar(c);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tudo]);
   if (!tudo) return <Carregando />;
   const dados = tudo.caixa;
   const equipe = tudo.equipe;

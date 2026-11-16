@@ -67,6 +67,7 @@ export default function ConferenciaDoCaixa() {
         if (!doDia.length) return (
           <div key={d} className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }}>
             <div className="linha entre"><b style={{ textTransform: "capitalize" }}>{diaDaSemana(d)} · {dia(d)}</b><span className="selo erro">sem lançamento</span></div>
+            <div className="linha mt"><Link className="btn p peq" href={`/gestao/caixa?mes=${d.slice(0, 7)}&dia=${d}`}>Lançar este dia</Link></div>
           </div>
         );
         return doDia.map((c) => {
@@ -88,6 +89,9 @@ export default function ConferenciaDoCaixa() {
               {c.obs && <div className="ajuda">Observação: {c.obs}</div>}
               {c.justificativa && <div className="ajuda">Motivo escrito: {c.justificativa}</div>}
               {problemas.length > 0 && <div className="aviso mt" style={{ marginBottom: 0 }}>Para conferir: {problemas.join("; ")}</div>}
+              <div className="linha mt" style={{ gap: 8 }}>
+                <Link className={`btn ${problemas.length ? "p" : "s"} peq`} href={`/gestao/caixa?mes=${d.slice(0, 7)}&corrigir=${c.id}`}>{problemas.length ? "Corrigir este dia" : "Abrir para alterar"}</Link>
+              </div>
               {vendasLink.length > 0 && (
                 <details className="mt">
                   <summary style={{ cursor: "pointer", fontWeight: 600 }}>{vendasLink.length} {vendasLink.length === 1 ? "venda lançada" : "vendas lançadas"} no link, uma por uma</summary>

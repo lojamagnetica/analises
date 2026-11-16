@@ -58,7 +58,9 @@ export default function ConferenciaDoCaixa() {
         <div className="kpi"><small>Dias lançados</small><b>{new Set(dados.lancados.map((c) => c.dia)).size}</b></div>
         <div className="kpi"><small>Dias sem lançamento</small><b style={{ color: faltando ? "var(--red)" : undefined }}>{faltando}</b></div>
       </div>
-      <p className="ajuda">O que conta como venda do dia e o que entra no recebido segue as <Link href="/gestao/caixa?regras=1">Regras do caixa da sua loja</Link> (vale-presente, consórcio, crédito da cliente, troca…). Confira se estão certas.</p>
+      {portal.regras_caixa
+        ? <p className="ajuda">O que conta como venda do dia e o que entra no recebido segue as <Link href="/gestao/caixa?regras=1">Regras do caixa da sua loja</Link> (vale-presente, consórcio, crédito da cliente, troca…). Confira se estão certas.</p>
+        : <p className="ajuda">Voucher, vale-troca e saldo de troca não entram no caixa do Hub. Para conferir com o sistema, tire o voucher do total do sistema.</p>}
 
       {dias.map((d) => {
         const doDia = dados.lancados.filter((c) => c.dia === d);

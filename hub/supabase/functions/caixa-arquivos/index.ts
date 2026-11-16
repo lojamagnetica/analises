@@ -45,7 +45,7 @@ const INSTRUCOES = `Você lê os arquivos do fechamento de caixa de UM dia de um
 Tire só o que está escrito, sem estimar: faturamento do dia (R$), número de vendas (cupons/atendimentos), peças vendidas,
 quanto entrou em cada forma de pagamento (pix, credito, debito, dinheiro, crediario; crediário inclui promissória/fiado; 0 quando não houver)
 e, se o arquivo mostrar, a venda de cada vendedora (nome, faturamento, vendas, peças).
-Voucher, vale-troca, saldo de troca e crédito de devolução NÃO são recebimento: não entram em nenhuma forma de pagamento
+Regra geral (quando a loja não tiver regra própria para o item): voucher, vale-troca, saldo de troca e crédito de devolução NÃO são recebimento: não entram em nenhuma forma de pagamento
 e saem do faturamento (se o relatório só mostrar o total com o voucher dentro, desconte o voucher e diga isso em observacao).
 Planilha de vendas peça por peça (ex.: "vendas com repasse" do TicTag, uma linha por peça com o número da venda):
 vendas = quantos números de venda diferentes, peças = quantas linhas, faturamento = soma dos valores menos o que foi pago com voucher
@@ -79,10 +79,22 @@ async function arquivos(admin: SupabaseClient, portal: string, loja: string, dia
   return blocos;
 }
 
+/** As regras do caixa que a loja respondeu (como cada forma de pagamento ou lançamento do sistema dela conta). */
+async function regrasDaLoja(admin: SupabaseClient, portalId: string) {
+  const { data } = await admin.from("loja_regras_caixa").select("itens, confirmado_em").eq("portal_id", portalId).maybeSingle();
+  const r = (v: string) => (v === "sim" ? "conta" : v === "nao" ? "não conta" : v === "diferenca" ? "só a diferença" : "sem resposta");
+  const linhas = ((data?.itens ?? []) as { titulo: string; faturamento: string; recebido: string; nome: string; obs: string; naoUso?: boolean }[])
+    .filter((i) => i.titulo && (i.naoUso || i.faturamento || i.recebido))
+    .map((i) => i.naoUso ? `- ${i.titulo}: a loja não usa.` : `- ${i.titulo}${i.nome ? ` (no relatório: ${i.nome})` : ""}: faturamento ${r(i.faturamento)}; recebido do dia ${r(i.recebido)}${i.obs ? `. ${i.obs}` : ""}.`);
+  if (!linhas.length) return "";
+  return `Regras do caixa desta loja (${data?.confirmado_em ? "confirmadas pela loja" : "respondidas pela loja, ainda sem confirmar"}). Elas valem acima de qualquer regra geral:\n${linhas.join("\n")}`;
+}
+
 async function ler(admin: SupabaseClient, portal: string, loja: string, dia: string): Promise<Lido | null> {
   if (!CHAVE) return null;
   const blocos = await arquivos(admin, portal, loja, dia);
   if (!blocos.length) return null;
+  const regras = await regrasDaLoja(admin, portal).catch(() => "");
   const client = new Anthropic({ apiKey: CHAVE });
   const r = await client.beta.messages.stream({
     model: MODELO, max_tokens: 3000,
@@ -91,7 +103,7 @@ async function ler(admin: SupabaseClient, portal: string, loja: string, dia: str
     fallbacks: "default",
     output_config: { effort: "low", format: { type: "json_schema", schema: ESQUEMA } },
     system: INSTRUCOES,
-    messages: [{ role: "user", content: [...blocos, { type: "text", text: `Dia do fechamento: ${dia}${loja ? ` · loja ${loja}` : ""}. Responda só com o JSON pedido.` }] as never }],
+    messages: [{ role: "user", content: [...blocos, { type: "text", text: `${regras ? `${regras}\n\n` : "A loja ainda não respondeu as Regras do caixa: siga a regra geral e diga em observacao o que você contou e o que deixou de fora (vale-presente, crédito da cliente, consórcio, troca).\n\n"}Dia do fechamento: ${dia}${loja ? ` · loja ${loja}` : ""}. Responda só com o JSON pedido.` }] as never }],
   }).finalMessage();
   const bloco = r.content.find((b) => b.type === "text");
   if (!bloco || bloco.type !== "text") return null;

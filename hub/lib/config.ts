@@ -6,3 +6,6 @@ export const SUPABASE_CHAVE_PUBLICA =
 
 // O Hub é publicado como site estático em lojamagnetica.github.io/analises/portal/
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "/analises/portal";
+
+/** O endereço fixo do Hub para as lojas (Cloudflare, com o GitHub Pages de reserva). É o que vai nas mensagens de acesso. */
+export const SITE_HUB = "https://hub.ometodolojamagnetica.com.br";

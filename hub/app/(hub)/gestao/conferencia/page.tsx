@@ -15,23 +15,77 @@ type Lancado = Caixa & { lancado_por: string | null; corrigido_por: string | nul
 type VendaLink = { id: string; dia: string; canal: string; valor: number; pecas: number | null; quem: string | null; created_at: string };
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const somarDias = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+type Pessoa = { id: string; nome: string };
+type LinhaVend = { pessoa_id: string | null; nome: string; faturamento: number; vendas: number; pecas: number };
+const primeiro = (n: string) => n.trim().split(/\s+/)[0].toLowerCase();
+/** O nome escrito no link é de alguém da equipe? (mesma regra do banco: começo do primeiro nome, ou as 2 primeiras letras de uma só pessoa) */
+const daEquipe = (quem: string | null, time: Pessoa[]) => {
+  const q = (quem ?? "").trim().toLowerCase();
+  if (q.length < 2) return false;
+  return time.some((p) => primeiro(p.nome).startsWith(q)) || time.filter((p) => primeiro(p.nome).slice(0, 2) === q.slice(0, 2)).length === 1;
+};
+
+/** A parte do dia sem vendedora: de onde vem e para quem passar. */
+function SemVendedora({ c, time, link, recarregar }: { c: Caixa & { obs: string | null }; time: Pessoa[]; link: VendaLink[]; recarregar: () => void }) {
+  const [salvando, setSalvando] = useState(false);
+  const linhas = (c.vendedoras ?? []) as LinhaVend[];
+  const sem = linhas.find((v) => !v.pessoa_id);
+  if (!sem || !(Number(sem.faturamento) > 0) || !time.length) return null;
+  const doLinkSemNome = link.filter((v) => !daEquipe(v.quem, time));
+  const doSistema = /relat[óo]rio (de vendas )?(com repasse )?do sistema|Ajuste pelo relat/i.test(c.obs ?? "");
+  const passar = async (para: Pessoa[]) => {
+    if (!confirm(para.length === 1 ? `Passar ${moeda(sem.faturamento)} para ${para[0].nome}?` : `Dividir ${moeda(sem.faturamento)} por igual entre ${para.map((p) => p.nome).join(", ")}?`)) return;
+    setSalvando(true);
+    // Divide valor, vendas e peças; o centavo e a sobra de vendas/peças ficam com a primeira.
+    const n = para.length, fat = Math.round(Number(sem.faturamento) * 100);
+    const parte = (total: number, i: number) => Math.floor(total / n) + (i === 0 ? total % n : 0);
+    let nova = linhas.filter((v) => v !== sem).map((v) => ({ ...v }));
+    para.forEach((p, i) => {
+      const add = { faturamento: parte(fat, i) / 100, vendas: parte(Number(sem.vendas) || 0, i), pecas: parte(Number(sem.pecas) || 0, i) };
+      const ja = nova.find((v) => v.pessoa_id === p.id);
+      if (ja) { ja.faturamento = Math.round((Number(ja.faturamento) + add.faturamento) * 100) / 100; ja.vendas = Number(ja.vendas) + add.vendas; ja.pecas = Number(ja.pecas) + add.pecas; }
+      else nova = [...nova, { pessoa_id: p.id, nome: p.nome.split(" ")[0], ...add }];
+    });
+    const { error } = await supabaseBrowser().from("loja_caixa").update({ vendedoras: nova }).eq("id", c.id);
+    setSalvando(false);
+    if (error) { alert(error.message); return; }
+    recarregar();
+  };
+  return (
+    <div className="aviso mt" style={{ marginBottom: 0 }}>
+      <b>Sem vendedora: {moeda(sem.faturamento)} · {sem.vendas} {Number(sem.vendas) === 1 ? "venda" : "vendas"} · {sem.pecas} {Number(sem.pecas) === 1 ? "peça" : "peças"}</b>
+      <div style={{ marginTop: 4 }}>
+        De onde vem:{" "}
+        {doSistema && "vendas que estão no relatório do sistema mas não foram lançadas no link, por isso entraram sem o nome de quem vendeu. "}
+        {doLinkSemNome.length > 0 && <>no link, {doLinkSemNome.map((v) => `${hora(v.created_at)} ${v.quem?.trim() ? `"${v.quem.trim()}"` : "sem nome"} · ${v.canal} · ${moeda(v.valor)}`).join("; ")} (o nome não é de ninguém da equipe). </>}
+        {!doSistema && !doLinkSemNome.length && "venda lançada sem escolher a vendedora. "}
+        Se você sabe quem vendeu, passe para ela:
+      </div>
+      <div className="linha mt" style={{ gap: 6, flexWrap: "wrap" }}>
+        {time.map((p) => <button key={p.id} type="button" className="btn s peq" disabled={salvando} onClick={() => passar([p])}>Tudo para {p.nome.split(" ")[0]}</button>)}
+        {time.length > 1 && <button type="button" className="btn s peq" disabled={salvando} onClick={() => passar(time)}>Dividir por igual entre todas</button>}
+      </div>
+    </div>
+  );
+}
+
 const hora = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
 
 export default function ConferenciaDoCaixa() {
   const { portal } = usePortal();
   const [mes, setMes] = useState(mesDeHoje());
   useEffect(() => { document.title = "Conferência do caixa · magnética.hub"; }, []);
-  const { dados } = useDados(async () => {
+  const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: caixa }, { data: link }, { count: time }] = await Promise.all([
+    const [{ data: caixa }, { data: link }, { data: time }] = await Promise.all([
       sb.from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros, origem, justificativa, lancado_por, corrigido_por, created_at, atualizado_em")
         .eq("portal_id", portal.id).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes)).order("dia", { ascending: false }),
       sb.from("loja_canais_registro").select("id, dia, canal, valor, pecas, quem, created_at")
         .eq("portal_id", portal.id).eq("tipo", "venda").gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes)).order("created_at"),
-      sb.from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("ativo", true),
+      sb.from("loja_equipe").select("id, nome").eq("portal_id", portal.id).eq("ativo", true).order("nome"),
     ]);
     const lancados = (caixa ?? []).map((c) => ({ ...c, faturamento: Number(c.faturamento), vendas: Number(c.vendas), pecas: Number(c.pecas) })) as Lancado[];
-    return { lancados, link: (link ?? []).map((v) => ({ ...v, valor: Number(v.valor) })) as VendaLink[], comTime: (time ?? 0) > 0 };
+    return { lancados, link: (link ?? []).map((v) => ({ ...v, valor: Number(v.valor) })) as VendaLink[], comTime: (time ?? []).length > 0, time: (time ?? []) as Pessoa[] };
   }, [portal.id, mes]);
   if (!dados) return <Carregando />;
 
@@ -92,6 +146,7 @@ export default function ConferenciaDoCaixa() {
               {c.obs && <div className="ajuda">Observação: {c.obs}</div>}
               {c.justificativa && <div className="ajuda">Motivo escrito: {c.justificativa}</div>}
               {problemas.length > 0 && <div className="aviso mt" style={{ marginBottom: 0 }}>Para conferir: {problemas.join("; ")}</div>}
+              <SemVendedora c={c} time={dados.time} link={vendasLink} recarregar={recarregar} />
               <div className="linha mt" style={{ gap: 8 }}>
                 <Link className={`btn ${problemas.length ? "p" : "s"} peq`} href={`/gestao/caixa?mes=${d.slice(0, 7)}&corrigir=${c.id}`}>{problemas.length ? "Corrigir este dia" : "Abrir para alterar"}</Link>
               </div>

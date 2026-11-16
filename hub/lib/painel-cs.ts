@@ -117,3 +117,23 @@ export async function registrarEmLote(g: GrupoAlerta, por: string) {
   const { error } = await supabaseBrowser().from("cs_contatos").insert(g.lojas.map((l) => ({ portal_id: l.id, tipo: g.registro.tipo, ref: g.registro.ref, feito_em: agora, feito_por: por || null, resumo: g.titulo })));
   if (error) throw new Error(error.message);
 }
+
+// Aprovação do dia: a Camilla revisa as demandas da CS e só o que ela aprovou aparece para a Claudia.
+export const chaveGrupo = (g: GrupoAlerta) => `g:${g.chave}`;
+export const chaveAlerta = (portalId: string, alerta: string) => `l:${portalId}:${alerta}`;
+
+/** As chaves aprovadas hoje. */
+export async function aprovadasHoje(): Promise<Set<string>> {
+  const { data } = await supabaseBrowser().from("cs_aprovacoes").select("chave").eq("dia", hoje());
+  return new Set((data ?? []).map((a) => a.chave as string));
+}
+
+/** Aprova (ou tira a aprovação de) uma ou mais demandas de hoje. */
+export async function aprovar(chaves: string[], sim: boolean, por: string) {
+  if (!chaves.length) return;
+  const sb = supabaseBrowser();
+  const { error } = sim
+    ? await sb.from("cs_aprovacoes").upsert(chaves.map((chave) => ({ dia: hoje(), chave, aprovado_por: por || null })), { onConflict: "dia,chave", ignoreDuplicates: true })
+    : await sb.from("cs_aprovacoes").delete().eq("dia", hoje()).in("chave", chaves);
+  if (error) throw new Error(error.message);
+}

@@ -8,7 +8,7 @@ import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
-import { liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
+import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
 import { hoje } from "@/lib/formato";
 
@@ -50,7 +50,7 @@ function RegistrarConversa({ loja, registro, nome, feito }: { loja: LojaCs; regi
 }
 
 /** Um cartão por loja: tudo o que ela precisa hoje, cada item com a mensagem pronta e o registro da conversa. */
-function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; abrir: (id: string, destino?: string) => void; recarregar: () => void }) {
+function CartaoLoja({ l, nome, abrir, recarregar, aprov }: { l: LojaCs; nome: string; abrir: (id: string, destino?: string) => void; recarregar: () => void; aprov?: (alerta: string) => Aprov }) {
   const [copiada, setCopiada] = useState("");
   const [aberto, setAberto] = useState<string | null>(null);
   const alertas = [...l.alertas].sort((a, b) => Number(b.grave) - Number(a.grave));
@@ -64,6 +64,7 @@ function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; a
         {a.registro && <button type="button" className="btn s peq" onClick={() => setAberto(aberto === a.chave ? null : a.chave)}>Conversei</button>}
         {a.chave === "pendencias" && <a className="btn s peq" href="#pendencias">Ver as pendências</a>}
         {a.destino && !a.msg && a.chave !== "pendencias" && <button type="button" className="btn s peq" onClick={() => abrir(l.id, a.destino)}>Abrir</button>}
+        <BotaoAprovar a={aprov?.(a.chave)} />
       </div>
       {a.registro && aberto === a.chave && <RegistrarConversa loja={l} registro={a.registro} nome={nome} feito={() => { setAberto(null); recarregar(); }} />}
     </div>
@@ -84,10 +85,19 @@ function CartaoLoja({ l, nome, abrir, recarregar }: { l: LojaCs; nome: string; a
   );
 }
 
+/** Para a Camilla: aprova (ou desfaz) uma demanda de hoje para a Claudia. */
+type Aprov = { ok: boolean; trocar: () => void };
+function BotaoAprovar({ a }: { a?: Aprov }) {
+  if (!a) return null;
+  return a.ok
+    ? <button type="button" className="btn s peq" onClick={a.trocar} title="Tirar da lista da Claudia">✓ Aprovado para a Claudia</button>
+    : <button type="button" className="btn p peq" onClick={a.trocar}>Aprovar para a Claudia</button>;
+}
+
 const COR_GRUPO = { laranja: "var(--orange)", vermelho: "var(--red)", verde: "var(--feito)" } as const;
 
 /** Um assunto, várias lojas: a CS fala com todas de uma vez, com a mesma mensagem, e marca "falei com todas". */
-function CartaoAssunto({ g, nome, recarregar }: { g: GrupoAlerta; nome: string; recarregar: () => void }) {
+function CartaoAssunto({ g, nome, recarregar, aprov }: { g: GrupoAlerta; nome: string; recarregar: () => void; aprov?: Aprov }) {
   const [copiada, setCopiada] = useState("");
   const [salvando, setSalvando] = useState(false);
   const verde = g.cor === "verde";
@@ -97,6 +107,7 @@ function CartaoAssunto({ g, nome, recarregar }: { g: GrupoAlerta; nome: string; 
     <div className="card card-borda mb" style={{ ["--c" as string]: COR_GRUPO[g.cor] }}>
       <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
         <b style={{ fontSize: 16 }}>{verde ? "🎉 " : ""}{g.lojas.length} {g.lojas.length === 1 ? "loja" : "lojas"} · {g.titulo}</b>
+        <BotaoAprovar a={aprov} />
         <span className={`selo ${verde ? "feito" : g.cor === "vermelho" ? "erro" : "alerta"}`}>{verde ? `${g.ok} de ${g.total} fizeram` : `${g.ok} de ${g.total} em dia`}</span>
       </div>
       <p className="mudo" style={{ margin: "4px 0 8px" }}>{g.detalhe}</p>
@@ -123,10 +134,24 @@ export default function InicioCs() {
   const { dados, recarregar } = useDados(() => painelCs(), []);
   const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas">("painel");
   const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
+  // As demandas do dia passam pela Camilla: ela vê tudo e aprova; a Claudia só vê o que foi aprovado hoje.
+  const { dados: aprovadas, recarregar: recarregarAprov } = useDados(() => aprovadasHoje(), []);
   const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hoje())) : []), [conversas, userId]);
-  if (!dados) return <Carregando />;
+  if (!dados || !aprovadas) return <Carregando />;
 
-  const { lojas, reunioes } = dados;
+  const trocar = (chaves: string[], sim: boolean) => async () => { try { await aprovar(chaves, sim, nome ?? ""); recarregarAprov(); } catch (e) { alert((e as Error).message); } };
+  const aprovGrupo = (g: GrupoAlerta): Aprov | undefined => (aprova ? { ok: aprovadas.has(chaveGrupo(g)), trocar: trocar([chaveGrupo(g)], !aprovadas.has(chaveGrupo(g))) } : undefined);
+  const aprovLoja = (id: string) => (aprova ? (alerta: string): Aprov => { const k = chaveAlerta(id, alerta); return { ok: aprovadas.has(k), trocar: trocar([k], !aprovadas.has(k)) }; } : undefined);
+  const lojas: LojaCs[] = aprova ? dados.lojas : dados.lojas.map((l) => {
+    const alertas = l.alertas.filter((a) => aprovadas.has(chaveAlerta(l.id, a.chave)));
+    return { ...l, alertas, nivel: alertas.some((a) => a.grave) ? "vermelho" : alertas.length ? "amarelo" : "verde" } as LojaCs;
+  });
+  const grupos = (pd?.grupos ?? []).filter((g) => aprova || aprovadas.has(chaveGrupo(g)));
+  const pendentesAprov = aprova ? [
+    ...(pd?.grupos ?? []).filter((g) => g.lojas.length && !aprovadas.has(chaveGrupo(g))).map(chaveGrupo),
+    ...dados.lojas.flatMap((l) => l.alertas.map((a) => chaveAlerta(l.id, a.chave)).filter((k) => !aprovadas.has(k))),
+  ] : [];
+  const { reunioes } = dados;
   const vermelhas = lojas.filter((l) => l.nivel === "vermelho");
   const amarelas = lojas.filter((l) => l.nivel === "amarelo");
   const comCaixa = lojas.filter((l) => l.caixaCompleto !== null);
@@ -138,6 +163,14 @@ export default function InicioCs() {
     <>
       <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub="Uma loja, um cartão. Resolva de cima para baixo: cada item traz a mensagem pronta, e a conversa que você registrar fecha o alerta." />
 
+      {aprova && (
+        <div className={`aviso mb ${pendentesAprov.length ? "" : "ok"}`}>
+          {pendentesAprov.length
+            ? <>Você está vendo as demandas de hoje da Claudia. Só aparece para ela o que você aprovar. Faltam <b>{pendentesAprov.length}</b> para revisar. <button type="button" className="btn s peq" onClick={trocar(pendentesAprov, true)}>Aprovar todas</button></>
+            : "Tudo o que está aqui hoje já foi aprovado para a Claudia."}
+        </div>
+      )}
+      {!aprova && !aprovadas.size && <div className="aviso mb">A Camilla ainda está revisando as demandas de hoje. Elas aparecem aqui assim que ela aprovar.</div>}
       <div className="grade g4 mb">
         <div className="kpi"><small>Precisam de você hoje</small><b style={{ fontSize: 28, color: vermelhas.length ? "var(--red)" : "var(--feito)" }}>{vermelhas.length}</b><small className="mudo">de {lojas.length} lojas</small></div>
         <div className="kpi"><small>Em atenção</small><b style={{ fontSize: 28 }}>{amarelas.length}</b></div>
@@ -172,9 +205,9 @@ export default function InicioCs() {
           <>
             {pd.acompanhadas === 0 && <div className="card mudo">Nenhuma loja no acompanhamento ainda.</div>}
             <p className="ajuda" style={{ marginTop: 0 }}>{pd.acompanhadas} {pd.acompanhadas === 1 ? "loja acompanhada" : "lojas acompanhadas"}. Cada alerta junta as lojas com o mesmo assunto: fale com todas de uma vez.</p>
-            {pd.grupos.filter((g) => g.cor !== "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
-            {pd.grupos.some((g) => g.cor === "verde" && g.lojas.length) && <div className="secao">Parabéns da semana passada</div>}
-            {pd.grupos.filter((g) => g.cor === "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} />)}
+            {grupos.filter((g) => g.cor !== "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} aprov={aprovGrupo(g)} />)}
+            {grupos.some((g) => g.cor === "verde" && g.lojas.length) && <div className="secao">Parabéns da semana passada</div>}
+            {grupos.filter((g) => g.cor === "verde").map((g) => <CartaoAssunto key={g.chave} g={g} nome={nomeCs} recarregar={recarregarPd} aprov={aprovGrupo(g)} />)}
             {aprova && pd.direcao.length > 0 && (
               <details className="card mt">
                 <summary style={{ cursor: "pointer", fontWeight: 600 }}>Mensagem de direção do dia: liberar a cobrança da CS · {pd.direcao.filter((d) => d.ligada).length} de {pd.direcao.length}</summary>
@@ -193,13 +226,13 @@ export default function InicioCs() {
       {ver === "agora" && (
         <>
           {!vermelhas.length && <div className="card mudo">Nada urgente agora. Todas as lojas estão em dia. 🎉</div>}
-          {vermelhas.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} />)}
+          {vermelhas.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} aprov={aprovLoja(l.id)} />)}
         </>
       )}
       {ver === "depois" && (
         <>
           {!depois.length && <div className="card mudo">Nada para depois.</div>}
-          {depois.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} />)}
+          {depois.map((l) => <CartaoLoja key={l.id} l={l} nome={nomeCs} abrir={abrirPortal} recarregar={recarregar} aprov={aprovLoja(l.id)} />)}
         </>
       )}
       {ver === "todas" && <Lojas lojas={lojas} abrir={abrirPortal} />}

@@ -11,3 +11,7 @@ begin
   if n = d then raise exception 'caixa_com_problema: trecho não encontrado'; end if;
   execute n;
 end $do$;
+
+-- Cópia do caixa antes de refazer dias em lote (para voltar atrás se precisar). Só o banco lê.
+create table if not exists public.loja_caixa_antes (copiado_em timestamptz default now(), motivo text, linha jsonb);
+alter table public.loja_caixa_antes enable row level security;

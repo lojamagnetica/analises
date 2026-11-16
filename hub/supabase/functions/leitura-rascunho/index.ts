@@ -62,7 +62,7 @@ async function arquivosDaSemana(admin: SupabaseClient, portalId: string, de: str
       if (!(dia && dia >= soma(de, -1) && dia <= ate) && !(mes && mes >= soma(de, -40).slice(0, 7))) continue;
       const { data: fs } = await admin.storage.from(BALDE).list(`${base}/${p.name}`, { limit: 100 });
       for (const f of fs ?? []) {
-        if (!f.id) continue;
+        if (!f.id || f.name.startsWith("caixa_")) continue;
         const subiu = String(f.created_at ?? "").slice(0, 10);
         if (mes && (subiu < de || subiu > soma(ate, 2))) continue;
         caminhos.push(`${base}/${p.name}/${f.name}`);
@@ -72,7 +72,7 @@ async function arquivosDaSemana(admin: SupabaseClient, portalId: string, de: str
   // Primeiro os relatórios da semana (estoque e vendas), depois os do caixa do dia.
   caminhos.sort((a, b) => Number(/\/caixa_/.test(a)) - Number(/\/caixa_/.test(b)));
   for (const c of caminhos) {
-    if (blocos.length >= 10 || bytes > 18 * 1024 * 1024) break;
+    if (blocos.length >= 6 || bytes > 10 * 1024 * 1024) break;
     const { data: b } = await admin.storage.from(BALDE).download(c);
     if (!b || b.size > 8 * 1024 * 1024) continue;
     const nome = c.split("/").slice(-2).join("/"), baixo = nome.toLowerCase();
@@ -311,6 +311,12 @@ Deno.serve(async (req) => {
   }
 
   if (corpo?.portal_id) {
+    // Pelo agendamento (domingo, conferência do caixa): roda em segundo plano, sem segurar a chamada.
+    if (peloAgendamento) {
+      // @ts-ignore: EdgeRuntime existe nas Edge Functions do Supabase
+      EdgeRuntime.waitUntil(rascunho(admin, String(corpo.portal_id), false, true).catch((e) => console.error(corpo.portal_id, (e as Error).message)));
+      return json({ ok: true, portal_id: corpo.portal_id }, 202);
+    }
     try { return json(await rascunho(admin, String(corpo.portal_id), false, peloAgendamento)); } catch (e) { return json({ erro: (e as Error).message }, 500); }
   }
   if (corpo?.todas) {

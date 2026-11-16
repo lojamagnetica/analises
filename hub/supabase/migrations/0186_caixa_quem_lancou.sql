@@ -14,6 +14,9 @@ declare quem text;
 begin
   if auth.uid() is not null then
     select coalesce(nullif(trim(nome), ''), email) into quem from perfis where id = auth.uid();
+  elsif coalesce(current_setting('lm.caixa_quem', true), '') <> '' then
+    -- Ajuste feito pela equipe direto no banco (ex.: pelo relatório do sistema): o nome vem na sessão.
+    quem := current_setting('lm.caixa_quem', true);
   elsif coalesce(current_setting('lm.caixa_canais', true), '') = '1' then
     quem := 'Link de vendas por canal';
   else

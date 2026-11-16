@@ -123,9 +123,12 @@ async function rodada(admin: SupabaseClient) {
     for (const loja of lojas) {
       const { data: dias } = await admin.storage.from(BALDE).list(`${p.id}/gestao/${pastaDaLoja(loja)}`);
       for (const d of (dias ?? []).map((x) => x.name).filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x) && x >= de && x <= hoje())) {
+        // Portal de uma loja só: o dia lançado pode ter o nome da loja ou ficar sem loja (16/11: o agente não achou
+        // o lançamento com o nome e criou outro igual). Então acha qualquer lançamento do dia.
         let q = admin.from("loja_caixa").select("*").eq("portal_id", p.id).eq("dia", d);
-        q = loja ? q.eq("loja", loja) : q.is("loja", null);
-        const { data: atual } = await q.maybeSingle();
+        if (loja) q = q.eq("loja", loja);
+        const { data: doDia } = await q.order("created_at").limit(1);
+        const atual = (doDia ?? [])[0] ?? null;
         if (atual?.justificativa) continue;
         if (atual) {
           const { data: ruim } = await admin.rpc("caixa_id_com_problema", { p_id: atual.id });

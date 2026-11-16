@@ -111,7 +111,7 @@ export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduc
 
 /** O que está faltando ou não bate num dia de caixa, em frases curtas para a loja.
  * comEquipe: a loja tem time cadastrado no Hub (aí a venda por vendedora é obrigatória). */
-export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null }, comEquipe: boolean): string[] {
+export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null; dia?: string }, comEquipe: boolean): string[] {
   // Dia fechado com o motivo escrito pela loja: não volta para a lista de correção.
   if (c.justificativa?.trim()) return [];
   const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
@@ -119,6 +119,9 @@ export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "peca
   const pag = Object.values(c.pagamentos ?? {}).reduce((s: number, v) => s + (Number(v) || 0), 0);
   const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);
   const out: string[] = [];
+  // Dia salvo todo zerado (fora o domingo, quando a loja costuma fechar): esconde o dia sem número.
+  const domingo = !!c.dia && new Date(`${c.dia}T12:00:00Z`).getUTCDay() === 0;
+  if (fat === 0 && vendas === 0 && pecas === 0 && !domingo) out.push("o dia foi salvo zerado (sem faturamento, vendas e peças)");
   if (fat > 0 && vendas === 0) out.push("falta o número de vendas");
   if (vendas > 0 && pecas === 0) out.push("falta o número de peças");
   if (pecas > 0 && pecas < vendas) out.push(`tem menos peças (${pecas}) que vendas (${vendas})`);

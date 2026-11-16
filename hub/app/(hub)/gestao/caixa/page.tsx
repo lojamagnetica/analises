@@ -86,7 +86,7 @@ function FechamentoCaixa() {
   // Com time cadastrado, o dia é lançado por vendedora e o total da loja é a soma.
   const porPessoa = equipe.length > 0 && !f.soTotal;
   // O que falta ou não bate no que está digitado agora (o motivo só aparece quando precisa).
-  const faltaAgora = (fat: number, vendas: number, pecas: number) => problemasDoCaixa({ faturamento: fat, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0);
+  const faltaAgora = (fat: number, vendas: number, pecas: number) => problemasDoCaixa({ dia: f.dia, faturamento: fat, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0);
   // Dias do mês com número faltando ou que não bate (a loja corrige daqui).
   const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
   const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];

@@ -264,7 +264,7 @@ async function faleComCamilla(admin: SupabaseClient, portalId: string) {
 async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = "", arquivos: { blocos: unknown[]; nomes: string[] } = { blocos: [], nomes: [] }, regras = ""): Promise<Saida> {
   const client = new Anthropic({ apiKey: CHAVE });
   const r = await client.beta.messages.stream({
-    model: MODELO, max_tokens: 12000,
+    model: MODELO, max_tokens: 32000,
     betas: ["server-side-fallback-2026-07-01"],
     // @ts-ignore: fallbacks "default" ainda pode não estar no tipo do SDK
     fallbacks: "default",
@@ -291,6 +291,7 @@ async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; fina
   }).finalMessage();
   const bloco = r.content.find((b) => b.type === "text");
   if (!bloco || bloco.type !== "text") throw new Error("O agente não devolveu a leitura.");
+  if (r.stop_reason === "max_tokens") throw new Error("A análise ficou maior que o limite e foi cortada: monte de novo.");
   return juntar(JSON.parse(bloco.text) as Analise);
 }
 

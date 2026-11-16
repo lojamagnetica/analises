@@ -421,7 +421,7 @@ function FechamentoCaixa() {
       <LerRelatorioDoCaixa portalId={portal.id} loja={varias ? f.loja : ""} equipe={equipe.filter((p) => !varias || !p.loja || p.loja === f.loja).map((p) => ({ id: p.id, nome: p.nome }))} aoLancar={recarregar} />
       {f.dia && <ArquivosDoCaixa portalId={portal.id} dia={f.dia} loja={varias ? f.loja : ""} />}
 
-      <RegrasDoCaixa portalId={portal.id} nome={nome} abertoDeInicio={params.get("regras") === "1"} />
+      {portal.regras_caixa && <RegrasDoCaixa portalId={portal.id} nome={nome} abertoDeInicio={params.get("regras") === "1"} />}
       <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />
       <BoletosMes portalId={portal.id} lojas={portal.lojas ?? []} />
 

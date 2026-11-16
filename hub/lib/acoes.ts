@@ -4,7 +4,7 @@
 // as regras do banco (RLS) garantem que cada mentorado só mexe no próprio portal
 // e que só a equipe faz o que é da equipe.
 import { supabaseBrowser, erroDaFuncao } from "@/lib/supabase/client";
-import { BASE } from "@/lib/config";
+import { BASE, SITE_HUB } from "@/lib/config";
 import { BLOCOS_PLANEJE, ETAPAS, ROTINA_GESTAO, chaveSituacao, type Respostas, type Situacao } from "@/lib/conteudo";
 import { localParaIso } from "@/lib/formato";
 import { FUNDAMENTOS } from "@/lib/carteira";
@@ -103,7 +103,8 @@ export async function salvarFoto(arquivo: File | null) {
 
 /** O acesso da pessoa: sempre o mesmo endereço (a página de entrar), o e-mail e a senha. Não vence. */
 export type Acesso = { link: string; email: string; senha: string };
-const paginaDeEntrar = (email: string) => `${location.origin}${BASE}/login/?email=${encodeURIComponent(email)}`;
+// Endereço curto e fixo: hub.ometodolojamagnetica.com.br leva para a tela de entrar, já com o e-mail.
+const paginaDeEntrar = (email: string) => `${SITE_HUB}/?email=${encodeURIComponent(email)}`;
 
 /**
  * Cria ou renova o acesso de uma pessoa com e-mail e senha, sem depender de e-mail nem de link que expira.

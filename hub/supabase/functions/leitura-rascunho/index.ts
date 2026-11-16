@@ -90,6 +90,17 @@ async function arquivosDaSemana(admin: SupabaseClient, portalId: string, de: str
   return { blocos, nomes };
 }
 
+/** As regras do caixa que a loja respondeu (como cada forma de pagamento ou lançamento do sistema dela conta). */
+async function regrasDaLoja(admin: SupabaseClient, portalId: string) {
+  const { data } = await admin.from("loja_regras_caixa").select("itens, confirmado_em").eq("portal_id", portalId).maybeSingle();
+  const r = (v: string) => (v === "sim" ? "conta" : v === "nao" ? "não conta" : v === "diferenca" ? "só a diferença" : "sem resposta");
+  const linhas = ((data?.itens ?? []) as { titulo: string; faturamento: string; recebido: string; nome: string; obs: string; naoUso?: boolean }[])
+    .filter((i) => i.titulo && (i.naoUso || i.faturamento || i.recebido))
+    .map((i) => i.naoUso ? `- ${i.titulo}: a loja não usa.` : `- ${i.titulo}${i.nome ? ` (no relatório: ${i.nome})` : ""}: faturamento ${r(i.faturamento)}; recebido do dia ${r(i.recebido)}${i.obs ? `. ${i.obs}` : ""}.`);
+  if (!linhas.length) return "";
+  return `Regras do caixa desta loja (${data?.confirmado_em ? "confirmadas pela loja" : "respondidas pela loja, ainda sem confirmar"}). Elas valem acima de qualquer regra geral:\n${linhas.join("\n")}`;
+}
+
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(refSemana()), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
@@ -222,8 +233,9 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
   ]);
   const instrucoes = (mem?.dados as { instrucoes: string })?.instrucoes ?? "";
   const conversas = await faleComCamilla(admin, portalId);
+  const regras = await regrasDaLoja(admin, portalId).catch(() => "");
   const arquivos = CHAVE ? await arquivosDaSemana(admin, portalId, nums.semana_passada.de, nums.semana_passada.ate).catch(() => ({ blocos: [], nomes: [] })) : { blocos: [], nomes: [] };
-  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums, conversas, arquivos) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
+  const out = CHAVE ? await comAgente(instrucoes, exemplos ?? [], portal, nums, conversas, arquivos, regras) : porRegras(String(portal?.responsavel ?? "").split(" ")[0] || "Oi", nums, ((portal?.menu_oculto ?? []) as string[]).includes("gestao"));
   // A Camilla sempre vê os dias fechados com motivo antes de aprovar.
   const motivos = ((nums.semana_passada as { fechados_com_motivo?: { dia: string; motivo: string }[] }).fechados_com_motivo ?? [])
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
@@ -249,7 +261,7 @@ async function faleComCamilla(admin: SupabaseClient, portalId: string) {
   return linhas.map((x) => `${x.em.slice(8, 10)}/${x.em.slice(5, 7)} · ${x.quem}: ${x.t.replace(/\s+/g, " ").slice(0, 400)}`).join("\n").slice(-8000);
 }
 
-async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = "", arquivos: { blocos: unknown[]; nomes: string[] } = { blocos: [], nomes: [] }): Promise<Saida> {
+async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; final: unknown }[], portal: { loja?: string; responsavel?: string; tipo?: string } | null, nums: Nums, conversas = "", arquivos: { blocos: unknown[]; nomes: string[] } = { blocos: [], nomes: [] }, regras = ""): Promise<Saida> {
   const client = new Anthropic({ apiKey: CHAVE });
   const r = await client.beta.messages.stream({
     model: MODELO, max_tokens: 12000,
@@ -262,6 +274,9 @@ async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; fina
       arquivos.nomes.length
         ? `Acima estão os relatórios que a loja subiu para esta semana (${arquivos.nomes.join(", ")}). Leia todos: é deles que saem os produtos que mais venderam, as categorias, as marcas, os tamanhos e o estoque de cada uma. Use só o que está escrito neles.`
         : "A loja não subiu relatório de vendas por produto nem de estoque nesta semana: nos blocos de produtos e de estoque, diga o que dá para ler pelo caixa e peça o relatório que falta (vendas por produto ou o estoque por categoria).",
+      regras
+        ? `${regras}\nUse essas regras para ler os relatórios e o caixa (o que é venda do dia e o que é só recebimento).`
+        : "A loja ainda não respondeu as Regras do caixa no Hub. Se a diferença entre venda e recebido parecer vir de vale-presente, crédito da cliente, consórcio ou troca, diga isso em para_camilla e não trate como erro da loja.",
       exemplos.length ? `Exemplos de tom (rascunho do agente → versão final da Camilla; a estrutura agora é a dos pilares, use os exemplos só para o tom):\n${exemplos.map((e) => `RASCUNHO: ${JSON.stringify(e.rascunho)}\nFINAL: ${JSON.stringify(e.final)}`).join("\n\n")}` : "Ainda não há exemplos aprovados.",
       `Loja: ${portal?.loja} (${portal?.tipo}). Lojista: ${portal?.responsavel ?? "—"}.`,
       `Números (R$; semana = segunda a domingo): ${JSON.stringify(nums)}`,

@@ -16,6 +16,7 @@ import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
+import { RegrasDoCaixa } from "@/components/RegrasDoCaixa";
 import { AulaDoCaixa } from "@/components/AulaDoCaixa";
 import { LerRelatorioDoCaixa } from "@/components/LerRelatorioDoCaixa";
 import { BoletosMes } from "@/components/BoletosMes";
@@ -57,7 +58,7 @@ function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vend
 
 function FechamentoCaixa() {
   const params = useSearchParams();
-  const { portal, soCaixa, lojaTravada } = usePortal();
+  const { portal, soCaixa, lojaTravada, nome } = usePortal();
   const lojas = lojaTravada ? [lojaTravada] : portal.lojas ?? [];
   const varias = (portal.lojas ?? []).length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
@@ -420,6 +421,7 @@ function FechamentoCaixa() {
       <LerRelatorioDoCaixa portalId={portal.id} loja={varias ? f.loja : ""} equipe={equipe.filter((p) => !varias || !p.loja || p.loja === f.loja).map((p) => ({ id: p.id, nome: p.nome }))} aoLancar={recarregar} />
       {f.dia && <ArquivosDoCaixa portalId={portal.id} dia={f.dia} loja={varias ? f.loja : ""} />}
 
+      <RegrasDoCaixa portalId={portal.id} nome={nome} abertoDeInicio={params.get("regras") === "1"} />
       <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />
       <BoletosMes portalId={portal.id} lojas={portal.lojas ?? []} />
 

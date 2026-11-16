@@ -47,6 +47,10 @@ quanto entrou em cada forma de pagamento (pix, credito, debito, dinheiro, credia
 e, se o arquivo mostrar, a venda de cada vendedora (nome, faturamento, vendas, peças).
 Voucher, vale-troca, saldo de troca e crédito de devolução NÃO são recebimento: não entram em nenhuma forma de pagamento
 e saem do faturamento (se o relatório só mostrar o total com o voucher dentro, desconte o voucher e diga isso em observacao).
+Planilha de vendas peça por peça (ex.: "vendas com repasse" do TicTag, uma linha por peça com o número da venda):
+vendas = quantos números de venda diferentes, peças = quantas linhas, faturamento = soma dos valores menos o que foi pago com voucher
+(numa venda paga com voucher e outra forma, o relatório de formas de pagamento mostra quanto foi voucher; sem ele, use null nas formas e explique).
+Nessas planilhas a data pode vir com dia e mês trocados (10/11 aparece como 11/10): se só bater trocando, é deste dia.
 Use null no que o arquivo não mostra. Se o arquivo não for do fechamento deste dia, responda achou=false.
 Em observacao, uma frase curta em português dizendo de onde tirou os números ou o que não deu para ler.`;
 

@@ -35,11 +35,12 @@ type Caixa = { dia: string; faturamento: number; vendas: number; pecas: number; 
 async function numeros(admin: SupabaseClient, portalId: string) {
   const h = hoje(), esta = segunda(refSemana()), passada = soma(esta, -7), retrasada = soma(esta, -14), mes = h.slice(0, 7);
   const ini = [retrasada, `${mes}-01`].sort()[0];
-  const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }] = await Promise.all([
+  const [{ data: caixa }, { data: plano }, { data: anterior }, { data: informados }, { data: canais }] = await Promise.all([
     admin.from("loja_caixa").select("dia, faturamento, vendas, pecas, vendedoras, justificativa").eq("portal_id", portalId).gte("dia", ini).lte("dia", fimDoMes(mes)),
     admin.from("loja_plano_mes").select("dados, status").eq("portal_id", portalId).eq("mes", mes).maybeSingle(),
     admin.from("loja_leituras").select("semana, texto, acoes").eq("portal_id", portalId).eq("publicada", true).lt("semana", esta).order("semana", { ascending: false }).limit(1).maybeSingle(),
     admin.from("loja_numeros_semana").select("semana, faturamento, vendas, pecas, obs").eq("portal_id", portalId).gte("semana", retrasada),
+    admin.from("loja_canais_registro").select("dia, canal, tipo, valor, pecas, minutos").eq("portal_id", portalId).gte("dia", retrasada).lt("dia", esta),
   ]);
   const cx = (caixa ?? []) as Caixa[];
   const resumo = (de: string, ate: string) => {
@@ -59,6 +60,20 @@ async function numeros(admin: SupabaseClient, portalId: string) {
       // Dias que a loja fechou com algo faltando ou que não bate, e o motivo que ela escreveu.
       fechados_com_motivo: l.filter((c) => c.justificativa?.trim()).map((c) => ({ dia: c.dia, motivo: c.justificativa as string })) };
   };
+  // Vendas por canal (o link da equipe): cada lançamento é uma venda. Quanto cada canal vende, P.A., ticket e quanto rende por hora de trabalho.
+  const porCanal = (de: string, ate: string) => {
+    const rs = ((canais ?? []) as { dia: string; canal: string; tipo: string; valor: number; pecas: number; minutos: number }[]).filter((r) => r.dia >= de && r.dia <= ate);
+    if (!rs.length) return null;
+    const total = rs.filter((r) => r.tipo === "venda").reduce((t, r) => t + Number(r.valor), 0);
+    return [...new Set(rs.map((r) => r.canal))].map((canal) => {
+      const v = rs.filter((r) => r.canal === canal && r.tipo === "venda");
+      const valor = v.reduce((t, r) => t + Number(r.valor), 0), pecas = v.reduce((t, r) => t + Number(r.pecas), 0);
+      const min = rs.filter((r) => r.canal === canal && r.tipo === "tempo").reduce((t, r) => t + Number(r.minutos), 0);
+      return { canal, vendas: v.length, faturamento: Math.round(valor), pct_da_venda_do_link: total ? Math.round((valor / total) * 100) : 0, pecas,
+        pa: v.length ? +(pecas / v.length).toFixed(2) : null, ticket: v.length ? Math.round(valor / v.length) : null,
+        horas_de_trabalho: +(min / 60).toFixed(1), vende_por_hora: min ? Math.round(valor / (min / 60)) : null };
+    }).sort((a, b) => b.faturamento - a.faturamento);
+  };
   const d = (plano?.dados ?? {}) as { base?: number; crescimento?: number; premiacao?: string; semanas?: { foco?: string }[]; acoes?: { titulo: string; inicio?: string }[]; datas?: { titulo: string; trabalhar: boolean }[] };
   const meta = d.base ? Math.round((d.base * (1 + (d.crescimento ?? 20) / 100)) / 100) * 100 : null;
   const ontem = soma(h, -1);
@@ -72,6 +87,8 @@ async function numeros(admin: SupabaseClient, portalId: string) {
     mes_ate_ontem: { ...noMes, meta_do_mes: meta, deveria_ter_vendido_ate_ontem: ritmo },
     plano_do_mes: plano ? { status: plano.status, premiacao: d.premiacao ?? "", foco_desta_semana: d.semanas?.[semanaDoMes]?.foco ?? "", acoes: (d.acoes ?? []).map((a) => a.titulo), datas: (d.datas ?? []).filter((x) => x.trabalhar).map((x) => x.titulo) } : null,
     leitura_anterior: anterior ?? null,
+    canais_semana_passada: porCanal(passada, soma(esta, -1)),
+    canais_semana_retrasada: porCanal(retrasada, soma(passada, -1)),
   };
 }
 
@@ -175,8 +192,11 @@ async function comAgente(instrucoes: string, exemplos: { rascunho: unknown; fina
       conversas
         ? `Fale com a Camilla da loja (últimas 2 semanas, o que a loja contou, pediu ou combinou):\n${conversas}\n\nSe algum ponto dessas conversas fizer sentido para esta semana (uma dificuldade, um pedido, um combinado, uma ação que ela planejou), use-o nas ações sugeridas, com as palavras dela. Não repita pergunta que ela já respondeu ali. Em para_camilla, diga em uma frase qual ponto da conversa você usou (ou que nada dali entrou).`
         : "A loja não escreveu no Fale com a Camilla nas últimas 2 semanas.",
+      nums.canais_semana_passada
+        ? "A loja mede as vendas por canal (canais_semana_passada e canais_semana_retrasada, lançadas pela equipe; cada lançamento é uma venda). Inclua na leitura o comparativo dos canais: qual mais vendeu, qual rende mais por hora de trabalho, o P.A. e o ticket de cada um, e qual toma tempo demais para o que traz. Diga com clareza em qual canal vale investir o tempo da equipe nesta semana e qual reduzir. Se a venda do link ficou bem abaixo do caixa da semana, avise que parte das vendas não foi lançada por canal (o comparativo fica parcial)."
+        : "",
       "Monte a leitura desta semana. Responda só com o JSON pedido.",
-    ].join("\n\n") }],
+    ].filter(Boolean).join("\n\n") }],
   }).finalMessage();
   const bloco = r.content.find((b) => b.type === "text");
   if (!bloco || bloco.type !== "text") throw new Error("O agente não devolveu a leitura.");

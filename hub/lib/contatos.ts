@@ -60,3 +60,34 @@ export async function linhaDoTempo(portalId: string, comConversas: boolean): Pro
   ((cv.data ?? []) as { texto: string; autor_nome: string | null; tipo: string; created_at: string; arquivos: Anexo[] }[]).forEach((m) => itens.push({ quando: m.created_at, tipo: "conversa", titulo: `Conversa da equipe · ${m.autor_nome ?? ""}`, texto: m.texto || null, arquivos: m.arquivos ?? [] }));
   return itens.sort((a, b) => b.quando.localeCompare(a.quando));
 }
+
+export type ContatoDoDia = Contato & { loja: string };
+/** Tudo o que a equipe registrou hoje (de qualquer loja) e os próximos passos marcados para hoje ou atrasados. */
+export async function contatosDoDia(): Promise<{ hoje: ContatoDoDia[]; proximos: ContatoDoDia[] }> {
+  const inicioHoje = new Date(`${hoje()}T00:00:00-03:00`).toISOString();
+  const [{ data: h }, { data: p }, { data: lojas }] = await Promise.all([
+    sb().from("cs_contatos").select("*").gte("feito_em", inicioHoje).order("feito_em", { ascending: false }),
+    sb().from("cs_contatos").select("*").not("proximo_passo", "is", null).lte("proximo_em", hoje()).gte("proximo_em", somarDias(hoje(), -14)).order("proximo_em"),
+    sb().from("portais").select("id, loja"),
+  ]);
+  const nome = new Map(((lojas ?? []) as { id: string; loja: string }[]).map((l) => [l.id, l.loja]));
+  const com = (x: Contato[]) => x.map((c) => ({ ...c, loja: nome.get(c.portal_id) ?? "Loja" }));
+  const todos = com((h ?? []) as Contato[]);
+  // Próximo passo some quando já houve um contato com a mesma loja depois de registrado.
+  const prox = com((p ?? []) as Contato[]).filter((c) => !todos.some((t) => t.portal_id === c.portal_id && t.feito_em > c.feito_em));
+  return { hoje: todos, proximos: prox };
+}
+
+export async function editarContato(id: string, x: { resumo: string; proximo_passo: string; proximo_em: string; precisa_ajuda: boolean }) {
+  await ok(sb().from("cs_contatos").update({ resumo: x.resumo.trim() || null, proximo_passo: x.proximo_passo.trim() || null, proximo_em: x.proximo_em || null, precisa_ajuda: x.precisa_ajuda }).eq("id", id));
+}
+
+export async function excluirContato(id: string) {
+  await ok(sb().from("cs_contatos").delete().eq("id", id));
+}
+
+/** Os últimos contatos registrados com uma loja (para a ficha da cliente). */
+export async function contatosDaLoja(portalId: string, loja: string): Promise<ContatoDoDia[]> {
+  const { data } = await sb().from("cs_contatos").select("*").eq("portal_id", portalId).order("feito_em", { ascending: false }).limit(10);
+  return ((data ?? []) as Contato[]).map((c) => ({ ...c, loja }));
+}

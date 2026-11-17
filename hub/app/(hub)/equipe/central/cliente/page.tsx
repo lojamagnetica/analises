@@ -7,6 +7,7 @@ import { Titulo } from "@/components/Titulo";
 import { Copiar } from "@/components/Copiar";
 import { LinkAcesso } from "@/components/LinkAcesso";
 import { MensagensCS } from "@/components/MensagensCS";
+import { ContatosDaLoja } from "@/components/ContatosDoDia";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { BASE } from "@/lib/config";
 import { dataCurta, dataHora, isoParaLocal, localParaIso, moeda } from "@/lib/formato";
@@ -217,6 +218,8 @@ function Cliente() {
           {!p.recebida_em && <button type="button" className="btn p peq mt" onClick={async () => { await receberPassagem(c.id, nome); recarregar(); }}>Receber a passagem</button>}
         </details>
       )}
+
+      <ContatosDaLoja portalId={c.id} loja={c.loja} />
 
       <ContratoAssinado portalId={c.id} />
 

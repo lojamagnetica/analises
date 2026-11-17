@@ -93,7 +93,9 @@ export default function Inicio() {
   const pct = total ? Math.round((feitos / total) * 100) : 0;
   const passosEntrada = PASSOS_ENTRADA.filter((p) => !(portal.sem_equipe && p.chave === "equipe"));
   const etapa2 = pers.get(2)?.respostas;
-  const quem = donoDaLoja || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
+  // Loja com mais de uma responsável ("Fulana e Ciclana"): a boas-vindas fala com todas, no plural sem gênero (há sócios homens).
+  const socias = !donoDaLoja && /\s+e\s+/.test(portal.responsavel ?? "") ? (portal.responsavel as string) : "";
+  const quem = donoDaLoja || socias || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
   const c = consult?.dados;
   const nMes = c ? mesDaConsultoria(c.inicio) : 0;
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
@@ -152,7 +154,7 @@ export default function Inicio() {
       )}
       <div className="heroi mt">
         <div>
-          <h1>Que bom ter você aqui, {quem}!</h1>
+          <h1>{socias ? `Que bom ter vocês aqui, ${socias}!` : `Que bom ter você aqui, ${quem}!`}</h1>
           <p>{portal.lojas?.length > 1
             ? `Este é o Hub da ${portal.lojas.join(" e ")}. Tudo das suas lojas em um lugar só.`
             : `Este é o Hub da ${portal.loja}. Tudo da sua loja em um lugar só.`}</p>

@@ -9,6 +9,7 @@ import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
+import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
 import { hoje } from "@/lib/formato";
@@ -133,8 +134,9 @@ function CartaoAssunto({ g, nome, recarregar, aprov }: { g: GrupoAlerta; nome: s
 export default function InicioCs() {
   const { nome, abrirPortal, userId, conversas, aprova } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
-  const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas">("painel");
+  const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas" | "contatos">("painel");
   const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
+  const { dados: ct, recarregar: recarregarCt } = useDados(() => contatosDoDia(), []);
   // As demandas do dia passam pela Camilla: ela vê tudo e aprova; a Claudia só vê o que foi aprovado hoje.
   const { dados: aprovadas, recarregar: recarregarAprov } = useDados(() => aprovadasHoje(), []);
   const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hoje())) : []), [conversas, userId]);
@@ -191,14 +193,15 @@ export default function InicioCs() {
         </div>
       )}
 
-      <ContatosDoDia />
+      <p className="mb" style={{ marginTop: 0 }}><Link className="btn p peq" href="/equipe/contatos#novo">+ Registrar contato</Link></p>
 
       <div className="chips mb">
         <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>
         <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Por loja · {vermelhas.length}</button>
         <button type="button" className={`chip${ver === "depois" ? " escolhido" : ""}`} onClick={() => setVer("depois")}>Depois · {depois.length}</button>
         <button type="button" className={`chip${ver === "todas" ? " escolhido" : ""}`} onClick={() => setVer("todas")}>Todas as lojas · {lojas.length}</button>
-        <button type="button" className="chip" onClick={recarregar}>Atualizar</button>
+        <button type="button" className={`chip${ver === "contatos" ? " escolhido" : ""}`} onClick={() => setVer("contatos")}>Contatos registrados hoje · {ct?.hoje.length ?? 0}{ct?.proximos.length ? ` · ${ct.proximos.length} próximos passos` : ""}</button>
+        <button type="button" className="chip" onClick={() => { recarregar(); recarregarCt(); }}>Atualizar</button>
       </div>
 
       {ver === "painel" && (
@@ -237,6 +240,7 @@ export default function InicioCs() {
         </>
       )}
       {ver === "todas" && <Lojas lojas={lojas} abrir={abrirPortal} />}
+      {ver === "contatos" && (ct ? <ContatosDoDia dados={ct} recarregar={recarregarCt} /> : <Carregando />)}
 
       {reunioes.length > 0 && (
         <>

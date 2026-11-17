@@ -10,12 +10,14 @@ import { somarDias } from "@/lib/acoes-mes";
 import { preencher } from "@/lib/clientes";
 import { buscarPessoas, quemVende, type Pessoa } from "@/lib/pessoas";
 import { buscarMeuDia, placar } from "@/lib/meu-dia";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { FOCOS, buscarMissoes, excluirMissao, focoSugerido, mensagemGrupo, salvarMissao, semanaAtual, tirarPessoa, type Missao, type MissaoPessoa } from "@/lib/missoes";
 
 const linkMissao = (token: string) => `${SITE_HUB}/analises/portal/missao/?t=${token}`;
 const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : "—");
 
-type DadosMissoes = { time: Pessoa[]; missoes: Missao[]; pessoas: MissaoPessoa[]; abaixo: number | null };
+type MissaoAnalise = { foco: string; criterio: string; mensagem: string; meta: number };
+type DadosMissoes = { time: Pessoa[]; missoes: Missao[]; pessoas: MissaoPessoa[]; abaixo: number | null; daAnalise: MissaoAnalise | null };
 
 /** Missão da semana de CRM: uma força de venda unificada, igual para o time todo, com o retorno de cada pessoa.
  *  Com mais de uma loja no portal, cada loja tem a sua missão, uma embaixo da outra. */
@@ -23,8 +25,11 @@ export default function Missoes() {
   const { portal } = usePortal();
   const [lojaFoco] = useLojaFoco();
   const { dados, recarregar } = useDados(async () => {
-    const [p, ms, d] = await Promise.all([buscarPessoas(portal.id, lojaFoco), buscarMissoes(portal.id), buscarMeuDia(portal.id).catch(() => null)]);
-    return { time: quemVende(p.pessoas.filter((x) => x.ativo)), ...ms, abaixo: d ? placar(d).abaixo : null } as DadosMissoes;
+    const [p, ms, d, { data: lt }] = await Promise.all([buscarPessoas(portal.id, lojaFoco), buscarMissoes(portal.id), buscarMeuDia(portal.id).catch(() => null),
+      supabaseBrowser().from("loja_leituras").select("publicada, rascunho").eq("portal_id", portal.id).eq("semana", semanaAtual()).maybeSingle()]);
+    // A missão que a análise da semana sugeriu (só depois que a Camilla publicou a análise).
+    const daAnalise = lt?.publicada ? ((lt.rascunho as { missao?: MissaoAnalise } | null)?.missao ?? null) : null;
+    return { time: quemVende(p.pessoas.filter((x) => x.ativo)), ...ms, abaixo: d ? placar(d).abaixo : null, daAnalise } as DadosMissoes;
   }, [portal.id, lojaFoco]);
   if (!dados) return <Carregando />;
   const lojas = portal.lojas ?? [];
@@ -60,7 +65,9 @@ function BlocoMissao({ loja, dados: tudo, recarregar }: { loja: string; dados: D
       {ed && (
         <div className="card mb">
           <h3 style={{ marginTop: 0 }}>{daSemana ? "Editar a missão desta semana" : `Missão da semana de ${dia(semana)}`}</h3>
-          <p className="ajuda" style={{ marginTop: 0 }}>Ideia do Hub, só uma sugestão (quem decide é você): <b>{FOCOS.find((f) => f.id === sugestao.foco)?.nome}</b>. {sugestao.porque}</p>
+          {dados.daAnalise
+            ? <p className="ajuda" style={{ marginTop: 0 }}>A análise da semana sugeriu: <b>{dados.daAnalise.foco}</b>. <button type="button" className="link-loja" onClick={() => setEd({ ...ed, foco: dados.daAnalise!.foco, criterio: dados.daAnalise!.criterio, mensagem: dados.daAnalise!.mensagem, meta: dados.daAnalise!.meta || ed.meta })}>Usar a missão da análise</button></p>
+            : <p className="ajuda" style={{ marginTop: 0 }}>Ideia do Hub, só uma sugestão (quem decide é você): <b>{FOCOS.find((f) => f.id === sugestao.foco)?.nome}</b>. {sugestao.porque}</p>}
           <div className="chips mb">
             {FOCOS.map((f) => <button key={f.id} type="button" className={`chip${ed.foco === f.id ? " escolhido" : ""}`} onClick={() => setEd({ ...ed, foco: f.id, criterio: f.criterio, mensagem: f.mensagem })}>{f.nome}</button>)}
           </div>
@@ -129,7 +136,16 @@ function BlocoMissao({ loja, dados: tudo, recarregar }: { loja: string; dados: D
       {!daSemana && !ed && (
         <div className="card">
           <p className="mudo" style={{ marginTop: 0 }}>Ainda não tem missão nesta semana{loja ? ` na ${loja}` : ""}.</p>
-          <button type="button" className="btn p" onClick={() => setEd({ foco: "", criterio: "", mensagem: "", meta: 20, obs: "", produto: "" })}>Montar a missão desta semana</button>
+          {dados.daAnalise && (
+            <div className="aviso ok mb">
+              <b>A análise da semana já sugere a missão do time: {dados.daAnalise.foco}</b>
+              <div style={{ marginTop: 4 }}>Quem chamar: {dados.daAnalise.criterio}</div>
+              <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>Mensagem: {dados.daAnalise.mensagem}</div>
+              <div style={{ marginTop: 4 }}>Meta: {dados.daAnalise.meta} por pessoa</div>
+              <button type="button" className="btn p peq mt" onClick={() => setEd({ foco: dados.daAnalise!.foco, criterio: dados.daAnalise!.criterio, mensagem: dados.daAnalise!.mensagem, meta: dados.daAnalise!.meta || 20, obs: "", produto: "" })}>Usar esta missão (dá para ajustar)</button>
+            </div>
+          )}
+          <button type="button" className={`btn ${dados.daAnalise ? "s" : "p"}`} onClick={() => setEd({ foco: "", criterio: "", mensagem: "", meta: 20, obs: "", produto: "" })}>{dados.daAnalise ? "Montar outra missão" : "Montar a missão desta semana"}</button>
         </div>
       )}
     </>

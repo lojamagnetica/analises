@@ -169,23 +169,28 @@ async function numeros(admin: SupabaseClient, portalId: string) {
 }
 
 const ESQUEMA = {
-  type: "object", additionalProperties: false, required: ["resumo", "equipe", "produtos", "estoque_giro", "canais", "acoes", "para_camilla"],
+  type: "object", additionalProperties: false, required: ["resumo", "equipe", "produtos", "estoque_giro", "canais", "acoes", "missao", "para_camilla"],
   properties: {
     resumo: { type: "string" }, equipe: { type: "string" }, produtos: { type: "string" }, estoque_giro: { type: "string" }, canais: { type: "string" },
     acoes: { type: "array", items: { type: "object", additionalProperties: false, required: ["pilar", "acao"], properties: { pilar: { type: "string" }, acao: { type: "string" } } } },
+    // A missão da semana do time (CRM), igual para todas, que sai da análise.
+    missao: { type: "object", additionalProperties: false, required: ["foco", "criterio", "mensagem", "meta"],
+      properties: { foco: { type: "string" }, criterio: { type: "string" }, mensagem: { type: "string" }, meta: { type: "integer" } } },
     para_camilla: { type: "string" },
   },
 };
-type Analise = { resumo: string; equipe: string; produtos: string; estoque_giro: string; canais: string; acoes: { pilar: string; acao: string }[]; para_camilla: string };
+type Missao = { foco: string; criterio: string; mensagem: string; meta: number };
+type Analise = { resumo: string; equipe: string; produtos: string; estoque_giro: string; canais: string; acoes: { pilar: string; acao: string }[]; missao?: Missao; para_camilla: string };
 /** A análise em blocos vira o texto que a loja lê (um bloco por pilar) e as ações da semana. */
 const juntar = (a: Analise): Saida => ({
   texto: [a.resumo, a.equipe && `PERFORMANCE DA EQUIPE\n${a.equipe}`, a.produtos && `PERFORMANCE DE PRODUTOS\n${a.produtos}`,
     a.estoque_giro && `ESTOQUE X GIRO\n${a.estoque_giro}`, a.canais && `CANAIS DE VENDA\n${a.canais}`].filter((x) => x && x.trim()).join("\n\n"),
   acoes: a.acoes.map((x) => (x.pilar ? `${x.pilar}: ${x.acao}` : x.acao)),
   para_camilla: a.para_camilla,
+  missao: a.missao,
 });
 
-type Saida = { texto: string; acoes: string[]; para_camilla: string };
+type Saida = { texto: string; acoes: string[]; para_camilla: string; missao?: { foco: string; criterio: string; mensagem: string; meta: number } };
 type Nums = Awaited<ReturnType<typeof numeros>>;
 const reais = (v: number) => `R$ ${Math.round(v).toLocaleString("pt-BR")}`;
 
@@ -246,7 +251,7 @@ async function rascunho(admin: SupabaseClient, portalId: string, todas = false, 
     .map((x) => `${x.dia.slice(8)}/${x.dia.slice(5, 7)}: ${x.motivo}`);
   if (motivos.length) out.para_camilla = [out.para_camilla, `Caixa fechado com motivo (${motivos.length} ${motivos.length === 1 ? "dia" : "dias"}): ${motivos.join(" · ")}`].filter(Boolean).join("\n");
   const acoes = out.acoes.slice(0, 5).map((t) => ({ t, feita: false }));
-  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 5), para_camilla: out.para_camilla, agente: !!CHAVE, numeros: nums }, pronta: encaminhar, updated_at: new Date().toISOString() };
+  const linha = { texto: out.texto, acoes, rascunho: { texto: out.texto, acoes: out.acoes.slice(0, 5), para_camilla: out.para_camilla, missao: out.missao ?? null, agente: !!CHAVE, numeros: nums }, pronta: encaminhar, updated_at: new Date().toISOString() };
   if (atual) await admin.from("loja_leituras").update(linha).eq("id", atual.id);
   else await admin.from("loja_leituras").insert({ ...linha, portal_id: portalId, semana, autor_nome: "", publicada: false });
   return { portal_id: portalId, ok: true, agente: !!CHAVE };

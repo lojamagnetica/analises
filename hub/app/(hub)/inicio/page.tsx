@@ -56,7 +56,7 @@ export default function Inicio() {
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
-      sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
+      sb.from("datas_comerciais").select("mes, dia, titulo").in("mes", [mes, (mes + 1) % 12]).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
@@ -133,6 +133,10 @@ export default function Inicio() {
   const planoProx = planosMes.find((p) => p.mes === meses.proximo);
   const focoSemana = planoAtual?.dados?.semanas?.[semanaDoDia(Number(hoje().slice(8)))]?.foco?.trim();
   const ajustar = [planoAtual, planoProx].find((p) => p?.status === "ajustar");
+  // Cartão das datas: com o plano do mês atual já feito, ele já mostra o próximo mês para planejar.
+  const mesCard = planoAtual ? (mes + 1) % 12 : mes;
+  const mesCardIso = planoAtual ? meses.proximo : meses.atual;
+  const datasCard = (datas ?? []).filter((d) => d.mes === mesCard);
   const diagnosticoNovo = !!ent?.diagnosticoEm && Date.now() - new Date(ent.diagnosticoEm).getTime() < 15 * 86_400_000;
 
   return (
@@ -328,11 +332,11 @@ export default function Inicio() {
           </>
         )}
         <div className="card card-borda" style={{ ["--c" as string]: "var(--green)" }}>
-          <h3>Datas de {MESES[mes].toLowerCase()}</h3>
+          <h3>Datas de {MESES[mesCard].toLowerCase()}</h3>
           <p className="mudo">
-            {(datas ?? []).map((d) => (d.dia ? `${d.titulo} (${d.dia}/${MESES_ABREV[mes]})` : d.titulo)).join(" · ") || "Sem datas cadastradas"}
+            {datasCard.map((d) => (d.dia ? `${d.titulo} (${d.dia}/${MESES_ABREV[mesCard]})` : d.titulo)).join(" · ") || "Sem datas cadastradas"}
           </p>
-          <Link className="btn s peq" href={`/planeje/mes?m=${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
+          <Link className="btn s peq" href={`/planeje/mes?m=${mesCardIso}`}>Planejar {MESES[mesCard].toLowerCase()}</Link>
         </div>
       </div>
       </>}

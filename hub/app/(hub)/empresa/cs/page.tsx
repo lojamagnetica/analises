@@ -8,6 +8,7 @@ import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
+import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
 import { hoje } from "@/lib/formato";
@@ -190,7 +191,7 @@ export default function InicioCs() {
         </div>
       )}
 
-      <p className="mb" style={{ marginTop: 0 }}><Link className="btn p peq" href="/equipe/contatos#novo">+ Registrar contato</Link></p>
+      <ContatosDoDia />
 
       <div className="chips mb">
         <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>

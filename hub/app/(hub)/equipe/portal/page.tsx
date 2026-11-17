@@ -262,7 +262,7 @@ function EditarPortal() {
           {dados.pessoas.map((u) => (
             <div key={u.id} className="linha entre marcar" style={{ cursor: "default" }}>
               <div>
-                <b>{u.nome}</b>{u.so_caixa && <span className="selo andamento" style={{ marginLeft: 6 }}>acesso de envios</span>}
+                <b>{u.nome}</b>{u.so_caixa ? <span className="selo andamento" style={{ marginLeft: 6 }}>só envios e caixa</span> : <span className="selo feito" style={{ marginLeft: 6 }}>vê o portal inteiro</span>}
                 <div className="mudo" style={{ fontSize: 13 }}>{u.email} · último acesso {haQuanto(u.ultimo_acesso)}</div>
                 <label className="linha" style={{ gap: 6, fontSize: 13, cursor: "pointer", marginTop: 4 }}>
                   <input type="checkbox" checked={!!u.so_caixa} onChange={async (e) => {
@@ -270,7 +270,7 @@ function EditarPortal() {
                     setAviso(error ? { erro: error.message } : { ok: e.target.checked ? `${u.nome ?? "A pessoa"} agora vê só os Envios, o Fechamento de caixa, o mural e o Fale com a Camilla.` : `${u.nome ?? "A pessoa"} voltou a ver o portal inteiro.` });
                     recarregar();
                   }} />
-                  Acesso de envios (o ADM manda o caixa, os relatórios da semana e do mês e imprime o mural, sem ver o resto do portal)
+                  Limitar a envios e caixa (para quem só manda o caixa e os relatórios, como o ADM da loja). Desmarcado = vê o portal inteiro.
                 </label>
                 {u.so_caixa && (p.lojas?.length ?? 0) > 1 && (
                   <label className="linha" style={{ gap: 6, fontSize: 13, marginTop: 4, alignItems: "center" }}>

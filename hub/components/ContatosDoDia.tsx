@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useDados } from "@/lib/hub";
-import { contatosDaLoja, contatosDoDia, editarContato, excluirContato, type ContatoDoDia } from "@/lib/contatos";
+import { contatosDaLoja, type contatosDoDia, editarContato, excluirContato, type ContatoDoDia } from "@/lib/contatos";
 import { hoje } from "@/lib/formato";
 
 const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Recife" });
@@ -41,8 +41,8 @@ function Linha({ c, mudou, comHora }: { c: ContatoDoDia; mudou: () => void; comH
   );
 }
 
-export function ContatosDoDia() {
-  const { dados, recarregar } = useDados(() => contatosDoDia(), []);
+export type DadosContatos = Awaited<ReturnType<typeof contatosDoDia>>;
+export function ContatosDoDia({ dados, recarregar }: { dados: DadosContatos | null; recarregar: () => void }) {
   if (!dados) return null;
   return (
     <>

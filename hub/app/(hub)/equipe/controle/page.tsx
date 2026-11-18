@@ -79,7 +79,7 @@ export default function ControleDeClientes() {
           <b>Lembretes de hoje · {lembretes.length}</b>
           {lembretes.map((l) => (
             <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
-              <span style={{ flex: "1 1 300px" }}>{l.texto}</span>
+              <span style={{ flex: "1 1 300px" }}>{l.loja && <b>{l.loja} · </b>}{l.texto}</span>
               <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
             </div>
           ))}

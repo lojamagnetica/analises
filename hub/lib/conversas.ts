@@ -11,7 +11,7 @@ export type Anexo = { caminho: string; nome: string; tipo: string; tamanho: numb
 /** A pergunta da Assistente Magnética para confirmar uma reunião (ver a migração 0169). */
 export type AcaoReuniao = { tipo: "confirmar_reuniao"; reuniao_id: string; estado: "pendente" | "confirmada" | "nao"; minutos?: number; texto?: string; whatsapp?: string | null };
 export type Mensagem = { id: string; acao?: AcaoReuniao | null; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
-export type Lembrete = { id: string; portal_id: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
+export type Lembrete = { id: string; portal_id: string | null; loja?: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
 export type Pessoa = { id: string; nome: string };
 
 const sb = () => supabaseBrowser();
@@ -94,6 +94,12 @@ export async function buscarLembretes(responsavel: string | null, abertos = true
   if (abertos) q = q.eq("feito", false);
   if (responsavel) q = q.eq("responsavel", responsavel);
   const { data } = await q;
-  return (data ?? []) as Lembrete[];
+  const lista = (data ?? []) as Lembrete[];
+  // O nome da loja vai junto, para o lembrete dizer de quem é.
+  const ids = [...new Set(lista.map((l) => l.portal_id).filter(Boolean))] as string[];
+  const { data: ps } = ids.length ? await sb().from("portais").select("id, loja").in("id", ids) : { data: [] };
+  const nome = new Map(((ps ?? []) as { id: string; loja: string }[]).map((x) => [x.id, x.loja]));
+  // Se o texto já diz a loja (ex.: "🧾 SCHIÊ MODA ÍNTIMA: ..."), não repete.
+  return lista.map((l) => { const loja = l.portal_id ? nome.get(l.portal_id) ?? null : null; return { ...l, loja: loja && !l.texto.toLowerCase().includes(loja.toLowerCase()) ? loja : null }; });
 }
 export const marcarLembrete = (id: string, feito: boolean) => ok(sb().from("equipe_lembretes").update({ feito }).eq("id", id));

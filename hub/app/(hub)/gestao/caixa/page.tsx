@@ -26,6 +26,8 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 type Numeros = { faturamento: string; vendas: string; pecas: string };
 type Form = {
   id?: string; dia: string; loja: string; faturamento: string; vendas: string; pecas: string; obs: string; pag: Partial<Record<Forma, string>>;
+  /** Parte da venda paga com vale-troca (crédito de uma troca): conta na venda do dia, mas não é dinheiro recebido. */
+  vale: string;
   /** Por vendedora (chave = id da pessoa ou "outras"). */
   vend: Record<string, Numeros>;
   /** Lançar só o total da loja, sem dividir. */
@@ -37,14 +39,15 @@ type Form = {
   /** O motivo de fechar com algo faltando ou que não bate. */
   just: string;
 };
-const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "", just: "" });
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vale: "", vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "", just: "" });
 const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
 
 /** "Pix R$ 800 · Crédito R$ 1.200", só as formas com valor. */
 function ListaFormas({ p }: { p: Pagamentos }) {
-  return <>{FORMAS.filter((x) => p[x.chave]).map((x) => `${x.nome} ${moeda(p[x.chave]!)}`).join(" · ")}</>;
+  const vale = (p as Record<string, number>).vale_troca;
+  return <>{[...FORMAS.filter((x) => p[x.chave]).map((x) => `${x.nome} ${moeda(p[x.chave]!)}`), ...(vale ? [`Vale-troca ${moeda(vale)} (não é recebido)`] : [])].join(" · ")}</>;
 }
 
 function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vendas: number; pecas: number }) {
@@ -130,9 +133,11 @@ function FechamentoCaixa() {
   const valor = porPessoa ? somaVend : { faturamento: numeroDe(f.faturamento) ?? 0, vendas: numeroDe(f.vendas) ?? 0, pecas: numeroDe(f.pecas) ?? 0 };
   const pag: Pagamentos = {};
   for (const x of FORMAS) { const v = numeroDe(f.pag[x.chave]); if (v) pag[x.chave] = v; }
+  const vale = numeroDe(f.vale) ?? 0;
+  if (vale) (pag as Record<string, number>).vale_troca = vale;
   const malinha = { faturamento: numeroDe(f.mal.faturamento) ?? 0, vendas: numeroDe(f.mal.vendas) ?? 0, pecas: numeroDe(f.mal.pecas) ?? 0, saidas: numeroDe(f.mal.saidas) ?? 0 };
   const temMalinha = malinha.faturamento > 0 || malinha.vendas > 0 || malinha.pecas > 0 || malinha.saidas > 0;
-  const somaPag = somaPagamentos(pag);
+  const somaPag = somaPagamentos(pag) + vale;
   const faltaNoForm = faltaAgora(valor.faturamento || somaPag, valor.vendas, valor.pecas);
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const malMes = somarMalinha(lista);
@@ -254,6 +259,7 @@ function FechamentoCaixa() {
     setErro(""); setAviso(""); setEnviar(null);
     setF({ id: c.id, dia: c.dia, loja: c.loja ?? "", faturamento: texto(c.faturamento), vendas: String(c.vendas), pecas: String(c.pecas), obs: c.obs ?? "",
       pag: Object.fromEntries(FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => [x.chave, texto(c.pagamentos![x.chave]!)])),
+      vale: (c.pagamentos as Record<string, number> | null)?.vale_troca ? texto((c.pagamentos as Record<string, number>).vale_troca) : "",
       vend: Object.fromEntries((c.vendedoras ?? []).map((v) => [v.pessoa_id ?? OUTRAS, { faturamento: texto(v.faturamento), vendas: String(v.vendas), pecas: String(v.pecas) }])),
       // Dia antigo lançado só no total continua só no total.
       soTotal: !c.vendedoras?.length && c.faturamento > 0,
@@ -368,7 +374,7 @@ function FechamentoCaixa() {
           <div className="kpi"><small>Total do dia</small><b style={{ fontSize: 20 }}>{moeda(valor.faturamento || somaPag)}</b></div>
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
-        <p className="ajuda" style={{ marginTop: 0 }}>Voucher, vale-troca e saldo de troca não entram: não é dinheiro novo no caixa.</p>
+        <p className="ajuda" style={{ marginTop: 0 }}>Voucher e saldo de troca não entram: não é dinheiro novo no caixa. Se o sistema conta a venda paga com vale-troca, coloque esse valor em &quot;Vale-troca usado&quot;.</p>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
             <div key={x.chave}>
@@ -377,6 +383,10 @@ function FechamentoCaixa() {
                 onChange={(e) => setF({ ...f, pag: { ...f.pag, [x.chave]: e.target.value } })} />
             </div>
           ))}
+          <div>
+            <label className="rotulo" htmlFor="cx-vale" style={{ fontWeight: 400 }}>Vale-troca usado</label>
+            <input id="cx-vale" type="text" inputMode="decimal" placeholder="0,00" value={f.vale} style={NUM} onChange={(e) => setF({ ...f, vale: e.target.value })} />
+          </div>
         </div>
         <div className="ajuda" style={difere ? { color: "var(--red)" } : undefined}>
           {somaPag > 0

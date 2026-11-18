@@ -186,7 +186,7 @@ export default function InicioCs() {
           <b>Lembretes de hoje · {lembretes.length}</b>
           {lembretes.map((l) => (
             <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
-              <span>{l.texto}{l.quando && l.quando < hoje() ? <span className="selo alerta" style={{ marginLeft: 6 }}>atrasado</span> : null}</span>
+              <span>{l.loja && <b>{l.loja} · </b>}{l.texto}{l.quando && l.quando < hoje() ? <span className="selo alerta" style={{ marginLeft: 6 }}>atrasado</span> : null}</span>
               <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
             </div>
           ))}

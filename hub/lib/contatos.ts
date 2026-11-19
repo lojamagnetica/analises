@@ -1,6 +1,7 @@
 "use client";
 
 // Contatos da CS com as lojas: registrar uma conversa a qualquer hora (sem precisar de alerta) e ver a linha do tempo de cada loja.
+import { rotuloResultado } from "@/lib/contato-resultado";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
@@ -9,7 +10,7 @@ import type { Anexo } from "@/lib/conversas";
 export const CANAIS = ["WhatsApp", "Ligação", "Reunião", "Presencial", "Outro"] as const;
 export type Canal = (typeof CANAIS)[number];
 export type LojaOpcao = { id: string; loja: string; acompanhada: boolean };
-export type Contato = { id: string; portal_id: string; tipo: string; feito_em: string; feito_por: string | null; resumo: string | null; precisa_ajuda: boolean; proximo_passo: string | null; proximo_em: string | null; canal: string | null; arquivos: Anexo[] };
+export type Contato = { id: string; portal_id: string; tipo: string; feito_em: string; feito_por: string | null; resumo: string | null; precisa_ajuda: boolean; proximo_passo: string | null; proximo_em: string | null; canal: string | null; arquivos: Anexo[]; resultado?: string | null; retomar_em?: string | null };
 export type ItemLinha = { quando: string; tipo: "contato" | "combinado" | "conversa"; titulo: string; texto: string | null; ajuda?: boolean; arquivos?: Anexo[]; extra?: string };
 
 const sb = () => supabaseBrowser();
@@ -55,7 +56,7 @@ export async function linhaDoTempo(portalId: string, comConversas: boolean): Pro
     comConversas ? sb().from("equipe_conversas").select("texto, autor_nome, tipo, created_at, arquivos").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] }),
   ]);
   const itens: ItemLinha[] = [];
-  ((ct ?? []) as Contato[]).forEach((c) => itens.push({ quando: c.feito_em, tipo: "contato", titulo: `${c.canal ?? "Conversa"}${c.feito_por ? ` · ${c.feito_por}` : ""}`, texto: [c.resumo, c.proximo_passo ? `Próximo passo: ${c.proximo_passo}${c.proximo_em ? ` (${c.proximo_em.split("-").reverse().slice(0, 2).join("/")})` : ""}` : null].filter(Boolean).join("\n") || null, ajuda: c.precisa_ajuda, arquivos: c.arquivos ?? [] }));
+  ((ct ?? []) as Contato[]).forEach((c) => itens.push({ quando: c.feito_em, tipo: "contato", titulo: `${c.resultado && c.resultado !== "conversei" ? rotuloResultado(c.resultado) : c.canal ?? "Conversa"}${c.feito_por ? ` · ${c.feito_por}` : ""}${c.retomar_em ? ` · volta em ${c.retomar_em.split("-").reverse().slice(0, 2).join("/")}` : ""}`, texto: [c.resumo, c.proximo_passo ? `Próximo passo: ${c.proximo_passo}${c.proximo_em ? ` (${c.proximo_em.split("-").reverse().slice(0, 2).join("/")})` : ""}` : null].filter(Boolean).join("\n") || null, ajuda: c.precisa_ajuda, arquivos: c.arquivos ?? [] }));
   ((cb ?? []) as { texto: string; quem: string; prazo: string | null; status: string; origem: string; created_at: string; feito_em: string | null }[]).forEach((c) => itens.push({ quando: c.status === "feito" && c.feito_em ? c.feito_em : c.created_at, tipo: "combinado", titulo: c.status === "feito" ? "Combinado cumprido" : "Combinado", texto: c.texto, extra: c.prazo ? `prazo ${c.prazo.split("-").reverse().slice(0, 2).join("/")}` : undefined }));
   ((cv.data ?? []) as { texto: string; autor_nome: string | null; tipo: string; created_at: string; arquivos: Anexo[] }[]).forEach((m) => itens.push({ quando: m.created_at, tipo: "conversa", titulo: `Conversa da equipe · ${m.autor_nome ?? ""}`, texto: m.texto || null, arquivos: m.arquivos ?? [] }));
   return itens.sort((a, b) => b.quando.localeCompare(a.quando));

@@ -2,6 +2,7 @@
 
 // Controle de clientes: a porta de entrada da CS. Parece o Início do portal da loja: atalhos de tudo o que ela faz e usa,
 // do que mais se usa (todo dia) ao que menos se usa (quando precisar).
+import { OQueAconteceu } from "@/components/OQueAconteceu";
 import Link from "next/link";
 import { useEffect } from "react";
 import { Titulo } from "@/components/Titulo";
@@ -9,7 +10,7 @@ import { Icone } from "@/components/Icone";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { painelCs } from "@/lib/cs";
 import { aprovadasHoje, chaveAlerta } from "@/lib/painel-cs";
-import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
+import { buscarLembretes, marcarLembrete, lembreteDepois } from "@/lib/conversas";
 import { dataHora, hoje as hojeStr } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -80,7 +81,10 @@ export default function ControleDeClientes() {
           {lembretes.map((l) => (
             <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
               <span style={{ flex: "1 1 300px" }}>{l.loja && <b>{l.loja} · </b>}{l.texto}</span>
-              <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+              <span className="linha" style={{ gap: 6 }}>
+                <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+                {l.portal_id && <OQueAconteceu registro={{ portalId: l.portal_id, tipo: "lembrete", ref: l.id, loja: l.loja ?? undefined }} feito={async (_r, retomar) => { await lembreteDepois(l.id, retomar); recarregarLembretes(); }} />}
+              </span>
             </div>
           ))}
         </div>

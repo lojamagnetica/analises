@@ -103,3 +103,5 @@ export async function buscarLembretes(responsavel: string | null, abertos = true
   return lista.map((l) => { const loja = l.portal_id ? nome.get(l.portal_id) ?? null : null; return { ...l, loja: loja && !l.texto.toLowerCase().includes(loja.toLowerCase()) ? loja : null }; });
 }
 export const marcarLembrete = (id: string, feito: boolean) => ok(sb().from("equipe_lembretes").update({ feito }).eq("id", id));
+/** Depois do "O que aconteceu?": com data para retomar, o lembrete muda de dia; sem data, fica feito. */
+export const lembreteDepois = (id: string, retomar: string | null) => ok(sb().from("equipe_lembretes").update(retomar ? { quando: retomar } : { feito: true }).eq("id", id));

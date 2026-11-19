@@ -2,6 +2,7 @@
 
 // Início da CS: o que precisa da Claudia hoje, loja por loja. Junta acesso, caixa, leitura, reunião, plano, jornada,
 // pendências e contrato em alertas simples, cada um com a mensagem pronta para a loja.
+import { fechaAlerta, foiConversa } from "@/lib/contato-resultado";
 import { diaDeLoja } from "@/lib/feriados";
 import { diasDesde, hoje } from "@/lib/formato";
 import { ETAPAS, atrasado, buscarJornada } from "@/lib/jornada";
@@ -65,7 +66,7 @@ export async function painelCs(): Promise<PainelCs> {
     sb.from("loja_numeros_semana").select("portal_id").eq("semana", semanaPassada()),
     buscarJornada().catch(() => []),
     buscarPendencias().catch(() => []),
-    sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
+    sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda, resultado, retomar_em").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
     sb.from("loja_combinados").select("*").order("prazo", { ascending: true }),
   ]);
   const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && p.cs_acompanha);
@@ -100,8 +101,9 @@ export async function painelCs(): Promise<PainelCs> {
     else if (!leit.publicada && leit.pronta) al.push({ chave: "leitura_pronta", txt: "Leitura encaminhada: falta a Camilla publicar", grave: false });
     else if (!leit.publicada) al.push({ chave: "leitura_rascunho", txt: "Rascunho da leitura pronto: revisar e encaminhar", grave: true, destino: "/inicio" });
 
-    const contatosLoja = (contatos ?? []).filter((c) => c.portal_id === p.id);
-    const contato = (contatosLoja[0] ?? null) as LojaCs["contato"];
+    // Só fecham o alerta os registros válidos (aguardando, não consegui e adiado voltam na data de retomar).
+    const contatosLoja = (contatos ?? []).filter((c) => c.portal_id === p.id && fechaAlerta(c));
+    const contato = ((contatos ?? []).find((c) => c.portal_id === p.id && foiConversa(c)) ?? null) as LojaCs["contato"];
     // A Camilla liberou a análise da semana: a CS confirma em 1 dia útil que a loja viu, entendeu e se precisa de ajuda.
     if (leit?.publicada && leit.publicada_em && !contatosLoja.some((c) => c.tipo === "leitura" && c.ref === semana)) {
       const entrou = !!ultimo && ultimo > (leit.publicada_em as string);

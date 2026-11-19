@@ -2,6 +2,7 @@
 
 // Painel do dia da CS: os alertas por assunto, só das lojas que já estão no acompanhamento. Cada alerta junta as lojas
 // com o mesmo problema (ou o mesmo parabéns) para a CS falar com todas de uma vez, com a mesma mensagem.
+import { fechaAlerta } from "@/lib/contato-resultado";
 import { diasDesde, hoje } from "@/lib/formato";
 import { diaDeLoja } from "@/lib/feriados";
 import { somarDias } from "@/lib/acoes-mes";
@@ -45,9 +46,9 @@ export async function painelDia(): Promise<PainelDia> {
     sb.from("loja_caixa").select("portal_id, dia").in("portal_id", ids).gte("dia", passada),
     sb.from("loja_rotina").select("portal_id, feitos").in("portal_id", ids),
     sb.from("loja_reunioes").select("portal_id, data, dados").in("portal_id", ids).eq("tipo", "analise_semana").gte("data", passada),
-    sb.from("cs_contatos").select("portal_id, tipo, ref").in("portal_id", ids).gte("feito_em", new Date(Date.now() - 14 * 86_400_000).toISOString()),
+    sb.from("cs_contatos").select("portal_id, tipo, ref, resultado, retomar_em").in("portal_id", ids).gte("feito_em", new Date(Date.now() - 14 * 86_400_000).toISOString()),
   ]);
-  const falouSobre = (id: string, tipo: string, ref: string) => (contatos ?? []).some((c) => c.portal_id === id && c.tipo === tipo && c.ref === ref);
+  const falouSobre = (id: string, tipo: string, ref: string) => (contatos ?? []).some((c) => c.portal_id === id && c.tipo === tipo && c.ref === ref && fechaAlerta(c));
 
   type Info = { id: string; loja: string; whatsapp: string | null; responsavel: string | null; gestao: boolean; equipe: boolean; direcaoCs: boolean;
     caixaOntem: boolean; semAcesso: number | null; direcaoOntem: boolean; caixaPassada: boolean; direcaoPassada: boolean; analisePassada: boolean };

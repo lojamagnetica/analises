@@ -8,10 +8,11 @@ import { dataHora, haQuanto } from "@/lib/formato";
 import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib/cs";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
+import { OQueAconteceu } from "@/components/OQueAconteceu";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
-import { buscarLembretes, marcarLembrete } from "@/lib/conversas";
+import { buscarLembretes, marcarLembrete, lembreteDepois } from "@/lib/conversas";
 import { hoje } from "@/lib/formato";
 
 const COR: Record<Nivel, string> = { vermelho: "var(--red)", amarelo: "var(--orange)", verde: "var(--feito)" };
@@ -21,40 +22,9 @@ function Ponto({ nivel }: { nivel: Nivel }) {
   return <span aria-hidden style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: COR[nivel], marginRight: 7, flex: "none" }} />;
 }
 
-/** Registrar a conversa com a loja: o que ela respondeu, se precisa de ajuda e o próximo passo. Fecha o alerta que pediu o contato. */
-function RegistrarConversa({ loja, registro, nome, feito }: { loja: LojaCs; registro: { tipo: string; ref: string }; nome: string; feito: () => void }) {
-  const [resumo, setResumo] = useState("");
-  const [ajuda, setAjuda] = useState(false);
-  const [passo, setPasso] = useState("");
-  const [quando, setQuando] = useState("");
-  const [salvando, setSalvando] = useState(false);
-  const salvar = async () => {
-    setSalvando(true);
-    const { error } = await supabaseBrowser().from("cs_contatos").insert({ portal_id: loja.id, tipo: registro.tipo, ref: registro.ref, feito_em: new Date().toISOString(), feito_por: nome || null, resumo: resumo.trim() || null, precisa_ajuda: ajuda, proximo_passo: passo.trim() || null, proximo_em: quando || null });
-    setSalvando(false);
-    if (error) { alert(error.message); return; }
-    feito();
-  };
-  return (
-    <div className="card mt" style={{ background: "var(--soft)" }}>
-      <label className="rotulo">O que a loja respondeu?</label>
-      <textarea rows={2} value={resumo} onChange={(e) => setResumo(e.target.value)} placeholder="Ex.: viu, entendeu, vai começar pela vitrine" />
-      <label className="marcar"><input type="checkbox" checked={ajuda} onChange={(e) => setAjuda(e.target.checked)} /><span>Tem uma dificuldade em que precisamos ajudar</span></label>
-      <div className="grade g2" style={{ gap: 10 }}>
-        <div><label className="rotulo">Próximo passo</label><input type="text" value={passo} onChange={(e) => setPasso(e.target.value)} placeholder="Ex.: ligar na quinta" /></div>
-        <div><label className="rotulo">Quando</label><input type="date" value={quando} onChange={(e) => setQuando(e.target.value)} /></div>
-      </div>
-      <div className="linha mt" style={{ gap: 8 }}>
-        <button type="button" className="btn p peq" disabled={salvando} onClick={salvar}>{salvando ? "Salvando…" : "Salvar a conversa"}</button>
-      </div>
-    </div>
-  );
-}
-
 /** Um cartão por loja: tudo o que ela precisa hoje, cada item com a mensagem pronta e o registro da conversa. */
 function CartaoLoja({ l, nome, abrir, recarregar, aprov }: { l: LojaCs; nome: string; abrir: (id: string, destino?: string) => void; recarregar: () => void; aprov?: (alerta: string) => Aprov }) {
   const [copiada, setCopiada] = useState("");
-  const [aberto, setAberto] = useState<string | null>(null);
   const alertas = [...l.alertas].sort((a, b) => Number(b.grave) - Number(a.grave));
   const copiar = async (id: string, msg: string) => { try { await navigator.clipboard.writeText(msg); setCopiada(id); setTimeout(() => setCopiada(""), 2000); } catch { /* sem permissão */ } };
   const item = (a: AlertaCs) => (
@@ -63,18 +33,17 @@ function CartaoLoja({ l, nome, abrir, recarregar, aprov }: { l: LojaCs; nome: st
       <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
         {a.msg && <a className="btn p peq" href={linkZap(l.whatsapp, a.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>}
         {a.msg && <button type="button" className="btn s peq" onClick={() => copiar(`${l.id}-${a.chave}`, a.msg as string)}>{copiada === `${l.id}-${a.chave}` ? "Copiada ✓" : "Copiar a mensagem"}</button>}
-        {a.registro && <button type="button" className="btn s peq" onClick={() => setAberto(aberto === a.chave ? null : a.chave)}>Conversei</button>}
         {a.chave === "pendencias" && <a className="btn s peq" href="#pendencias">Ver as pendências</a>}
         {a.destino && !a.msg && a.chave !== "pendencias" && <button type="button" className="btn s peq" onClick={() => abrir(l.id, a.destino)}>Abrir</button>}
         <BotaoAprovar a={aprov?.(a.chave)} />
       </div>
-      {a.registro && aberto === a.chave && <RegistrarConversa loja={l} registro={a.registro} nome={nome} feito={() => { setAberto(null); recarregar(); }} />}
+      {a.registro && <OQueAconteceu registro={{ portalId: l.id, tipo: a.registro.tipo, ref: a.registro.ref, loja: l.loja }} feito={() => recarregar()} />}
     </div>
   );
   return (
     <div className="card card-borda mb" style={{ ["--c" as string]: COR[l.nivel] }}>
       <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-        <span className="linha" style={{ alignItems: "center" }}><Ponto nivel={l.nivel} /><b style={{ fontSize: 16 }}>{l.loja}</b></span>
+        <span className="linha" style={{ alignItems: "center" }}><Ponto nivel={l.nivel} /><Link href={`/equipe/loja?id=${l.id}`} style={{ fontSize: 16, fontWeight: 700, color: "inherit" }}>{l.loja}</Link></span>
         <small className="mudo">{l.ultimo ? `acesso ${haQuanto(l.ultimo)}` : "nunca entrou"}{l.contato ? ` · conversamos ${haQuanto(l.contato.feito_em)}` : ""}{l.contato?.precisa_ajuda ? " · pediu ajuda" : ""}</small>
       </div>
       {l.contato?.resumo && <small className="mudo" style={{ display: "block", marginTop: 2 }}>Última conversa: {l.contato.resumo}</small>}
@@ -115,11 +84,13 @@ function CartaoAssunto({ g, nome, recarregar, aprov }: { g: GrupoAlerta; nome: s
       <p className="mudo" style={{ margin: "4px 0 8px" }}>{g.detalhe}</p>
       {g.lojas.map((l) => (
         <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
-          <b>{l.loja}</b>
+          <Link href={`/equipe/loja?id=${l.id}`} style={{ fontWeight: 700, color: "inherit" }}>{l.loja}</Link>
           <span className="linha" style={{ gap: 6 }}>
             <a className="btn p peq" href={linkZap(l.whatsapp, l.msg)} target="_blank" rel="noopener">Mandar no WhatsApp</a>
             <button type="button" className="btn s peq" onClick={() => copiar(`${g.chave}-${l.id}`, l.msg)}>{copiada === `${g.chave}-${l.id}` ? "Copiada ✓" : "Copiar"}</button>
           </span>
+          {/* Uma loja por vez: a mesma escolha do cartão por loja (fica no histórico dela). */}
+          <OQueAconteceu registro={{ portalId: l.id, tipo: g.registro.tipo, ref: g.registro.ref, loja: l.loja }} feito={() => recarregar()} />
         </div>
       ))}
       <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
@@ -187,7 +158,10 @@ export default function InicioCs() {
           {lembretes.map((l) => (
             <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
               <span>{l.loja && <b>{l.loja} · </b>}{l.texto}{l.quando && l.quando < hoje() ? <span className="selo alerta" style={{ marginLeft: 6 }}>atrasado</span> : null}</span>
-              <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+              <span className="linha" style={{ gap: 6 }}>
+                <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
+                {l.portal_id && <OQueAconteceu registro={{ portalId: l.portal_id, tipo: "lembrete", ref: l.id, loja: l.loja ?? undefined }} feito={async (_r, retomar) => { await lembreteDepois(l.id, retomar); recarregarLembretes(); }} />}
+              </span>
             </div>
           ))}
         </div>

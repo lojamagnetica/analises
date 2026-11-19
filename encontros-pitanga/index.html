@@ -756,7 +756,17 @@ document.getElementById('steps').innerHTML = steps.map((s,i)=>`
 <section class="step" id="${s.id}">
   <div class="stephead"><div class="num">${String(i+1).padStart(2,'0')}</div><h2>${s.titulo}</h2><span class="when">${s.sem} · ${s.dia} · ${s.hora}</span></div>
   <p class="logic">${s.logica}</p>
-  ${s.id==='filme'?`<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:18px 0 6px"><div style="width:270px">${media({m:{sim:true}})}</div><div style="max-width:420px"><div class="optname">Simulação da versão "ENCONTROS ·"</div><p style="color:var(--muted);font-size:14px">Prévia montada com imagens de referência do Pinterest, só para Val e Deyvid visualizarem o ritmo e a emoção: Abre com cortes rápidos de mãos abrindo o presente e marcando o calendário, como na NV (nesta prévia, os cortes de abertura são da própria NV, só para simular). Depois ENCONTROS fica fixo e a palavra de contexto rola até parar, intercalando com as cenas. Fecha nos dois símbolos. Na gravação, entram a família, os amigos, o treino e a fé de verdade.</p></div></div>`:''}
+  ${s.id==='filme'?`<div class="nvref" style="margin:18px 0 10px;border:1px solid var(--line);background:var(--card);padding:18px 18px 22px">
+<div class="optname" style="color:var(--neon)">A inspiração · NV, "Entre Laços"</div>
+<p style="color:var(--muted);font-size:14px;max-width:640px;margin:6px 0 14px">Assista primeiro ao vídeo da NV: a palavra ENTRE fica fixa e a palavra ao lado rola como um letreiro até parar, intercalando cortes rápidos (o presente sendo aberto, o calendário marcado, o brinde) com depoimentos. É esse ritmo que a Pitanga vai adaptar.</p>
+<div style="display:flex;justify-content:center"><iframe src="https://www.instagram.com/p/DDcGCxhOIjd/embed" style="width:100%;max-width:360px;height:640px;border:0;border-radius:6px;background:#fff" loading="lazy" allowtransparency="true" scrolling="no"></iframe></div>
+<div style="text-align:center;margin-top:8px"><a class="reflink" href="https://www.instagram.com/p/DDcGCxhOIjd/" target="_blank" rel="noopener">Abrir no Instagram ↗</a></div>
+</div>
+<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:10px 0 6px;border:1px solid var(--line);padding:18px">
+<div style="width:270px;max-width:100%">${media({m:{sim:true}})}</div>
+<div style="max-width:420px"><div class="optname" style="color:var(--neon)">A adaptação · Pitanga</div>
+<p style="color:var(--muted);font-size:14px">ENTRE vira <b style="color:var(--txt)">ENCONTROS</b>, e as palavras que rolam são as da campanha: PRESENTES, MOMENTOS, FAMÍLIA, AMIGOS, A DOIS, FÉ e CELEBRAÇÕES. A cartela usa o café da Pitanga e o vídeo fecha nos dois símbolos.</p>
+<p style="color:var(--muted);font-size:13px">Nesta prévia, os cortes de abertura são da própria NV e as cenas são referências do Pinterest, só para Val e Deyvid visualizarem o ritmo e a emoção. Na gravação, entram as mãos da Val abrindo a caixa da Pitanga, dezembro marcado no calendário e as cenas reais de família, amigos, treino e fé.</p></div></div>`:''}
   ${s.film?`<div class="film"><table><tr><th>Tempo</th><th>Encontro</th><th>Imagem</th><th>Narração</th></tr>${s.film.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="vo">${r[3]}</td></tr>`).join('')}</table></div>`:''}
   <div class="opts">${s.opts.map((o,j)=>`
     <div class="opt"><div>${media(o)}</div><div>

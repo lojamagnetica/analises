@@ -38,6 +38,8 @@ export type Portal = {
   segmento?: string | null; // "tecidos" adapta os textos da rotina; vazio = loja de roupa
   /** Loja na mão: Vendas do dia, Crediário e Compras no menu. */
   venda_diaria?: boolean;
+  /** Listas do registro de venda desta loja (tipos de peça e linhas/marcas). */
+  venda_listas?: { tipos?: string[]; linhas?: string[]; rotulo_linha?: string } | null;
   /** Quem ajuda no conteúdo (nomes, mostrados no menu Conteúdo). */
   apoio_conteudo?: string | null;
   /** Tem uma medição de Vendas por canal em andamento (só então a página aparece no menu). */

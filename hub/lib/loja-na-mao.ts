@@ -19,6 +19,16 @@ async function ok<T>(p: PromiseLike<{ data: T; error: { message: string } | null
 export const LINHAS = ["Ouro", "Prata 925", "Semijoia", "Bijuteria", "Acessório"];
 export const CATEGORIAS = ["Anel", "Brinco", "Colar", "Pulseira", "Conjunto", "Pingente", "Berloque", "Piercing", "Tornozeleira", "Relógio", "Outro"];
 export { FORMAS };
+
+/** Listas de cada loja (tipo de peça e linha/marca). Sem configuração, valem as de joias (padrão da primeira loja). */
+export type ListasVenda = { tipos?: string[]; linhas?: string[]; rotulo_linha?: string } | null | undefined;
+export function listasDaLoja(l: ListasVenda) {
+  return {
+    tipos: l?.tipos?.length ? l.tipos : CATEGORIAS,
+    linhas: l?.linhas?.length ? l.linhas : LINHAS,
+    rotuloLinha: l?.rotulo_linha || "Linha",
+  };
+}
 export const nomeForma = (f: string) => FORMAS.find((x) => x.chave === f)?.nome ?? f;
 /** Marca do caixa somado pelas vendas (assim dá para saber que o dia veio daqui). */
 const MARCA = "Somado das vendas do dia";
@@ -77,12 +87,14 @@ const itensDe = (v: { itens?: unknown; categoria: string; linha: string | null; 
 const PLURAL: Record<string, string> = { anel: "anéis", colar: "colares", "relógio": "relógios" };
 const qtdTipo = (n: number, tipo: string) => {
   if (n <= 1) return tipo;
-  const t = tipo.toLowerCase();
-  return `${n} ${PLURAL[t] ?? (t.endsWith("s") ? t : `${t}s`)}`;
+  // Só a primeira palavra vai para o plural: "2 calças jeans", "2 shorts Liz".
+  const [primeira, ...resto] = tipo.toLowerCase().split(" ");
+  const pl = PLURAL[primeira] ?? (primeira.endsWith("s") ? primeira : `${primeira}s`);
+  return [`${n} ${pl}`, ...resto].join(" ");
 };
 /** O que saiu, numa linha: "Anel prata 925, 2 brincos semijoia". */
 export const descreverItens = (itens: ItemVenda[]) =>
-  itens.map((i) => [qtdTipo(i.pecas, i.categoria), i.linha?.toLowerCase(), i.produto ? `(${i.produto})` : null].filter(Boolean).join(" ")).join(", ");
+  itens.map((i) => [qtdTipo(i.pecas, i.categoria), i.linha && i.linha === i.linha.toUpperCase() ? i.linha : i.linha?.toLowerCase(), i.produto ? `(${i.produto})` : null].filter(Boolean).join(" ")).join(", ");
 
 export async function buscarVendas(portalId: string, de: string, ate: string) {
   const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at, linha, estoque_id, itens")

@@ -7,7 +7,7 @@ import { Excluir } from "@/components/Excluir";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, moeda } from "@/lib/formato";
 import {
-  CATEGORIAS, LINHAS, buscarEstoque, entradaEstoque, removerItemEstoque, salvarItemEstoque, type ItemEstoque,
+  listasDaLoja, buscarEstoque, entradaEstoque, removerItemEstoque, salvarItemEstoque, type ItemEstoque,
 } from "@/lib/loja-na-mao";
 
 type Form = { id?: string; categoria: string; linha: string; preco: number; qtd: string; obs: string };
@@ -15,6 +15,7 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 
 export default function EstoqueDaLoja() {
   const { portal } = usePortal();
+  const { tipos: CATEGORIAS, linhas: LINHAS, rotuloLinha } = listasDaLoja(portal.venda_listas);
   const [f, setF] = useState<Form>({ categoria: "", linha: "", preco: 0, qtd: "", obs: "" });
   const [chave, setChave] = useState(0);
   const [erro, setErro] = useState("");
@@ -61,7 +62,7 @@ export default function EstoqueDaLoja() {
         <h2 style={{ marginTop: 0 }}>{f.id ? "Corrigir grupo" : "Contar"}</h2>
         <label className="rotulo">Tipo de peça</label>
         <div className="chips">{CATEGORIAS.filter((c) => c !== "Outro").concat("Outro").map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c })}>{c}</button>)}</div>
-        <label className="rotulo">Linha</label>
+        <label className="rotulo">{rotuloLinha}</label>
         <div className="chips">{LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l })}>{l}</button>)}</div>
         <div className="grade" style={{ gridTemplateColumns: "1fr 120px", gap: 10 }} key={chave}>
           <CampoReais rotulo="Preço de venda" valor={f.preco} mudar={(v) => mudar({ preco: v })} vazio />

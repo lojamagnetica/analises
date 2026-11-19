@@ -6,11 +6,13 @@ import { buscarJornada, situacao, type ClienteJornada } from "@/lib/jornada";
 import { painelCs } from "@/lib/cs";
 import { foiConversa } from "@/lib/contato-resultado";
 import { semanaDe } from "@/lib/leitura";
+import { buscarProntas, type Pronta } from "@/lib/pronta";
 
 export type LinhaLoja = {
   id: string; loja: string; responsavel: string | null; tipo: string; etapa: number; termometro: string | null; dia: number | null;
   acompanhada: boolean; entrega: string | null; temAcesso: boolean; ultimoAcesso: string | null; ultimaConversa: string | null;
   caixaSemana: number; proxima: string | null; alertas: number; graves: number; atrasoJornada: boolean; proximoPasso: string | null;
+  pronta: Pronta | null;
 };
 
 export async function buscarMinhasLojas(): Promise<{ lojas: LinhaLoja[]; ex: { id: string; loja: string }[] }> {
@@ -25,6 +27,7 @@ export async function buscarMinhasLojas(): Promise<{ lojas: LinhaLoja[]; ex: { i
     sb.from("portais").select("id, loja").eq("ativo", false).order("loja"),
     painelCs().catch(() => null),
   ]);
+  const prontas = await buscarProntas().catch(() => new Map<string, Pronta>());
   const lojas = (jornada as ClienteJornada[]).filter((c) => c.tipo !== "Curso").map((c) => {
     const p = (portais ?? []).find((x) => x.id === c.id);
     const acessos = (perfis ?? []).filter((x) => x.portal_id === c.id);
@@ -38,6 +41,7 @@ export async function buscarMinhasLojas(): Promise<{ lojas: LinhaLoja[]; ex: { i
       caixaSemana: new Set((caixa ?? []).filter((x) => x.portal_id === c.id).map((x) => x.dia)).size,
       proxima: (reunioes ?? []).find((r) => r.portal_id === c.id)?.data ?? null,
       alertas: al.length, graves: al.filter((a) => a.grave).length, atrasoJornada: s.alerta, proximoPasso: s.proximo?.texto ?? null,
+      pronta: prontas.get(c.id) ?? null,
     } as LinhaLoja;
   });
   return { lojas, ex: (ex ?? []) as { id: string; loja: string }[] };

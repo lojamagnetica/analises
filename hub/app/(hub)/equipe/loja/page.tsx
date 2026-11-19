@@ -11,6 +11,7 @@ import { dataCurta, dataHora, haQuanto, hoje, moeda } from "@/lib/formato";
 import { buscarFicha } from "@/lib/ficha-loja";
 import { buscarLojas, linhaDoTempo } from "@/lib/contatos";
 import { linkZap } from "@/lib/cs";
+import { ProntaCs } from "@/components/ProntaCs";
 import { excluirCombinado } from "@/lib/combinados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -85,6 +86,7 @@ function Ficha({ id }: { id: string }) {
 
       {aba === "resumo" && (
         <>
+          <ProntaCs portalId={id} acompanhada={p.cs_acompanha} aprova={aprova} mudou={atualizar} />
           <div className="grade g4 mb">
             <div className="kpi"><small>Vendido no mês</small><b style={{ fontSize: 22 }}>{moeda(f.mes.vendido)}</b><small className="mudo">{f.mes.meta ? `${pct}% de ${moeda(f.mes.meta)}` : "sem meta no Planeje"}</small></div>
             <div className="kpi"><small>Vendas · peças</small><b style={{ fontSize: 22 }}>{f.mes.vendas} · {f.mes.pecas}</b><small className="mudo">{f.mes.dias} dias de caixa lançados</small></div>

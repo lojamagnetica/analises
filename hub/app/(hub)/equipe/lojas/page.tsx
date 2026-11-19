@@ -14,7 +14,8 @@ const FILTROS = [
   { id: "todas", rotulo: "Todas", f: () => true },
   { id: "atencao", rotulo: "Precisam de atenção", f: (l: LinhaLoja) => l.graves > 0 || l.atrasoJornada },
   { id: "acompanhadas", rotulo: "No acompanhamento", f: (l: LinhaLoja) => l.acompanhada },
-  { id: "caminho", rotulo: "A caminho do acompanhamento", f: (l: LinhaLoja) => !l.acompanhada },
+  { id: "caminho", rotulo: "A caminho da Claudia", f: (l: LinhaLoja) => !l.acompanhada },
+  { id: "incompletas", rotulo: "Com a Claudia, mas incompletas", f: (l: LinhaLoja) => l.acompanhada && !!l.pronta && l.pronta.feitos < l.pronta.total },
   { id: "semacesso", rotulo: "Sem acesso ao Hub", f: (l: LinhaLoja) => !l.temAcesso },
   { id: "semconversa", rotulo: "Sem conversa há 7 dias", f: (l: LinhaLoja) => l.acompanhada && (!l.ultimaConversa || Date.now() - Date.parse(l.ultimaConversa) > 7 * 86_400_000) },
 ] as const;
@@ -57,7 +58,7 @@ export default function MinhasLojas() {
         <div className="card" style={{ overflowX: "auto", padding: 0 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead><tr style={{ textAlign: "left" }}>
-              {["Loja", "Situação", "Etapa", "Termômetro", "Última conversa", "Entrou no Hub", "Caixa da semana", "Próxima reunião"].map((h) => <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" }}>{h}</th>)}
+              {["Loja", "Situação", "Etapa", "Termômetro", "Última conversa", "Entrou no Hub", "Pronta para a Claudia", "Caixa da semana", "Próxima reunião"].map((h) => <th key={h} style={{ padding: "10px 12px", borderBottom: "1px solid var(--line)", whiteSpace: "nowrap" }}>{h}</th>)}
             </tr></thead>
             <tbody>
               {lista.map((l) => (
@@ -68,6 +69,7 @@ export default function MinhasLojas() {
                   <td style={{ padding: "8px 12px" }}><Termometro valor={l.termometro} /></td>
                   <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>{l.ultimaConversa ? haQuanto(l.ultimaConversa) : <span className="mudo">nunca</span>}</td>
                   <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>{!l.temAcesso ? <span className="mudo">sem acesso</span> : l.ultimoAcesso ? haQuanto(l.ultimoAcesso) : <span className="mudo">nunca entrou</span>}</td>
+                  <td style={{ padding: "8px 12px", minWidth: 170 }}>{l.pronta && <><span className={`selo ${l.pronta.feitos === l.pronta.total ? "feito" : l.acompanhada ? "alerta" : "espera"}`}>{l.pronta.feitos} de {l.pronta.total}</span>{l.pronta.falta.length > 0 && <div><small className="mudo">Falta: {l.pronta.falta.join(" · ")}</small></div>}</>}</td>
                   <td style={{ padding: "8px 12px" }}>{l.caixaSemana ? `${l.caixaSemana} ${l.caixaSemana === 1 ? "dia" : "dias"}` : <span className="mudo">—</span>}</td>
                   <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>{l.proxima ? dataHora(l.proxima) : <span className="mudo">—</span>}</td>
                 </tr>

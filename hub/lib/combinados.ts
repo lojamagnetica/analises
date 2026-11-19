@@ -10,6 +10,8 @@ export type Quem = "loja" | "claudia" | "camilla";
 export type Combinado = {
   id: string; portal_id: string; texto: string; quem: Quem; prazo: string | null;
   status: "aberto" | "feito"; origem: string; criado_por: string | null; created_at: string; feito_em: string | null;
+  /** Onde se resolve (página do Hub ou link). */
+  link?: string | null;
 };
 export type NovoCombinado = { texto: string; quem: Quem; prazo: string | null };
 

@@ -40,7 +40,12 @@ const semAcento = (t: string) => t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
 
 export function destinoDe(p: Pick<Pendencia, "texto" | "link" | "portalId">): Destino | null {
   const link = p.link?.trim();
-  if (link) return link.startsWith("/") ? { rotulo: "Resolver", href: link } : { rotulo: "Resolver", href: link, externo: true };
+  if (link) {
+    if (!link.startsWith("/")) return { rotulo: "Resolver", href: link, externo: true };
+    // Página do portal da loja (ex.: /consultoria/materiais/ver?id=…): abre o portal dela já nessa página.
+    if (p.portalId && !/^\/(equipe|empresa)(\/|$)/.test(link)) return { rotulo: "Resolver", portal: { id: p.portalId, rota: link } };
+    return { rotulo: "Resolver", href: link };
+  }
   const url = p.texto.match(URL_NO_TEXTO)?.[0];
   if (url) return { rotulo: "Abrir o link", href: url, externo: true };
   const t = semAcento(p.texto);

@@ -3,6 +3,12 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Texto } from "@/components/Texto";
+import { supabaseBrowser } from "@/lib/supabase/client";
+
+/** Ao liberar o material, libera junto o combinado de aprovação que aponta para ele (o alerta no Início da loja). */
+async function liberarCombinadosDoMaterial(id: string) {
+  await supabaseBrowser().from("loja_combinados").update({ status: "aberto" }).eq("status", "rascunho").eq("link", `/consultoria/materiais/ver?id=${id}`);
+}
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { buscarConsultoria } from "@/lib/consultoria";
@@ -90,7 +96,7 @@ function Ver() {
       {equipe && (
         <div className={`aviso mb ${mat.liberado ? "ok" : ""}`}>
           {mat.liberado ? "A loja já vê este material." : "Rascunho: só a equipe vê."}{" "}
-          <button type="button" className="link-loja" onClick={async () => { await salvarMaterial({ ...mat, liberado: !mat.liberado }); recarregar(); }}>
+          <button type="button" className="link-loja" onClick={async () => { await salvarMaterial({ ...mat, liberado: !mat.liberado }); if (!mat.liberado) await liberarCombinadosDoMaterial(mat.id); recarregar(); }}>
             {mat.liberado ? "Voltar para rascunho" : "Liberar para a loja"}
           </button>
           {" · "}<button type="button" className="link-loja" onClick={() => setEditando(true)}>Editar</button>

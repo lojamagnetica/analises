@@ -36,6 +36,7 @@ export default function VendasDoDia() {
   const [antes, setAntes] = useState<Venda | null>(null);
   const [busca, setBusca] = useState("");
   const [whats, setWhats] = useState("");
+  const [aniv, setAniv] = useState("");
   const [cadastrando, setCadastrando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
@@ -103,8 +104,8 @@ export default function VendasDoDia() {
   async function cadastrar() {
     setErro("");
     try {
-      const c = await novaCliente(portal.id, busca, whats);
-      mudar({ cliente: c }); setCadastrando(false); setBusca(""); setWhats(""); recarregar();
+      const c = await novaCliente(portal.id, busca, whats, aniv);
+      mudar({ cliente: c }); setCadastrando(false); setBusca(""); setWhats(""); setAniv(""); recarregar();
     } catch (x) { setErro((x as Error).message); }
   }
 
@@ -182,8 +183,9 @@ export default function VendasDoDia() {
               )}
               {busca.trim().length >= 2 && !cadastrando && <button type="button" className="btn s peq mt" onClick={() => setCadastrando(true)}>+ Cadastrar &quot;{busca.trim()}&quot;</button>}
               {cadastrando && (
-                <div className="linha mt" style={{ gap: 8 }}>
-                  <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} />
+                <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} style={{ flex: "1 1 160px" }} />
+                  <input type="text" inputMode="numeric" placeholder="Aniversário (dia/mês)" value={aniv} onChange={(e) => setAniv(e.target.value)} style={{ flex: "1 1 140px" }} />
                   <button type="button" className="btn p peq" onClick={cadastrar}>Cadastrar</button>
                 </div>
               )}

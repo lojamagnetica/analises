@@ -109,7 +109,9 @@ function FechamentoCaixa() {
   const faltaAgora = (fat: number, vendas: number, pecas: number) => problemasDoCaixa({ dia: f.dia, faturamento: fat, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0, !!portal.regras_caixa);
   // Dias do mês com número faltando ou que não bate (a loja corrige daqui).
   const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0, !!portal.regras_caixa) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
-  const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
+  // Com várias lojas, só o time da loja escolhida (quem está sem loja trabalha nas duas).
+  const doTime = equipe.filter((p) => !varias || !p.loja || !f.loja || p.loja === f.loja);
+  const pessoas = [...doTime.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
   const linhasVend: LinhaVendedora[] = pessoas.map((p) => ({
     pessoa_id: p.chave === OUTRAS ? null : p.chave, nome: p.chave === OUTRAS ? "Outras vendas" : p.nome,
     faturamento: numeroDe(f.vend[p.chave]?.faturamento) ?? 0, vendas: numeroDe(f.vend[p.chave]?.vendas) ?? 0, pecas: numeroDe(f.vend[p.chave]?.pecas) ?? 0,

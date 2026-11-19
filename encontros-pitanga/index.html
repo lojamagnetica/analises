@@ -73,7 +73,22 @@
   .blank{color:var(--neon);font-weight:600}
   footer{margin-top:64px;color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
 </style>
-</head>
+<style>.card10{aspect-ratio:3/4;border-radius:6px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.35)}.c10in{height:100%;border:1px solid;outline:1px solid;outline-color:inherit;outline-offset:-5px;border-radius:3px;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:16px 14px}</style><style>
+.sim{position:relative;aspect-ratio:9/16;border-radius:4px;overflow:hidden;background:#0d0b09}
+.simf{position:absolute;inset:0;background:center/cover;opacity:0;animation:simf 15s infinite}
+.simf:nth-child(1){animation-delay:0s}.simf:nth-child(2){animation-delay:3s}.simf:nth-child(3){animation-delay:6s}.simf:nth-child(4){animation-delay:9s}
+@keyframes simf{0%{opacity:0;transform:scale(1.04)}2%{opacity:1}18%{opacity:1}20%{opacity:0;transform:scale(1)}100%{opacity:0}}
+.simend{position:absolute;inset:0;background:#1B1714;display:flex;align-items:center;justify-content:center;gap:10px;opacity:0;animation:simend 15s infinite}
+.simend img{height:26px}.simend img+span{width:1px;height:26px;background:#E9DFCF;opacity:.4}.simend span+img{height:34px}
+@keyframes simend{0%,79%{opacity:0}81%,99%{opacity:1}100%{opacity:0}}
+.simtx{position:absolute;left:0;right:0;top:16%;text-align:center;color:#F6F1E8;text-shadow:0 2px 12px rgba(0,0,0,.6);animation:simtx 15s infinite}
+@keyframes simtx{0%,79%{opacity:1}81%,100%{opacity:0}}
+.simtx .w{font-family:"Cormorant Garamond",serif;font-weight:300;letter-spacing:.3em;font-size:17px;padding-left:.3em}
+.simtx .c{position:relative;height:20px;margin-top:2px}
+.simtx .c span{position:absolute;left:0;right:0;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:15px;opacity:0;animation:simc 15s infinite}
+.simtx .c span:nth-child(1){animation-delay:0s}.simtx .c span:nth-child(2){animation-delay:3s}.simtx .c span:nth-child(3){animation-delay:6s}.simtx .c span:nth-child(4){animation-delay:9s}
+@keyframes simc{0%{opacity:0}2%{opacity:1}18%{opacity:1}20%{opacity:0}100%{opacity:0}}
+</style></head>
 <style>
   .goal{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:26px 0 0}
   .goal div{border-left:2px solid var(--neon);padding:4px 0 4px 14px;font-size:14px}
@@ -215,7 +230,7 @@
     <div class="hbot"><div class="stores"><span>Família</span><span>Amigos</span><span>A dois</span><span>Fé</span></div><span>Eunápolis · BA</span></div>
   </header>
   <nav class="topnav">
-    <a href="#objetivos">Objetivos</a><a href="#entenda">1 · Entenda</a><a href="#identidade">2 · Identidade</a><a href="#vender">3 · O que vender</a><a href="#calendario">4 · Calendário</a><a href="#roteiros">5 · Roteiros</a><a href="#top10">6 · Top 10</a><a href="#preparo">7 · Preparo</a>
+    <a href="#objetivos">Objetivos</a><a href="#entenda">1 · Entenda</a><a href="#identidade">2 · Identidade</a><a href="#vender">3 · O que vender</a><a href="#calendario">4 · Calendário</a><a href="#roteiros">5 · Roteiros</a><a href="#top10">6 · Club Pitanga</a><a href="#preparo">7 · Preparo</a>
   </nav>
   <section class="intro">
     <p>Num tempo em que todo mundo está online e distante, o fim de ano é sobre <b>presença</b>. A campanha mostra os encontros que importam e coloca as duas Pitangas como o lugar do <b>presente</b> para cada pessoa e do <b>look</b> para cada ocasião.</p>
@@ -225,7 +240,7 @@
 
   <section class="sec" id="objetivos" style="margin-top:72px">
     <div class="sech"><span class="n">00</span><h2>Objetivos</h2></div>
-    <div class="ogal"><div class="oc big"><div class="oimg" style="background-image:url(https://i.pinimg.com/1200x/fc/02/72/fc0272e9a8e0da50f2052349c4339cb8.jpg)"></div><div class="obody"><div class="on">01</div><h3>Faturamento histórico</h3><p>O maior dezembro das duas lojas. O feminino dobrou de tamanho e de custo, e o resultado precisa acompanhar.</p><div class="onum"><div><small>Morena · referência dez/2025</small><b>R$ 368 mil</b></div><div><small>For Men · maior mês até set/26</small><b>R$ 108 mil</b></div></div><div class="ometa">Meta de dezembro: <span class="blank">[R$ ___ Morena]</span> · <span class="blank">[R$ ___ For Men]</span></div></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/92/07/d8/9207d85f33d1a8aeeb2475fb7722248a.jpg)"></div><div class="obody"><div class="on">02</div><h3>Vender presente e look</h3><p>Presente por pessoa e por faixa de preço, e um look para cada ocasião de dezembro.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/a0/f8/5a/a0f85a2e2da88e1203353acc27fd8782.jpg)"></div><div class="obody"><div class="on">03</div><h3>Fazer a For Men conhecida</h3><p>Usar a base da Morena (13 mil) para levar a cliente a comprar o presente dele na For Men.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/25/01/b7/2501b772511fe03ee7b0aeaba609a820.jpg)"></div><div class="obody"><div class="on">04</div><h3>Ser a escolha da cidade</h3><p>A primeira loja que vem à cabeça para presentear e para se vestir nas festas.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/d3/45/26/d345269e5918cdea29506749a1387c54.jpg)"></div><div class="obody"><div class="on">05</div><h3>Começar a comunidade</h3><p>Top 10 de clientes de cada loja, com presente personalizado retirado na loja.</p></div></div></div>
+    <div class="ogal"><div class="oc big"><div class="oimg" style="background-image:url(https://i.pinimg.com/1200x/fc/02/72/fc0272e9a8e0da50f2052349c4339cb8.jpg)"></div><div class="obody"><div class="on">01</div><h3>Faturamento histórico</h3><p>O maior dezembro das duas lojas. O feminino dobrou de tamanho e de custo, e o resultado precisa acompanhar.</p><div class="onum"><div><small>Morena · referência dez/2025</small><b>R$ 368 mil</b></div><div><small>For Men · maior mês até set/26</small><b>R$ 108 mil</b></div></div><div class="ometa">Meta de dezembro: <span class="blank">[R$ ___ Morena]</span> · <span class="blank">[R$ ___ For Men]</span></div></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/92/07/d8/9207d85f33d1a8aeeb2475fb7722248a.jpg)"></div><div class="obody"><div class="on">02</div><h3>Vender presente e look</h3><p>Presente por pessoa e por faixa de preço, e um look para cada ocasião de dezembro.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/a0/f8/5a/a0f85a2e2da88e1203353acc27fd8782.jpg)"></div><div class="obody"><div class="on">03</div><h3>Fazer a For Men conhecida</h3><p>Usar a base da Morena (13 mil) para levar a cliente a comprar o presente dele na For Men.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/25/01/b7/2501b772511fe03ee7b0aeaba609a820.jpg)"></div><div class="obody"><div class="on">04</div><h3>Ser a escolha da cidade</h3><p>A primeira loja que vem à cabeça para presentear e para se vestir nas festas.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/d3/45/26/d345269e5918cdea29506749a1387c54.jpg)"></div><div class="obody"><div class="on">05</div><h3>Lançar o Club Pitanga</h3><p>A nova tradição anual: os clientes que mais estiveram com a loja no ano são celebrados em dezembro. Não é escolha dos donos, é o resultado do ano.</p></div></div></div>
   </section>
 
   <!-- 1 ENTENDA -->
@@ -257,7 +272,7 @@
       </div></div>
       <div class="arrow">↓</div>
       <div class="mrow"><div class="mlabel">Fechamento</div><div class="mcells">
-        <div class="mc"><b>Top 10</b>15 a 19/12. Os melhores clientes retiram um presente com o nome deles na loja.</div>
+        <div class="mc"><b>Club Pitanga</b>14/12: nasce a tradição anual. 15 a 19/12: os clientes do ano retiram o presente na loja.</div><div class="mc"><b>Histórias que se encontram</b>17 e 18/12: três clientes de cada loja contam um encontro que marcou a vida delas.</div>
         <div class="mc"><b>Réveillon</b>26 a 31/12. O branco da virada e a praia: o último pico do ano.</div>
       </div></div>
     </div>
@@ -284,7 +299,7 @@
       <div class="sw"><div style="background:#A8683A"></div><p><b>Caramelo</b>#A8683A · destaque</p></div>
       <div class="sw"><div style="background:#3A2A20"></div><p><b>Café</b>#3A2A20 · textos</p></div>
       <div class="sw"><div style="background:#7A5539"></div><p><b>Café Morena</b>#7A5539 · cor da Pitanga Morena</p></div><div class="sw"><div style="background:#22201D"></div><p><b>Preto For Men</b>#22201D · cor da For Men</p></div><div class="sw"><div style="background:#A88A72"></div><p><b>Rosé For Men</b>#A88A72 · símbolo da For Men</p></div>
-      <div class="sw"><div style="background:#B89B5E"></div><p><b>Dourado</b>#B89B5E · Top 10</p></div>
+      <div class="sw"><div style="background:#B89B5E"></div><p><b>Dourado</b>#B89B5E · Club Pitanga</p></div>
     </div>
     <div class="typo">
       <div><small>Título · Cormorant Garamond Light</small><span class="serif" style="font-size:38px;letter-spacing:.3em;font-weight:300">ENCONTROS</span></div>
@@ -306,10 +321,27 @@
         <div style="font-size:9px;letter-spacing:.25em;color:#E9DFCF">ENCONTROS · FOR MEN</div>
         <div><div class="serif" style="font-size:28px;line-height:1.05;font-style:italic">O presente dele está aqui.</div><div style="margin-top:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#E9DFCF">Lacoste · Reserva · Oficina · Tommy</div></div>
         <div style="display:flex;justify-content:space-between;align-items:center"><img src="logos/formen-rose.png" alt="" style="height:30px;width:auto;display:block"><span style="font-size:9px;letter-spacing:.2em;color:#A88A72">PITANGA FOR MEN</span></div></div><span class="cap">"Presente pra ele" (collab com a Morena)</span></div>
-      <div class="mock"><div class="art sq" style="background:#1c1712;color:#E9DFCF;border:1px solid #B89B5E">
-        <div style="display:flex;justify-content:space-between;align-items:center;color:#B89B5E"><span style="display:flex;align-items:center;gap:10px"><img src="logos/morena-claro.png" alt="" style="height:16px;width:auto;display:block"><span style="width:1px;height:16px;background:currentColor;opacity:.4"></span><img src="logos/formen-claro.png" alt="" style="height:20px;width:auto;display:block"></span><span style="font-size:9px;letter-spacing:.25em">TOP 10 · 2026</span></div>
-        <div style="text-align:center"><div class="serif" style="font-size:15px;font-style:italic;color:#B89B5E">Para</div><div class="wm" style="font-size:22px;margin:4px 0">[NOME]</div><div class="serif" style="font-size:14px;font-style:italic">obrigada por fazer parte da nossa história</div></div>
-        <div style="text-align:center;font-size:9px;letter-spacing:.25em;color:#B89B5E">PITANGA</div></div><span class="cap">Cartão do Top 10 (dourado)</span></div>
+      <div class="mock" style="grid-column:span 2"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="card10" style="background:#F3ECE1;color:#3A2A20">
+  <div class="c10in" style="border-color:#9C7A4E">
+    <img src="logos/morena-cafe.png" alt="" style="height:34px;margin:0 auto 14px;display:block">
+    <div style="font-size:8px;letter-spacing:.34em;text-transform:uppercase;color:#9C7A4E">Club Pitanga · 2026</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:18px;color:#9C7A4E">Clientes do ano</div>
+    <div class="serif" style="font-size:26px;font-weight:300;letter-spacing:.14em;margin:6px 0 10px">[NOME]</div>
+    <div style="width:28px;height:1px;background:#9C7A4E;margin:0 auto 10px"></div>
+    <div class="serif" style="font-size:13px;font-style:italic;line-height:1.35">Em 2026, você esteve com a gente como poucos. Obrigada por fazer parte da nossa história.</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:16px;color:#9C7A4E">Valquíria e Deyvid</div>
+    <div style="font-size:7px;letter-spacing:.3em;text-transform:uppercase;margin-top:6px;opacity:.7">Pitanga Morena</div>
+  </div></div><div class="card10" style="background:#1E1C19;color:#EDE5DA">
+  <div class="c10in" style="border-color:#A88A72">
+    <img src="logos/formen-rose.png" alt="" style="height:34px;margin:0 auto 14px;display:block">
+    <div style="font-size:8px;letter-spacing:.34em;text-transform:uppercase;color:#A88A72">Club Pitanga · 2026</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:18px;color:#A88A72">Clientes do ano</div>
+    <div class="serif" style="font-size:26px;font-weight:300;letter-spacing:.14em;margin:6px 0 10px">[NOME]</div>
+    <div style="width:28px;height:1px;background:#A88A72;margin:0 auto 10px"></div>
+    <div class="serif" style="font-size:13px;font-style:italic;line-height:1.35">Em 2026, você esteve com a gente como poucos. Obrigada por fazer parte da nossa história.</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:16px;color:#A88A72">Valquíria e Deyvid</div>
+    <div style="font-size:7px;letter-spacing:.3em;text-transform:uppercase;margin-top:6px;opacity:.7">Pitanga For Men</div>
+  </div></div></div><span class="cap">Cartão do Club Pitanga · clientes do ano (Morena e For Men)</span></div>
     </div>
     <div class="rules2">
       <div><b>Luz e câmera</b>Luz natural ou de fim de tarde, câmera na mão, gente de verdade. Mãos, abraços e gestos valem mais que pose.</div>
@@ -366,22 +398,46 @@
   </section>
 <section class="top10 sec" id="top10">
     <div class="sech" style="border:0;margin:0 0 6px"><span class="n">06</span><h2 style="font-size:14px;letter-spacing:.2em;color:var(--muted)">Comunidade das lojas</h2></div>
-    <h2>Encontro <span>Top 10</span></h2>
-    <p class="logic" style="max-width:820px">Os 10 melhores clientes de cada loja recebem um presente personalizado de fim de ano, e só podem retirar <b>na loja, pessoalmente</b>. É o encontro da campanha que vira relacionamento. Na Morena, é o reconhecimento de quem constrói a loja há anos. Na For Men, que acabou de fazer 1 ano, são os <b>10 fundadores</b>: os primeiros homens que acreditaram na loja.</p>
+    <h2>Club <span>Pitanga</span></h2>
+    <p class="logic" style="max-width:820px">Uma <b>tradição anual</b>, não uma lista de escolhidos. Todo dezembro a Pitanga celebra os clientes que mais estiveram com a loja no ano, pelo que está registrado no sistema. A regra é pública e igual para todos, e <b>toda compra do próximo ano já conta</b>. Quem não entrou em 2026 sai querendo entrar em 2027, em vez de se sentir deixado de fora.</p>
+    <div class="tcard" style="margin-top:14px"><b>Nome · para aprovar</b>Club Pitanga (sugestão) · Círculo Pitanga · Clientes do Ano Pitanga</div>
     <div class="tgrid">
-      <div class="tcard"><b>Quem entra</b><ul><li>Relatório do Objetivo: valor comprado nos últimos 12 meses (Morena) e desde a abertura, em março (For Men).</li><li>Desempate por frequência de compra.</li><li>Fora da lista: quem tem fiado em aberto.</li><li>Val e Deyvid fecham a lista final.</li></ul></div>
-      <div class="tcard"><b>O presente</b><ul><li>Personalizado com o nome do cliente (bordado, gravação ou cartão).</li><li>Morena: uma peça especial ou um acessório + cartão escrito à mão pela Val.</li><li>For Men: um item Oficina ou Reserva com a gravação "Fundador Pitanga For Men · 2026" + cartão do Deyvid.</li><li>Caixa e embrulho exclusivos do Top 10, diferentes do embrulho comum.</li></ul></div>
-      <div class="tcard"><b>A retirada</b><ul><li>Convite individual pelo WhatsApp, com horário marcado.</li><li>Na loja: espumante ou café, foto no painel ENCONTROS e conversa com os donos.</li><li>Nada de venda nesse momento. O cliente sai com o presente e a sensação de ser importante.</li></ul></div>
-      <div class="tcard"><b>Depois do Natal</b><ul><li>Cria o grupo "Top 10 Pitanga" (um por loja).</li><li>Benefícios de 2027: primeiro acesso às coleções e convite para os eventos.</li><li>No fim de 2027, a lista é refeita. Entrar no Top 10 vira status na cidade.</li></ul></div>
+      <div class="tcard"><b>A regra, dita em voz alta</b><ul><li>"Todo ano, em dezembro, a gente celebra quem mais esteve com a Pitanga. Não somos nós que escolhemos: é a história de vocês com a loja."</li><li>Contagem pelo valor de compras do ano no Objetivo (Morena) e desde a abertura (For Men).</li><li>Toda compra de 2027 conta a partir de 1º de janeiro.</li></ul></div>
+      <div class="tcard"><b>Três níveis: ninguém fica de fora</b><ul><li><b style="display:inline;color:var(--txt);letter-spacing:0;text-transform:none;font-size:13px">Club</b>: todo cliente que comprou no ano. Aviso antecipado de coleções e mimo de aniversário.</li><li><b style="display:inline;color:var(--txt);letter-spacing:0;text-transform:none;font-size:13px">Especiais</b>: os próximos 30 de cada loja. Cartão escrito à mão em dezembro e pré-venda da coleção de janeiro.</li><li><b style="display:inline;color:var(--txt);letter-spacing:0;text-transform:none;font-size:13px">Clientes do ano</b>: os 10 primeiros de cada loja. Presente com o nome, retirado na loja, e o encontro anual com Val e Deyvid. Na For Men, em 2026, são os 10 fundadores.</li></ul></div>
+      <div class="tcard"><b>Cuidados para gerar desejo, não raiva</b><ul><li>Nunca dizer "escolhidos" nem "os mais especiais": dizer "os que mais estiveram com a gente este ano".</li><li>Nunca mostrar ranking, posição ou valores.</li><li>Quem ficou perto recebe o cartão dos Especiais: se sente vista.</li><li>A equipe tem a resposta pronta para "como eu entro?" (abaixo).</li></ul></div>
+      <div class="tcard"><b>Resposta da equipe</b>"O Club Pitanga é anual: em dezembro a gente celebra quem mais esteve com a loja no ano. Você já faz parte do Club, e toda compra sua a partir de janeiro já conta para o próximo dezembro."</div>
     </div>
+    <div style="margin-top:20px;max-width:520px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div class="card10" style="background:#F3ECE1;color:#3A2A20">
+  <div class="c10in" style="border-color:#9C7A4E">
+    <img src="logos/morena-cafe.png" alt="" style="height:34px;margin:0 auto 14px;display:block">
+    <div style="font-size:8px;letter-spacing:.34em;text-transform:uppercase;color:#9C7A4E">Club Pitanga · 2026</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:18px;color:#9C7A4E">Clientes do ano</div>
+    <div class="serif" style="font-size:26px;font-weight:300;letter-spacing:.14em;margin:6px 0 10px">[NOME]</div>
+    <div style="width:28px;height:1px;background:#9C7A4E;margin:0 auto 10px"></div>
+    <div class="serif" style="font-size:13px;font-style:italic;line-height:1.35">Em 2026, você esteve com a gente como poucos. Obrigada por fazer parte da nossa história.</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:16px;color:#9C7A4E">Valquíria e Deyvid</div>
+    <div style="font-size:7px;letter-spacing:.3em;text-transform:uppercase;margin-top:6px;opacity:.7">Pitanga Morena</div>
+  </div></div><div class="card10" style="background:#1E1C19;color:#EDE5DA">
+  <div class="c10in" style="border-color:#A88A72">
+    <img src="logos/formen-rose.png" alt="" style="height:34px;margin:0 auto 14px;display:block">
+    <div style="font-size:8px;letter-spacing:.34em;text-transform:uppercase;color:#A88A72">Club Pitanga · 2026</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:18px;color:#A88A72">Clientes do ano</div>
+    <div class="serif" style="font-size:26px;font-weight:300;letter-spacing:.14em;margin:6px 0 10px">[NOME]</div>
+    <div style="width:28px;height:1px;background:#A88A72;margin:0 auto 10px"></div>
+    <div class="serif" style="font-size:13px;font-style:italic;line-height:1.35">Em 2026, você esteve com a gente como poucos. Obrigada por fazer parte da nossa história.</div>
+    <div class="serif" style="font-size:12px;font-style:italic;margin-top:16px;color:#A88A72">Valquíria e Deyvid</div>
+    <div style="font-size:7px;letter-spacing:.3em;text-transform:uppercase;margin-top:6px;opacity:.7">Pitanga For Men</div>
+  </div></div></div></div>
     <div class="tline">
-      <div class="dt">até 25/11</div><div>Puxar os relatórios e fechar as duas listas.</div>
-      <div class="dt">até 01/12</div><div>Encomendar os presentes e as personalizações.</div>
-      <div class="dt">08 a 10/12</div><div>Convite individual pelo WhatsApp (mensagem abaixo, na etapa 08).</div>
-      <div class="dt">15 a 19/12</div><div>Semana da retirada na loja.</div>
-      <div class="dt">20/12</div><div>Post do Top 10, só com quem autorizou aparecer.</div>
+      <div class="dt">até 28/11</div><div>Puxar os relatórios do ano e separar os três níveis nas duas lojas.</div>
+      <div class="dt">até 01/12</div><div>Encomendar os presentes personalizados e os cartões.</div>
+      <div class="dt">08 a 10/12</div><div>Convite individual aos clientes do ano pelo WhatsApp (mensagem na etapa "Encontro a dois").</div>
+      <div class="dt">14/12</div><div>Anúncio público: "Nasce o Club Pitanga" (vídeo da Val e do Deyvid explicando a tradição e a regra).</div>
+      <div class="dt">15 a 19/12</div><div>Retirada dos presentes na loja. Cartões dos Especiais entregues na loja ou enviados.</div>
+      <div class="dt">20/12</div><div>Post "Clientes do ano 2026", sem ranking, só com quem autorizou, fechando com "em 2027 pode ser você: toda compra conta".</div>
+      <div class="dt">janeiro</div><div>"O Club 2027 começou": lembrete para toda a base.</div>
     </div>
-    <label class="done"><input type="checkbox" data-k="step-top10"> Top 10 entregue</label>
+    <label class="done"><input type="checkbox" data-k="step-top10"> Club Pitanga entregue</label>
   </section>
   <section class="prep sec" id="preparo">
     <h2>07 · Preparo · até 28/11 (antes do lançamento)</h2>
@@ -399,7 +455,7 @@ const IG = c => 'https://www.instagram.com/p/'+c+'/';
 const weeks = [
  {t:'Lançamento', d:'29 e 30/11 · a campanha começa com o filme', days:[
   ['29/11','Dom','★',['m','O FILME ENCONTROS (domingo à noite)','filme']],
-  ['30/11','Seg',['m','Versão "Entre…" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
+  ['30/11','Seg',['m','Versão "Encontro de…" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
  ]},
  {t:'Encontro com a família', d:'30/11 a 06/12', days:[
   ['01/12','Ter',['p','Pra quem é o presente? A família toda','presente'],['p','Pra quem é o presente? Pai, marido e filho','presente']],
@@ -418,14 +474,14 @@ const weeks = [
   ['12/12','Sáb',['p','Cliente real: "pra quem é o presente?"'],['p','Cliente real: "pra quem é?"']],
   ['13/12','Dom',['l','Look para a celebração de domingo','look'],['l','Look de domingo para a celebração','look']]
  ]},
- {t:'Encontro a dois + Top 10', d:'14 a 20/12', days:[
-  ['14/12','Seg','★',['l','Do treino para a ceia: Val e Deyvid','a-dois']],
+ {t:'Encontro a dois + Club Pitanga', d:'14 a 20/12', days:[
+  ['14/12','Seg','★',['m','Nasce o Club Pitanga: Val e Deyvid explicam a tradição','club']],
   ['15/12','Ter','★',['p','O que dar para ele? O que dar para ela?','ela-ele']],
-  ['16/12','Qua',['l','Look da ceia: 3 propostas','look'],['l','Look da ceia: alfaiataria leve ou linho?','look']],
-  ['17/12','Qui',['m','Top 10: bastidor das caixas (sem rostos)'],['m','Os 10 fundadores: bastidor da gravação']],
-  ['18/12','Sex',['u','Horário estendido até dia 24'],['p','Presente pra ele até R$ 200','presente']],
+  ['16/12','Qua',['l','Do treino para a ceia: Val e Deyvid (collab)','a-dois'],['l','Look da ceia: alfaiataria leve ou linho?','look']],
+  ['17/12','Qui',['m','Histórias que se encontram: 3 clientes da Morena','historias'],['l','Look da ceia: alfaiataria leve ou linho?','look']],
+  ['18/12','Sex',['u','Horário estendido até dia 24'],['m','Histórias que se encontram: 3 clientes da For Men','historias']],
   ['19/12','Sáb',['p','Embrulho: a loja cheia de sacolas'],['l','O que vestir nas festas','look']],
-  ['20/12','Dom','★',['m','Top 10 Pitanga 2026: a retirada','a-dois']]
+  ['20/12','Dom','★',['m','Clientes do ano 2026: a retirada (Club Pitanga)','club']]
  ]},
  {t:'Reta final + fé', d:'21 a 25/12', days:[
   ['21/12','Seg',['u','Ainda dá tempo: presentes prontos para levar','natal'],['u','Esqueceu dele? Ainda dá tempo','natal']],
@@ -455,10 +511,10 @@ ${w.days.map(r=> r[2]==='★'
 
 /* ---------- PREPARO ---------- */
 const prep = [
-  'Fechar as listas do Top 10 (10 da Morena + 10 da For Men)',
+  'Club Pitanga: separar os três níveis nas duas lojas (relatório do ano)',
   'Gravar o filme ENCONTROS (família, amigos, treino, fé) até 27/11',
   'Painel ENCONTROS para foto nas duas lojas',
-  'Embrulho de fim de ano (fita caramelo + tag com o símbolo de cada loja) e embrulho dourado do Top 10',
+  'Embrulho de fim de ano (fita caramelo + tag com o símbolo de cada loja) e embrulho dourado dos clientes do ano',
   'Guia de presentes por faixa nas duas lojas: até R$ 150 · até R$ 300 · acima de R$ 300',
   'Separar as peças-herói de cada ocasião (seção 3) e deixar à mão para gravar',
   'Kits corporativos prontos (2 ou 3 opções fechadas) e lista de empresas da cidade',
@@ -489,12 +545,12 @@ const steps = [
      cena:'O roteiro da tabela, com narração da Val. Publicado em collab nos dois perfis e fixado no topo dos dois.',
      tela:'ENCONTROS', fala:['Narração da Val (texto da tabela).'],
      leg:'Num tempo em que estamos tão conectados e tão distantes, a gente escolheu falar de presença. 🤍 ENCONTROS: a campanha de fim de ano da Pitanga Morena e da Pitanga For Men.'},
-    {nome:'Versão "Entre…" (20 s)', loja:'Morena (dia 30)', m:I('nv-entre-lacos'), ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
-     cena:'Cortes de 3 s com as imagens do filme. A palavra muda a cada corte: ENCONTRO · com a família / com os amigos / a dois / com Deus.',
-     tela:'ENCONTRO · com a família (muda a cada corte)', fala:['Sem fala. A música do filme.'],
+    {nome:'Versão "Encontro de…" (20 s)', loja:'Collab (dia 30)', m:{sim:true}, ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
+     cena:'Cortes de 3 s com as imagens do filme. A palavra ENCONTRO fica fixa e o complemento troca a cada corte: de família, de amigos, a dois, com Deus. Fecha nos dois símbolos. A simulação ao lado foi gerada com IA, só para visualizar o ritmo.',
+     tela:'ENCONTRO · de família → de amigos → a dois → com Deus', fala:['Sem fala. A música do filme.'],
      leg:'Qual desses encontros é o seu? 🤍 ENCONTROS · Pitanga.'}
   ],
-  extras:[['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Hoje a gente estreou a nossa campanha de fim de ano, ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho: [link]. Em dezembro, as duas lojas estão preparadas para te ajudar a presentear cada pessoa especial. 🤍']]
+  extras:[['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Chegou o grande dia: a nossa campanha de fim de ano está no ar. ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho: [link]. Em dezembro, as duas lojas estão preparadas para te ajudar a presentear cada pessoa especial. 🤍']]
 },
 {
   id:'presente', dia:'Toda semana', sem:'Formato fixo', fase:'Presente', hora:'2 a 3 vezes por semana',
@@ -577,20 +633,52 @@ const steps = [
   extras:[['WhatsApp · base das duas lojas','Oi, [nome]! Amigo secreto ou confraternização essa semana? Separei opções por valor e looks para a ocasião. Me fala o valor que eu te mando as ideias. 🤍']]
 },
 {
-  id:'a-dois', dia:'14–20/12', sem:'Semana 3', fase:'A dois + Top 10', hora:'Horário de pico',
+  id:'a-dois', dia:'14–20/12', sem:'Semana 3', fase:'A dois', hora:'Horário de pico',
   titulo:'Encontro a dois',
-  logica:'<b>Por que agora:</b> faltando uma semana para o Natal, as pessoas compram para quem está mais perto e escolhem o look da ceia. É também a semana do Top 10 na loja.',
+  logica:'<b>Por que agora:</b> faltando uma semana para o Natal, as pessoas compram para quem está mais perto e escolhem o look da ceia. É também a semana em que nasce o Club Pitanga.',
   opts:[
     {nome:'Do treino para a ceia', loja:'Collab', m:null,
      cena:'Deyvid treinando a Val. Corte seco: os dois arrumados para a ceia, ela de Morena e ele de For Men. Os looks com preço na tela.',
      tela:'Do treino para a ceia', fala:['Val: "Ele cuida do meu treino o ano inteiro."','Deyvid: "E ela cuida do meu look."','Juntos: "O look da ceia já está escolhido."'],
      leg:'Ele cuida do treino, ela cuida do look. 🤍 O look a dois da ceia está nas duas Pitangas.'},
-    {nome:'Top 10: a retirada', loja:'Collab (dia 20)', m:null,
-     cena:'Um cliente do Top 10 chega à loja, recebe a caixa das mãos da Val ou do Deyvid, abre e vê o nome dele. Só com autorização.',
-     tela:'Top 10 Pitanga 2026', fala:['"Esse ano a gente quis agradecer de um jeito diferente a quem constrói a Pitanga com a gente."'],
-     leg:'Top 10 Pitanga 2026. 🤍 Obrigada a cada cliente que faz parte da nossa história.'}
+    {nome:'O look a dois da ceia', loja:'As duas', m:null,
+     cena:'Um casal (pode ser cliente) se arruma para a ceia: ela escolhe o look na Morena, ele na For Men. Corte final: os dois juntos, prontos, saindo de casa.',
+     tela:'O look a dois da ceia', fala:['"A ceia é nossa. O look também."'],
+     leg:'O look a dois da ceia está nas duas Pitangas. 🤍 📍 [endereço]'}
   ],
-  extras:[['Convite do Top 10 (08 a 10/12, individual)','Oi, [nome]! Aqui é a [Val/Deyvid]. Você está entre os 10 clientes mais especiais da Pitanga em 2026, e a gente preparou um presente com o seu nome. Ele só pode ser retirado pessoalmente, com a gente na loja. Qual o melhor dia para você entre 15 e 19/12?']]
+  extras:[]
+},
+{
+  id:'club', dia:'14/12 e 20/12', sem:'Collab', fase:'Club Pitanga', hora:'Horário de pico',
+  titulo:'Nasce o Club Pitanga',
+  logica:'<b>Por que assim:</b> primeiro a tradição é anunciada para todo mundo, com a regra clara. Só depois aparecem os clientes do ano. Quem não entrou entende que não foi uma escolha, e sai querendo entrar em 2027.',
+  opts:[
+    {nome:'14/12 · O anúncio da tradição', loja:'Collab', m:null,
+     cena:'Val e Deyvid na loja, lado a lado, falando para a câmera. Corte para mãos amarrando a fita dourada numa caixa com nome (sem mostrar o nome), e a vitrine à noite.',
+     tela:'Nasce o Club Pitanga', fala:['Val: "A partir deste ano, a Pitanga tem uma tradição."','Deyvid: "Todo dezembro, a gente celebra os clientes que mais estiveram com a loja no ano."','Val: "Não somos nós que escolhemos. É a história de vocês com a Pitanga."','Deyvid: "E toda compra a partir de janeiro já conta para o próximo dezembro."'],
+     leg:'Nasce o Club Pitanga. 🤍 Todo dezembro, a gente celebra quem mais esteve com a loja no ano. Não é escolha nossa: é a história de vocês com a Pitanga. Em 2027, toda compra conta.'},
+    {nome:'20/12 · Clientes do ano', loja:'Collab', m:null,
+     cena:'Clientes do ano (só quem autorizou) recebendo a caixa das mãos da Val ou do Deyvid, abrindo e lendo o cartão. Sem ranking, sem valores. Termina na frase da regra.',
+     tela:'Clientes do ano 2026 · Club Pitanga', fala:['"Obrigada por estarem com a gente em cada estação deste ano."','Texto final na tela: "Em 2027 pode ser você. Toda compra conta."'],
+     leg:'Clientes do ano 2026. 🤍 Obrigada a cada cliente que esteve com a gente. O Club 2027 começa em 1º de janeiro, e toda compra conta.'}
+  ],
+  extras:[['Convite aos clientes do ano (08 a 10/12, individual)','Oi, [nome]! Aqui é a [Val/Deyvid]. Este ano a Pitanga começa uma tradição: todo dezembro, a gente celebra os clientes que mais estiveram com a loja no ano. E você é um deles. Preparamos um presente com o seu nome, que só pode ser retirado pessoalmente, com a gente na loja. Qual o melhor dia para você entre 15 e 19/12?'],['Cartão dos Especiais (15 a 19/12)','[nome], obrigada por ter estado tão perto da Pitanga em 2026. Você faz parte da nossa história. Com carinho, Valquíria e Deyvid.']]
+},
+{
+  id:'historias', dia:'17/12 e 18/12', sem:'Morena e For Men', fase:'Histórias', hora:'Horário de pico',
+  titulo:'Histórias que se encontram',
+  logica:'<b>Por que entra:</b> é a prova de que a campanha é verdadeira. Três clientes de cada loja (de preferência do Club) contam um encontro que marcou a vida delas, vestindo a peça Pitanga preferida. O comercial está no figurino, não na fala. Fecha a campanha com emoção antes da reta final do Natal.',
+  opts:[
+    {nome:'Três encontros, uma frase', loja:'Morena (17) · For Men (18)', m:null,
+     cena:'Cada cliente sentada num canto da loja ou em casa, luz de fim de tarde. Cortes alternados entre as três: cada uma conta um encontro (o casamento, o nascimento do filho, o reencontro com a mãe). 45 a 60 s.',
+     tela:'Histórias que se encontram', fala:['Cliente: "O encontro que mudou a minha vida foi…"','Final, na voz da Val: "Obrigada por nos permitir fazer parte da sua história e por nos ajudar a construir a nossa."'],
+     leg:'Três histórias, três encontros. 🤍 Obrigada por nos permitir fazer parte da sua história e por nos ajudar a construir a nossa.'},
+    {nome:'O look daquele dia', loja:'Morena (17) · For Men (18)', m:null,
+     cena:'A cliente mostra a peça da Pitanga que usou num encontro importante e conta o momento. Corte para foto do dia, se ela tiver. Versão mais comercial, 30 s.',
+     tela:'O look daquele encontro', fala:['"Foi com essa peça que eu…"'],
+     leg:'Tem peça que vira memória. 🤍 Obrigada por nos deixar fazer parte dos seus encontros.'}
+  ],
+  extras:[['Quem escolher','Clientes do Club (de preferência entre os Especiais e os clientes do ano), com autorização de imagem. Uma história por cliente, contada com as palavras dela.']]
 },
 {
   id:'natal', dia:'21–25/12', sem:'Semana 4', fase:'Reta final + fé', hora:'Manhã + pico',
@@ -634,6 +722,7 @@ document.getElementById('timeline').innerHTML = steps.map((s,i)=>
   `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('');
 
 function media(o){
+  if(o.m&&o.m.sim) return `<div class="sim"><div class="simf" style="background-image:url(sim/familia.jpg)"></div><div class="simf" style="background-image:url(sim/amigos.jpg)"></div><div class="simf" style="background-image:url(sim/adois.jpg)"></div><div class="simf" style="background-image:url(sim/fe.jpg)"></div><div class="simend"><img src="logos/morena-claro.png" alt=""><span></span><img src="logos/formen-claro.png" alt=""></div><div class="simtx"><div class="w">ENCONTRO</div><div class="c"><span>de família</span><span>de amigos</span><span>a dois</span><span>com Deus</span></div></div><span class="tag">Simulação com IA</span></div>` + (o.ref?`<a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Ref: ${o.ref[0]} ↗</a>`:'');
   if(!o.m) return `<div class="noref">Gravação própria</div>`;
   return `<div class="media"><span class="tag">Ref · ${o.ref[0].split(' · ')[0]}</span><img src="${o.m.img}" alt="Referência: ${o.ref[0]}" loading="lazy"></div><a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Assistir no Instagram ↗</a>`;
 }
@@ -641,6 +730,7 @@ document.getElementById('steps').innerHTML = steps.map((s,i)=>`
 <section class="step" id="${s.id}">
   <div class="stephead"><div class="num">${String(i+1).padStart(2,'0')}</div><h2>${s.titulo}</h2><span class="when">${s.sem} · ${s.dia} · ${s.hora}</span></div>
   <p class="logic">${s.logica}</p>
+  ${s.id==='filme'?`<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:18px 0 6px"><div style="width:270px">${media({m:{sim:true}})}</div><div style="max-width:420px"><div class="optname">Simulação da versão "Encontro de…"</div><p style="color:var(--muted);font-size:14px">Prévia gerada com IA, só para Val e Deyvid visualizarem o ritmo: a palavra ENCONTRO fica fixa, o complemento troca a cada 3 segundos e o vídeo fecha nos dois símbolos. Na gravação, entram a família, os amigos, o treino e a fé de verdade.</p></div></div>`:''}
   ${s.film?`<div class="film"><table><tr><th>Tempo</th><th>Encontro</th><th>Imagem</th><th>Narração</th></tr>${s.film.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="vo">${r[3]}</td></tr>`).join('')}</table></div>`:''}
   <div class="opts">${s.opts.map((o,j)=>`
     <div class="opt"><div>${media(o)}</div><div>
@@ -713,7 +803,7 @@ document.addEventListener('click',async e=>{
   let notes=[]; try{notes=JSON.parse(store&&store.getItem(KEY)||'[]')}catch(e){notes=[]}
   const save=()=>{try{store&&store.setItem(KEY,JSON.stringify(notes))}catch(e){}};
   const txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
-  const targets=[['header.hero',()=> 'Capa'],['.intro',()=> 'Texto de abertura'],['.mi',el=>'Moodboard · '+txt(el.querySelector('span'))],['.oc',el=>'Objetivo · '+txt(el.querySelector('h3'))],['.mrow',el=>'Entenda · '+txt(el.querySelector('.mlabel'))],['.rule',el=>'Regra · '+txt(el.querySelector('b'))],['.brands',()=> 'Identidade · marcas'],['.palette',()=> 'Identidade · paleta'],['.typo',()=> 'Identidade · tipografia'],['.mock',el=>'Modelo · '+txt(el.querySelector('.cap'))],['.rules2>div',el=>'Identidade · '+txt(el.querySelector('b'))],['.sellc',el=>'O que vender · '+txt(el.querySelector('h3'))],['.week',el=>'Calendário · '+txt(el.querySelector('h3'))],['.step .stephead',el=>'Roteiro · '+txt(el.querySelector('h2'))],['.film',()=> 'Roteiro do filme (tabela)'],['.opt',el=>'Roteiro · '+txt(el.closest('.step').querySelector('h2'))+' · '+txt(el.querySelector('h3'))],['.extra',el=>'Roteiro · '+txt(el.closest('.step')?.querySelector('h2'))+' · '+txt(el.querySelector('b'))],['.tcard',el=>'Top 10 · '+txt(el.querySelector('b'))],['.tline',()=> 'Top 10 · prazos'],['#prep',()=> 'Preparo']];
+  const targets=[['header.hero',()=> 'Capa'],['.intro',()=> 'Texto de abertura'],['.mi',el=>'Moodboard · '+txt(el.querySelector('span'))],['.oc',el=>'Objetivo · '+txt(el.querySelector('h3'))],['.mrow',el=>'Entenda · '+txt(el.querySelector('.mlabel'))],['.rule',el=>'Regra · '+txt(el.querySelector('b'))],['.brands',()=> 'Identidade · marcas'],['.palette',()=> 'Identidade · paleta'],['.typo',()=> 'Identidade · tipografia'],['.mock',el=>'Modelo · '+txt(el.querySelector('.cap'))],['.rules2>div',el=>'Identidade · '+txt(el.querySelector('b'))],['.sellc',el=>'O que vender · '+txt(el.querySelector('h3'))],['.week',el=>'Calendário · '+txt(el.querySelector('h3'))],['.step .stephead',el=>'Roteiro · '+txt(el.querySelector('h2'))],['.film',()=> 'Roteiro do filme (tabela)'],['.opt',el=>'Roteiro · '+txt(el.closest('.step').querySelector('h2'))+' · '+txt(el.querySelector('h3'))],['.extra',el=>'Roteiro · '+txt(el.closest('.step')?.querySelector('h2'))+' · '+txt(el.querySelector('b'))],['.tcard',el=>'Club Pitanga · '+txt(el.querySelector('b'))],['.tline',()=> 'Club Pitanga · prazos'],['#prep',()=> 'Preparo']];
   const els=[];
   targets.forEach(([sel,lab])=>document.querySelectorAll(sel).forEach((el,i)=>{
     if(el.hasAttribute('data-rev'))return;

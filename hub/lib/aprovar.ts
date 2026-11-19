@@ -108,6 +108,21 @@ export async function buscarParaAprovar(): Promise<{ itens: ItemAprovar[]; ativo
       destino: "/consultoria/reunioes", acao: "Validar",
       liberar: async () => { const { error } = await sb.from("loja_reunioes").update({ dados: { ...r.dados, validado: true } }).eq("id", r.id); if (error) throw new Error(error.message); },
     }));
+  // Combinados: os que esperam revisão (rascunho, por loja) e o que a Camilla mesma ficou de fazer.
+  const { data: comb } = await sb.from("loja_combinados").select("id, portal_id, texto, prazo, quem, status, created_at").or("status.eq.rascunho,and(status.eq.aberto,quem.eq.camilla)");
+  const cs = (comb ?? []) as { id: string; portal_id: string; texto: string; prazo: string | null; quem: string; status: string; created_at: string }[];
+  const rasc = new Map<string, typeof cs>();
+  cs.filter((c) => c.status === "rascunho" && daLoja(c.portal_id)).forEach((c) => rasc.set(c.portal_id, [...(rasc.get(c.portal_id) ?? []), c]));
+  rasc.forEach((lista, pid) => itens.push({
+    chave: `cbr${pid}`, portal: pid, tipo: "Combinados para revisar", titulo: `${lista.length} ${lista.length === 1 ? "combinado" : "combinados"} em rascunho: liberar ou excluir na ficha da loja`,
+    quando: lista[0].created_at, href: `/equipe/loja?id=${pid}`, acao: "Liberar todos",
+    liberar: async () => { const { error } = await sb.from("loja_combinados").update({ status: "aberto" }).in("id", lista.map((c) => c.id)); if (error) throw new Error(error.message); },
+  }));
+  cs.filter((c) => c.status === "aberto" && daLoja(c.portal_id)).forEach((c) => itens.push({
+    chave: `cbc${c.id}`, portal: c.portal_id, tipo: "Você ficou de fazer", titulo: `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)}${c.prazo < new Date().toISOString().slice(0, 10) ? ", atrasado" : ""})` : ""}`,
+    quando: c.prazo ?? c.created_at, href: `/equipe/loja?id=${c.portal_id}`, acao: "Feito",
+    liberar: async () => { const { error } = await sb.from("loja_combinados").update({ status: "feito", feito_em: new Date().toISOString() }).eq("id", c.id); if (error) throw new Error(error.message); },
+  }));
   // O que a CS passou para a Camilla ("Passar para a Camilla" no Meu dia).
   const { data: eu } = await sb.auth.getUser();
   if (eu.user) {

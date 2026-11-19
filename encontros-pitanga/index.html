@@ -170,23 +170,63 @@
   @media(max-width:640px){.cal th:nth-child(3),.cal td:nth-child(3){display:none}.cal .men{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}}
   .men{display:none}
 </style>
-<body>
+<style>
+  :root{--bg:#12100E;--card:#1B1714;--line:#2E2722;--neon:#C9965F;--terra:#A8683A;--txt:#F3EDE4;--muted:#A99D8E}
+  .hero{position:relative;margin:0 -20px;min-height:92vh;display:flex;flex-direction:column;justify-content:space-between;padding:28px 6vw 40px;background:#0d0b09 center/cover no-repeat;overflow:hidden}
+  .hero:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,11,9,.55) 0%,rgba(13,11,9,.25) 40%,rgba(13,11,9,.85) 100%)}
+  .hero>*{position:relative}
+  .htop{display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:.32em;text-transform:uppercase;color:#E9DFCF}
+  .hmid{text-align:center}
+  .hmid .k{font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:#E9DFCF;opacity:.85}
+  .hmid h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:300;letter-spacing:.2em;padding-left:.2em;font-size:clamp(40px,8.4vw,104px);margin:14px 0 6px;line-height:1;color:#F6F1E8;text-transform:uppercase}
+  .hmid .s{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:clamp(18px,2.6vw,26px);color:#E9DFCF}
+  .hbot{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#E9DFCF}
+  .hbot .stores{display:flex;gap:28px}
+  .intro{max-width:760px;margin:64px auto 0;text-align:center}
+  .intro p{font-family:"Cormorant Garamond",serif;font-size:clamp(20px,2.6vw,28px);line-height:1.45;color:var(--txt);font-weight:300;margin:0}
+  .intro p b{font-weight:500;color:var(--neon)}
+  .mood{columns:4 220px;column-gap:10px;margin-top:48px}
+  .mi{display:block;position:relative;margin:0 0 10px;break-inside:avoid;border-radius:4px;overflow:hidden}
+  .mi img{width:100%;display:block;aspect-ratio:4/5;object-fit:cover;filter:saturate(.9)}
+  .mi.tall img{aspect-ratio:3/5}
+  .mi span{position:absolute;left:12px;bottom:10px;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:19px;color:#F6F1E8;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+  .moodcap{text-align:center;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-top:8px}
+  .ogal{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
+  .oc{background:var(--card);border:1px solid var(--line);border-radius:6px;overflow:hidden;display:flex;flex-direction:column}
+  .oc.big{grid-column:1/-1;flex-direction:row;min-height:300px}
+  .oc.big .oimg{flex:0 0 42%;aspect-ratio:auto}
+  .oimg{aspect-ratio:4/3;background:center/cover no-repeat}
+  .obody{padding:18px 20px}
+  .on{font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:300;color:var(--neon);line-height:1}
+  .oc h3{margin:6px 0 6px;font-size:14px;letter-spacing:.14em;text-transform:uppercase;font-weight:800}
+  .oc.big h3{font-size:22px}
+  .oc p{margin:0;color:var(--muted);font-size:14px}
+  .onum{display:flex;gap:28px;flex-wrap:wrap;margin-top:18px}
+  .onum small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .onum b{font-family:"Cormorant Garamond",serif;font-size:40px;font-weight:300;color:var(--txt)}
+  .ometa{margin-top:14px;font-size:14px}
+  @media(max-width:900px){.ogal{grid-template-columns:1fr 1fr}.oc.big{flex-direction:column}.oc.big .oimg{aspect-ratio:16/9}}
+  @media(max-width:520px){.ogal{grid-template-columns:1fr}}
+</style><body>
 <div class="wrap">
+  <header class="hero" style="background-position:center 68%;background-image:url(https://i.pinimg.com/1200x/37/d2/7d/37d27d5c87b8120d5eca3bac0fa3f47c.jpg)">
+    <div class="htop"><span class="rings" style="color:#E9DFCF"></span><span>Campanha de fim de ano · 2026</span></div>
+    <div class="hmid"><div class="k">Pitanga Morena · Pitanga For Men</div><h1>Encontros</h1><div class="s">Lançamento 29 de novembro, com o filme · até 31 de dezembro</div></div>
+    <div class="hbot"><div class="stores"><span>Família</span><span>Amigos</span><span>A dois</span><span>Fé</span></div><span>Eunápolis · BA</span></div>
+  </header>
   <nav class="topnav">
-    <a href="#entenda">1 · Entenda</a><a href="#identidade">2 · Identidade</a><a href="#vender">3 · O que vender</a><a href="#calendario">4 · Calendário</a><a href="#roteiros">5 · Roteiros</a><a href="#top10">6 · Top 10</a><a href="#preparo">7 · Preparo</a>
+    <a href="#objetivos">Objetivos</a><a href="#entenda">1 · Entenda</a><a href="#identidade">2 · Identidade</a><a href="#vender">3 · O que vender</a><a href="#calendario">4 · Calendário</a><a href="#roteiros">5 · Roteiros</a><a href="#top10">6 · Top 10</a><a href="#preparo">7 · Preparo</a>
   </nav>
+  <section class="intro">
+    <p>Num tempo em que todo mundo está online e distante, o fim de ano é sobre <b>presença</b>. A campanha mostra os encontros que importam e coloca as duas Pitangas como o lugar do <b>presente</b> para cada pessoa e do <b>look</b> para cada ocasião.</p>
+  </section>
+  <div class="mood"><a class="mi tall" href="https://br.pinterest.com/pin/1002262092082751752/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/37/d2/7d/37d27d5c87b8120d5eca3bac0fa3f47c.jpg" alt="Família" loading="lazy" referrerpolicy="no-referrer"><span>Família</span></a><a class="mi " href="https://br.pinterest.com/pin/1150458667339696922/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/c8/6e/28/c86e2865ee1cbaad214d93732e8d7c57.jpg" alt="O presente" loading="lazy" referrerpolicy="no-referrer"><span>O presente</span></a><a class="mi tall" href="https://br.pinterest.com/pin/780952391681497969/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/70/89/ea/7089eabb7dfcdcbe3390797109eb7601.jpg" alt="Amigos" loading="lazy" referrerpolicy="no-referrer"><span>Amigos</span></a><a class="mi " href="https://br.pinterest.com/pin/134122895149528013/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/b0/c3/e3/b0c3e327301bb1175fabb6d32d9902ac.jpg" alt="Fé" loading="lazy" referrerpolicy="no-referrer"><span>Fé</span></a><a class="mi " href="https://br.pinterest.com/pin/1117666832559805781/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/1a/f9/34/1af934bb3e69bbc299aa559853dc6c97.jpg" alt="A mesa" loading="lazy" referrerpolicy="no-referrer"><span>A mesa</span></a><a class="mi tall" href="https://br.pinterest.com/pin/952581758710315820/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/e4/b0/f7/e4b0f784464e458875dba000ceacb786.jpg" alt="A dois" loading="lazy" referrerpolicy="no-referrer"><span>A dois</span></a><a class="mi tall" href="https://br.pinterest.com/pin/1142858842972549813/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/a2/da/3c/a2da3cd088dfcda9fff87e2d395ba4e3.jpg" alt="Ele" loading="lazy" referrerpolicy="no-referrer"><span>Ele</span></a><a class="mi " href="https://br.pinterest.com/pin/1127377719245598094/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/54/20/1c/54201c09cf01805c583234e3e1094286.jpg" alt="O brinde" loading="lazy" referrerpolicy="no-referrer"><span>O brinde</span></a><a class="mi tall" href="https://br.pinterest.com/pin/515521488618308900/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/52/60/d9/5260d9a9175b84969d495738c421584a.jpg" alt="A virada" loading="lazy" referrerpolicy="no-referrer"><span>A virada</span></a><a class="mi " href="https://br.pinterest.com/pin/4603452970995589888/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/04/63/7f/04637f66f38edf45569a90d4f777b839.jpg" alt="Embrulho" loading="lazy" referrerpolicy="no-referrer"><span>Embrulho</span></a><a class="mi " href="https://br.pinterest.com/pin/63683782252492030/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/05/5b/9d/055b9d7b4fa7f4bd805361212c9503ac.jpg" alt="Presença" loading="lazy" referrerpolicy="no-referrer"><span>Presença</span></a><a class="mi " href="https://br.pinterest.com/pin/48765608461114120/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/e0/de/ac/e0deac9e75e85f6f793b65bfe4ebcbf8.jpg" alt="Silêncio" loading="lazy" referrerpolicy="no-referrer"><span>Silêncio</span></a></div>
+  <div class="moodcap">Moodboard · a emoção da campanha (referências via Pinterest)</div>
 
-  <div style="margin-top:36px" class="kicker">Campanha de fim de ano · 23 de novembro a 31 de dezembro</div>
-  <h1><span class="serif" style="font-weight:300;letter-spacing:.18em">ENCONTROS</span><br><span style="font-size:.5em">Pitanga Morena · Pitanga For Men</span></h1>
-  <p class="sub">Num tempo em que todo mundo está online e distante, o fim de ano é sobre presença. A campanha mostra os encontros que importam e coloca as duas Pitangas como o lugar onde se compra <b style="color:var(--txt)">o presente</b> para cada pessoa e <b style="color:var(--txt)">o look</b> para cada ocasião.</p>
-
-  <div class="goal">
-    <div><b>Faturamento histórico</b>O maior dezembro das duas lojas. O feminino dobrou de tamanho e de custo, e o resultado precisa acompanhar. Referência: dez/2025 do feminino, R$ 368 mil (o maior mês da história da loja). Na For Men, o primeiro dezembro precisa ser o maior mês desde a abertura (maior mês registrado até setembro: agosto, R$ 108 mil). Meta: <span class="blank">[R$ ___ Morena]</span> · <span class="blank">[R$ ___ For Men]</span></div>
-    <div><b>Vender</b>Presentes por pessoa e por faixa de preço, e looks para cada ocasião de dezembro.</div>
-    <div><b>Fazer a For Men conhecida</b>Usar a base da Morena (13 mil) para levar mulheres a comprar o presente dele na For Men.</div>
-    <div><b>Virar a escolha da cidade</b>Ser a primeira loja que vem à cabeça para presentear e se vestir para as festas.</div>
-    <div><b>Começar a comunidade</b>Top 10 de clientes de cada loja, com presente personalizado retirado na loja.</div>
-  </div>
+  <section class="sec" id="objetivos" style="margin-top:72px">
+    <div class="sech"><span class="n">00</span><h2>Objetivos</h2></div>
+    <div class="ogal"><div class="oc big"><div class="oimg" style="background-image:url(https://i.pinimg.com/1200x/fc/02/72/fc0272e9a8e0da50f2052349c4339cb8.jpg)"></div><div class="obody"><div class="on">01</div><h3>Faturamento histórico</h3><p>O maior dezembro das duas lojas. O feminino dobrou de tamanho e de custo, e o resultado precisa acompanhar.</p><div class="onum"><div><small>Morena · referência dez/2025</small><b>R$ 368 mil</b></div><div><small>For Men · maior mês até set/26</small><b>R$ 108 mil</b></div></div><div class="ometa">Meta de dezembro: <span class="blank">[R$ ___ Morena]</span> · <span class="blank">[R$ ___ For Men]</span></div></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/92/07/d8/9207d85f33d1a8aeeb2475fb7722248a.jpg)"></div><div class="obody"><div class="on">02</div><h3>Vender presente e look</h3><p>Presente por pessoa e por faixa de preço, e um look para cada ocasião de dezembro.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/a0/f8/5a/a0f85a2e2da88e1203353acc27fd8782.jpg)"></div><div class="obody"><div class="on">03</div><h3>Fazer a For Men conhecida</h3><p>Usar a base da Morena (13 mil) para levar a cliente a comprar o presente dele na For Men.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/25/01/b7/2501b772511fe03ee7b0aeaba609a820.jpg)"></div><div class="obody"><div class="on">04</div><h3>Ser a escolha da cidade</h3><p>A primeira loja que vem à cabeça para presentear e para se vestir nas festas.</p></div></div><div class="oc"><div class="oimg" style="background-image:url(https://i.pinimg.com/736x/d3/45/26/d345269e5918cdea29506749a1387c54.jpg)"></div><div class="obody"><div class="on">05</div><h3>Começar a comunidade</h3><p>Top 10 de clientes de cada loja, com presente personalizado retirado na loja.</p></div></div></div>
+  </section>
 
   <!-- 1 ENTENDA -->
   <section class="sec" id="entenda">
@@ -224,7 +264,7 @@
     <div class="rules" style="margin-top:22px">
       <div class="rule"><b>Uma ideia, duas lojas</b>Todo encontro tem a versão dela (Morena) e a dele (For Men). Os vídeos-chave saem em collab nos dois perfis.</div>
       <div class="rule"><b>Val e Dayvid</b>São a cara da campanha: a família, o treino, a fé. É o que nenhuma outra loja da cidade consegue copiar.</div>
-      <div class="rule"><b>Evento Oficina (26/11)</b>Produzido por outra empresa. Na campanha, só repostar o conteúdo deles no perfil da For Men.</div>
+      <div class="rule"><b>Lançamento</b>A campanha só aparece no dia 29, com o filme. Antes disso, nada de teaser: o evento Oficina (26/11) é produzido por outra empresa e fica fora da campanha.</div>
       <div class="rule"><b>Ritmo</b>1 vídeo por dia em cada loja + stories todos os dias. Nos dias de collab, um vídeo só, publicado nos dois perfis.</div>
     </div>
   </section>
@@ -339,7 +379,7 @@
     <label class="done"><input type="checkbox" data-k="step-top10"> Top 10 entregue</label>
   </section>
   <section class="prep sec" id="preparo">
-    <h2>07 · Preparo · até 28/11</h2>
+    <h2>07 · Preparo · até 28/11 (antes do lançamento)</h2>
     <div class="sub" style="font-size:13px">Sem isso pronto, a campanha atrasa no meio de dezembro.</div>
     <ul id="prep"></ul>
   </section>
@@ -352,15 +392,7 @@ const IG = c => 'https://www.instagram.com/p/'+c+'/';
 
 /* ---------- CALENDÁRIO ---------- */
 const weeks = [
- {t:'Aquecimento', d:'23 a 28/11 · a Black acabou, o assunto agora é presente', days:[
-  ['23/11','Seg',['l','Look que vai da confraternização à ceia'],['l','4 propostas de linho para dezembro','look']],
-  ['24/11','Ter',['p','Chegaram os presentes de Natal: a primeira seleção'],['p','Presente pra ele que não erra','presente']],
-  ['25/11','Qua',['m','Bastidor desfocado: "estamos gravando algo"'],['l','O look da confraternização: polo ou camisa?','look']],
-  ['26/11','Qui',['p','Presente até R$ 150','presente'],['m','Evento Oficina: repostar o conteúdo da agência']],
-  ['27/11','Sex','★',['m','Teaser: "Quando foi o último encontro que você não esqueceu?"','teaser']],
-  ['28/11','Sáb','★',['m','Teaser: "ENCONTROS · 29.11"','teaser']]
- ]},
- {t:'A estreia', d:'29 e 30/11', days:[
+ {t:'Lançamento', d:'29 e 30/11 · a campanha começa com o filme', days:[
   ['29/11','Dom','★',['m','O FILME ENCONTROS (domingo à noite)','filme']],
   ['30/11','Seg',['m','Versão "Entre…" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
  ]},
@@ -434,22 +466,6 @@ document.getElementById('prep').innerHTML = prep.map((p,i)=>`<li><label><input t
 
 /* ---------- ROTEIROS ---------- */
 const steps = [
-{
-  id:'teaser', dia:'27–28/11', sem:'Sex–Sáb', fase:'Teaser', hora:'Horário de pico',
-  titulo:'Algo está chegando',
-  logica:'<b>Por que agora:</b> o filme estreia no domingo. Dois dias de antecipação fazem as pessoas esperarem por ele, em vez de passarem direto.',
-  opts:[
-    {nome:'A pergunta', loja:'Collab', m:I('bomcharme-celebre'), ref:['Bom Charme · Celebre',IG('DfTJnBZhkCg')],
-     cena:'Imagens desfocadas e quentes: mãos se encontrando numa mesa, um abraço, uma taça, uma Bíblia aberta. A frase entra palavra por palavra. 8 a 10 s.',
-     tela:'Quando foi o último encontro que você não esqueceu?', fala:['Sem fala. Piano suave.'],
-     leg:'Quando foi o último encontro que você não esqueceu? Domingo, 29, a gente te conta uma história. 🤍'},
-    {nome:'O título', loja:'Collab', m:I('reforma-segredo'), ref:['Loja Reforma · série de Natal',IG('DfQVI6UxeGJ')],
-     cena:'Tela café. A palavra ENCONTROS aparece devagar, em letra fina. Depois "29.11" e as duas logos Pitanga lado a lado.',
-     tela:'ENCONTROS · 29.11', fala:['Sem fala.'],
-     leg:'ENCONTROS. Domingo, 29. Pitanga Morena e Pitanga For Men. 🤍'}
-  ],
-  extras:[['Stories','Contagem regressiva para 29/11 · bastidor desfocado da gravação · caixinha "qual encontro você espera o ano inteiro?".']]
-},
 {
   id:'filme', dia:'29/11', sem:'Dom', fase:'O filme', hora:'Domingo à noite (pico)',
   titulo:'O filme ENCONTROS',

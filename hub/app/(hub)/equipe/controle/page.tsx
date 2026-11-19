@@ -57,7 +57,7 @@ const BLOCOS: { titulo: string; sub: string; atalhos: Atalho[] }[] = [
 ];
 
 export default function ControleDeClientes() {
-  const { nome, monta, conversas, userId, aprova } = useEquipe();
+  const { nome, monta, conversas, idDaVisao, aprova } = useEquipe();
   // A Claudia só conta as demandas que a Camilla aprovou hoje.
   const { dados, recarregar } = useDados(async () => {
     const [p, ok] = await Promise.all([painelCs(), aprova ? Promise.resolve(null) : aprovadasHoje()]);
@@ -66,7 +66,7 @@ export default function ControleDeClientes() {
   }, [aprova]);
   const { dados: caixaAberta } = useDados(async () => (monta ? (await supabaseBrowser().from("caixa_dia").select("id", { count: "exact", head: true }).eq("perfil", "camilla").neq("status", "Feito")).count ?? 0 : 0), [monta]);
   const { dados: paraRevisar } = useDados(async () => (await supabaseBrowser().from("reunioes_gravadas").select("id", { count: "exact", head: true }).in("status", ["rascunho", "sem_loja"])).count ?? 0, []);
-  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, userId]);
+  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === idDaVisao) && (!l.quando || l.quando <= hojeStr())) : []), [conversas, idDaVisao]);
   useEffect(() => { document.title = "Controle de clientes · magnética.hub"; }, []);
   if (!dados) return <Carregando />;
   const hoje = dados.lojas.filter((l) => l.nivel === "vermelho").length;

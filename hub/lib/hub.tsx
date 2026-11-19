@@ -68,6 +68,13 @@ export type Hub = {
   verComoEnvios: (modo: string) => void;
   /** Pode aprovar e liberar o que vai para a loja (a Camilla). */
   aprova: boolean;
+  /** A Camilla vendo o Hub como a CS (Claudia): sem aprovar, só o que foi aprovado. */
+  comoCs: boolean;
+  /** De quem são os lembretes na tela: a própria pessoa, ou a CS no "Ver como a Claudia". */
+  idDaVisao: string;
+  /** Quem aprova pode ver como a CS. */
+  podeVerComoCs: boolean;
+  verComoCs: (sim: boolean) => void;
   /** Monta diagnósticos, gestão, ações e gincanas das lojas (a Camilla e a CS). Liberar continua com quem aprova. */
   monta: boolean;
   /** Entra nas Conversas da equipe: só a Camilla e a CS. */
@@ -110,6 +117,8 @@ function janelaDaLoja() {
 export function emDemonstracao() {
   try { return janelaDaLoja() !== null && window.name.startsWith("lm-loja-demo:"); } catch { return false; }
 }
+const CHAVE_COMO_CS = "lm-como-cs";
+function lerComoCs() { try { return localStorage.getItem(CHAVE_COMO_CS) === "1"; } catch { return false; } }
 function lerComoLoja() {
   if (janelaDaLoja()) return true;
   try { return localStorage.getItem(CHAVE_COMO_LOJA) === "1"; } catch { return false; }
@@ -178,6 +187,9 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
     if (!equipe) sb.rpc("registrar_acesso").then(() => undefined);
     const persFaltam = portal ? ETAPAS.filter((e) => !pers.get(e.numero)?.concluida).length : 0;
     const comoLojaAgora = equipe && !!portal && lerComoLoja();
+    // "Ver como a Claudia": só para quem aprova; vale até sair.
+    const comoCsAgora = equipe && !!perfil?.aprova && lerComoCs();
+    const csId = comoCsAgora ? ((await sb.from("perfis").select("id").is("portal_id", null).eq("monta", true).eq("aprova", false).limit(1).maybeSingle()).data?.id as string | undefined) : undefined;
     const comoEnviosAgora = comoLojaAgora ? lerComoEnvios() : "";
     // Quem comprou só o curso não passa pela entrada da mentoria.
     const entrada = portal && portal.tipo !== "Curso" ? await buscarEntrada(portal.id, persFaltam === 0, comoLojaAgora, !!portal.sem_equipe) : null;
@@ -219,9 +231,16 @@ export function HubProvider({ children }: { children: React.ReactNode }) {
         gravarComoEnvios(modo);
         carregar().then(() => router.push(modo ? "/envios" : "/inicio"));
       },
-      aprova: equipe && !!perfil?.aprova,
+      aprova: equipe && !!perfil?.aprova && !comoCsAgora,
       monta: equipe && (!!perfil?.aprova || !!perfil?.monta),
       conversas: equipe && !!perfil?.conversas_equipe,
+      comoCs: comoCsAgora,
+      idDaVisao: csId ?? user.id,
+      podeVerComoCs: equipe && !!perfil?.aprova,
+      verComoCs: (sim) => {
+        try { if (sim) localStorage.setItem(CHAVE_COMO_CS, "1"); else localStorage.removeItem(CHAVE_COMO_CS); } catch { /* sem armazenamento */ }
+        carregar().then(() => router.push("/empresa/cs"));
+      },
       equipe,
       portal,
       pers,

@@ -103,14 +103,14 @@ function CartaoAssunto({ g, nome, recarregar, aprov }: { g: GrupoAlerta; nome: s
 
 /** Faça agora da CS: uma loja, um cartão, os mais urgentes primeiro. Cada alerta some sozinho quando o dado entra ou a conversa é registrada. */
 export default function InicioCs() {
-  const { nome, abrirPortal, userId, conversas, aprova } = useEquipe();
+  const { nome, abrirPortal, idDaVisao, conversas, aprova, podeVerComoCs, comoCs, verComoCs } = useEquipe();
   const { dados, recarregar } = useDados(() => painelCs(), []);
   const [ver, setVer] = useState<"painel" | "agora" | "depois" | "todas" | "contatos">("painel");
   const { dados: pd, recarregar: recarregarPd } = useDados(() => painelDia(), []);
   const { dados: ct, recarregar: recarregarCt } = useDados(() => contatosDoDia(), []);
   // As demandas do dia passam pela Camilla: ela vê tudo e aprova; a Claudia só vê o que foi aprovado hoje.
   const { dados: aprovadas, recarregar: recarregarAprov } = useDados(() => aprovadasHoje(), []);
-  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === userId) && (!l.quando || l.quando <= hoje())) : []), [conversas, userId]);
+  const { dados: lembretes, recarregar: recarregarLembretes } = useDados(async () => (conversas ? (await buscarLembretes(null)).filter((l) => (!l.responsavel || l.responsavel === idDaVisao) && (!l.quando || l.quando <= hoje())) : []), [conversas, idDaVisao]);
   if (!dados || !aprovadas) return <Carregando />;
 
   const trocar = (chaves: string[], sim: boolean) => async () => { try { await aprovar(chaves, sim, nome ?? ""); recarregarAprov(); } catch (e) { alert((e as Error).message); } };
@@ -137,6 +137,7 @@ export default function InicioCs() {
     <>
       <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub="Uma loja, um cartão. Resolva de cima para baixo: cada item traz a mensagem pronta, e a conversa que você registrar fecha o alerta." />
 
+      {podeVerComoCs && !comoCs && <p className="mb" style={{ marginTop: 0 }}><button type="button" className="btn s peq" onClick={() => verComoCs(true)}>👁 Ver como a Claudia</button></p>}
       {aprova && (
         <div className={`aviso mb ${pendentesAprov.length ? "" : "ok"}`}>
           {pendentesAprov.length

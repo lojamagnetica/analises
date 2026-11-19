@@ -11,6 +11,8 @@ import { dataCurta, dataHora, haQuanto, hoje, moeda } from "@/lib/formato";
 import { buscarFicha } from "@/lib/ficha-loja";
 import { buscarLojas, linhaDoTempo } from "@/lib/contatos";
 import { linkZap } from "@/lib/cs";
+import { excluirCombinado } from "@/lib/combinados";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 const ABAS = [
   { id: "resumo", rotulo: "Resumo" },
@@ -22,6 +24,7 @@ const ABAS = [
 type Aba = (typeof ABAS)[number]["id"];
 
 const COR_TERM: Record<string, string> = { Verde: "var(--feito)", Amarelo: "var(--orange)", Vermelho: "var(--red)" };
+const QUEM_C: Record<string, string> = { loja: "a loja", claudia: "a Claudia", camilla: "você (Camilla)" };
 const ROTULO = { contato: "Contato", combinado: "Combinado", conversa: "Conversa interna" } as const;
 
 /** Sem loja escolhida: a lista para escolher (as acompanhadas primeiro). */
@@ -48,7 +51,7 @@ function Escolher() {
 function Ficha({ id }: { id: string }) {
   const router = useRouter();
   const aba = (ABAS.find((a) => a.id === useSearchParams().get("aba"))?.id ?? "resumo") as Aba;
-  const { abrirPortal, conversas } = useEquipe();
+  const { abrirPortal, conversas, aprova } = useEquipe();
   const { dados: carregado, recarregar } = useDados(async () => ({ f: await buscarFicha(id) }), [id]);
   const { dados: linha, recarregar: recarregarLinha } = useDados(() => linhaDoTempo(id, conversas), [id, conversas]);
   if (!carregado) return <Carregando />;
@@ -57,6 +60,11 @@ function Ficha({ id }: { id: string }) {
   const p = f.portal;
   const ir = (a: Aba) => router.replace(`/equipe/loja?id=${id}&aba=${a}`);
   const atualizar = () => { recarregar(); recarregarLinha(); };
+  const mudar = async (ids: string[], status: "aberto" | "feito") => {
+    const { error } = await supabaseBrowser().from("loja_combinados").update(status === "feito" ? { status, feito_em: new Date().toISOString() } : { status }).in("id", ids);
+    if (error) alert(error.message); else atualizar();
+  };
+  const excluir = async (id: string) => { const { error } = await excluirCombinado(id); if (error) alert(error.message); else atualizar(); };
   const pct = f.mes.meta ? Math.round((f.mes.vendido / f.mes.meta) * 100) : null;
   const ultimoAcesso = f.acessos.map((a) => a.ultimo_acesso).filter(Boolean).sort().reverse()[0] ?? null;
 
@@ -99,9 +107,30 @@ function Ficha({ id }: { id: string }) {
               </div>
             ))}
           </div>
+          {f.rascunhos.length > 0 && aprova && (
+            <div className="card card-borda mb" style={{ ["--c" as string]: "var(--orange)" }}>
+              <div className="linha entre"><b>Combinados para revisar · {f.rascunhos.length}</b>
+                <button className="btn s peq" onClick={() => mudar(f.rascunhos.map((c) => c.id), "aberto")}>Liberar todos</button></div>
+              <p className="ajuda" style={{ marginTop: 2 }}>Vieram da reunião gravada ou do histórico antigo. A loja só vê depois que você libera.</p>
+              {f.rascunhos.map((c) => (
+                <div key={c.id} className="linha entre" style={{ padding: "6px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
+                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}</small></span>
+                  <span style={{ whiteSpace: "nowrap" }}>
+                    <button className="btn p peq" onClick={() => mudar([c.id], "aberto")}>Liberar</button>{" "}
+                    <button className="btn s peq" onClick={() => { if (confirm("Excluir este combinado?")) excluir(c.id); }}>Excluir</button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {f.combinados.length > 0 && (
             <div className="card mb"><b>Combinados abertos · {f.combinados.length}</b>
-              {f.combinados.map((c, i) => <div key={i} style={{ padding: "4px 0", borderTop: "1px solid var(--line)" }}>{c.texto}{c.prazo && <small className="mudo"> · até {dataCurta(c.prazo)}</small>}</div>)}
+              {f.combinados.map((c) => (
+                <div key={c.id} className="linha entre" style={{ padding: "4px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
+                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}{c.prazo && c.prazo < hoje() ? " (atrasado)" : ""}</small></span>
+                  <button className="btn s peq" onClick={() => mudar([c.id], "feito")}>Feito</button>
+                </div>
+              ))}
             </div>
           )}
         </>

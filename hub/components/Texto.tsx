@@ -1,7 +1,8 @@
 import { Fragment } from "react";
+import { CopiarMensagem } from "@/components/CopiarMensagem";
 
 // Markdown simples e seguro: ## e ### títulos, **negrito**, [links](https://…), listas com "- ",
-// tabelas com "|", avisos com "> " e parágrafos.
+// tabelas com "|", avisos com "> ", parágrafos e mensagens prontas entre ``` (com botão Copiar).
 function negrito(linha: string) {
   return linha.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g).map((p, i) => {
     if (p.startsWith("**") && p.endsWith("**")) return <strong key={i}>{p.slice(2, -2)}</strong>;
@@ -14,9 +15,21 @@ function negrito(linha: string) {
 const celulas = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
 
 export function Texto({ md }: { md: string }) {
-  const blocos = md.replace(/\r/g, "").split(/\n{2,}/);
+  // Blocos entre ``` viram mensagem para copiar; o resto segue as regras de sempre.
+  const partes = md.replace(/\r/g, "").split(/^```[^\n]*\n([\s\S]*?)\n```[ \t]*$/m);
   return (
     <div className="texto">
+      {partes.map((parte, k) => (k % 2 === 1
+        ? <CopiarMensagem key={`m${k}`} texto={parte} />
+        : <Fragment key={`t${k}`}>{blocosDe(parte)}</Fragment>))}
+    </div>
+  );
+}
+
+function blocosDe(md: string) {
+  const blocos = md.trim() ? md.trim().split(/\n{2,}/) : [];
+  return (
+    <>
       {blocos.map((b, i) => {
         if (b.startsWith("## ")) return <h2 key={i}>{b.slice(3)}</h2>;
         if (b.startsWith("### ")) return <h3 key={i}>{b.slice(4)}</h3>;
@@ -46,6 +59,6 @@ export function Texto({ md }: { md: string }) {
           </p>
         );
       })}
-    </div>
+    </>
   );
 }

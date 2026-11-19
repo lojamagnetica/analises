@@ -12,6 +12,7 @@ import { OQueAconteceu } from "@/components/OQueAconteceu";
 import { CaixaDoDiaResumo, NovidadesDoDia } from "@/components/MeuDiaExtras";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { MeuMapa } from "@/components/MeuMapa";
+import { Recolhivel } from "@/components/Recolhivel";
 import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
 import { buscarLembretes, marcarLembrete, lembreteDepois } from "@/lib/conversas";
@@ -157,8 +158,7 @@ export default function InicioCs() {
       </div>
 
       {lembretes && lembretes.length > 0 && (
-        <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)" }}>
-          <b>Lembretes de hoje · {lembretes.length}</b>
+        <Recolhivel id="lembretes" cor="var(--purple)" titulo={`Lembretes de hoje · ${lembretes.length}`}>
           {lembretes.map((l) => (
             <div key={l.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
               <span>{l.loja && <b>{l.loja} · </b>}{l.texto}{l.quando && l.quando < hoje() ? <span className="selo alerta" style={{ marginLeft: 6 }}>atrasado</span> : null}</span>
@@ -168,7 +168,7 @@ export default function InicioCs() {
               </span>
             </div>
           ))}
-        </div>
+        </Recolhivel>
       )}
 
       <NovidadesDoDia />
@@ -176,6 +176,7 @@ export default function InicioCs() {
 
       <p className="mb" style={{ marginTop: 0 }}><Link className="btn p peq" href="/equipe/contatos#novo">+ Registrar contato</Link></p>
 
+      <Recolhivel id="demandas" solto titulo={aprova ? "Demandas do dia da Claudia (alertas das lojas)" : "Demandas do dia (alertas das lojas)"}>
       <div className="chips mb">
         <button type="button" className={`chip${ver === "painel" ? " escolhido" : ""}`} onClick={() => setVer("painel")}>Painel do dia</button>
         <button type="button" className={`chip${ver === "agora" ? " escolhido" : ""}`} onClick={() => setVer("agora")}>Por loja · {vermelhas.length}</button>
@@ -222,24 +223,26 @@ export default function InicioCs() {
       )}
       {ver === "todas" && <Lojas lojas={lojas} abrir={abrirPortal} />}
       {ver === "contatos" && (ct ? <ContatosDoDia dados={ct} recarregar={recarregarCt} /> : <Carregando />)}
+      </Recolhivel>
 
       {reunioes.length > 0 && (
         <>
-          <div className="secao">Reuniões desta semana</div>
-          <div className="card mb">
+          <Recolhivel id="reunioes-semana" titulo={`Reuniões desta semana · ${reunioes.length}`}>
             {reunioes.map((r, i) => (
               <div key={i} className="linha entre" style={{ gap: 8, padding: "6px 0", borderTop: i ? "1px solid var(--line)" : 0 }}>
                 <span><b>{r.loja}</b> <span className="mudo">· {r.titulo || "Reunião"}</span></span>
                 <span style={{ textTransform: "capitalize" }}>{dataHora(r.data)}</span>
               </div>
             ))}
-          </div>
+          </Recolhivel>
         </>
       )}
 
-      <div className="secao" id="pendencias">Pendências por cliente</div>
-      <p className="ajuda" style={{ marginTop: 0 }}>O que falta pedir a cada loja e o que falta a equipe fazer. Os itens automáticos somem sozinhos quando o dado entra no Hub.</p>
-      <PendenciasPorCliente />
+      <div id="pendencias" />
+      <Recolhivel id="pendencias" solto titulo="Pendências por cliente">
+        <p className="ajuda" style={{ marginTop: 0 }}>O que falta pedir a cada loja e o que falta a equipe fazer. Os itens automáticos somem sozinhos quando o dado entra no Hub.</p>
+        <PendenciasPorCliente />
+      </Recolhivel>
 
     </>
   );

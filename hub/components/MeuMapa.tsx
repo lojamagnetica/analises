@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Carregando, useDados } from "@/lib/hub";
+import { Recolhivel } from "@/components/Recolhivel";
 import { dataCurta, hoje } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarParaAprovar } from "@/lib/aprovar";
@@ -58,8 +59,7 @@ export function MeuMapa() {
   return (
     <>
       <div className="secao" style={{ marginTop: 0 }}>Seu mapa de hoje</div>
-      <div className="card card-borda mb" style={{ ["--c" as string]: "var(--purple)" }}>
-        <b>1 · Reuniões de hoje · {dados.reunioes.length}</b>
+      <Recolhivel id="mapa-reunioes" cor="var(--purple)" titulo={`1 · Reuniões de hoje · ${dados.reunioes.length}`}>
         {!dados.reunioes.length && <p className="mudo" style={{ margin: "4px 0 0" }}>Nenhuma reunião marcada no Hub para hoje.</p>}
         {dados.reunioes.map((r, i) => {
           const deve = dados.devo.filter((c) => c.portal_id === r.portal_id);
@@ -70,19 +70,15 @@ export function MeuMapa() {
             </div>
           );
         })}
-      </div>
+      </Recolhivel>
 
-      <div className="card card-borda mb" style={{ ["--c" as string]: atrasados.length ? "var(--red)" : "var(--feito)" }}>
-        <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
-          <b>2 · O que eu devo · {dados.devo.length}</b>
-          <small className="mudo">{atrasados.length} atrasados · {hojeVence.length} vencem hoje</small>
-        </div>
+      <Recolhivel id="mapa-devo" cor={atrasados.length ? "var(--red)" : "var(--feito)"} titulo={`2 · O que eu devo · ${dados.devo.length}`} extra={<small className="mudo">{atrasados.length} atrasados · {hojeVence.length} vencem hoje</small>}>
         {!lista.length && <p className="mudo" style={{ margin: "4px 0 0" }}>{dados.devo.length ? "Nada atrasado nem vencendo hoje. 🎉" : "Você não deve nada às lojas. 🎉"}</p>}
         {lista.map(linha)}
         {dados.devo.length > lista.length || todos ? (
           <p style={{ margin: "8px 0 0" }}><button type="button" className="link-loja" onClick={() => setTodos(!todos)}>{todos ? "Mostrar só os atrasados e de hoje" : `Ver todos os ${dados.devo.length}, por prazo`}</button></p>
         ) : null}
-      </div>
+      </Recolhivel>
 
       <div className="grade g3 mb">
         <Link href="/equipe/aprovar" className="card" style={{ textDecoration: "none", color: "inherit" }}><small>3 · Para revisar</small><b style={{ display: "block", fontSize: 24 }}>{dados.revisar}</b><small className="mudo">liberar, validar, responder a Claudia</small></Link>

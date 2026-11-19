@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useDados } from "@/lib/hub";
+import { Recolhivel } from "@/components/Recolhivel";
 import { haQuanto, hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -19,8 +20,7 @@ export function NovidadesDoDia() {
   useEffect(() => { if (dados?.length) marcarVisto(); }, [dados]);
   if (!dados || !dados.length) return null;
   return (
-    <div className="card card-borda mb" style={{ ["--c" as string]: "var(--blue)" }}>
-      <div className="linha entre" style={{ gap: 8 }}><b>O que as lojas fizeram desde ontem · {dados.length}</b><Link href="/empresa/novidades" className="mudo" style={{ fontSize: 13 }}>ver todas</Link></div>
+    <Recolhivel id="novidades" cor="var(--blue)" titulo={`O que as lojas fizeram desde ontem · ${dados.length}`} extra={<Link href="/empresa/novidades" className="mudo" style={{ fontSize: 13 }}>ver todas</Link>}>
       {dados.map((n) => {
         const nova = !visto || n.created_at > visto;
         return (
@@ -34,7 +34,7 @@ export function NovidadesDoDia() {
           </div>
         );
       })}
-    </div>
+    </Recolhivel>
   );
 }
 

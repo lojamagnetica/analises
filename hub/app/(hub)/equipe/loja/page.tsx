@@ -12,6 +12,7 @@ import { buscarFicha } from "@/lib/ficha-loja";
 import { buscarLojas, linhaDoTempo } from "@/lib/contatos";
 import { linkZap } from "@/lib/cs";
 import { ProntaCs } from "@/components/ProntaCs";
+import { Recolhivel } from "@/components/Recolhivel";
 import { excluirCombinado } from "@/lib/combinados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
@@ -110,9 +111,8 @@ function Ficha({ id }: { id: string }) {
             ))}
           </div>
           {f.rascunhos.length > 0 && aprova && (
-            <div className="card card-borda mb" style={{ ["--c" as string]: "var(--orange)" }}>
-              <div className="linha entre"><b>Combinados para revisar · {f.rascunhos.length}</b>
-                <button className="btn s peq" onClick={() => mudar(f.rascunhos.map((c) => c.id), "aberto")}>Liberar todos</button></div>
+            <Recolhivel id="ficha-rascunhos" cor="var(--orange)" titulo={`Combinados para revisar · ${f.rascunhos.length}`}
+              extra={<button className="btn s peq" onClick={() => mudar(f.rascunhos.map((c) => c.id), "aberto")}>Liberar todos</button>}>
               <p className="ajuda" style={{ marginTop: 2 }}>Vieram da reunião gravada ou do histórico antigo. A loja só vê depois que você libera.</p>
               {f.rascunhos.map((c) => (
                 <div key={c.id} className="linha entre" style={{ padding: "6px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
@@ -123,17 +123,17 @@ function Ficha({ id }: { id: string }) {
                   </span>
                 </div>
               ))}
-            </div>
+            </Recolhivel>
           )}
           {f.combinados.length > 0 && (
-            <div className="card mb"><b>Combinados abertos · {f.combinados.length}</b>
+            <Recolhivel id="ficha-combinados" titulo={`Combinados abertos · ${f.combinados.length}`}>
               {f.combinados.map((c) => (
                 <div key={c.id} className="linha entre" style={{ padding: "4px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
                   <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}{c.prazo && c.prazo < hoje() ? " (atrasado)" : ""}</small></span>
                   <button className="btn s peq" onClick={() => mudar([c.id], "feito")}>Feito</button>
                 </div>
               ))}
-            </div>
+            </Recolhivel>
           )}
         </>
       )}

@@ -79,7 +79,8 @@ export function ConversaAberta({ cheia = false }: { cheia?: boolean }) {
     const visto = vistoDe(l.id);
     return {
       ...l, ultima: daqui[0] ?? null,
-      novas: daqui.filter((x) => x.autor !== userId && x.created_at > visto).length,
+      // Concluída não conta como nova: já foi resolvida, mesmo que a conversa não tenha sido aberta aqui.
+      novas: daqui.filter((x) => x.autor !== userId && x.status === "aberta" && x.created_at > visto).length,
       abertas: daqui.filter((x) => x.status === "aberta").length,
     };
   });

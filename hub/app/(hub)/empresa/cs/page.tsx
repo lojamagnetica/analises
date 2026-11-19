@@ -12,6 +12,7 @@ import { OQueAconteceu } from "@/components/OQueAconteceu";
 import { CaixaDoDiaResumo, NovidadesDoDia } from "@/components/MeuDiaExtras";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { MeuMapa } from "@/components/MeuMapa";
+import { PlannerDoDia } from "@/components/PlannerDoDia";
 import { Recolhivel } from "@/components/Recolhivel";
 import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
@@ -140,6 +141,7 @@ export default function InicioCs() {
     <>
       <Titulo titulo={`Meu dia${nome ? ` · ${nome.split(" ")[0]}` : ""}`} sub="Tudo o que pede você hoje, de cima para baixo: lembretes, o que as lojas fizeram, os alertas com a mensagem pronta e as pendências. Em cada item, conte o que aconteceu: fica no histórico da loja." />
 
+      {aprova && !comoCs && <PlannerDoDia />}
       {aprova && !comoCs && <MeuMapa />}
       {podeVerComoCs && !comoCs && <p className="mb" style={{ marginTop: 0 }}><button type="button" className="btn s peq" onClick={() => verComoCs(true)}>👁 Ver como a Claudia</button></p>}
       {aprova && (

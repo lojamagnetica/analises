@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>ENCONTROS · Campanha de fim de ano · Pitanga</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --line:#262626;
+    --terra:#BC4914; --neon:#FF5B1F; --txt:#F5F1EA; --muted:#A9A397;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:Montserrat,Avenir,"Helvetica Neue",Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--neon)}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+  .kicker{font-weight:300;letter-spacing:.35em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+  h1{font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(30px,6vw,56px);line-height:1.02;margin:10px 0 14px}
+  h1 span{color:var(--neon)}
+  .sub{color:var(--muted);max-width:640px;font-size:15px}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:28px 0 8px}
+  .rule{border:1px solid var(--line);background:var(--card);padding:14px 16px;border-radius:4px;font-size:14px}
+  .rule b{display:block;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--neon);margin-bottom:4px}
+
+  /* linha do tempo */
+  .timeline{display:flex;gap:6px;overflow-x:auto;margin:36px 0 10px;padding-bottom:6px}
+  .tl{flex:1 0 120px;border-top:3px solid var(--line);padding-top:10px;text-decoration:none;color:var(--txt)}
+  .tl.on{border-color:var(--neon)}
+  .tl .d{font-weight:800;font-size:18px}
+  .tl .f{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .tl .h{font-size:12px;color:var(--neon);font-weight:600}
+
+  /* etapas */
+  .step{margin-top:56px;border-top:1px solid var(--line);padding-top:28px;scroll-margin-top:16px}
+  .stephead{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px}
+  .num{font-weight:900;font-size:44px;line-height:1;color:var(--neon)}
+  .stephead h2{margin:0;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(20px,3.6vw,30px)}
+  .when{display:inline-block;background:var(--neon);color:#0B0B0B;font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:2px}
+  .logic{margin:12px 0 4px;color:var(--muted);font-size:15px;max-width:760px}
+  .logic b{color:var(--txt)}
+  .done{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .done input{accent-color:var(--neon);width:18px;height:18px}
+
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:20px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;grid-template-columns:150px 1fr;gap:16px}
+  @media(max-width:420px){.opt{grid-template-columns:1fr}.media{max-width:220px}}
+  .media{position:relative}
+  .media video,.media img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px;background:#000;display:block}
+  .media .tag{position:absolute;top:6px;left:6px;background:rgba(11,11,11,.8);color:var(--txt);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;border-radius:2px}
+  .noref{aspect-ratio:9/16;border:1px dashed var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .reflink{display:block;font-size:11px;margin-top:6px;text-decoration:none}
+  .optname{font-weight:300;letter-spacing:.2em;text-transform:uppercase;font-size:11px;color:var(--neon)}
+  .opt h3{margin:2px 0 10px;font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.03em}
+  .rows{display:grid;gap:8px;font-size:13.5px}
+  .row b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .screen{display:inline-block;background:#F5F1EA;color:#2C2C2A;font-weight:400;padding:4px 8px;border-radius:2px}
+  .say{border-left:2px solid var(--terra);padding-left:10px}
+  .say div{margin:2px 0}
+
+  .extras{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .extra{border:1px solid var(--line);padding:12px 14px;border-radius:4px;font-size:13.5px}
+  .extra b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);margin-bottom:4px}
+  .copy{margin-top:8px;background:none;border:1px solid var(--line);color:var(--muted);font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:2px;cursor:pointer}
+  .copy:hover{border-color:var(--neon);color:var(--neon)}
+
+  .prep{margin-top:40px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px}
+  .prep h2{margin:0 0 4px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:20px}
+  .prep ul{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 20px}
+  .prep li label{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+  .prep input{accent-color:var(--neon);margin-top:3px;width:16px;height:16px;flex:none}
+  .blank{color:var(--neon);font-weight:600}
+  footer{margin-top:64px;color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+</style>
+</head>
+<style>
+  .goal{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:26px 0 0}
+  .goal div{border-left:2px solid var(--neon);padding:4px 0 4px 14px;font-size:14px}
+  .goal b{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);margin-bottom:2px}
+  .phase{margin-top:72px;font-weight:300;letter-spacing:.35em;text-transform:uppercase;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:8px}
+  .phase b{color:var(--neon);font-weight:800}
+  .store{display:inline-block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line);color:var(--muted);padding:2px 7px;border-radius:2px;margin-right:6px}
+  .top10{margin-top:72px;background:var(--card);border:1px solid var(--neon);border-radius:6px;padding:24px}
+  .top10 h2{margin:0;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(22px,4vw,32px)}
+  .top10 h2 span{color:var(--neon)}
+  .tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:18px}
+  .tcard{border:1px solid var(--line);border-radius:4px;padding:14px;font-size:13.5px}
+  .tcard b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);margin-bottom:6px}
+  .tcard ul{margin:0;padding-left:18px}
+  .tcard li{margin:3px 0}
+  .tline{display:grid;grid-template-columns:110px 1fr;gap:6px 14px;margin-top:16px;font-size:13.5px}
+  .tline .dt{color:var(--neon);font-weight:800}
+  .film{margin-top:16px;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .film table{width:100%;border-collapse:collapse;font-size:13px}
+  .film th{background:#1d1d1d;text-align:left;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:8px 10px}
+  .film td{border-top:1px solid var(--line);padding:9px 10px;vertical-align:top}
+  .film td:first-child{color:var(--neon);font-weight:800;white-space:nowrap}
+  .film .vo{color:var(--txt);font-style:italic}
+</style>
+<body>
+<div class="wrap">
+  <div class="kicker">Plano de execução · 22 de novembro a 31 de dezembro</div>
+  <h1>Encontros<br><span>Pitanga Morena · Pitanga For Men</span></h1>
+  <p class="sub">A campanha de fim de ano das duas lojas. Começa logo depois da Black, passa pelo evento da Oficina no dia 26, estreia o filme no domingo, dia 29, e se desdobra em dezembro: cada semana é um encontro da vida, e cada encontro pede um presente.</p>
+
+  <div class="goal">
+    <div><b>Objetivo 1</b>Fazer a Pitanga For Men ser conhecida e acelerar o primeiro ano da loja.</div>
+    <div><b>Objetivo 2</b>Ser a escolha de fim de ano da cidade: o lugar onde se compra o presente e o look das festas.</div>
+    <div><b>Objetivo 3</b>Começar a comunidade das lojas com o Top 10 de clientes de cada uma.</div>
+  </div>
+
+  <div class="rules">
+    <div class="rule"><b>A ideia</b>Num tempo em que todo mundo está online e distante, o fim de ano é sobre presença. Presentear é o jeito de dizer "você é importante para mim".</div>
+    <div class="rule"><b>A lógica</b>Evento (encontro de homens e negócios) → teaser → filme → um encontro por semana → Top 10 → fé no Natal → réveillon.</div>
+    <div class="rule"><b>As duas lojas</b>Todo encontro tem a versão dela (Morena) e a dele (For Men). O casal Val e Dayvid é a ponte entre as duas.</div>
+    <div class="rule"><b>Padrão de vídeo</b>Texto fixo no topo desde o 1º segundo, cortes secos, até 35 s (o filme é a exceção). Paleta da campanha em tons quentes, sem vermelho de Papai Noel.</div>
+  </div>
+
+  <nav class="timeline" id="timeline"></nav>
+
+  <section class="prep" id="preparo">
+    <h2>Antes de começar · até 25/11</h2>
+    <div class="sub" style="font-size:13px">Sem isso pronto, a campanha atrasa no meio de dezembro.</div>
+    <ul id="prep"></ul>
+  </section>
+
+  <div id="steps"></div>
+
+  <section class="top10" id="top10">
+    <div class="kicker">Comunidade das lojas</div>
+    <h2>Encontro <span>Top 10</span></h2>
+    <p class="logic" style="max-width:820px">Os 10 melhores clientes de cada loja recebem um presente personalizado de fim de ano, e só podem retirar <b>na loja, pessoalmente</b>. É o encontro da campanha que vira relacionamento. Na Morena, é o reconhecimento de quem constrói a loja há anos. Na For Men, que acabou de fazer 1 ano, são os <b>10 fundadores</b>: os primeiros homens que acreditaram na loja.</p>
+    <div class="tgrid">
+      <div class="tcard"><b>Quem entra</b><ul><li>Relatório do Objetivo: valor comprado nos últimos 12 meses (Morena) e desde a abertura, em março (For Men).</li><li>Desempate por frequência de compra.</li><li>Fora da lista: quem tem fiado em aberto.</li><li>Val e Dayvid fecham a lista final.</li></ul></div>
+      <div class="tcard"><b>O presente</b><ul><li>Personalizado com o nome do cliente (bordado, gravação ou cartão).</li><li>Morena: uma peça especial ou um acessório + cartão escrito à mão pela Val.</li><li>For Men: um item Oficina ou Reserva com a gravação "Fundador Pitanga For Men · 2026" + cartão do Dayvid.</li><li>Caixa e embrulho exclusivos do Top 10, diferentes do embrulho comum.</li></ul></div>
+      <div class="tcard"><b>A retirada</b><ul><li>Convite individual pelo WhatsApp, com horário marcado.</li><li>Na loja: espumante ou café, foto no painel ENCONTROS e conversa com os donos.</li><li>Nada de venda nesse momento. O cliente sai com o presente e a sensação de ser importante.</li></ul></div>
+      <div class="tcard"><b>Depois do Natal</b><ul><li>Cria o grupo "Top 10 Pitanga" (um por loja).</li><li>Benefícios de 2027: primeiro acesso às coleções e convite para os eventos.</li><li>No fim de 2027, a lista é refeita. Entrar no Top 10 vira status na cidade.</li></ul></div>
+    </div>
+    <div class="tline">
+      <div class="dt">até 25/11</div><div>Puxar os relatórios e fechar as duas listas.</div>
+      <div class="dt">até 01/12</div><div>Encomendar os presentes e as personalizações.</div>
+      <div class="dt">08 a 10/12</div><div>Convite individual pelo WhatsApp (mensagem abaixo, na etapa 08).</div>
+      <div class="dt">15 a 19/12</div><div>Semana da retirada na loja.</div>
+      <div class="dt">20/12</div><div>Post do Top 10, só com quem autorizou aparecer.</div>
+    </div>
+    <label class="done"><input type="checkbox" data-k="step-top10"> Top 10 entregue</label>
+  </section>
+
+  <footer>Por Camilla Ribeiro · Método Loja Magnética</footer>
+</div>
+<script>
+const I = s => ({img:'refs/'+s+'.jpg'});
+const IG = c => 'https://www.instagram.com/p/'+c+'/';
+
+const prep = [
+  'Fechar as listas do Top 10 (10 da Morena + 10 da For Men)',
+  'Lista de convidados do evento Oficina: clientes homens, empresários, profissionais liberais e parceiros da cidade',
+  'Agendar a gravação do filme ENCONTROS (família, amigos, treino, fé) até 27/11',
+  'Painel ou cantinho de foto ENCONTROS nas duas lojas',
+  'Embrulho de fim de ano e embrulho exclusivo do Top 10',
+  'Guia de presentes por faixa de preço nas duas lojas (até R$ 150 · até R$ 300 · acima de R$ 300)',
+  'Kits corporativos prontos para confraternização de empresa (2 ou 3 opções fechadas)',
+  'Lista de empresas da cidade para oferecer os kits (começar pelos convidados do evento)',
+  'Horário estendido de 15 a 24/12 combinado com a equipe',
+  'Equipe com o roteiro de abordagem "pra quem é o presente?"'
+];
+
+const steps = [
+{
+  phase:'Fase 1 · <b>Encontro de negócios</b>',
+  id:'convite', dia:'22–25/11', sem:'Sáb–Ter', fase:'Convite', hora:'1 post por dia',
+  titulo:'Convite do evento Oficina',
+  logica:'<b>Por que agora:</b> a Black termina no dia 21, e o próximo assunto das lojas já precisa estar no ar. O evento é o primeiro encontro da campanha e a grande chance da For Men ser apresentada aos homens que movimentam a cidade.',
+  opts:[
+    {nome:'Dayvid convida', loja:'For Men', m:null,
+     cena:'Dayvid abrindo as caixas da Oficina na loja, tirando as peças, vestindo uma camisa no provador. Fecha olhando para a câmera, com o convite na mão.',
+     tela:'26.11 · Pitanga For Men · Lançamento Oficina',
+     fala:['"Chegou a Oficina na Pitanga For Men."','"E a gente não vai só colocar na arara: dia 26 tem lançamento, com convidados, boa conversa e network."','"Se você recebeu o convite, te espero aqui."'],
+     leg:'Dia 26 a Oficina chega oficialmente à Pitanga For Men. Uma noite de lançamento, boa conversa e network. 🤎 📍 [endereço]'},
+    {nome:'O convite chegando', loja:'For Men', m:null,
+     cena:'Close de mãos abrindo um convite impresso de papel encorpado: "Você está convidado". Corta para a vitrine da For Men à noite, iluminada. 8 a 10 s, sem fala.',
+     tela:'Alguns homens da cidade receberam este convite.',
+     fala:['Sem fala. Música instrumental elegante.'],
+     leg:'Alguns convites já foram entregues. Dia 26, Pitanga For Men. 🤎'}
+  ],
+  extras:[
+    ['Convite pelo WhatsApp (individual)','Oi, [nome]! Aqui é o Dayvid, da Pitanga For Men. Dia 26, às [hora], vamos lançar a Oficina na loja, com uma noite para receber clientes e amigos: boa conversa, network e [bebida/petisco]. Queria muito você aqui. Posso confirmar seu nome?'],
+    ['Bastidor (não postar)','Fechar as listas do Top 10 nesta semana.']
+  ]
+},
+{
+  id:'evento', dia:'26/11', sem:'Qui', fase:'Evento', hora:'Noite do evento',
+  titulo:'Lançamento Oficina + network',
+  logica:'<b>Por que agora:</b> cada homem que vem ao evento sai conhecendo a loja, e os amigos dele veem nos stories. É o maior empurrão de reconhecimento que a For Men vai ter no ano. O destaque do evento vai ao ar na manhã do dia 27.',
+  opts:[
+    {nome:'Destaque do evento', loja:'For Men', m:I('evento-tommy'), ref:['Evento Tommy Hilfiger',IG('DZtHeOiJYDS')],
+     cena:'Cenas curtas de 1 a 2 s: detalhe da vitrine, peças Oficina, brinde, aperto de mão, gente rindo, Dayvid falando para o grupo. Termina na fachada iluminada. Postar no dia 27 de manhã.',
+     tela:'Lançamento Oficina · Pitanga For Men · 26.11',
+     fala:['Sem fala. Música em alta, ritmo de cortes secos.'],
+     leg:'Obrigado a cada um que veio celebrar a chegada da Oficina com a gente. 🤎 Isso foi só o começo. 📍 [endereço]'},
+    {nome:'Quem veio', loja:'For Men', m:null,
+     cena:'Retrato de 2 s de cada convidado, sorrindo para a câmera, com nome e profissão na tela. 10 a 12 rostos. Só com quem autorizou.',
+     tela:'Quem esteve no lançamento da Oficina',
+     fala:['Sem fala.'],
+     leg:'Uma noite com gente que faz a cidade acontecer. Obrigado pela presença. 🤎'}
+  ],
+  extras:[
+    ['Stories ao vivo','Chegada dos convidados · Dayvid apresentando a Oficina · provador · brinde · marcar quem autorizou (cada marcação leva a loja para o perfil dele).'],
+    ['No dia seguinte (27/11)','Mensagem de agradecimento individual + oferta exclusiva Oficina para quem veio, válida até 30/11.']
+  ]
+},
+{
+  phase:'Fase 2 · <b>A estreia</b>',
+  id:'teaser', dia:'27–28/11', sem:'Sex–Sáb', fase:'Teaser', hora:'Horário de pico',
+  titulo:'Algo está chegando',
+  logica:'<b>Por que agora:</b> o filme estreia no domingo. Dois dias de antecipação fazem as pessoas esperarem por ele, em vez de passarem direto.',
+  opts:[
+    {nome:'A pergunta', loja:'As duas', m:I('bomcharme-celebre'), ref:['Bom Charme · Celebre',IG('DfTJnBZhkCg')],
+     cena:'Imagens desfocadas e quentes: mãos se encontrando numa mesa, um abraço, uma taça, uma Bíblia aberta. A frase entra palavra por palavra. 8 a 10 s.',
+     tela:'Quando foi o último encontro que você não esqueceu?',
+     fala:['Sem fala. Piano suave.'],
+     leg:'Quando foi o último encontro que você não esqueceu? Domingo, 29, a gente te conta uma história. 🤍'},
+    {nome:'O título', loja:'As duas', m:I('reforma-segredo'), ref:['Loja Reforma · série de Natal',IG('DfQVI6UxeGJ')],
+     cena:'Tela preta. A palavra ENCONTROS aparece devagar, em letra fina. Depois "29.11" e as duas logos Pitanga lado a lado.',
+     tela:'ENCONTROS · 29.11',
+     fala:['Sem fala.'],
+     leg:'ENCONTROS. Domingo, 29. Pitanga Morena e Pitanga For Men. 🤍'}
+  ],
+  extras:[
+    ['Stories','Contagem regressiva para 29/11 · bastidor desfocado da gravação do filme · caixinha "qual encontro você espera o ano inteiro?".']
+  ]
+},
+{
+  id:'lancamento', dia:'29/11', sem:'Dom', fase:'Lançamento', hora:'Domingo à noite (pico)',
+  titulo:'O filme ENCONTROS',
+  logica:'<b>Por que agora:</b> domingo à noite é família em casa e celular na mão. O filme não vende peça: apresenta a ideia que vai guiar dezembro inteiro, e cada encontro do filme vira uma semana da campanha.',
+  film:[
+    ['0–5 s','Abertura','Celular na mesa vibrando, ninguém olha. Uma mão vira o celular para baixo.','"A gente vive conectado com todo mundo…"'],
+    ['5–15 s','Família','Val, Dayvid e os dois filhos à mesa: risada, criança no colo, mãos dadas na oração.','"…e às vezes esquece de estar perto de quem importa."'],
+    ['15–25 s','Amigos','Noite de queijos e vinhos com amigos. Amigo secreto: alguém abre o presente e todo mundo vibra.','"Tem encontro que aquece."'],
+    ['25–35 s','A dois','Dayvid treinando a Val (ela correndo, ele contando as séries). Corta para os dois arrumados, saindo para jantar.','"Tem encontro que fortalece."'],
+    ['35–45 s','Fé','Val sozinha, luz da manhã, Bíblia aberta, olhos fechados. Depois, a família entrando na igreja.','"E tem o encontro que sustenta todos os outros."'],
+    ['45–55 s','Presente','Mãos entregando uma sacola Pitanga, um abraço apertado, alguém lendo um cartão e se emocionando.','"Neste fim de ano, esteja presente. E diga com um presente o quanto alguém é importante para você."'],
+    ['55–60 s','Assinatura','As duas logos lado a lado sobre fundo quente.','ENCONTROS · Pitanga Morena · Pitanga For Men']
+  ],
+  opts:[
+    {nome:'Filme completo (60 s)', loja:'As duas', m:I('john-lewis'), ref:['John Lewis · filme de Natal',IG('DflD9QAR_Gk')],
+     cena:'O roteiro da tabela acima, com narração da Val. Postado em collab nos dois perfis, para chegar às duas bases de uma vez. Fixar no topo dos dois perfis.',
+     tela:'ENCONTROS',
+     fala:['Narração da Val (texto da tabela).'],
+     leg:'Num tempo em que estamos tão conectados e tão distantes, a gente escolheu falar de presença. 🤍 ENCONTROS: a campanha de fim de ano da Pitanga Morena e da Pitanga For Men.'},
+    {nome:'Versão "Entre…" (20 s)', loja:'As duas', m:I('nv-entre-lacos'), ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
+     cena:'Cortes de 3 s com as mesmas imagens do filme. Em cada corte a palavra muda: ENCONTRO · com a família / com os amigos / a dois / com Deus. Postar no dia 30 para quem não viu o filme inteiro.',
+     tela:'ENCONTRO · com a família (muda a cada corte)',
+     fala:['Sem fala. A música do filme.'],
+     leg:'Qual desses encontros é o seu? 🤍 ENCONTROS · Pitanga.'}
+  ],
+  extras:[
+    ['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Hoje a gente estreou a nossa campanha de fim de ano, ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho e queria que você visse: [link]. Em dezembro, a loja está preparada para te ajudar a presentear cada pessoa especial. 🤍'],
+    ['Loja','Painel ENCONTROS montado nas duas lojas a partir do dia 29.']
+  ]
+},
+{
+  phase:'Fase 3 · <b>Um encontro por semana</b>',
+  id:'familia', dia:'30/11–06/12', sem:'Semana 1', fase:'Família', hora:'2 posts por dia',
+  titulo:'Encontro com a família',
+  logica:'<b>Por que agora:</b> começo de dezembro é quando as pessoas fazem a lista de presentes. Ajudar a resolver "o que dar para cada um" coloca a Pitanga no começo dessa lista.',
+  opts:[
+    {nome:'Pra quem é o presente?', loja:'As duas', m:null,
+     cena:'Uma vendedora monta, na frente da câmera, um presente para cada pessoa da família: pai, mãe, marido, esposa, filho. 4 s em cada, com o preço na tela. Uma versão por loja.',
+     tela:'Presente para a família toda, sem errar',
+     fala:['"Pro seu pai: …"','"Pra sua mãe: …"','"Pro seu marido: …" (e assim por diante)'],
+     leg:'Presente para a família toda, num lugar só. Qual desses é o seu? 📍 [endereço]'},
+    {nome:'A família Pitanga escolhe', loja:'As duas', m:I('gant-holiday'), ref:['GANT · Holiday',IG('DS24X_eASf-')],
+     cena:'Val, Dayvid e os filhos na loja, cada um escolhendo em segredo o presente de outro. No fim, a troca dos presentes e o abraço.',
+     tela:'Na nossa família, cada um escolheu o presente do outro',
+     fala:['"Aqui em casa a regra é: cada um escolhe o presente de alguém."','"E o meu é para…" (cada um fala para quem escolheu)'],
+     leg:'Cada um escolheu o presente de alguém da família. 🤍 Que tal fazer isso na sua também?'}
+  ],
+  extras:[
+    ['Stories','Guia de presentes por faixa de preço (até R$ 150 · até R$ 300 · acima de R$ 300), um story por faixa, nas duas lojas.'],
+    ['WhatsApp · base das duas lojas','Oi, [nome]! Já começou a lista de presentes? Separamos ideias para cada pessoa da família, por faixa de preço. Me fala para quem você precisa presentear que eu te mando opções. 🤍']
+  ]
+},
+{
+  id:'amigos', dia:'07–13/12', sem:'Semana 2', fase:'Amigos', hora:'2 posts por dia',
+  titulo:'Encontro com os amigos',
+  logica:'<b>Por que agora:</b> é a semana das confraternizações e do amigo secreto. Cada amigo secreto é uma compra com valor definido, e cada confraternização pede um look novo.',
+  opts:[
+    {nome:'Meu amigo secreto é…', loja:'As duas', m:I('amigo-secreto'), ref:['Dezzy · amiga secreta',IG('DfX8I2Cvk6H')],
+     cena:'Mãos segurando uma pilha de caixinhas. A cada corte sai uma caixa e aparece o presente ideal para um tipo de amigo, com o preço. Versão Morena: "minha amiga secreta é…". Versão For Men: "meu amigo secreto é…".',
+     tela:'Minha amiga secreta é… / Meu amigo secreto é…',
+     fala:['"…a que vive na academia: …"','"…a que ama praia: …"','"…o que não tira a camisa polo: …"'],
+     leg:'Amigo secreto até R$ [valor]? Resolvido. Qual desses é o seu? 📍 [endereço]'},
+    {nome:'Noite de queijos e vinhos', loja:'As duas', m:null,
+     cena:'Um grupo de amigos chegando para uma noite de queijos e vinhos. Cada pessoa entra com o look da loja, e o preço aparece no corte. Termina com o brinde.',
+     tela:'O look da confraternização',
+     fala:['Sem fala. Ou: "Vai ter confraternização essa semana? Esse é o look."'],
+     leg:'Confraternização com os amigos pede look novo. 🍷 Vem montar o seu.'}
+  ],
+  extras:[
+    ['Corporativo','Oferecer os kits de confraternização às empresas da lista, começando pelos convidados do evento do dia 26. Contato pessoal do Dayvid e da Val.'],
+    ['WhatsApp · base das duas lojas','Oi, [nome]! Amigo secreto ou confraternização essa semana? Separei opções por valor e looks para a ocasião. Me fala o valor que eu te mando as ideias. 🤍']
+  ]
+},
+{
+  id:'a-dois', dia:'14–20/12', sem:'Semana 3', fase:'A dois + Top 10', hora:'2 posts por dia',
+  titulo:'Encontro a dois',
+  logica:'<b>Por que agora:</b> faltando uma semana para o Natal, as pessoas compram para quem está mais perto, e escolhem o look da ceia. É também a semana do Top 10 na loja, o encontro que mostra que a Pitanga trata o cliente como alguém especial.',
+  opts:[
+    {nome:'Do treino para a ceia', loja:'As duas', m:null,
+     cena:'Dayvid treinando a Val (cena do filme). Corte seco: os dois já arrumados para a ceia, ela de Pitanga Morena e ele de Pitanga For Men. Os looks com preço na tela.',
+     tela:'Do treino para a ceia',
+     fala:['Val: "Ele cuida do meu treino o ano inteiro."','Dayvid: "E ela cuida do meu look."','Juntos: "O look da ceia já está escolhido."'],
+     leg:'Ele cuida do treino, ela cuida do look. 🤍 O look a dois da ceia está nas duas Pitangas.'},
+    {nome:'Top 10: a retirada', loja:'As duas', m:null,
+     cena:'Um cliente do Top 10 chegando na loja, recebendo a caixa das mãos da Val (ou do Dayvid), abrindo e vendo o nome dele. Só com autorização. Postar dia 20.',
+     tela:'Top 10 Pitanga 2026',
+     fala:['"Esse ano a gente quis agradecer de um jeito diferente a quem constrói a Pitanga com a gente."'],
+     leg:'Top 10 Pitanga 2026. 🤍 Obrigada a cada cliente que faz parte da nossa história. Esse é só o começo.'}
+  ],
+  extras:[
+    ['Convite do Top 10 (08 a 10/12, individual)','Oi, [nome]! Aqui é a [Val/Dayvid]. Você está entre os 10 clientes mais especiais da Pitanga em 2026, e a gente preparou um presente com o seu nome. Ele só pode ser retirado pessoalmente, com a gente na loja. Qual o melhor dia para você entre 15 e 19/12?'],
+    ['Loja','Horário estendido a partir de 15/12. Embrulho no capricho.']
+  ]
+},
+{
+  id:'natal', dia:'21–25/12', sem:'Semana 4', fase:'Reta final + fé', hora:'Manhã + pico',
+  titulo:'O encontro que sustenta todos os outros',
+  logica:'<b>Por que agora:</b> até o dia 23, a pressa: "ainda dá tempo". No dia 24, nada de venda: a Val fala de fé, que é o encontro mais verdadeiro da campanha e de quem ela é.',
+  opts:[
+    {nome:'Ainda dá tempo', loja:'As duas', m:I('reforma-natal-comeca'), ref:['Loja Reforma · Natal na loja',IG('DRvQrtVDTYN')],
+     cena:'Loja cheia, embrulhos em sequência, fila no caixa, sacolas saindo. A equipe sorrindo e acenando. 21 a 23/12.',
+     tela:'Ainda dá tempo. Até dia 24, às [hora].',
+     fala:['"Esqueceu alguém? Ainda dá tempo, e a gente embrulha para você."'],
+     leg:'Ainda dá tempo! Até dia 24, às [hora], nas duas Pitangas. Embrulho por nossa conta. 🎁 📍 [endereço]'},
+    {nome:'Encontro com Deus', loja:'As duas', m:null,
+     cena:'24/12, de manhã. Val sozinha, em casa ou na loja vazia, com luz natural e a Bíblia aberta. Fala de gratidão pelo ano. Sem produto, sem preço.',
+     tela:'O encontro que sustenta todos os outros',
+     fala:['"Esse ano a gente falou de encontros."','"Mas tem um que vem antes de todos: o encontro com Deus."','"Obrigada por cada pessoa que entrou na nossa loja e na nossa vida. Feliz Natal."'],
+     leg:'Que o seu Natal seja cheio dos encontros que importam. Feliz Natal, da família Pitanga para a sua. 🤍'}
+  ],
+  extras:[
+    ['WhatsApp · base das duas lojas, 22/12','Oi, [nome]! Ainda falta algum presente? A gente está aberta até dia 24, às [hora], e embrulha tudo para você. É só chegar ou me mandar uma mensagem. 🎁'],
+    ['25/12','Story da família Pitanga + agradecimento. Loja fechada.']
+  ]
+},
+{
+  id:'reveillon', dia:'26–31/12', sem:'Fim do ano', fase:'Réveillon', hora:'Manhã + pico',
+  titulo:'Encontro com o novo',
+  logica:'<b>Por que agora:</b> depois do Natal, a cidade vira a chave para o réveillon e a praia. A Morena é moda praia, e a For Men tem linho e branco: é a última venda forte do ano.',
+  opts:[
+    {nome:'O branco da virada', loja:'As duas', m:null,
+     cena:'Looks de réveillon em branco e areia, gravados com luz de fim de tarde (praia ou varanda). Ela de Morena, ele de For Men. Preço na tela.',
+     tela:'O look da virada já está aqui',
+     fala:['Sem fala, ou: "Já escolheu o branco da virada?"'],
+     leg:'O branco da virada e a praia de janeiro, nas duas Pitangas. 🤍 📍 [endereço]'},
+    {nome:'O que você leva para 2027', loja:'As duas', m:null,
+     cena:'Equipe das duas lojas, uma pessoa por corte, falando um desejo para 2027. Termina com Val e Dayvid agradecendo o primeiro ano da For Men.',
+     tela:'O que você leva para 2027?',
+     fala:['"Eu levo…" (cada pessoa da equipe)','Dayvid: "E a gente leva o primeiro ano da For Men, graças a vocês."'],
+     leg:'Obrigado, 2026. Que 2027 venha com mais encontros. 🤍'}
+  ],
+  extras:[
+    ['WhatsApp · base das duas lojas, 27/12','Oi, [nome]! Já escolheu o look da virada? Chegaram peças em branco e moda praia para o réveillon, nas duas Pitangas. Quer que eu te mande?']
+  ]
+}
+];
+
+const esc = s => s.replace(/\[([^\]]+)\]/g,'<span class="blank">[$1]</span>');
+const store = (()=>{try{return window.localStorage}catch(e){return null}})();
+const get = k => {try{return store&&store.getItem('enc-'+k)==='1'}catch(e){return false}};
+const set = (k,v) => {try{store&&store.setItem('enc-'+k,v?'1':'0')}catch(e){}};
+
+document.getElementById('timeline').innerHTML = steps.map((s,i)=>
+  `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('')
+  + `<a class="tl" href="#top10" data-k="step-top10"><div class="d">15–19/12</div><div class="f">★ Top 10</div><div class="h">Retirada na loja</div></a>`;
+
+document.getElementById('prep').innerHTML = prep.map((p,i)=>
+  `<li><label><input type="checkbox" data-k="prep-${i}"> <span>${esc(p)}</span></label></li>`).join('');
+
+function media(o){
+  if(!o.m) return `<div class="noref">Gravação própria</div>`;
+  return `<div class="media"><span class="tag">Ref · ${o.ref[0].split(' · ')[0]}</span><img src="${o.m.img}" alt="Referência: ${o.ref[0]}" loading="lazy"></div><a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Assistir no Instagram ↗</a>`;
+}
+
+document.getElementById('steps').innerHTML = steps.map((s,i)=>`
+${s.phase?`<div class="phase">${s.phase}</div>`:''}
+<section class="step" id="${s.id}">
+  <div class="stephead">
+    <div class="num">${String(i+1).padStart(2,'0')}</div>
+    <h2>${s.titulo}</h2>
+    <span class="when">${s.sem} · ${s.dia} · ${s.hora}</span>
+  </div>
+  <p class="logic">${s.logica}</p>
+  ${s.film?`<div class="film"><table><tr><th>Tempo</th><th>Encontro</th><th>Imagem</th><th>Narração</th></tr>${s.film.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="vo">${r[3]}</td></tr>`).join('')}</table></div>`:''}
+  <div class="opts">
+    ${s.opts.map((o,j)=>`
+    <div class="opt">
+      <div>${media(o)}</div>
+      <div>
+        <div class="optname">Opção ${'AB'[j]} &nbsp;<span class="store">${o.loja}</span></div>
+        <h3>${o.nome}</h3>
+        <div class="rows">
+          <div class="row"><b>Cena</b>${esc(o.cena)}</div>
+          <div class="row"><b>Texto na tela</b><span class="screen">${esc(o.tela)}</span></div>
+          <div class="row"><b>Fala</b><div class="say">${o.fala.map(f=>`<div>${esc(f)}</div>`).join('')}</div></div>
+          <div class="row"><b>Legenda</b>${esc(o.leg)}<br><button class="copy" data-copy="${o.leg.replace(/"/g,'&quot;')}">Copiar legenda</button></div>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>
+  ${s.extras.length?`<div class="extras">${s.extras.map(e=>`<div class="extra"><b>${e[0]}</b>${esc(e[1])}${/WhatsApp|Convite/.test(e[0])?`<br><button class="copy" data-copy="${e[1].replace(/"/g,'&quot;')}">Copiar mensagem</button>`:''}</div>`).join('')}</div>`:''}
+  <label class="done"><input type="checkbox" data-k="step-${s.id}"> Etapa feita</label>
+</section>`).join('');
+
+document.querySelectorAll('input[data-k]').forEach(cb=>{
+  cb.checked = get(cb.dataset.k);
+  cb.addEventListener('change',()=>{set(cb.dataset.k,cb.checked);paint()});
+});
+function paint(){ document.querySelectorAll('.tl').forEach(t=>t.classList.toggle('on',get(t.dataset.k))); }
+paint();
+
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('.copy'); if(!b) return;
+  const t=b.dataset.copy, old=b.textContent;
+  try{await navigator.clipboard.writeText(t); b.textContent='Copiado ✓'}
+  catch(err){b.textContent='Selecione e copie'}
+  setTimeout(()=>b.textContent=old,1600);
+});
+</script>
+</body>
+</html>

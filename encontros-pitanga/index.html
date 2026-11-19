@@ -474,7 +474,7 @@ const IG = c => 'https://www.instagram.com/p/'+c+'/';
 const weeks = [
  {t:'Lançamento', d:'29 e 30/11 · a campanha começa com o filme', days:[
   ['29/11','Dom','★',['m','O FILME ENCONTROS (domingo à noite)','filme']],
-  ['30/11','Seg',['m','Versão "Encontro de…" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
+  ['30/11','Seg',['m','Versão "ENCONTROS ·" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
  ]},
  {t:'Encontro com a família', d:'30/11 a 06/12', days:[
   ['01/12','Ter',['p','Pra quem é o presente? A família toda','presente'],['p','Pra quem é o presente? Pai, marido e filho','presente']],
@@ -565,9 +565,9 @@ const steps = [
      cena:'O roteiro da tabela, com narração da Val. Publicado em collab nos dois perfis e fixado no topo dos dois.',
      tela:'ENCONTROS', fala:['Narração da Val (texto da tabela).'],
      leg:'Num tempo em que estamos tão conectados e tão distantes, a gente escolheu falar de presença. 🤍 ENCONTROS: a campanha de fim de ano da Pitanga Morena e da Pitanga For Men.'},
-    {nome:'Versão "Encontro de…" (20 s)', loja:'Collab (dia 30)', m:{sim:true}, ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
-     cena:'Cortes de 3 s com as imagens do filme. A palavra ENCONTRO fica fixa e o complemento troca a cada corte: de família, de amigos, a dois, com Deus. Fecha nos dois símbolos. A simulação ao lado foi gerada com IA, só para visualizar o ritmo.',
-     tela:'ENCONTRO · de família → de amigos → a dois → com Deus', fala:['Sem fala. A música do filme.'],
+    {nome:'Versão "ENCONTROS ·" (20 s)', loja:'Collab (dia 30)', m:{sim:true}, ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
+     cena:'Cortes de 3 s com as imagens do filme. No mesmo efeito da NV: cartela café com ENCONTROS fixo e, ao lado, a palavra de contexto rolando como um letreiro até parar (FAMÍLIA, AMIGOS, A DOIS, FÉ). Entre uma cartela e outra, 2 s de cena. Fecha em PRESENTES, CELEBRAÇÕES e nos dois símbolos. A simulação ao lado foi gerada com IA, só para visualizar o ritmo.',
+     tela:'ENCONTROS · FAMÍLIA / AMIGOS / A DOIS / FÉ / PRESENTES / CELEBRAÇÕES', fala:['Sem fala. A música do filme.'],
      leg:'Qual desses encontros é o seu? 🤍 ENCONTROS · Pitanga.'}
   ],
   extras:[['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Chegou o grande dia: a nossa campanha de fim de ano está no ar. ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho: [link]. Em dezembro, as duas lojas estão preparadas para te ajudar a presentear cada pessoa especial. 🤍']]
@@ -742,7 +742,7 @@ document.getElementById('timeline').innerHTML = steps.map((s,i)=>
   `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('');
 
 function media(o){
-  if(o.m&&o.m.sim) return `<div class="sim"><div class="simf" style="background-image:url(sim/familia.jpg)"></div><div class="simf" style="background-image:url(sim/amigos.jpg)"></div><div class="simf" style="background-image:url(sim/adois.jpg)"></div><div class="simf" style="background-image:url(sim/fe.jpg)"></div><div class="simend"><img src="logos/morena-claro.png" alt=""><span></span><img src="logos/formen-claro.png" alt=""></div><div class="simtx"><div class="w">ENCONTRO</div><div class="c"><span>de família</span><span>de amigos</span><span>a dois</span><span>com Deus</span></div></div><span class="tag">Simulação com IA</span></div>` + (o.ref?`<a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Ref: ${o.ref[0]} ↗</a>`:'');
+  if(o.m&&o.m.sim) return `<div class="sim"><video src="sim/encontro-de.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video><span class="tag">Simulação com IA</span></div>` + (o.ref?`<a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Ref: ${o.ref[0]} ↗</a>`:'');
   if(!o.m) return `<div class="noref">Gravação própria</div>`;
   return `<div class="media"><span class="tag">Ref · ${o.ref[0].split(' · ')[0]}</span><img src="${o.m.img}" alt="Referência: ${o.ref[0]}" loading="lazy"></div><a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Assistir no Instagram ↗</a>`;
 }
@@ -750,7 +750,7 @@ document.getElementById('steps').innerHTML = steps.map((s,i)=>`
 <section class="step" id="${s.id}">
   <div class="stephead"><div class="num">${String(i+1).padStart(2,'0')}</div><h2>${s.titulo}</h2><span class="when">${s.sem} · ${s.dia} · ${s.hora}</span></div>
   <p class="logic">${s.logica}</p>
-  ${s.id==='filme'?`<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:18px 0 6px"><div style="width:270px">${media({m:{sim:true}})}</div><div style="max-width:420px"><div class="optname">Simulação da versão "Encontro de…"</div><p style="color:var(--muted);font-size:14px">Prévia gerada com IA, só para Val e Deyvid visualizarem o ritmo: a palavra ENCONTRO fica fixa, o complemento troca a cada 3 segundos e o vídeo fecha nos dois símbolos. Na gravação, entram a família, os amigos, o treino e a fé de verdade.</p></div></div>`:''}
+  ${s.id==='filme'?`<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin:18px 0 6px"><div style="width:270px">${media({m:{sim:true}})}</div><div style="max-width:420px"><div class="optname">Simulação da versão "ENCONTROS ·"</div><p style="color:var(--muted);font-size:14px">Prévia gerada com IA, só para Val e Deyvid visualizarem o ritmo: ENCONTROS fica fixo e a palavra de contexto rola até parar, no mesmo efeito do vídeo da NV, intercalando com as cenas. Fecha nos dois símbolos. Na gravação, entram a família, os amigos, o treino e a fé de verdade.</p></div></div>`:''}
   ${s.film?`<div class="film"><table><tr><th>Tempo</th><th>Encontro</th><th>Imagem</th><th>Narração</th></tr>${s.film.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="vo">${r[3]}</td></tr>`).join('')}</table></div>`:''}
   <div class="opts">${s.opts.map((o,j)=>`
     <div class="opt"><div>${media(o)}</div><div>

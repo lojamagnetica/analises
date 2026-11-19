@@ -11,7 +11,7 @@ export const CANAIS = ["WhatsApp", "Ligação", "Reunião", "Presencial", "Outro
 export type Canal = (typeof CANAIS)[number];
 export type LojaOpcao = { id: string; loja: string; acompanhada: boolean };
 export type Contato = { id: string; portal_id: string; tipo: string; feito_em: string; feito_por: string | null; resumo: string | null; precisa_ajuda: boolean; proximo_passo: string | null; proximo_em: string | null; canal: string | null; arquivos: Anexo[]; resultado?: string | null; retomar_em?: string | null };
-export type ItemLinha = { quando: string; tipo: "contato" | "combinado" | "conversa"; titulo: string; texto: string | null; ajuda?: boolean; arquivos?: Anexo[]; extra?: string };
+export type ItemLinha = { quando: string; tipo: "contato" | "combinado" | "conversa" | "reuniao" | "entrega"; titulo: string; texto: string | null; ajuda?: boolean; arquivos?: Anexo[]; extra?: string; link?: string | null };
 
 const sb = () => supabaseBrowser();
 const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
@@ -50,15 +50,33 @@ export async function registrarContato(c: NovoContato, por: { id: string; nome: 
 
 /** A linha do tempo de uma loja: contatos, combinados e (para quem entra nas conversas) as conversas internas, do mais novo para o mais antigo. */
 export async function linhaDoTempo(portalId: string, comConversas: boolean): Promise<ItemLinha[]> {
-  const [{ data: ct }, { data: cb }, cv] = await Promise.all([
+  const [{ data: ct }, { data: cb }, cv, { data: rs }, { data: en }, { data: gv }, { data: rr }] = await Promise.all([
     sb().from("cs_contatos").select("*").eq("portal_id", portalId).order("feito_em", { ascending: false }).limit(100),
     sb().from("loja_combinados").select("texto, quem, prazo, status, origem, created_at, feito_em").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(50),
     comConversas ? sb().from("equipe_conversas").select("texto, autor_nome, tipo, created_at, arquivos").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(50) : Promise.resolve({ data: [] }),
+    // As reuniões que já aconteceram (com o resumo), as entregas feitas e as notas internas das gravações aprovadas.
+    sb().from("reunioes").select("id, titulo, data, status, ata").eq("portal_id", portalId).lte("data", new Date().toISOString()).order("data", { ascending: false }).limit(40),
+    sb().from("loja_entregas").select("tipo, titulo, link, entregue_em, origem").eq("portal_id", portalId).neq("origem", "reuniao").order("entregue_em", { ascending: false }).limit(60),
+    sb().from("reunioes_gravadas").select("titulo, data, criado_em, interno, para_claudia").eq("portal_id", portalId).eq("status", "aprovada").order("criado_em", { ascending: false }).limit(20),
+    sb().from("reunioes_rascunho").select("reuniao_id, resumo, interno").eq("portal_id", portalId),
   ]);
   const itens: ItemLinha[] = [];
   ((ct ?? []) as Contato[]).forEach((c) => itens.push({ quando: c.feito_em, tipo: "contato", titulo: `${c.resultado && c.resultado !== "conversei" ? rotuloResultado(c.resultado) : c.canal ?? "Conversa"}${c.feito_por ? ` · ${c.feito_por}` : ""}${c.retomar_em ? ` · volta em ${c.retomar_em.split("-").reverse().slice(0, 2).join("/")}` : ""}`, texto: [c.resumo, c.proximo_passo ? `Próximo passo: ${c.proximo_passo}${c.proximo_em ? ` (${c.proximo_em.split("-").reverse().slice(0, 2).join("/")})` : ""}` : null].filter(Boolean).join("\n") || null, ajuda: c.precisa_ajuda, arquivos: c.arquivos ?? [] }));
   ((cb ?? []) as { texto: string; quem: string; prazo: string | null; status: string; origem: string; created_at: string; feito_em: string | null }[]).forEach((c) => itens.push({ quando: c.status === "feito" && c.feito_em ? c.feito_em : c.created_at, tipo: "combinado", titulo: c.status === "feito" ? "Combinado cumprido" : "Combinado", texto: c.texto, extra: c.prazo ? `prazo ${c.prazo.split("-").reverse().slice(0, 2).join("/")}` : undefined }));
   ((cv.data ?? []) as { texto: string; autor_nome: string | null; tipo: string; created_at: string; arquivos: Anexo[] }[]).forEach((m) => itens.push({ quando: m.created_at, tipo: "conversa", titulo: `Conversa da equipe · ${m.autor_nome ?? ""}`, texto: m.texto || null, arquivos: m.arquivos ?? [] }));
+  const rasc = new Map(((rr ?? []) as { reuniao_id: string; resumo: string | null; interno: string | null }[]).map((x) => [x.reuniao_id, x]));
+  ((rs ?? []) as { id: string; titulo: string | null; data: string; status: string | null; ata: string | null }[]).forEach((r) => {
+    const x = rasc.get(r.id);
+    // O resumo que a loja lê (ou o rascunho, se ainda não foi liberado) e as notas internas, que só a equipe vê.
+    const partes = [r.ata || (x?.resumo ? `Resumo em rascunho (a loja ainda não vê):\n${x.resumo}` : null), x?.interno ? `Interno (só a equipe vê):\n${x.interno}` : null].filter(Boolean);
+    itens.push({ quando: r.data, tipo: "reuniao", titulo: `Reunião com a Camilla · ${r.titulo || "Reunião"}`, texto: partes.join("\n\n") || null, extra: r.ata ? undefined : "resumo ainda não liberado para a loja" });
+  });
+  ((en ?? []) as { tipo: string; titulo: string; link: string | null; entregue_em: string }[]).forEach((e) => itens.push({ quando: e.entregue_em, tipo: "entrega", titulo: `Entrega · ${e.tipo}`, texto: e.titulo, link: e.link }));
+  ((gv ?? []) as { titulo: string | null; data: string | null; criado_em: string; interno: string | null; para_claudia: { texto: string }[] | null }[]).forEach((g) => {
+    const cs = (g.para_claudia ?? []).map((c) => c.texto).filter(Boolean);
+    const texto = [g.interno, cs.length ? `Para a Claudia acompanhar:\n${cs.map((t) => `- ${t}`).join("\n")}` : null].filter(Boolean).join("\n\n");
+    if (texto) itens.push({ quando: g.data ? `${g.data}T12:00:00-03:00` : g.criado_em, tipo: "reuniao", titulo: `O que ficou da reunião (interno) · ${g.titulo ?? ""}`, texto });
+  });
   return itens.sort((a, b) => b.quando.localeCompare(a.quando));
 }
 

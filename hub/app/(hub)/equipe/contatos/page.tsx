@@ -11,7 +11,7 @@ import { CANAIS, buscarLojas, buscarResumo, linhaDoTempo, registrarContato, type
 import { subirAnexo } from "@/lib/conversas";
 import { suportaDitado, useDitado } from "@/lib/ditado";
 
-const ROTULO = { contato: "Contato", combinado: "Combinado", conversa: "Conversa interna" } as const;
+const ROTULO = { contato: "Contato", combinado: "Combinado", conversa: "Conversa interna", reuniao: "Reunião", entrega: "Entrega" } as const;
 
 function Contatos() {
   const { nome, userId, conversas } = useEquipe();

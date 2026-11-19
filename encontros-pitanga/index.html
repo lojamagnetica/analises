@@ -97,38 +97,230 @@
   .film td{border-top:1px solid var(--line);padding:9px 10px;vertical-align:top}
   .film td:first-child{color:var(--neon);font-weight:800;white-space:nowrap}
   .film .vo{color:var(--txt);font-style:italic}
+</style><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;1,300;1,500&display=swap" rel="stylesheet">
+<style>
+  :root{--areia:#E9DFCF;--off:#F6F1E8;--caramelo:#A8683A;--cafe:#3A2A20;--oliva:#6B6B4E;--dourado:#B89B5E}
+  .serif{font-family:"Cormorant Garamond",Georgia,serif}
+  .topnav{position:sticky;top:0;z-index:5;background:rgba(11,11,11,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);margin:0 -20px;padding:10px 20px;display:flex;gap:18px;overflow-x:auto}
+  .topnav a{color:var(--muted);text-decoration:none;font-size:11px;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
+  .topnav a:hover{color:var(--neon)}
+  .sec{margin-top:80px;scroll-margin-top:60px}
+  .sech{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:22px}
+  .sech .n{font-weight:900;color:var(--neon);font-size:14px;letter-spacing:.2em}
+  .sech h2{margin:0;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(22px,4vw,34px)}
+  .lead{color:var(--muted);max-width:780px;font-size:15px;margin:0 0 20px}
+  .lead b{color:var(--txt)}
+
+  /* mapa */
+  .map{display:grid;gap:12px}
+  .mrow{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:stretch}
+  @media(max-width:640px){.mrow{grid-template-columns:1fr}}
+  .mlabel{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--neon);font-weight:800;padding-top:14px}
+  .mcells{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .mc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:13px}
+  .mc b{display:block;font-size:15px;margin-bottom:4px}
+  .mc.big{background:linear-gradient(135deg,#2a1d15,#161616);border-color:var(--caramelo);text-align:center;padding:22px}
+  .mc.big b{font-family:"Cormorant Garamond",serif;font-size:34px;font-weight:300;letter-spacing:.25em}
+  .arrow{text-align:center;color:var(--caramelo);font-size:18px;line-height:1}
+  .chip{display:inline-block;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:2px 7px;border-radius:2px;margin:2px 4px 2px 0;font-weight:600}
+  .c-p{background:#3a2a20;color:#E9C9A7}.c-l{background:#2c3324;color:#C9D3B3}.c-m{background:#2b2b2b;color:#E9DFCF}.c-u{background:#4a1f10;color:#FFB08A}
+
+  /* identidade */
+  .palette{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .sw{border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .sw div{height:70px}
+  .sw p{margin:0;padding:8px 10px;font-size:12px;background:var(--card)}
+  .sw p b{display:block;font-size:13px}
+  .typo{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .typo div{background:var(--off);color:var(--cafe);border-radius:6px;padding:18px}
+  .typo small{display:block;font-family:Montserrat,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--caramelo);margin-bottom:6px}
+  .mocks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:18px}
+  .mock{display:flex;flex-direction:column;gap:6px}
+  .mock .cap{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .art{aspect-ratio:9/16;border-radius:8px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:18px}
+  .art.sq{aspect-ratio:4/5}
+  .wm{font-family:"Cormorant Garamond",serif;letter-spacing:.32em;font-weight:300}
+  .rings{width:34px;height:20px;position:relative}
+  .rings:before,.rings:after{content:"";position:absolute;top:0;width:20px;height:20px;border:1.5px solid currentColor;border-radius:50%}
+  .rings:before{left:0}.rings:after{left:13px}
+  .rules2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:18px}
+  .rules2 div{border:1px solid var(--line);border-radius:4px;padding:12px 14px;font-size:13.5px}
+  .rules2 b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);margin-bottom:4px}
+
+  /* o que vender */
+  .sell{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .sellc{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:18px}
+  .sellc h3{margin:0 0 4px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+  .sellc table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  .sellc td{border-top:1px solid var(--line);padding:8px 6px;vertical-align:top}
+  .sellc td:first-child{color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase;width:34%}
+
+  /* calendario */
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-bottom:12px}
+  .week{margin-top:22px}
+  .week h3{margin:0 0 8px;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);font-weight:800}
+  .week h3 span{color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+  .cal{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}.cal th:first-child{width:74px}
+  .cal th{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+  .cal td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+  .cal td.d{white-space:nowrap;font-weight:800;width:74px}
+  .cal td.d small{display:block;font-weight:400;color:var(--muted);font-size:11px}
+  .cal td.collab{background:#1d1712}
+  .cal .star{color:var(--dourado)}
+  @media(max-width:640px){.cal th:nth-child(3),.cal td:nth-child(3){display:none}.cal .men{display:block;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}}
+  .men{display:none}
 </style>
 <body>
 <div class="wrap">
-  <div class="kicker">Plano de execução · 22 de novembro a 31 de dezembro</div>
-  <h1>Encontros<br><span>Pitanga Morena · Pitanga For Men</span></h1>
-  <p class="sub">A campanha de fim de ano das duas lojas. Começa logo depois da Black, passa pelo evento da Oficina no dia 26, estreia o filme no domingo, dia 29, e se desdobra em dezembro: cada semana é um encontro da vida, e cada encontro pede um presente.</p>
+  <nav class="topnav">
+    <a href="#entenda">1 · Entenda</a><a href="#identidade">2 · Identidade</a><a href="#vender">3 · O que vender</a><a href="#calendario">4 · Calendário</a><a href="#roteiros">5 · Roteiros</a><a href="#top10">6 · Top 10</a><a href="#preparo">7 · Preparo</a>
+  </nav>
+
+  <div style="margin-top:36px" class="kicker">Campanha de fim de ano · 23 de novembro a 31 de dezembro</div>
+  <h1><span class="serif" style="font-weight:300;letter-spacing:.18em">ENCONTROS</span><br><span style="font-size:.5em">Pitanga Morena · Pitanga For Men</span></h1>
+  <p class="sub">Num tempo em que todo mundo está online e distante, o fim de ano é sobre presença. A campanha mostra os encontros que importam e coloca as duas Pitangas como o lugar onde se compra <b style="color:var(--txt)">o presente</b> para cada pessoa e <b style="color:var(--txt)">o look</b> para cada ocasião.</p>
 
   <div class="goal">
-    <div><b>Objetivo 1</b>Fazer a Pitanga For Men ser conhecida e acelerar o primeiro ano da loja.</div>
-    <div><b>Objetivo 2</b>Ser a escolha de fim de ano da cidade: o lugar onde se compra o presente e o look das festas.</div>
-    <div><b>Objetivo 3</b>Começar a comunidade das lojas com o Top 10 de clientes de cada uma.</div>
+    <div><b>Faturamento histórico</b>O maior dezembro das duas lojas. O feminino dobrou de tamanho e de custo, e o resultado precisa acompanhar. Referência: dez/2025 do feminino, R$ 368 mil (o maior mês da história da loja). Na For Men, o primeiro dezembro precisa ser o maior mês desde a abertura (maior mês registrado até setembro: agosto, R$ 108 mil). Meta: <span class="blank">[R$ ___ Morena]</span> · <span class="blank">[R$ ___ For Men]</span></div>
+    <div><b>Vender</b>Presentes por pessoa e por faixa de preço, e looks para cada ocasião de dezembro.</div>
+    <div><b>Fazer a For Men conhecida</b>Usar a base da Morena (13 mil) para levar mulheres a comprar o presente dele na For Men.</div>
+    <div><b>Virar a escolha da cidade</b>Ser a primeira loja que vem à cabeça para presentear e se vestir para as festas.</div>
+    <div><b>Começar a comunidade</b>Top 10 de clientes de cada loja, com presente personalizado retirado na loja.</div>
   </div>
 
-  <div class="rules">
-    <div class="rule"><b>A ideia</b>Num tempo em que todo mundo está online e distante, o fim de ano é sobre presença. Presentear é o jeito de dizer "você é importante para mim".</div>
-    <div class="rule"><b>A lógica</b>Evento (encontro de homens e negócios) → teaser → filme → um encontro por semana → Top 10 → fé no Natal → réveillon.</div>
-    <div class="rule"><b>As duas lojas</b>Todo encontro tem a versão dela (Morena) e a dele (For Men). O casal Val e Dayvid é a ponte entre as duas.</div>
-    <div class="rule"><b>Padrão de vídeo</b>Texto fixo no topo desde o 1º segundo, cortes secos, até 35 s (o filme é a exceção). Paleta da campanha em tons quentes, sem vermelho de Papai Noel.</div>
-  </div>
-
-  <nav class="timeline" id="timeline"></nav>
-
-  <section class="prep" id="preparo">
-    <h2>Antes de começar · até 25/11</h2>
-    <div class="sub" style="font-size:13px">Sem isso pronto, a campanha atrasa no meio de dezembro.</div>
-    <ul id="prep"></ul>
+  <!-- 1 ENTENDA -->
+  <section class="sec" id="entenda">
+    <div class="sech"><span class="n">01</span><h2>Entenda a campanha</h2></div>
+    <p class="lead">Um conceito, quatro encontros e, em cada encontro, as ocasiões em que a pessoa precisa de um <b>presente</b> ou de um <b>look</b>. Cada semana de dezembro é um encontro, e todo vídeo termina numa dessas duas vendas.</p>
+    <div class="map">
+      <div class="mrow"><div class="mlabel">Conceito</div><div class="mcells"><div class="mc big"><b>ENCONTROS</b>Esteja presente. E diga com um presente o quanto alguém é importante para você.</div></div></div>
+      <div class="arrow">↓</div>
+      <div class="mrow"><div class="mlabel">Os 4 encontros</div><div class="mcells">
+        <div class="mc"><b>Família</b>30/11 a 06/12<br><span style="color:var(--muted)">valores e conexão</span></div>
+        <div class="mc"><b>Amigos</b>07 a 13/12<br><span style="color:var(--muted)">celebrar junto</span></div>
+        <div class="mc"><b>A dois</b>14 a 20/12<br><span style="color:var(--muted)">cuidado e parceria</span></div>
+        <div class="mc"><b>Fé</b>21 a 25/12<br><span style="color:var(--muted)">o que sustenta tudo</span></div>
+      </div></div>
+      <div class="arrow">↓</div>
+      <div class="mrow"><div class="mlabel">As ocasiões</div><div class="mcells">
+        <div class="mc">Almoço e ceia em família · presente para pai, mãe, marido, esposa e filhos</div>
+        <div class="mc">Amigo secreto · noite de queijos e vinhos · confraternização da empresa</div>
+        <div class="mc">Jantar a dois · presente para ele e para ela · look da ceia</div>
+        <div class="mc">Celebração de Natal · gratidão · presente de última hora</div>
+      </div></div>
+      <div class="arrow">↓</div>
+      <div class="mrow"><div class="mlabel">O que vende</div><div class="mcells">
+        <div class="mc"><span class="chip c-p">Presente</span><br>Por pessoa e por faixa: até R$ 150 · até R$ 300 · acima de R$ 300. Embrulho como parte do produto.</div>
+        <div class="mc"><span class="chip c-l">Look</span><br>Um look para cada ocasião, nas duas lojas: confraternização, queijos e vinhos, ceia, celebração e réveillon.</div>
+        <div class="mc"><span class="chip c-p">Presente pra ele</span><br>A ponte entre as lojas: a cliente da Morena compra o presente do marido, do pai e do filho na For Men.</div>
+        <div class="mc"><span class="chip c-p">Kits corporativos</span><br>Presente de fim de ano das empresas da cidade para equipes e clientes.</div>
+      </div></div>
+      <div class="arrow">↓</div>
+      <div class="mrow"><div class="mlabel">Fechamento</div><div class="mcells">
+        <div class="mc"><b>Top 10</b>15 a 19/12. Os melhores clientes retiram um presente com o nome deles na loja.</div>
+        <div class="mc"><b>Réveillon</b>26 a 31/12. O branco da virada e a praia: o último pico do ano.</div>
+      </div></div>
+    </div>
+    <div class="rules" style="margin-top:22px">
+      <div class="rule"><b>Uma ideia, duas lojas</b>Todo encontro tem a versão dela (Morena) e a dele (For Men). Os vídeos-chave saem em collab nos dois perfis.</div>
+      <div class="rule"><b>Val e Dayvid</b>São a cara da campanha: a família, o treino, a fé. É o que nenhuma outra loja da cidade consegue copiar.</div>
+      <div class="rule"><b>Evento Oficina (26/11)</b>Produzido por outra empresa. Na campanha, só repostar o conteúdo deles no perfil da For Men.</div>
+      <div class="rule"><b>Ritmo</b>1 vídeo por dia em cada loja + stories todos os dias. Nos dias de collab, um vídeo só, publicado nos dois perfis.</div>
+    </div>
   </section>
 
-  <div id="steps"></div>
+  <!-- 2 IDENTIDADE -->
+  <section class="sec" id="identidade">
+    <div class="sech"><span class="n">02</span><h2>Identidade visual</h2></div>
+    <p class="lead">Quente, elegante e de verdade. Nada de vermelho e verde de Papai Noel: a campanha é sobre gente, então a luz é de fim de tarde, os tons são de areia e café, e a letra é fina como um convite.</p>
+    <div class="palette">
+      <div class="sw"><div style="background:#F6F1E8"></div><p><b>Off-white</b>#F6F1E8 · fundos</p></div>
+      <div class="sw"><div style="background:#E9DFCF"></div><p><b>Areia</b>#E9DFCF · cartões e telas</p></div>
+      <div class="sw"><div style="background:#A8683A"></div><p><b>Caramelo</b>#A8683A · destaque</p></div>
+      <div class="sw"><div style="background:#3A2A20"></div><p><b>Café</b>#3A2A20 · textos</p></div>
+      <div class="sw"><div style="background:#6B6B4E"></div><p><b>Oliva</b>#6B6B4E · For Men</p></div>
+      <div class="sw"><div style="background:#B89B5E"></div><p><b>Dourado</b>#B89B5E · Top 10</p></div>
+    </div>
+    <div class="typo">
+      <div><small>Título · Cormorant Garamond Light</small><span class="serif" style="font-size:38px;letter-spacing:.3em;font-weight:300">ENCONTROS</span></div>
+      <div><small>Frases · Cormorant Garamond Itálico</small><span class="serif" style="font-size:24px;font-style:italic">Tem encontro que aquece.</span></div>
+      <div><small>Apoio · Montserrat</small><span style="font-family:Montserrat;font-size:13px;letter-spacing:.2em;text-transform:uppercase;font-weight:600">Presente até R$ 150 · Pitanga For Men</span></div>
+    </div>
+    <div class="mocks">
+      <div class="mock"><div class="art" style="background:linear-gradient(180deg,#3A2A20 0%,#5a3d2b 100%);color:#F6F1E8">
+        <div style="display:flex;justify-content:space-between;align-items:center;color:#E9DFCF"><span class="rings"></span><span style="font-size:9px;letter-spacing:.25em">PITANGA</span></div>
+        <div style="text-align:center"><div class="wm" style="font-size:26px">ENCONTROS</div><div class="serif" style="font-style:italic;font-size:17px;margin-top:6px;color:#E9DFCF">com a família</div></div>
+        <div style="text-align:center;font-size:9px;letter-spacing:.25em;color:#E9DFCF">29.11</div></div><span class="cap">Capa do filme e dos reels de marca</span></div>
+      <div class="mock"><div class="art" style="background:#F6F1E8;color:#3A2A20">
+        <div style="font-size:9px;letter-spacing:.25em;color:#A8683A">ENCONTROS · GUIA DE PRESENTES</div>
+        <div><div class="serif" style="font-size:30px;line-height:1.05;font-style:italic">Pra quem é o presente?</div>
+        <div style="margin-top:14px;display:grid;gap:6px;font-size:11px;letter-spacing:.12em;text-transform:uppercase">
+          <div style="border-top:1px solid #d6c9b4;padding-top:6px">Até R$ 150</div><div style="border-top:1px solid #d6c9b4;padding-top:6px">Até R$ 300</div><div style="border-top:1px solid #d6c9b4;padding-top:6px">Acima de R$ 300</div></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;color:#A8683A"><span class="rings"></span><span style="font-size:9px;letter-spacing:.2em">PITANGA MORENA</span></div></div><span class="cap">Story do guia de presentes</span></div>
+      <div class="mock"><div class="art" style="background:#6B6B4E;color:#F6F1E8">
+        <div style="font-size:9px;letter-spacing:.25em;color:#E9DFCF">ENCONTROS · FOR MEN</div>
+        <div><div class="serif" style="font-size:28px;line-height:1.05;font-style:italic">O presente dele está aqui.</div><div style="margin-top:10px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#E9DFCF">Lacoste · Reserva · Oficina · Tommy</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span class="rings"></span><span style="font-size:9px;letter-spacing:.2em">PITANGA FOR MEN</span></div></div><span class="cap">"Presente pra ele" (collab com a Morena)</span></div>
+      <div class="mock"><div class="art sq" style="background:#1c1712;color:#E9DFCF;border:1px solid #B89B5E">
+        <div style="display:flex;justify-content:space-between;align-items:center;color:#B89B5E"><span class="rings"></span><span style="font-size:9px;letter-spacing:.25em">TOP 10 · 2026</span></div>
+        <div style="text-align:center"><div class="serif" style="font-size:15px;font-style:italic;color:#B89B5E">Para</div><div class="wm" style="font-size:22px;margin:4px 0">[NOME]</div><div class="serif" style="font-size:14px;font-style:italic">obrigada por fazer parte da nossa história</div></div>
+        <div style="text-align:center;font-size:9px;letter-spacing:.25em;color:#B89B5E">PITANGA</div></div><span class="cap">Cartão do Top 10 (dourado)</span></div>
+    </div>
+    <div class="rules2">
+      <div><b>Luz e câmera</b>Luz natural ou de fim de tarde, câmera na mão, gente de verdade. Mãos, abraços e detalhes valem mais que pose.</div>
+      <div><b>Texto na tela</b>Tarja areia no topo com letra café. Frase curta, em itálico serifado nos vídeos de marca e em Montserrat nos de produto e preço.</div>
+      <div><b>Na loja</b>Painel ENCONTROS (fundo areia, letreiro fino) para foto, fita caramelo nos embrulhos e tag com os dois anéis.</div>
+      <div><b>Sem</b>Gorro de Papai Noel, vermelho e verde, letras pesadas, filtro frio, montagem com muito texto.</div>
+    </div>
+  </section>
 
-  <section class="top10" id="top10">
-    <div class="kicker">Comunidade das lojas</div>
+  <!-- 3 VENDER -->
+  <section class="sec" id="vender">
+    <div class="sech"><span class="n">03</span><h2>O que vender em cada ocasião</h2></div>
+    <p class="lead">A equipe abre todo atendimento com <b>"pra quem é o presente?"</b> ou <b>"pra qual ocasião é o look?"</b>. Este quadro é o que mostrar em cada resposta, e é o mesmo que aparece nos vídeos.</p>
+    <div class="sell">
+      <div class="sellc"><h3>Pitanga Morena</h3><span class="chip c-p">Presentes</span><span class="chip c-l">Looks</span>
+        <table>
+          <tr><td>Para a mãe e a sogra</td><td>Peça-coringa (camisa de linho, vestido leve) + embrulho</td></tr>
+          <tr><td>Para a amiga</td><td>Acessórios, moda praia, peças até R$ 150</td></tr>
+          <tr><td>Amigo secreto</td><td>Faixas fechadas: até R$ 100 · até R$ 200 · até R$ 300</td></tr>
+          <tr><td>Para ele</td><td>Encaminha para a For Men (vale-presente ou visita)</td></tr>
+          <tr><td>Look confraternização</td><td>Conjunto ou vestido midi + sandália</td></tr>
+          <tr><td>Look queijos e vinhos</td><td>Pantalona + blusa leve (as linhas âncora da loja)</td></tr>
+          <tr><td>Look da ceia</td><td>Vestido em tom areia, caramelo ou branco</td></tr>
+          <tr><td>Réveillon</td><td>Branco + biquíni e saída de praia</td></tr>
+        </table></div>
+      <div class="sellc"><h3>Pitanga For Men</h3><span class="chip c-p">Presentes</span><span class="chip c-l">Looks</span>
+        <table>
+          <tr><td>Para o pai</td><td>Polo premium (Lacoste, Reserva) + embrulho</td></tr>
+          <tr><td>Para o marido</td><td>Camisa de linho ou Oficina, por faixa de preço</td></tr>
+          <tr><td>Para o filho</td><td>Camiseta e bermuda Reserva</td></tr>
+          <tr><td>Amigo secreto</td><td>Faixas fechadas: até R$ 100 · até R$ 200</td></tr>
+          <tr><td>Kits corporativos</td><td>2 ou 3 kits fechados para empresas</td></tr>
+          <tr><td>Look confraternização</td><td>Polo ou camisa + chino</td></tr>
+          <tr><td>Look da ceia</td><td>Alfaiataria leve ou linho</td></tr>
+          <tr><td>Réveillon</td><td>Linho branco + bermuda</td></tr>
+        </table></div>
+    </div>
+  </section>
+
+  <!-- 4 CALENDARIO -->
+  <section class="sec" id="calendario">
+    <div class="sech"><span class="n">04</span><h2>Calendário de vídeos</h2></div>
+    <p class="lead">Um vídeo por dia em cada loja. As linhas marcadas como collab são um vídeo só, publicado nos dois perfis. O nome em negrito leva ao roteiro da seção 5, quando existe.</p>
+    <div class="legend"><span><span class="chip c-p">Presente</span>vende presente</span><span><span class="chip c-l">Look</span>vende look da ocasião</span><span><span class="chip c-m">Marca</span>conecta e faz lembrar</span><span><span class="chip c-u">Urgência</span>puxa para a loja agora</span><span><span class="star">★</span> collab nos dois perfis</span></div>
+    <div id="cal"></div>
+  </section>
+
+  <!-- 5 ROTEIROS -->
+  <section class="sec" id="roteiros">
+    <div class="sech"><span class="n">05</span><h2>Roteiros dos vídeos-chave</h2></div>
+    <p class="lead">Os vídeos que seguram a campanha, com duas opções cada. Os outros dias do calendário repetem estes formatos com outras peças e ocasiões.</p>
+    <nav class="timeline" id="timeline"></nav>
+    <div id="steps"></div>
+  </section>
+<section class="top10 sec" id="top10">
+    <div class="sech" style="border:0;margin:0 0 6px"><span class="n">06</span><h2 style="font-size:14px;letter-spacing:.2em;color:var(--muted)">Comunidade das lojas</h2></div>
     <h2>Encontro <span>Top 10</span></h2>
     <p class="logic" style="max-width:820px">Os 10 melhores clientes de cada loja recebem um presente personalizado de fim de ano, e só podem retirar <b>na loja, pessoalmente</b>. É o encontro da campanha que vira relacionamento. Na Morena, é o reconhecimento de quem constrói a loja há anos. Na For Men, que acabou de fazer 1 ano, são os <b>10 fundadores</b>: os primeiros homens que acreditaram na loja.</p>
     <div class="tgrid">
@@ -146,6 +338,11 @@
     </div>
     <label class="done"><input type="checkbox" data-k="step-top10"> Top 10 entregue</label>
   </section>
+  <section class="prep sec" id="preparo">
+    <h2>07 · Preparo · até 28/11</h2>
+    <div class="sub" style="font-size:13px">Sem isso pronto, a campanha atrasa no meio de dezembro.</div>
+    <ul id="prep"></ul>
+  </section>
 
   <footer>Por Camilla Ribeiro · Método Loja Magnética</footer>
 </div>
@@ -153,266 +350,289 @@
 const I = s => ({img:'refs/'+s+'.jpg'});
 const IG = c => 'https://www.instagram.com/p/'+c+'/';
 
+/* ---------- CALENDÁRIO ---------- */
+const weeks = [
+ {t:'Aquecimento', d:'23 a 28/11 · a Black acabou, o assunto agora é presente', days:[
+  ['23/11','Seg',['l','Look que vai da confraternização à ceia'],['l','4 propostas de linho para dezembro','look']],
+  ['24/11','Ter',['p','Chegaram os presentes de Natal: a primeira seleção'],['p','Presente pra ele que não erra','presente']],
+  ['25/11','Qua',['m','Bastidor desfocado: "estamos gravando algo"'],['l','O look da confraternização: polo ou camisa?','look']],
+  ['26/11','Qui',['p','Presente até R$ 150','presente'],['m','Evento Oficina: repostar o conteúdo da agência']],
+  ['27/11','Sex','★',['m','Teaser: "Quando foi o último encontro que você não esqueceu?"','teaser']],
+  ['28/11','Sáb','★',['m','Teaser: "ENCONTROS · 29.11"','teaser']]
+ ]},
+ {t:'A estreia', d:'29 e 30/11', days:[
+  ['29/11','Dom','★',['m','O FILME ENCONTROS (domingo à noite)','filme']],
+  ['30/11','Seg',['m','Versão "Entre…" (20 s) do filme','filme'],['p','Presente pra ele por faixa de preço','presente']]
+ ]},
+ {t:'Encontro com a família', d:'30/11 a 06/12', days:[
+  ['01/12','Ter',['p','Pra quem é o presente? A família toda','presente'],['p','Pra quem é o presente? Pai, marido e filho','presente']],
+  ['02/12','Qua',['l','Look do almoço de família','look'],['l','2 propostas para a ceia em família: qual você usaria?','look']],
+  ['03/12','Qui','★',['p','Ela escolhe o presente dele (Morena + For Men)','ela-ele']],
+  ['04/12','Sex','★',['m','A família Pitanga escolhe os presentes','familia']],
+  ['05/12','Sáb',['p','O embrulho: como sai um presente da Pitanga'],['p','Presente para o pai que tem tudo','presente']],
+  ['06/12','Dom',['l','Domingo em família: look leve','look'],['l','Look de domingo com a família','look']]
+ ]},
+ {t:'Encontro com os amigos', d:'07 a 13/12', days:[
+  ['07/12','Seg',['p','Minha amiga secreta é…','amigos'],['p','Meu amigo secreto é…','amigos']],
+  ['08/12','Ter',['l','Noite de queijos e vinhos: o look','amigos'],['l','Queijos e vinhos: 2 propostas','look']],
+  ['09/12','Qua',['p','Amigo secreto até R$ 100, 200 e 300','presente'],['p','Amigo secreto até R$ 100 e 200','presente']],
+  ['10/12','Qui','★',['p','Kits corporativos: o presente da empresa']],
+  ['11/12','Sex',['l','Look da confraternização da empresa','look'],['l','Confraternização da firma sem errar','look']],
+  ['12/12','Sáb',['p','Cliente real: "pra quem é o presente?"'],['p','Cliente real: "pra quem é?"']],
+  ['13/12','Dom',['l','Look para a celebração de domingo','look'],['l','Look de domingo para a celebração','look']]
+ ]},
+ {t:'Encontro a dois + Top 10', d:'14 a 20/12', days:[
+  ['14/12','Seg','★',['l','Do treino para a ceia: Val e Dayvid','a-dois']],
+  ['15/12','Ter','★',['p','O que dar para ele? O que dar para ela?','ela-ele']],
+  ['16/12','Qua',['l','Look da ceia: 3 propostas','look'],['l','Look da ceia: alfaiataria leve ou linho?','look']],
+  ['17/12','Qui',['m','Top 10: bastidor das caixas (sem rostos)'],['m','Os 10 fundadores: bastidor da gravação']],
+  ['18/12','Sex',['u','Horário estendido até dia 24'],['p','Presente pra ele até R$ 200','presente']],
+  ['19/12','Sáb',['p','Embrulho: a loja cheia de sacolas'],['l','O que vestir nas festas','look']],
+  ['20/12','Dom','★',['m','Top 10 Pitanga 2026: a retirada','a-dois']]
+ ]},
+ {t:'Reta final + fé', d:'21 a 25/12', days:[
+  ['21/12','Seg',['u','Ainda dá tempo: presentes prontos para levar','natal'],['u','Esqueceu dele? Ainda dá tempo','natal']],
+  ['22/12','Ter',['p','Presente de última hora até R$ 150','presente'],['p','Presente de última hora até R$ 150','presente']],
+  ['23/12','Qua','★',['u','Loja cheia, embrulho por nossa conta','natal']],
+  ['24/12','Qui','★',['m','Encontro com Deus (Val)','natal']],
+  ['25/12','Sex','★',['m','Feliz Natal da família Pitanga (stories)']]
+ ]},
+ {t:'Encontro com o novo', d:'26 a 31/12', days:[
+  ['26/12','Sáb',['l','O branco da virada','reveillon'],['l','Linho branco para a virada','reveillon']],
+  ['27/12','Dom',['l','Réveillon na praia: biquíni + saída','reveillon'],['l','Bermuda e linho: a virada na praia','reveillon']],
+  ['28/12','Seg',['l','3 looks brancos: qual é o seu?','look'],['l','2 propostas para a virada','look']],
+  ['29/12','Ter',['m','Trocas de Natal: chega que a gente ajuda'],['m','Trocas de Natal na For Men']],
+  ['30/12','Qua',['u','Último dia para garantir o look da virada'],['u','Último dia para o linho da virada']],
+  ['31/12','Qui','★',['m','O que você leva para 2027','reveillon']]
+ ]}
+];
+const tag={p:['c-p','Presente'],l:['c-l','Look'],m:['c-m','Marca'],u:['c-u','Urgência']};
+const cell=e=>`<span class="chip ${tag[e[0]][0]}">${tag[e[0]][1]}</span> ${e[2]?`<a href="#${e[2]}" style="color:var(--txt)"><b>${e[1]}</b></a>`:e[1]}`;
+document.getElementById('cal').innerHTML = weeks.map(w=>`
+<div class="week"><h3>${w.t} · <span>${w.d}</span></h3>
+<table class="cal"><tr><th>Dia</th><th>Pitanga Morena</th><th>Pitanga For Men</th></tr>
+${w.days.map(r=> r[2]==='★'
+  ? `<tr><td class="d">${r[0]}<small>${r[1]}</small></td><td class="collab" colspan="2"><span class="star">★ collab</span> &nbsp;${cell(r[3])}</td></tr>`
+  : `<tr><td class="d">${r[0]}<small>${r[1]}</small></td><td>${cell(r[2])}<div class="men"><span style="font-size:10px;letter-spacing:.14em;color:var(--muted)">FOR MEN · </span>${cell(r[3])}</div></td><td>${cell(r[3])}</td></tr>`).join('')}
+</table></div>`).join('');
+
+/* ---------- PREPARO ---------- */
 const prep = [
   'Fechar as listas do Top 10 (10 da Morena + 10 da For Men)',
-  'Lista de convidados do evento Oficina: clientes homens, empresários, profissionais liberais e parceiros da cidade',
-  'Agendar a gravação do filme ENCONTROS (família, amigos, treino, fé) até 27/11',
-  'Painel ou cantinho de foto ENCONTROS nas duas lojas',
-  'Embrulho de fim de ano e embrulho exclusivo do Top 10',
-  'Guia de presentes por faixa de preço nas duas lojas (até R$ 150 · até R$ 300 · acima de R$ 300)',
-  'Kits corporativos prontos para confraternização de empresa (2 ou 3 opções fechadas)',
-  'Lista de empresas da cidade para oferecer os kits (começar pelos convidados do evento)',
+  'Gravar o filme ENCONTROS (família, amigos, treino, fé) até 27/11',
+  'Painel ENCONTROS para foto nas duas lojas',
+  'Embrulho de fim de ano (fita caramelo + tag dos dois anéis) e embrulho dourado do Top 10',
+  'Guia de presentes por faixa nas duas lojas: até R$ 150 · até R$ 300 · acima de R$ 300',
+  'Separar as peças-herói de cada ocasião (seção 3) e deixar à mão para gravar',
+  'Kits corporativos prontos (2 ou 3 opções fechadas) e lista de empresas da cidade',
+  'Vale-presente da For Men disponível também no caixa da Morena',
   'Horário estendido de 15 a 24/12 combinado com a equipe',
-  'Equipe com o roteiro de abordagem "pra quem é o presente?"'
+  'Equipe treinada para abrir o atendimento com "pra quem é o presente?"'
 ];
+const esc = s => s.replace(/\[([^\]]+)\]/g,'<span class="blank">[$1]</span>');
+document.getElementById('prep').innerHTML = prep.map((p,i)=>`<li><label><input type="checkbox" data-k="prep-${i}"> <span>${esc(p)}</span></label></li>`).join('');
 
+/* ---------- ROTEIROS ---------- */
 const steps = [
 {
-  phase:'Fase 1 · <b>Encontro de negócios</b>',
-  id:'convite', dia:'22–25/11', sem:'Sáb–Ter', fase:'Convite', hora:'1 post por dia',
-  titulo:'Convite do evento Oficina',
-  logica:'<b>Por que agora:</b> a Black termina no dia 21, e o próximo assunto das lojas já precisa estar no ar. O evento é o primeiro encontro da campanha e a grande chance da For Men ser apresentada aos homens que movimentam a cidade.',
-  opts:[
-    {nome:'Dayvid convida', loja:'For Men', m:null,
-     cena:'Dayvid abrindo as caixas da Oficina na loja, tirando as peças, vestindo uma camisa no provador. Fecha olhando para a câmera, com o convite na mão.',
-     tela:'26.11 · Pitanga For Men · Lançamento Oficina',
-     fala:['"Chegou a Oficina na Pitanga For Men."','"E a gente não vai só colocar na arara: dia 26 tem lançamento, com convidados, boa conversa e network."','"Se você recebeu o convite, te espero aqui."'],
-     leg:'Dia 26 a Oficina chega oficialmente à Pitanga For Men. Uma noite de lançamento, boa conversa e network. 🤎 📍 [endereço]'},
-    {nome:'O convite chegando', loja:'For Men', m:null,
-     cena:'Close de mãos abrindo um convite impresso de papel encorpado: "Você está convidado". Corta para a vitrine da For Men à noite, iluminada. 8 a 10 s, sem fala.',
-     tela:'Alguns homens da cidade receberam este convite.',
-     fala:['Sem fala. Música instrumental elegante.'],
-     leg:'Alguns convites já foram entregues. Dia 26, Pitanga For Men. 🤎'}
-  ],
-  extras:[
-    ['Convite pelo WhatsApp (individual)','Oi, [nome]! Aqui é o Dayvid, da Pitanga For Men. Dia 26, às [hora], vamos lançar a Oficina na loja, com uma noite para receber clientes e amigos: boa conversa, network e [bebida/petisco]. Queria muito você aqui. Posso confirmar seu nome?'],
-    ['Bastidor (não postar)','Fechar as listas do Top 10 nesta semana.']
-  ]
-},
-{
-  id:'evento', dia:'26/11', sem:'Qui', fase:'Evento', hora:'Noite do evento',
-  titulo:'Lançamento Oficina + network',
-  logica:'<b>Por que agora:</b> cada homem que vem ao evento sai conhecendo a loja, e os amigos dele veem nos stories. É o maior empurrão de reconhecimento que a For Men vai ter no ano. O destaque do evento vai ao ar na manhã do dia 27.',
-  opts:[
-    {nome:'Destaque do evento', loja:'For Men', m:I('evento-tommy'), ref:['Evento Tommy Hilfiger',IG('DZtHeOiJYDS')],
-     cena:'Cenas curtas de 1 a 2 s: detalhe da vitrine, peças Oficina, brinde, aperto de mão, gente rindo, Dayvid falando para o grupo. Termina na fachada iluminada. Postar no dia 27 de manhã.',
-     tela:'Lançamento Oficina · Pitanga For Men · 26.11',
-     fala:['Sem fala. Música em alta, ritmo de cortes secos.'],
-     leg:'Obrigado a cada um que veio celebrar a chegada da Oficina com a gente. 🤎 Isso foi só o começo. 📍 [endereço]'},
-    {nome:'Quem veio', loja:'For Men', m:null,
-     cena:'Retrato de 2 s de cada convidado, sorrindo para a câmera, com nome e profissão na tela. 10 a 12 rostos. Só com quem autorizou.',
-     tela:'Quem esteve no lançamento da Oficina',
-     fala:['Sem fala.'],
-     leg:'Uma noite com gente que faz a cidade acontecer. Obrigado pela presença. 🤎'}
-  ],
-  extras:[
-    ['Stories ao vivo','Chegada dos convidados · Dayvid apresentando a Oficina · provador · brinde · marcar quem autorizou (cada marcação leva a loja para o perfil dele).'],
-    ['No dia seguinte (27/11)','Mensagem de agradecimento individual + oferta exclusiva Oficina para quem veio, válida até 30/11.']
-  ]
-},
-{
-  phase:'Fase 2 · <b>A estreia</b>',
   id:'teaser', dia:'27–28/11', sem:'Sex–Sáb', fase:'Teaser', hora:'Horário de pico',
   titulo:'Algo está chegando',
   logica:'<b>Por que agora:</b> o filme estreia no domingo. Dois dias de antecipação fazem as pessoas esperarem por ele, em vez de passarem direto.',
   opts:[
-    {nome:'A pergunta', loja:'As duas', m:I('bomcharme-celebre'), ref:['Bom Charme · Celebre',IG('DfTJnBZhkCg')],
+    {nome:'A pergunta', loja:'Collab', m:I('bomcharme-celebre'), ref:['Bom Charme · Celebre',IG('DfTJnBZhkCg')],
      cena:'Imagens desfocadas e quentes: mãos se encontrando numa mesa, um abraço, uma taça, uma Bíblia aberta. A frase entra palavra por palavra. 8 a 10 s.',
-     tela:'Quando foi o último encontro que você não esqueceu?',
-     fala:['Sem fala. Piano suave.'],
+     tela:'Quando foi o último encontro que você não esqueceu?', fala:['Sem fala. Piano suave.'],
      leg:'Quando foi o último encontro que você não esqueceu? Domingo, 29, a gente te conta uma história. 🤍'},
-    {nome:'O título', loja:'As duas', m:I('reforma-segredo'), ref:['Loja Reforma · série de Natal',IG('DfQVI6UxeGJ')],
-     cena:'Tela preta. A palavra ENCONTROS aparece devagar, em letra fina. Depois "29.11" e as duas logos Pitanga lado a lado.',
-     tela:'ENCONTROS · 29.11',
-     fala:['Sem fala.'],
+    {nome:'O título', loja:'Collab', m:I('reforma-segredo'), ref:['Loja Reforma · série de Natal',IG('DfQVI6UxeGJ')],
+     cena:'Tela café. A palavra ENCONTROS aparece devagar, em letra fina. Depois "29.11" e as duas logos Pitanga lado a lado.',
+     tela:'ENCONTROS · 29.11', fala:['Sem fala.'],
      leg:'ENCONTROS. Domingo, 29. Pitanga Morena e Pitanga For Men. 🤍'}
   ],
-  extras:[
-    ['Stories','Contagem regressiva para 29/11 · bastidor desfocado da gravação do filme · caixinha "qual encontro você espera o ano inteiro?".']
-  ]
+  extras:[['Stories','Contagem regressiva para 29/11 · bastidor desfocado da gravação · caixinha "qual encontro você espera o ano inteiro?".']]
 },
 {
-  id:'lancamento', dia:'29/11', sem:'Dom', fase:'Lançamento', hora:'Domingo à noite (pico)',
+  id:'filme', dia:'29/11', sem:'Dom', fase:'O filme', hora:'Domingo à noite (pico)',
   titulo:'O filme ENCONTROS',
-  logica:'<b>Por que agora:</b> domingo à noite é família em casa e celular na mão. O filme não vende peça: apresenta a ideia que vai guiar dezembro inteiro, e cada encontro do filme vira uma semana da campanha.',
+  logica:'<b>Por que agora:</b> domingo à noite é família em casa e celular na mão. O filme não vende peça: apresenta a ideia que guia dezembro, e cada encontro dele vira uma semana da campanha.',
   film:[
     ['0–5 s','Abertura','Celular na mesa vibrando, ninguém olha. Uma mão vira o celular para baixo.','"A gente vive conectado com todo mundo…"'],
     ['5–15 s','Família','Val, Dayvid e os dois filhos à mesa: risada, criança no colo, mãos dadas na oração.','"…e às vezes esquece de estar perto de quem importa."'],
     ['15–25 s','Amigos','Noite de queijos e vinhos com amigos. Amigo secreto: alguém abre o presente e todo mundo vibra.','"Tem encontro que aquece."'],
-    ['25–35 s','A dois','Dayvid treinando a Val (ela correndo, ele contando as séries). Corta para os dois arrumados, saindo para jantar.','"Tem encontro que fortalece."'],
-    ['35–45 s','Fé','Val sozinha, luz da manhã, Bíblia aberta, olhos fechados. Depois, a família entrando na igreja.','"E tem o encontro que sustenta todos os outros."'],
+    ['25–35 s','A dois','Dayvid treinando a Val. Corta para os dois arrumados, saindo para jantar.','"Tem encontro que fortalece."'],
+    ['35–45 s','Fé','Val sozinha, luz da manhã, Bíblia aberta. Depois a família entrando na igreja.','"E tem o encontro que sustenta todos os outros."'],
     ['45–55 s','Presente','Mãos entregando uma sacola Pitanga, um abraço apertado, alguém lendo um cartão e se emocionando.','"Neste fim de ano, esteja presente. E diga com um presente o quanto alguém é importante para você."'],
-    ['55–60 s','Assinatura','As duas logos lado a lado sobre fundo quente.','ENCONTROS · Pitanga Morena · Pitanga For Men']
+    ['55–60 s','Assinatura','As duas logos lado a lado sobre fundo areia.','ENCONTROS · Pitanga Morena · Pitanga For Men']
   ],
   opts:[
-    {nome:'Filme completo (60 s)', loja:'As duas', m:I('john-lewis'), ref:['John Lewis · filme de Natal',IG('DflD9QAR_Gk')],
-     cena:'O roteiro da tabela acima, com narração da Val. Postado em collab nos dois perfis, para chegar às duas bases de uma vez. Fixar no topo dos dois perfis.',
-     tela:'ENCONTROS',
-     fala:['Narração da Val (texto da tabela).'],
+    {nome:'Filme completo (60 s)', loja:'Collab', m:I('john-lewis'), ref:['John Lewis · filme de Natal',IG('DflD9QAR_Gk')],
+     cena:'O roteiro da tabela, com narração da Val. Publicado em collab nos dois perfis e fixado no topo dos dois.',
+     tela:'ENCONTROS', fala:['Narração da Val (texto da tabela).'],
      leg:'Num tempo em que estamos tão conectados e tão distantes, a gente escolheu falar de presença. 🤍 ENCONTROS: a campanha de fim de ano da Pitanga Morena e da Pitanga For Men.'},
-    {nome:'Versão "Entre…" (20 s)', loja:'As duas', m:I('nv-entre-lacos'), ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
-     cena:'Cortes de 3 s com as mesmas imagens do filme. Em cada corte a palavra muda: ENCONTRO · com a família / com os amigos / a dois / com Deus. Postar no dia 30 para quem não viu o filme inteiro.',
-     tela:'ENCONTRO · com a família (muda a cada corte)',
-     fala:['Sem fala. A música do filme.'],
+    {nome:'Versão "Entre…" (20 s)', loja:'Morena (dia 30)', m:I('nv-entre-lacos'), ref:['NV · Entre Laços',IG('DDcGCxhOIjd')],
+     cena:'Cortes de 3 s com as imagens do filme. A palavra muda a cada corte: ENCONTRO · com a família / com os amigos / a dois / com Deus.',
+     tela:'ENCONTRO · com a família (muda a cada corte)', fala:['Sem fala. A música do filme.'],
      leg:'Qual desses encontros é o seu? 🤍 ENCONTROS · Pitanga.'}
   ],
-  extras:[
-    ['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Hoje a gente estreou a nossa campanha de fim de ano, ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho e queria que você visse: [link]. Em dezembro, a loja está preparada para te ajudar a presentear cada pessoa especial. 🤍'],
-    ['Loja','Painel ENCONTROS montado nas duas lojas a partir do dia 29.']
-  ]
+  extras:[['WhatsApp · base das duas lojas, domingo à noite','Oi, [nome]! Hoje a gente estreou a nossa campanha de fim de ano, ENCONTROS. É sobre estar perto de quem importa. Fizemos com muito carinho: [link]. Em dezembro, as duas lojas estão preparadas para te ajudar a presentear cada pessoa especial. 🤍']]
 },
 {
-  phase:'Fase 3 · <b>Um encontro por semana</b>',
-  id:'familia', dia:'30/11–06/12', sem:'Semana 1', fase:'Família', hora:'2 posts por dia',
-  titulo:'Encontro com a família',
-  logica:'<b>Por que agora:</b> começo de dezembro é quando as pessoas fazem a lista de presentes. Ajudar a resolver "o que dar para cada um" coloca a Pitanga no começo dessa lista.',
+  id:'presente', dia:'Toda semana', sem:'Formato fixo', fase:'Presente', hora:'2 a 3 vezes por semana',
+  titulo:'Formato: pra quem é o presente?',
+  logica:'<b>Por que este formato:</b> resolve a maior dúvida de dezembro. Quem assiste sai sabendo o que comprar e quanto vai gastar, e a loja vira o atalho da lista de presentes.',
   opts:[
-    {nome:'Pra quem é o presente?', loja:'As duas', m:null,
-     cena:'Uma vendedora monta, na frente da câmera, um presente para cada pessoa da família: pai, mãe, marido, esposa, filho. 4 s em cada, com o preço na tela. Uma versão por loja.',
-     tela:'Presente para a família toda, sem errar',
-     fala:['"Pro seu pai: …"','"Pra sua mãe: …"','"Pro seu marido: …" (e assim por diante)'],
+    {nome:'Um presente para cada pessoa', loja:'As duas', m:null,
+     cena:'Uma vendedora monta, na frente da câmera, um presente para cada pessoa: pai, mãe, marido, esposa, filho. 4 s em cada, com o preço na tela e o embrulho fechando no fim.',
+     tela:'Pra quem é o presente?', fala:['"Pro seu pai: …"','"Pra sua mãe: …"','"Pro seu marido: …"'],
      leg:'Presente para a família toda, num lugar só. Qual desses é o seu? 📍 [endereço]'},
-    {nome:'A família Pitanga escolhe', loja:'As duas', m:I('gant-holiday'), ref:['GANT · Holiday',IG('DS24X_eASf-')],
-     cena:'Val, Dayvid e os filhos na loja, cada um escolhendo em segredo o presente de outro. No fim, a troca dos presentes e o abraço.',
-     tela:'Na nossa família, cada um escolheu o presente do outro',
-     fala:['"Aqui em casa a regra é: cada um escolhe o presente de alguém."','"E o meu é para…" (cada um fala para quem escolheu)'],
-     leg:'Cada um escolheu o presente de alguém da família. 🤍 Que tal fazer isso na sua também?'}
+    {nome:'Presente até R$ ___', loja:'As duas', m:null,
+     cena:'Mãos colocando sobre o balcão as peças de uma faixa de preço, uma por corte, com o valor na tela. Termina com a sacola fechada.',
+     tela:'Presente até R$ 150 (ou 300, ou acima de 300)', fala:['"Separei os presentes até R$ 150 que mais saem."'],
+     leg:'Presente até R$ 150, sem errar. Me chama que eu separo para você. 📍 [endereço]'}
   ],
-  extras:[
-    ['Stories','Guia de presentes por faixa de preço (até R$ 150 · até R$ 300 · acima de R$ 300), um story por faixa, nas duas lojas.'],
-    ['WhatsApp · base das duas lojas','Oi, [nome]! Já começou a lista de presentes? Separamos ideias para cada pessoa da família, por faixa de preço. Me fala para quem você precisa presentear que eu te mando opções. 🤍']
-  ]
+  extras:[['Stories (todos os dias)','Um story por faixa de preço · enquete "pra quem falta comprar?" · caixinha "me fala pra quem é que eu te indico".']]
 },
 {
-  id:'amigos', dia:'07–13/12', sem:'Semana 2', fase:'Amigos', hora:'2 posts por dia',
+  id:'ela-ele', dia:'03/12 e 15/12', sem:'Collab', fase:'Ela → ele', hora:'Horário de pico',
+  titulo:'Ela escolhe o presente dele',
+  logica:'<b>Por que este formato:</b> é o atalho para a For Men ser conhecida. A cliente da Morena já confia na loja; quando ela descobre que o presente do marido, do pai e do filho está na loja do lado, a For Men ganha a base inteira da Morena.',
+  opts:[
+    {nome:'Ela compra, ele ganha', loja:'Collab', m:I('gant-holiday'), ref:['GANT · Holiday',IG('DS24X_eASf-')],
+     cena:'Uma cliente (ou a Val) sai da Morena com a sacola dela e entra na For Men. Escolhe o presente do marido com a ajuda do vendedor. Corte final: ele abrindo em casa.',
+     tela:'O presente dele está na loja do lado', fala:['"Comprei o meu na Morena e o dele na For Men. Resolvi tudo de uma vez."'],
+     leg:'O seu presente na Pitanga Morena, o dele na Pitanga For Men. 🤍 Uma ida, a lista inteira resolvida.'},
+    {nome:'O que dar para ele? O que dar para ela?', loja:'Collab', m:null,
+     cena:'Tela dividida. De um lado, a vendedora da Morena mostra 3 presentes para ela; do outro, o vendedor da For Men mostra 3 para ele. Fecham juntos na porta das duas lojas.',
+     tela:'O que dar para ela? · O que dar para ele?', fala:['Morena: "Pra ela: …"','For Men: "Pra ele: …"'],
+     leg:'Presente para ela e para ele, nas duas Pitangas. Salva para não esquecer. 📍 [endereço]'}
+  ],
+  extras:[['Na loja','Vale-presente da For Men disponível no caixa da Morena, e a equipe da Morena pergunta sempre: "e o presente dele, já comprou?".']]
+},
+{
+  id:'look', dia:'Toda semana', sem:'Formato fixo', fase:'Look', hora:'2 a 3 vezes por semana',
+  titulo:'Formato: o look da ocasião',
+  logica:'<b>Por que este formato:</b> dezembro é uma agenda de ocasiões. Cada ocasião (confraternização, queijos e vinhos, ceia, celebração, réveillon) é um motivo novo para comprar um look, e é a ocasião que dá nome ao vídeo.',
+  opts:[
+    {nome:'POV: a ocasião', loja:'As duas', m:null,
+     cena:'A cena da ocasião (mesa posta, taça, praia ao fim da tarde). A pessoa entra com o look completo, gira, close nos detalhes. Preço na tela. 10 a 15 s.',
+     tela:'POV: o look da [ocasião]', fala:['Sem fala, ou: "Vai ter [ocasião] essa semana? Esse é o look."'],
+     leg:'O look da [ocasião] já está aqui. Vem montar o seu. 📍 [endereço]'},
+    {nome:'2 propostas: qual você usaria?', loja:'For Men (e Morena)', m:null,
+     cena:'O mesmo formato que a For Men já usa ("quatro propostas"): duas produções completas para a mesma ocasião, lado a lado, com as peças descritas na tela.',
+     tela:'Ceia em família: 1 ou 2?', fala:['"Duas propostas para a ceia. Qual você usaria?"'],
+     leg:'Ceia em família: proposta 1 ou 2? Comenta o número. As peças estão na loja.'}
+  ],
+  extras:[]
+},
+{
+  id:'familia', dia:'04/12', sem:'Collab', fase:'Família', hora:'Horário de pico',
+  titulo:'A família Pitanga escolhe',
+  logica:'<b>Por que agora:</b> é o encontro da semana 1 com a cara deles. Ninguém na cidade tem uma família como a da Val e do Dayvid à frente da loja.',
+  opts:[
+    {nome:'Cada um escolhe o presente do outro', loja:'Collab', m:I('gant-holiday'), ref:['GANT · Holiday',IG('DS24X_eASf-')],
+     cena:'Val, Dayvid e os filhos na loja, cada um escolhendo em segredo o presente de outro. No fim, a troca dos presentes e o abraço.',
+     tela:'Na nossa família, cada um escolheu o presente do outro', fala:['"Aqui em casa a regra é: cada um escolhe o presente de alguém."','"E o meu é para…"'],
+     leg:'Cada um escolheu o presente de alguém da família. 🤍 Que tal fazer isso na sua também?'},
+    {nome:'O amigo secreto da família', loja:'Collab', m:I('amigo-secreto'), ref:['Dezzy · amiga secreta',IG('DfX8I2Cvk6H')],
+     cena:'A família sorteia o amigo secreto em casa. Cada um vai à loja escolher o seu, escondido dos outros. Termina na revelação.',
+     tela:'O amigo secreto da família Pitanga', fala:['"Esse ano o amigo secreto da família vai ser na Pitanga."'],
+     leg:'O amigo secreto da família este ano saiu da Pitanga. 🤍 Já sorteou o da sua?'}
+  ],
+  extras:[]
+},
+{
+  id:'amigos', dia:'07–13/12', sem:'Semana 2', fase:'Amigos', hora:'Horário de pico',
   titulo:'Encontro com os amigos',
   logica:'<b>Por que agora:</b> é a semana das confraternizações e do amigo secreto. Cada amigo secreto é uma compra com valor definido, e cada confraternização pede um look novo.',
   opts:[
     {nome:'Meu amigo secreto é…', loja:'As duas', m:I('amigo-secreto'), ref:['Dezzy · amiga secreta',IG('DfX8I2Cvk6H')],
-     cena:'Mãos segurando uma pilha de caixinhas. A cada corte sai uma caixa e aparece o presente ideal para um tipo de amigo, com o preço. Versão Morena: "minha amiga secreta é…". Versão For Men: "meu amigo secreto é…".',
-     tela:'Minha amiga secreta é… / Meu amigo secreto é…',
-     fala:['"…a que vive na academia: …"','"…a que ama praia: …"','"…o que não tira a camisa polo: …"'],
+     cena:'Mãos segurando uma pilha de caixinhas. A cada corte sai uma caixa e aparece o presente para um tipo de amigo, com o preço. Morena: "minha amiga secreta é…". For Men: "meu amigo secreto é…".',
+     tela:'Minha amiga secreta é… / Meu amigo secreto é…', fala:['"…a que vive na academia: …"','"…a que ama praia: …"','"…o que não tira a polo: …"'],
      leg:'Amigo secreto até R$ [valor]? Resolvido. Qual desses é o seu? 📍 [endereço]'},
     {nome:'Noite de queijos e vinhos', loja:'As duas', m:null,
-     cena:'Um grupo de amigos chegando para uma noite de queijos e vinhos. Cada pessoa entra com o look da loja, e o preço aparece no corte. Termina com o brinde.',
-     tela:'O look da confraternização',
-     fala:['Sem fala. Ou: "Vai ter confraternização essa semana? Esse é o look."'],
-     leg:'Confraternização com os amigos pede look novo. 🍷 Vem montar o seu.'}
+     cena:'Amigos chegando para uma noite de queijos e vinhos. Cada pessoa entra com um look da loja, com o preço no corte. Termina no brinde.',
+     tela:'O look da noite de queijos e vinhos', fala:['"Vai ter queijos e vinhos com os amigos? Esse é o look."'],
+     leg:'Noite com os amigos pede look novo. 🍷 Vem montar o seu.'}
   ],
-  extras:[
-    ['Corporativo','Oferecer os kits de confraternização às empresas da lista, começando pelos convidados do evento do dia 26. Contato pessoal do Dayvid e da Val.'],
-    ['WhatsApp · base das duas lojas','Oi, [nome]! Amigo secreto ou confraternização essa semana? Separei opções por valor e looks para a ocasião. Me fala o valor que eu te mando as ideias. 🤍']
-  ]
+  extras:[['WhatsApp · base das duas lojas','Oi, [nome]! Amigo secreto ou confraternização essa semana? Separei opções por valor e looks para a ocasião. Me fala o valor que eu te mando as ideias. 🤍']]
 },
 {
-  id:'a-dois', dia:'14–20/12', sem:'Semana 3', fase:'A dois + Top 10', hora:'2 posts por dia',
+  id:'a-dois', dia:'14–20/12', sem:'Semana 3', fase:'A dois + Top 10', hora:'Horário de pico',
   titulo:'Encontro a dois',
-  logica:'<b>Por que agora:</b> faltando uma semana para o Natal, as pessoas compram para quem está mais perto, e escolhem o look da ceia. É também a semana do Top 10 na loja, o encontro que mostra que a Pitanga trata o cliente como alguém especial.',
+  logica:'<b>Por que agora:</b> faltando uma semana para o Natal, as pessoas compram para quem está mais perto e escolhem o look da ceia. É também a semana do Top 10 na loja.',
   opts:[
-    {nome:'Do treino para a ceia', loja:'As duas', m:null,
-     cena:'Dayvid treinando a Val (cena do filme). Corte seco: os dois já arrumados para a ceia, ela de Pitanga Morena e ele de Pitanga For Men. Os looks com preço na tela.',
-     tela:'Do treino para a ceia',
-     fala:['Val: "Ele cuida do meu treino o ano inteiro."','Dayvid: "E ela cuida do meu look."','Juntos: "O look da ceia já está escolhido."'],
+    {nome:'Do treino para a ceia', loja:'Collab', m:null,
+     cena:'Dayvid treinando a Val. Corte seco: os dois arrumados para a ceia, ela de Morena e ele de For Men. Os looks com preço na tela.',
+     tela:'Do treino para a ceia', fala:['Val: "Ele cuida do meu treino o ano inteiro."','Dayvid: "E ela cuida do meu look."','Juntos: "O look da ceia já está escolhido."'],
      leg:'Ele cuida do treino, ela cuida do look. 🤍 O look a dois da ceia está nas duas Pitangas.'},
-    {nome:'Top 10: a retirada', loja:'As duas', m:null,
-     cena:'Um cliente do Top 10 chegando na loja, recebendo a caixa das mãos da Val (ou do Dayvid), abrindo e vendo o nome dele. Só com autorização. Postar dia 20.',
-     tela:'Top 10 Pitanga 2026',
-     fala:['"Esse ano a gente quis agradecer de um jeito diferente a quem constrói a Pitanga com a gente."'],
-     leg:'Top 10 Pitanga 2026. 🤍 Obrigada a cada cliente que faz parte da nossa história. Esse é só o começo.'}
+    {nome:'Top 10: a retirada', loja:'Collab (dia 20)', m:null,
+     cena:'Um cliente do Top 10 chega à loja, recebe a caixa das mãos da Val ou do Dayvid, abre e vê o nome dele. Só com autorização.',
+     tela:'Top 10 Pitanga 2026', fala:['"Esse ano a gente quis agradecer de um jeito diferente a quem constrói a Pitanga com a gente."'],
+     leg:'Top 10 Pitanga 2026. 🤍 Obrigada a cada cliente que faz parte da nossa história.'}
   ],
-  extras:[
-    ['Convite do Top 10 (08 a 10/12, individual)','Oi, [nome]! Aqui é a [Val/Dayvid]. Você está entre os 10 clientes mais especiais da Pitanga em 2026, e a gente preparou um presente com o seu nome. Ele só pode ser retirado pessoalmente, com a gente na loja. Qual o melhor dia para você entre 15 e 19/12?'],
-    ['Loja','Horário estendido a partir de 15/12. Embrulho no capricho.']
-  ]
+  extras:[['Convite do Top 10 (08 a 10/12, individual)','Oi, [nome]! Aqui é a [Val/Dayvid]. Você está entre os 10 clientes mais especiais da Pitanga em 2026, e a gente preparou um presente com o seu nome. Ele só pode ser retirado pessoalmente, com a gente na loja. Qual o melhor dia para você entre 15 e 19/12?']]
 },
 {
   id:'natal', dia:'21–25/12', sem:'Semana 4', fase:'Reta final + fé', hora:'Manhã + pico',
   titulo:'O encontro que sustenta todos os outros',
-  logica:'<b>Por que agora:</b> até o dia 23, a pressa: "ainda dá tempo". No dia 24, nada de venda: a Val fala de fé, que é o encontro mais verdadeiro da campanha e de quem ela é.',
+  logica:'<b>Por que agora:</b> até o dia 23, a pressa: "ainda dá tempo". No dia 24, nada de venda: a Val fala de fé, o encontro mais verdadeiro da campanha.',
   opts:[
     {nome:'Ainda dá tempo', loja:'As duas', m:I('reforma-natal-comeca'), ref:['Loja Reforma · Natal na loja',IG('DRvQrtVDTYN')],
-     cena:'Loja cheia, embrulhos em sequência, fila no caixa, sacolas saindo. A equipe sorrindo e acenando. 21 a 23/12.',
-     tela:'Ainda dá tempo. Até dia 24, às [hora].',
-     fala:['"Esqueceu alguém? Ainda dá tempo, e a gente embrulha para você."'],
+     cena:'Loja cheia, embrulhos em sequência, fila no caixa, sacolas saindo, equipe sorrindo.',
+     tela:'Ainda dá tempo. Até dia 24, às [hora].', fala:['"Esqueceu alguém? Ainda dá tempo, e a gente embrulha para você."'],
      leg:'Ainda dá tempo! Até dia 24, às [hora], nas duas Pitangas. Embrulho por nossa conta. 🎁 📍 [endereço]'},
-    {nome:'Encontro com Deus', loja:'As duas', m:null,
-     cena:'24/12, de manhã. Val sozinha, em casa ou na loja vazia, com luz natural e a Bíblia aberta. Fala de gratidão pelo ano. Sem produto, sem preço.',
-     tela:'O encontro que sustenta todos os outros',
-     fala:['"Esse ano a gente falou de encontros."','"Mas tem um que vem antes de todos: o encontro com Deus."','"Obrigada por cada pessoa que entrou na nossa loja e na nossa vida. Feliz Natal."'],
+    {nome:'Encontro com Deus', loja:'Collab (dia 24)', m:null,
+     cena:'24/12 de manhã. Val sozinha, luz natural, Bíblia aberta. Fala de gratidão pelo ano. Sem produto, sem preço.',
+     tela:'O encontro que sustenta todos os outros', fala:['"Esse ano a gente falou de encontros."','"Mas tem um que vem antes de todos: o encontro com Deus."','"Obrigada por cada pessoa que entrou na nossa loja e na nossa vida. Feliz Natal."'],
      leg:'Que o seu Natal seja cheio dos encontros que importam. Feliz Natal, da família Pitanga para a sua. 🤍'}
   ],
-  extras:[
-    ['WhatsApp · base das duas lojas, 22/12','Oi, [nome]! Ainda falta algum presente? A gente está aberta até dia 24, às [hora], e embrulha tudo para você. É só chegar ou me mandar uma mensagem. 🎁'],
-    ['25/12','Story da família Pitanga + agradecimento. Loja fechada.']
-  ]
+  extras:[['WhatsApp · base das duas lojas, 22/12','Oi, [nome]! Ainda falta algum presente? A gente está aberta até dia 24, às [hora], e embrulha tudo para você. É só chegar ou me mandar uma mensagem. 🎁']]
 },
 {
   id:'reveillon', dia:'26–31/12', sem:'Fim do ano', fase:'Réveillon', hora:'Manhã + pico',
   titulo:'Encontro com o novo',
-  logica:'<b>Por que agora:</b> depois do Natal, a cidade vira a chave para o réveillon e a praia. A Morena é moda praia, e a For Men tem linho e branco: é a última venda forte do ano.',
+  logica:'<b>Por que agora:</b> depois do Natal, a cidade vira a chave para o réveillon e a praia. A Morena é moda praia e a For Men tem linho e branco: é o último pico de venda do ano.',
   opts:[
     {nome:'O branco da virada', loja:'As duas', m:null,
-     cena:'Looks de réveillon em branco e areia, gravados com luz de fim de tarde (praia ou varanda). Ela de Morena, ele de For Men. Preço na tela.',
-     tela:'O look da virada já está aqui',
-     fala:['Sem fala, ou: "Já escolheu o branco da virada?"'],
+     cena:'Looks de réveillon em branco e areia, com luz de fim de tarde (praia ou varanda). Ela de Morena, ele de For Men. Preço na tela.',
+     tela:'O look da virada já está aqui', fala:['Sem fala, ou: "Já escolheu o branco da virada?"'],
      leg:'O branco da virada e a praia de janeiro, nas duas Pitangas. 🤍 📍 [endereço]'},
-    {nome:'O que você leva para 2027', loja:'As duas', m:null,
+    {nome:'O que você leva para 2027', loja:'Collab (dia 31)', m:null,
      cena:'Equipe das duas lojas, uma pessoa por corte, falando um desejo para 2027. Termina com Val e Dayvid agradecendo o primeiro ano da For Men.',
-     tela:'O que você leva para 2027?',
-     fala:['"Eu levo…" (cada pessoa da equipe)','Dayvid: "E a gente leva o primeiro ano da For Men, graças a vocês."'],
+     tela:'O que você leva para 2027?', fala:['"Eu levo…" (cada pessoa da equipe)','Dayvid: "E a gente leva o primeiro ano da For Men, graças a vocês."'],
      leg:'Obrigado, 2026. Que 2027 venha com mais encontros. 🤍'}
   ],
-  extras:[
-    ['WhatsApp · base das duas lojas, 27/12','Oi, [nome]! Já escolheu o look da virada? Chegaram peças em branco e moda praia para o réveillon, nas duas Pitangas. Quer que eu te mande?']
-  ]
+  extras:[['WhatsApp · base das duas lojas, 27/12','Oi, [nome]! Já escolheu o look da virada? Chegaram peças em branco e moda praia para o réveillon, nas duas Pitangas. Quer que eu te mande?']]
 }
 ];
 
-const esc = s => s.replace(/\[([^\]]+)\]/g,'<span class="blank">[$1]</span>');
 const store = (()=>{try{return window.localStorage}catch(e){return null}})();
 const get = k => {try{return store&&store.getItem('enc-'+k)==='1'}catch(e){return false}};
 const set = (k,v) => {try{store&&store.setItem('enc-'+k,v?'1':'0')}catch(e){}};
 
 document.getElementById('timeline').innerHTML = steps.map((s,i)=>
-  `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('')
-  + `<a class="tl" href="#top10" data-k="step-top10"><div class="d">15–19/12</div><div class="f">★ Top 10</div><div class="h">Retirada na loja</div></a>`;
-
-document.getElementById('prep').innerHTML = prep.map((p,i)=>
-  `<li><label><input type="checkbox" data-k="prep-${i}"> <span>${esc(p)}</span></label></li>`).join('');
+  `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('');
 
 function media(o){
   if(!o.m) return `<div class="noref">Gravação própria</div>`;
   return `<div class="media"><span class="tag">Ref · ${o.ref[0].split(' · ')[0]}</span><img src="${o.m.img}" alt="Referência: ${o.ref[0]}" loading="lazy"></div><a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Assistir no Instagram ↗</a>`;
 }
-
 document.getElementById('steps').innerHTML = steps.map((s,i)=>`
-${s.phase?`<div class="phase">${s.phase}</div>`:''}
 <section class="step" id="${s.id}">
-  <div class="stephead">
-    <div class="num">${String(i+1).padStart(2,'0')}</div>
-    <h2>${s.titulo}</h2>
-    <span class="when">${s.sem} · ${s.dia} · ${s.hora}</span>
-  </div>
+  <div class="stephead"><div class="num">${String(i+1).padStart(2,'0')}</div><h2>${s.titulo}</h2><span class="when">${s.sem} · ${s.dia} · ${s.hora}</span></div>
   <p class="logic">${s.logica}</p>
   ${s.film?`<div class="film"><table><tr><th>Tempo</th><th>Encontro</th><th>Imagem</th><th>Narração</th></tr>${s.film.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td><td class="vo">${r[3]}</td></tr>`).join('')}</table></div>`:''}
-  <div class="opts">
-    ${s.opts.map((o,j)=>`
-    <div class="opt">
-      <div>${media(o)}</div>
-      <div>
-        <div class="optname">Opção ${'AB'[j]} &nbsp;<span class="store">${o.loja}</span></div>
-        <h3>${o.nome}</h3>
-        <div class="rows">
-          <div class="row"><b>Cena</b>${esc(o.cena)}</div>
-          <div class="row"><b>Texto na tela</b><span class="screen">${esc(o.tela)}</span></div>
-          <div class="row"><b>Fala</b><div class="say">${o.fala.map(f=>`<div>${esc(f)}</div>`).join('')}</div></div>
-          <div class="row"><b>Legenda</b>${esc(o.leg)}<br><button class="copy" data-copy="${o.leg.replace(/"/g,'&quot;')}">Copiar legenda</button></div>
-        </div>
-      </div>
-    </div>`).join('')}
-  </div>
+  <div class="opts">${s.opts.map((o,j)=>`
+    <div class="opt"><div>${media(o)}</div><div>
+      <div class="optname">Opção ${'AB'[j]} &nbsp;<span class="store">${o.loja}</span></div>
+      <h3>${o.nome}</h3>
+      <div class="rows">
+        <div class="row"><b>Cena</b>${esc(o.cena)}</div>
+        <div class="row"><b>Texto na tela</b><span class="screen">${esc(o.tela)}</span></div>
+        <div class="row"><b>Fala</b><div class="say">${o.fala.map(f=>`<div>${esc(f)}</div>`).join('')}</div></div>
+        <div class="row"><b>Legenda</b>${esc(o.leg)}<br><button class="copy" data-copy="${o.leg.replace(/"/g,'&quot;')}">Copiar legenda</button></div>
+      </div></div></div>`).join('')}</div>
   ${s.extras.length?`<div class="extras">${s.extras.map(e=>`<div class="extra"><b>${e[0]}</b>${esc(e[1])}${/WhatsApp|Convite/.test(e[0])?`<br><button class="copy" data-copy="${e[1].replace(/"/g,'&quot;')}">Copiar mensagem</button>`:''}</div>`).join('')}</div>`:''}
-  <label class="done"><input type="checkbox" data-k="step-${s.id}"> Etapa feita</label>
+  <label class="done"><input type="checkbox" data-k="step-${s.id}"> Feito</label>
 </section>`).join('');
 
 document.querySelectorAll('input[data-k]').forEach(cb=>{
@@ -421,12 +641,10 @@ document.querySelectorAll('input[data-k]').forEach(cb=>{
 });
 function paint(){ document.querySelectorAll('.tl').forEach(t=>t.classList.toggle('on',get(t.dataset.k))); }
 paint();
-
 document.addEventListener('click',async e=>{
   const b=e.target.closest('.copy'); if(!b) return;
   const t=b.dataset.copy, old=b.textContent;
-  try{await navigator.clipboard.writeText(t); b.textContent='Copiado ✓'}
-  catch(err){b.textContent='Selecione e copie'}
+  try{await navigator.clipboard.writeText(t); b.textContent='Copiado ✓'}catch(err){b.textContent='Selecione e copie'}
   setTimeout(()=>b.textContent=old,1600);
 });
 </script>

@@ -39,6 +39,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         ...(conversas ? [{ href: "/equipe/conversas", rotulo: "Conversas da equipe", icone: "chat" }] : []),
         { href: "/empresa/minha-central", rotulo: "Minha central", icone: "target" },
+        { href: "/equipe/ver-como-cs", rotulo: "Ver como a Claudia", icone: "users", soMentora: true },
         { href: "/empresa/caixa-do-dia", rotulo: "Caixa do dia", icone: "inbox" },
         { href: "/equipe/aprovar", rotulo: "Para aprovar", icone: "check", soMentora: true },
         { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban", soMentora: true },

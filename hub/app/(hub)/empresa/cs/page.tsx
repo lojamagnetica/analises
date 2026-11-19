@@ -13,6 +13,7 @@ import { CaixaDoDiaResumo, NovidadesDoDia } from "@/components/MeuDiaExtras";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { MeuMapa } from "@/components/MeuMapa";
 import { PlannerDoDia } from "@/components/PlannerDoDia";
+import { AcoesPendencia } from "@/components/AcoesPendencia";
 import { Recolhivel } from "@/components/Recolhivel";
 import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
@@ -168,6 +169,7 @@ export default function InicioCs() {
                 <button type="button" className="btn s peq" onClick={async () => { await marcarLembrete(l.id, true); recarregarLembretes(); }}>Feito</button>
                 {l.portal_id && <OQueAconteceu registro={{ portalId: l.portal_id, tipo: "lembrete", ref: l.id, loja: l.loja ?? undefined }} feito={async (_r, retomar) => { await lembreteDepois(l.id, retomar); recarregarLembretes(); }} />}
               </span>
+              <div style={{ flex: "1 1 100%" }}><AcoesPendencia semFeito mudou={() => recarregarLembretes()} p={{ id: l.id, origem: "lembrete", texto: l.texto, link: l.link, portalId: l.portal_id }} /></div>
             </div>
           ))}
         </Recolhivel>

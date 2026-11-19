@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useDados, useEquipe } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
 import { hora as horaDe } from "@/lib/agenda";
+import { AcoesPendencia } from "@/components/AcoesPendencia";
 import { buscarPlanner, concluirItem, fecharDia, registrarCobranca, salvarRegistro, type ClientePlanner, type ItemFila, type Nivel, type Prioridade } from "@/lib/planner-dia";
 
 const C = { bg: "#0B0B0B", card: "#161616", line: "#262626", line2: "#3a3a3a", txt: "#F5F1EA", mudo: "#A9A397", apagado: "#6f6a62", terra: "#BC4914", neon: "#FF5B1F" };
@@ -87,7 +88,7 @@ export function PlannerDoDia() {
   minhas.forEach((i) => { conta[i.prioridade]++; });
   const atrasadas = minhas.filter((i) => i.atraso > 0).length;
   const venceHoje = minhas.filter((i) => i.atraso === 0).length;
-  const entregues = feitosHoje.length;
+  const entregues = feitosHoje.filter((id) => !dados.fila.some((i) => i.id === id)).length;
   const totalDia = entregues + conta.p1 + conta.p2;
   const pct = totalDia ? Math.round((entregues / totalDia) * 100) : 100;
   const lista = aba === "cobrar" ? cobrar : minhas.filter((i) => i.prioridade === aba);
@@ -120,8 +121,8 @@ export function PlannerDoDia() {
 
   // Agenda de hoje: eventos do Google Agenda + horários dos posts, na ordem do relógio.
   const linhas = [
-    ...dados.eventos.filter((e) => !e.dia_inteiro).map((e) => ({ min: paraMin(horaDe(e.inicio)) ?? 0, hora: horaDe(e.inicio), titulo: esconder(e.titulo), tipo: e.loja ? "Cliente" : "Agenda", evento: true, link: e.meet_url })),
-    ...dados.posts.map((p) => ({ min: paraMin(p.horario ?? "") ?? 24 * 60, hora: (p.horario ?? "").replace(/h$/i, ":00").padStart(5, "0"), titulo: `Post · ${p.titulo ?? p.formato ?? ""}`, tipo: p.status === "Postado" ? "Postado" : p.formato ?? "Conteúdo", evento: false, link: null as string | null })),
+    ...dados.eventos.filter((e) => !e.dia_inteiro).map((e) => ({ min: paraMin(horaDe(e.inicio)) ?? 0, hora: horaDe(e.inicio), titulo: esconder(e.titulo), tipo: e.loja ? "Cliente" : "Agenda", evento: true, link: e.reuniaoUrl, portalId: e.portal_id, postId: null as string | null })),
+    ...dados.posts.map((p) => ({ min: paraMin(p.horario ?? "") ?? 24 * 60, hora: (p.horario ?? "").replace(/h$/i, ":00").padStart(5, "0"), titulo: `Post · ${p.titulo ?? p.formato ?? ""}`, tipo: p.status === "Postado" ? "Postado" : p.formato ?? "Conteúdo", evento: false, link: null as string | null, portalId: null as string | null, postId: p.id })),
   ].filter((l) => l.min < 24 * 60).sort((a, b) => a.min - b.min);
   let agoraIdx = -1;
   linhas.forEach((l, i) => { if (l.min <= agora) agoraIdx = i; });
@@ -224,6 +225,8 @@ export function PlannerDoDia() {
                   {i.quem && <span style={{ fontSize: 9, letterSpacing: "0.2em", fontWeight: 700, color: C.terra, textTransform: "uppercase" }}>{i.quem === "loja" ? "A loja" : "Claudia"}</span>}
                 </div>
                 <div style={{ marginTop: 6, fontSize: 14, lineHeight: 1.45, fontWeight: 600 }}>{esconder(i.texto)}</div>
+                <AcoesPendencia escuro semFeito cobrar={i.prioridade === "cobrar"} mudou={() => recarregar()}
+                  p={{ id: i.id, origem: i.origem, texto: i.texto, link: i.link, portalId: i.portalId, whatsapp: i.whatsapp }} />
               </div>
               {i.prioridade === "cobrar" && <button type="button" disabled={ocupado === i.id} onClick={() => concluir(i)} style={{ ...pilula(false), minHeight: 36, padding: "0 12px", fontSize: 9 }}>Cobrei</button>}
             </div>
@@ -236,7 +239,12 @@ export function PlannerDoDia() {
             <Link href="/equipe/agenda" style={{ ...rotulo, color: C.neon, textDecoration: "none" }}>Abrir agenda →</Link>
           </div>
           {diaTodo.map((e) => (
-            <div key={e.gcal_id} style={{ padding: "10px 12px", border: `1px dashed ${C.line2}`, borderRadius: 4, marginBottom: 8, fontSize: 13, fontWeight: 700 }}><span style={{ ...rotulo, marginRight: 8 }}>Dia todo</span>{esconder(e.titulo)}</div>
+            <div key={e.gcal_id} style={{ padding: "10px 12px", border: `1px dashed ${C.line2}`, borderRadius: 4, marginBottom: 8, fontSize: 13, fontWeight: 700 }}><span style={{ ...rotulo, marginRight: 8 }}>Dia todo</span>{esconder(e.titulo)}
+              {(e.reuniaoUrl || e.portal_id) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                {e.reuniaoUrl && <a href={e.reuniaoUrl} target="_blank" rel="noopener" style={{ ...pilula(false), minHeight: 32, padding: "0 10px", fontSize: 9, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>Link da reunião ↗</a>}
+                {e.portal_id && <Link href={`/equipe/loja?id=${e.portal_id}`} style={{ ...pilula(false), minHeight: 32, padding: "0 10px", fontSize: 9, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>Abrir a loja</Link>}
+              </div>}
+            </div>
           ))}
           {!linhas.length && !diaTodo.length && <p style={{ color: C.mudo, fontSize: 13 }}>Nada na agenda hoje.</p>}
           {linhas.map((l, i) => {
@@ -256,7 +264,13 @@ export function PlannerDoDia() {
                       <span style={{ fontSize: 9, letterSpacing: "0.2em", fontWeight: 700, color: C.mudo, textTransform: "uppercase" }}>{l.tipo}</span>
                     </div>
                     {on && <div style={{ marginTop: 4, fontSize: 9, letterSpacing: "0.3em", fontWeight: 800, color: C.neon }}>AGORA</div>}
-                    {l.link && <a href={l.link} target="_blank" rel="noopener" style={{ display: "inline-block", marginTop: 4, fontSize: 11, color: C.neon }}>Entrar na reunião</a>}
+                    {(l.link || l.portalId || l.postId) && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                        {l.link && <a href={l.link} target="_blank" rel="noopener" style={{ ...pilula(false), minHeight: 32, padding: "0 10px", fontSize: 9, background: C.neon, borderColor: C.neon, color: C.bg, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>Entrar na reunião ↗</a>}
+                        {l.portalId && <Link href={`/equipe/loja?id=${l.portalId}&aba=reunioes`} style={{ ...pilula(false), minHeight: 32, padding: "0 10px", fontSize: 9, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>Abrir a loja</Link>}
+                        {l.postId && <Link href={`/empresa/conteudo/post?id=${l.postId}`} style={{ ...pilula(false), minHeight: 32, padding: "0 10px", fontSize: 9, display: "inline-flex", alignItems: "center", textDecoration: "none" }}>Abrir o post →</Link>}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -296,7 +310,7 @@ export function PlannerDoDia() {
           {dados.posts.map((p) => (
             <div key={p.id} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.line}` }}>
               <span style={{ flex: "0 0 38px", fontSize: 11, fontWeight: 800 }}>{p.horario}</span>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.4 }}>{p.titulo}<span style={{ display: "block", ...rotulo, fontSize: 8, marginTop: 2 }}>{p.formato}</span></span>
+              <Link href={`/empresa/conteudo/post?id=${p.id}`} style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.4, color: C.txt, textDecoration: "none" }}>{p.titulo} <span style={{ color: C.neon }}>→</span><span style={{ display: "block", ...rotulo, fontSize: 8, marginTop: 2 }}>{p.formato}</span></Link>
               <span style={{ flex: "none", fontSize: 8, letterSpacing: "0.2em", fontWeight: 800, padding: "4px 8px", borderRadius: 999, textTransform: "uppercase", ...(p.status === "Postado" || p.status === "Gravado ou arte pronta" ? { background: C.txt, color: C.bg } : p.status === "Roteiro pronto" ? { border: `1px solid ${C.neon}`, color: C.neon } : { border: `1px solid ${C.line2}`, color: C.mudo }) }}>{p.status === "Gravado ou arte pronta" ? "Pronto" : p.status}</span>
             </div>
           ))}

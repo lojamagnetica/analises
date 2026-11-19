@@ -9,7 +9,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { fimDoMes, mesDeHoje, nomeMes, somarMes } from "@/lib/caixa";
 import {
-  LINHAS, CATEGORIAS, buscarCompras, buscarVendas, emAberto, gerarParcelas, marcarParcelasCompra, removerCompra, salvarCompra, somarMeses, type Compra, type Parcela,
+  listasDaLoja, buscarCompras, buscarVendas, emAberto, gerarParcelas, marcarParcelasCompra, removerCompra, salvarCompra, somarMeses, type Compra, type Parcela,
 } from "@/lib/loja-na-mao";
 
 type Form = { id?: string; dia: string; fornecedor: string; categoria: string; linha: string; pecas: string; valor: number; aVista: boolean; n: number; primeira: string; obs: string; parcelas: Parcela[] | null };
@@ -17,6 +17,7 @@ const novo = (): Form => ({ dia: hoje(), fornecedor: "", categoria: "", linha: "
 
 export default function MinhasCompras() {
   const { portal } = usePortal();
+  const { tipos: CATEGORIAS, linhas: LINHAS, rotuloLinha } = listasDaLoja(portal.venda_listas);
   const [mes, setMes] = useState(mesDeHoje());
   const [f, setF] = useState<Form | null>(null);
   const [aberta, setAberta] = useState<string | null>(null);
@@ -72,7 +73,7 @@ export default function MinhasCompras() {
           <div className="chips">
             {[...CATEGORIAS, "Várias"].map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: f.categoria === c ? "" : c })}>{c}</button>)}
           </div>
-          <label className="rotulo">Linha (opcional)</label>
+          <label className="rotulo">{rotuloLinha} (opcional)</label>
           <div className="chips">
             {LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l })}>{l}</button>)}
           </div>

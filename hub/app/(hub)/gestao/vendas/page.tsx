@@ -10,7 +10,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { linkWhats, semAcento } from "@/lib/clientes";
 import {
-  CATEGORIAS, FORMAS, LINHAS, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
+  FORMAS, listasDaLoja, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
   type ClienteSimples, type ItemVenda, type Venda, descreverItens,
 } from "@/lib/loja-na-mao";
 import { fimDoMes, type Forma } from "@/lib/caixa";
@@ -30,6 +30,7 @@ const passarDia = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`
 
 export default function VendasDoDia() {
   const { portal } = usePortal();
+  const { tipos: CATEGORIAS, linhas: LINHAS, rotuloLinha } = listasDaLoja(portal.venda_listas);
   const [diaVer, setDiaVer] = useState(hoje());
   const [f, setF] = useState<Form>(() => novo());
   const [antes, setAntes] = useState<Venda | null>(null);
@@ -131,7 +132,7 @@ export default function VendasDoDia() {
           <div className="chips">
             {CATEGORIAS.map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c, estoque_id: null })}>{c}</button>)}
           </div>
-          <label className="rotulo">Linha</label>
+          <label className="rotulo">{rotuloLinha}</label>
           <div className="chips">
             {LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l, estoque_id: null })}>{l}</button>)}
           </div>

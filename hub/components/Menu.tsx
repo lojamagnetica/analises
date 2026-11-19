@@ -74,20 +74,18 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
         // Área da mentora vem duplicado aqui, menos o conteúdo; liberar para a loja continua só com a Camilla.
         // Meu dia junta o Controle de clientes, o Faça agora, as Lojas que precisam de atenção, as Novidades e o Caixa do dia.
         { href: "/empresa/cs", rotulo: "Meu dia", icone: "target" },
+        { href: "/equipe/lojas", rotulo: "Minhas lojas", icone: "users" },
         { href: "/equipe/loja", rotulo: "Ficha da loja", icone: "folder" },
         { href: "/equipe/contatos", rotulo: "Contatos das lojas", icone: "phone" },
         ...(conversas ? [{ href: "/equipe/conversas", rotulo: "Conversas da equipe", icone: "chat" }] : []),
         { href: "/equipe/agenda", rotulo: "Agenda", icone: "cal" },
         { href: "/equipe/reunioes-revisar", rotulo: "Reuniões para revisar", icone: "video" },
-        { href: "/equipe", rotulo: "Painel dos portais", icone: "folder" },
-        { href: "/equipe/central", rotulo: "Jornada das clientes", icone: "kanban" },
         { href: "/equipe/programa", rotulo: "Programa Brasil", icone: "gift" },
         ...(cs ? [{ href: "/empresa/minha-central/diagnostico", rotulo: "Preparar diagnóstico", icone: "spark" }] : []),
         ...(cs ? [
           { href: "/equipe/aprovar", rotulo: "Esperando a Camilla", icone: "check" },
           { href: "/equipe/planos", rotulo: "Planos do mês", icone: "kanban" },
         ] : []),
-        { href: "/empresa/carteira", rotulo: "Gestão de Clientes", icone: "users" },
         ...(cs ? [{ href: "/equipe/acoes", rotulo: "Ações do Mês", icone: "bolt" }] : []),
         { href: "/empresa/historias", rotulo: "Histórias das lojas", icone: "book" },
         ...(cs ? [

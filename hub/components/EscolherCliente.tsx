@@ -4,12 +4,13 @@ import { useState } from "react";
 import { semAcento } from "@/lib/clientes";
 import { novaCliente, type ClienteSimples } from "@/lib/loja-na-mao";
 
-/** Busca a cliente pelo nome ou WhatsApp; se não acha, cadastra na hora só com nome e WhatsApp. */
+/** Busca a cliente pelo nome ou WhatsApp; se não acha, cadastra na hora com nome, WhatsApp e aniversário. */
 export function EscolherCliente({ portalId, clientes, valor, mudar, aoCadastrar }: {
   portalId: string; clientes: ClienteSimples[]; valor: ClienteSimples | null; mudar: (c: ClienteSimples | null) => void; aoCadastrar?: () => void;
 }) {
   const [busca, setBusca] = useState("");
   const [whats, setWhats] = useState("");
+  const [aniv, setAniv] = useState("");
   const [cadastrando, setCadastrando] = useState(false);
   const [erro, setErro] = useState("");
   if (valor) return (
@@ -26,11 +27,12 @@ export function EscolherCliente({ portalId, clientes, valor, mudar, aoCadastrar 
       {achadas.length > 0 && <div className="chips mt">{achadas.map((c) => <button key={c.id} type="button" className="chip" onClick={() => { mudar(c); setBusca(""); }}>{c.nome}</button>)}</div>}
       {busca.trim().length >= 2 && !cadastrando && <button type="button" className="btn s peq mt" onClick={() => setCadastrando(true)}>+ Cadastrar &quot;{busca.trim()}&quot;</button>}
       {cadastrando && (
-        <div className="linha mt" style={{ gap: 8 }}>
-          <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} />
+        <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+          <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} style={{ flex: "1 1 160px" }} />
+          <input type="text" inputMode="numeric" placeholder="Aniversário (dia/mês)" value={aniv} onChange={(e) => setAniv(e.target.value)} style={{ flex: "1 1 140px" }} />
           <button type="button" className="btn p peq" onClick={async () => {
             setErro("");
-            try { const c = await novaCliente(portalId, busca, whats); mudar(c); setBusca(""); setWhats(""); setCadastrando(false); aoCadastrar?.(); }
+            try { const c = await novaCliente(portalId, busca, whats, aniv); mudar(c); setBusca(""); setWhats(""); setAniv(""); setCadastrando(false); aoCadastrar?.(); }
             catch (x) { setErro((x as Error).message); }
           }}>Cadastrar</button>
         </div>

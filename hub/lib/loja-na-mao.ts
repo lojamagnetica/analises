@@ -5,7 +5,7 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { FORMAS, salvarCaixa, type Forma, type Pagamentos } from "@/lib/caixa";
-import { arrumarNome, type Cliente } from "@/lib/clientes";
+import { arrumarNome, lerData, type Cliente } from "@/lib/clientes";
 
 const sb = () => supabaseBrowser();
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -42,10 +42,14 @@ export async function buscarClientesSimples(portalId: string) {
 export type ClienteSimples = Awaited<ReturnType<typeof buscarClientesSimples>>[number];
 
 /** Só nome e WhatsApp: o resto a cliente vai ganhando com as compras. */
-export async function novaCliente(portalId: string, nome: string, whatsapp: string) {
+export async function novaCliente(portalId: string, nome: string, whatsapp: string, aniversario: string) {
   const n = arrumarNome(nome).slice(0, 120);
   if (!n) throw new Error("Escreva o nome da cliente.");
-  const data = await ok(sb().from("loja_clientes").insert({ portal_id: portalId, nome: n, whatsapp: whatsapp.trim().slice(0, 40) || null }).select("id, nome, whatsapp, aniversario, ultima_compra, n_compras, total").single());
+  // Cadastro completo: sem WhatsApp e aniversário não dá para fazer pós-venda nem o presente do mês.
+  if (whatsapp.replace(/\D/g, "").length < 10) throw new Error("Escreva o WhatsApp da cliente com DDD.");
+  const aniv = lerData(aniversario, true);
+  if (!aniv) throw new Error("Escreva o aniversário da cliente (dia/mês, ex.: 25/11).");
+  const data = await ok(sb().from("loja_clientes").insert({ portal_id: portalId, nome: n, whatsapp: whatsapp.trim().slice(0, 40), aniversario: aniv }).select("id, nome, whatsapp, aniversario, ultima_compra, n_compras, total").single());
   return data as ClienteSimples;
 }
 

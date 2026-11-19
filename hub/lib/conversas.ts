@@ -11,7 +11,7 @@ export type Anexo = { caminho: string; nome: string; tipo: string; tamanho: numb
 /** A pergunta da Assistente Magnética para confirmar uma reunião (ver a migração 0169). */
 export type AcaoReuniao = { tipo: "confirmar_reuniao"; reuniao_id: string; estado: "pendente" | "confirmada" | "nao"; minutos?: number; texto?: string; whatsapp?: string | null };
 export type Mensagem = { id: string; acao?: AcaoReuniao | null; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
-export type Lembrete = { id: string; portal_id: string | null; loja?: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
+export type Lembrete = { id: string; portal_id: string | null; loja?: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string; link?: string | null };
 export type Pessoa = { id: string; nome: string };
 
 const sb = () => supabaseBrowser();

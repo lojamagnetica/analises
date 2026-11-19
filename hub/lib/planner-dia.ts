@@ -24,6 +24,8 @@ export type ItemFila = {
   quem?: "loja" | "claudia";
   nota?: string;
   cobradoHoje?: boolean;
+  link?: string | null;
+  whatsapp?: string | null;
 };
 export type Nivel = "critico" | "atencao" | "emdia" | "semcontato";
 export type ClientePlanner = {
@@ -32,17 +34,18 @@ export type ClientePlanner = {
   ultimaReuniao: string | null; proximaReuniao: string | null;
   meusAtrasos: number; lojaAtrasos: number; abertos: number; passo: string;
 };
+export type EventoDia = Evento & { reuniaoUrl: string | null };
 export type PostDia = { id: string; horario: string | null; formato: string | null; titulo: string | null; status: string | null };
 export type RegistroDia = { foco: string | null; vitoria: string | null; amanha: string | null; fechado_em: string | null };
 export type Planner = {
-  dia: string; fila: ItemFila[]; clientes: ClientePlanner[]; eventos: Evento[]; posts: PostDia[]; registro: RegistroDia | null;
+  dia: string; fila: ItemFila[]; clientes: ClientePlanner[]; eventos: EventoDia[]; posts: PostDia[]; registro: RegistroDia | null;
 };
 
-type Comb = { id: string; portal_id: string; texto: string; quem: string; prazo: string | null; status: string };
-type Lemb = { id: string; portal_id: string | null; texto: string; quando: string | null };
+type Comb = { id: string; portal_id: string; texto: string; quem: string; prazo: string | null; status: string; link: string | null };
+type Lemb = { id: string; portal_id: string | null; texto: string; quando: string | null; link: string | null };
 type Contato = { portal_id: string; tipo: string; ref: string | null; feito_em: string; proximo_em: string | null };
 type Reuniao = { portal_id: string; data: string };
-type PortalRow = { id: string; loja: string; tipo: string | null; ativo: boolean | null };
+type PortalRow = { id: string; loja: string; tipo: string | null; ativo: boolean | null; whatsapp: string | null; meet_url: string | null };
 
 const diasEntre = (de: string, ate: string) => Math.round((Date.parse(ate.slice(0, 10)) - Date.parse(de.slice(0, 10))) / 86_400_000);
 
@@ -50,9 +53,9 @@ export async function buscarPlanner(perfilId: string): Promise<Planner> {
   const dia = hoje();
   const ate3 = somarDias(dia, 3);
   const [portais, combs, lembs, contatos, reunioes, posts, reg, agenda] = await Promise.all([
-    sb().from("portais").select("id, loja, tipo, ativo"),
-    sb().from("loja_combinados").select("id, portal_id, texto, quem, prazo, status").eq("status", "aberto"),
-    sb().from("equipe_lembretes").select("id, portal_id, texto, quando").eq("feito", false).eq("responsavel", perfilId),
+    sb().from("portais").select("id, loja, tipo, ativo, whatsapp, meet_url"),
+    sb().from("loja_combinados").select("id, portal_id, texto, quem, prazo, status, link").eq("status", "aberto"),
+    sb().from("equipe_lembretes").select("id, portal_id, texto, quando, link").eq("feito", false).eq("responsavel", perfilId),
     sb().from("cs_contatos").select("portal_id, tipo, ref, feito_em, proximo_em").order("feito_em", { ascending: false }).limit(2000),
     sb().from("reunioes").select("portal_id, data").gte("data", somarDias(dia, -120)).order("data"),
     sb().from("conteudo_casa").select("id, horario, formato, titulo, status").eq("data", dia).order("horario"),
@@ -62,6 +65,8 @@ export async function buscarPlanner(perfilId: string): Promise<Planner> {
 
   const lista = ((portais.data ?? []) as PortalRow[]).filter((p) => p.ativo !== false && p.tipo);
   const nomeDe = new Map(lista.map((p) => [p.id, p.loja]));
+  const zapDe = new Map(((portais.data ?? []) as PortalRow[]).map((p) => [p.id, p.whatsapp]));
+  const meetDe = new Map(((portais.data ?? []) as PortalRow[]).map((p) => [p.id, p.meet_url]));
   const ativos = new Set(lista.map((p) => p.id));
   const todosCombs = ((combs.data ?? []) as Comb[]).filter((c) => ativos.has(c.portal_id));
   const cts = (contatos.data ?? []) as Contato[];
@@ -78,16 +83,16 @@ export async function buscarPlanner(perfilId: string): Promise<Planner> {
     if (c.quem === "camilla") {
       if (!c.prazo || c.prazo > ate3) continue;
       const prioridade: Prioridade = atraso === 0 || (atraso > 0 && reuniaoHoje.has(c.portal_id)) ? "p1" : atraso > 0 ? "p2" : "p3";
-      fila.push({ id: c.id, origem: "combinado", prioridade, portalId: c.portal_id, loja, texto: c.texto, prazo: c.prazo, atraso, nota: atraso > 0 && reuniaoHoje.has(c.portal_id) ? "Reunião hoje" : undefined });
+      fila.push({ id: c.id, origem: "combinado", prioridade, portalId: c.portal_id, loja, texto: c.texto, prazo: c.prazo, atraso, link: c.link, whatsapp: zapDe.get(c.portal_id) ?? null, nota: atraso > 0 && reuniaoHoje.has(c.portal_id) ? "Reunião hoje" : undefined });
     } else if ((c.quem === "loja" || c.quem === "claudia") && c.prazo && c.prazo <= dia) {
-      fila.push({ id: c.id, origem: "combinado", prioridade: "cobrar", portalId: c.portal_id, loja, texto: c.texto, prazo: c.prazo, atraso, quem: c.quem, cobradoHoje: cobradoHoje.has(c.id) });
+      fila.push({ id: c.id, origem: "combinado", prioridade: "cobrar", portalId: c.portal_id, loja, texto: c.texto, prazo: c.prazo, atraso, link: c.link, whatsapp: zapDe.get(c.portal_id) ?? null, quem: c.quem, cobradoHoje: cobradoHoje.has(c.id) });
     }
   }
   for (const l of (lembs.data ?? []) as Lemb[]) {
     if (l.quando && l.quando > ate3) continue;
     const atraso = l.quando ? diasEntre(l.quando, dia) : 0;
     const prioridade: Prioridade = !l.quando || atraso === 0 ? "p1" : atraso > 0 ? "p2" : "p3";
-    fila.push({ id: l.id, origem: "lembrete", prioridade, portalId: l.portal_id, loja: l.portal_id ? nomeDe.get(l.portal_id) ?? "Lembrete" : "Lembrete", texto: l.texto, prazo: l.quando, atraso });
+    fila.push({ id: l.id, origem: "lembrete", prioridade, portalId: l.portal_id, loja: l.portal_id ? nomeDe.get(l.portal_id) ?? "Lembrete" : "Lembrete", texto: l.texto, prazo: l.quando, atraso, link: l.link, whatsapp: l.portal_id ? zapDe.get(l.portal_id) ?? null : null });
   }
   // Dentro de cada prioridade: o mais atrasado primeiro.
   fila.sort((a, b) => b.atraso - a.atraso);
@@ -130,7 +135,7 @@ export async function buscarPlanner(perfilId: string): Promise<Planner> {
 
   return {
     dia, fila, clientes,
-    eventos: agenda.eventos,
+    eventos: agenda.eventos.map((e) => ({ ...e, reuniaoUrl: e.meet_url ?? (e.portal_id ? meetDe.get(e.portal_id) ?? null : null) })),
     posts: (posts.data ?? []) as PostDia[],
     registro: (reg.data ?? null) as RegistroDia | null,
   };

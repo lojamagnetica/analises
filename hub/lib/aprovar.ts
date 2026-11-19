@@ -17,6 +17,8 @@ export type ItemAprovar = {
   /** Abre no portal da loja (destino) ou numa página da equipe (href). */
   destino?: string; href?: string;
   liberar?: () => Promise<unknown>;
+  /** Nome do botão de ação (padrão: Liberar). */
+  acao?: string;
 };
 
 export async function buscarParaAprovar(): Promise<{ itens: ItemAprovar[]; ativos: Map<string, string> }> {
@@ -96,5 +98,25 @@ export async function buscarParaAprovar(): Promise<{ itens: ItemAprovar[]; ativo
     chave: `rg${g.id}`, portal: g.portal_id && daLoja(g.portal_id as string) ? (g.portal_id as string) : null, tipo: "Reunião gravada", titulo: `${g.titulo ?? "Reunião"}${g.data ? ` (${dataCurta(g.data as string)})` : ""}`,
     quando: (g.criado_em as string) ?? null, href: "/equipe/reunioes-revisar",
   }));
+  // Reuniões de gestão que esperam a validação da Camilla.
+  const { data: gestaoR } = await sb.from("loja_reunioes").select("id, portal_id, tipo, data, dados").neq("tipo", "planejamento").gte("data", new Date(Date.now() - 45 * 86_400_000).toISOString().slice(0, 10));
+  ((gestaoR ?? []) as { id: string; portal_id: string; tipo: string; data: string; dados: { validado?: boolean; loja?: string; semana?: string } }[])
+    .filter((r) => !r.dados?.validado && daLoja(r.portal_id) && ["analise_semana", "feedback_time", "mensal", "analise"].includes(r.tipo))
+    .forEach((r) => itens.push({
+      chave: `rgest${r.id}`, portal: r.portal_id, tipo: "Reunião de gestão", quando: r.data,
+      titulo: `${({ analise_semana: "Análise da semana", feedback_time: "Feedback do time", mensal: "Reunião do mês", analise: "Análise do mês" } as Record<string, string>)[r.tipo] ?? r.tipo}${r.dados?.loja ? ` · ${r.dados.loja}` : ""} (${dataCurta(r.data)})`,
+      destino: "/consultoria/reunioes", acao: "Validar",
+      liberar: async () => { const { error } = await sb.from("loja_reunioes").update({ dados: { ...r.dados, validado: true } }).eq("id", r.id); if (error) throw new Error(error.message); },
+    }));
+  // O que a CS passou para a Camilla ("Passar para a Camilla" no Meu dia).
+  const { data: eu } = await sb.auth.getUser();
+  if (eu.user) {
+    const { data: pedidos } = await sb.from("equipe_lembretes").select("id, portal_id, texto, quando, criado_por, created_at").eq("responsavel", eu.user.id).eq("feito", false).like("texto", "Da %");
+    ((pedidos ?? []) as { id: string; portal_id: string | null; texto: string; created_at: string }[]).forEach((p) => itens.push({
+      chave: `pc${p.id}`, portal: p.portal_id && daLoja(p.portal_id) ? p.portal_id : null, tipo: "Pedido da CS", titulo: p.texto, quando: p.created_at,
+      href: p.portal_id ? `/equipe/loja?id=${p.portal_id}&aba=conversas` : undefined, acao: "Resolvido",
+      liberar: async () => { const { error } = await sb.from("equipe_lembretes").update({ feito: true }).eq("id", p.id); if (error) throw new Error(error.message); },
+    }));
+  }
   return { itens, ativos };
 }

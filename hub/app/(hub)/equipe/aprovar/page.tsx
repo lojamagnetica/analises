@@ -23,8 +23,8 @@ export default function Aprovar() {
 
   return (
     <>
-      <Titulo titulo={aprova ? "Para aprovar" : "Esperando a Camilla"} sub={aprova
-        ? "Tudo o que está esperando a sua revisão para as lojas verem: Diagnósticos, Gestão, Análises do Instagram, planos do mês, Ações do Mês e pautas. Abra para revisar e libere quando estiver ok."
+      <Titulo titulo={aprova ? "Para revisar" : "Esperando a Camilla"} sub={aprova
+        ? "A sua fila única: o que espera a sua revisão para as lojas verem (Diagnósticos, Gestão, Análises do Instagram, planos do mês, leituras, reuniões gravadas e de gestão, Ações do Mês e pautas) e os pedidos que a Claudia passou para você."
         : "Tudo o que está pronto e esperando a Camilla aprovar para as lojas verem. Abra para conferir e completar o que faltar; liberar é com a Camilla."} />
       <div className="chips mb">
         <button type="button" className={`chip ${!filtro ? "escolhido" : ""}`} aria-pressed={!filtro} onClick={() => setFiltro("")}>Tudo · {dados.itens.length}</button>
@@ -49,13 +49,13 @@ export default function Aprovar() {
               <span className="linha" style={{ gap: 6 }}>
                 {i.destino && i.portal
                   ? <button type="button" className="btn s peq" onClick={() => abrirPortal(i.portal, i.destino)}>Abrir para revisar</button>
-                  : i.href && <Link className="btn s peq" href={i.href}>Abrir para revisar</Link>}
+                  : i.href && <Link className="btn s peq" href={i.href}>{i.tipo === "Pedido da CS" ? "Abrir a ficha" : "Abrir para revisar"}</Link>}
                 {i.liberar && aprova && (
                   <button type="button" className="btn p peq" onClick={async () => {
-                    if (!confirm(`Liberar "${i.titulo}" para ${nome(i.portal)}? A loja passa a ver.`)) return;
+                    if (!confirm(i.acao ? `${i.acao}: "${i.titulo}"?` : `Liberar "${i.titulo}" para ${nome(i.portal)}? A loja passa a ver.`)) return;
                     setErro("");
                     try { await i.liberar!(); recarregar(); } catch (e) { setErro((e as Error).message); }
-                  }}>Liberar</button>
+                  }}>{i.acao ?? "Liberar"}</button>
                 )}
               </span>
             </div>

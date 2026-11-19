@@ -27,7 +27,8 @@ type Aba = (typeof ABAS)[number]["id"];
 
 const COR_TERM: Record<string, string> = { Verde: "var(--feito)", Amarelo: "var(--orange)", Vermelho: "var(--red)" };
 const QUEM_C: Record<string, string> = { loja: "a loja", claudia: "a Claudia", camilla: "você (Camilla)" };
-const ROTULO = { contato: "Contato", combinado: "Combinado", conversa: "Conversa interna" } as const;
+const ROTULO = { contato: "Contato", combinado: "Combinado", conversa: "Conversa interna", reuniao: "Reunião", entrega: "Entrega" } as const;
+const diaDe = (iso: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Recife", weekday: "long", day: "2-digit", month: "2-digit" }).format(new Date(iso));
 
 /** Sem loja escolhida: a lista para escolher (as acompanhadas primeiro). */
 function Escolher() {
@@ -145,13 +146,22 @@ function Ficha({ id }: { id: string }) {
             <p className="ajuda" style={{ marginTop: 2 }}>Conversou, tentou e não conseguiu, mandou mensagem ou decidiu que não precisava: tudo fica no histórico da loja.</p>
             <OQueAconteceu registro={{ portalId: id, tipo: "geral", ref: hoje(), loja: p.loja }} feito={atualizar} inicial="conversei" comCanal />
           </div>
-          <div className="secao">Histórico</div>
+          <div className="secao">Histórico da loja</div>
+          <p className="ajuda" style={{ marginTop: 0 }}>Dia a dia: reuniões e o que ficou, combinados, entregas feitas para a loja, contatos e conversas.</p>
           {!linha ? <Carregando /> : !linha.length ? <p className="mudo">Nada registrado ainda.</p> : linha.map((i, n) => (
-            <div key={n} className="card mb" style={{ padding: 12 }}>
-              <div className="linha entre" style={{ gap: 8 }}><b>{i.titulo}</b><small className="mudo">{ROTULO[i.tipo]} · {dataHora(i.quando)}</small></div>
-              {i.texto && <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{i.texto}</div>}
-              {i.ajuda && <span className="selo alerta">pediu ajuda</span>}
-              {i.extra && <small className="mudo">{i.extra}</small>}
+            <div key={n}>
+              {(n === 0 || diaDe(linha[n - 1].quando) !== diaDe(i.quando)) && <div className="secao" style={{ textTransform: "capitalize", marginTop: n ? 18 : 0 }}>{diaDe(i.quando)}</div>}
+              <div className={`card mb${i.tipo === "reuniao" || i.tipo === "entrega" ? " card-borda" : ""}`} style={{ padding: 12, ...(i.tipo === "reuniao" ? { ["--c" as string]: "var(--purple)" } : i.tipo === "entrega" ? { ["--c" as string]: "var(--feito)" } : {}) }}>
+                <div className="linha entre" style={{ gap: 8 }}><b>{i.titulo}</b><small className="mudo">{ROTULO[i.tipo]} · {dataHora(i.quando)}</small></div>
+                {i.texto && (i.tipo === "reuniao" && i.texto.length > 400
+                  ? <details style={{ marginTop: 4 }}><summary style={{ cursor: "pointer" }}>{i.texto.slice(0, 200)}…</summary><div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{i.texto}</div></details>
+                  : <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{i.texto}</div>)}
+                {i.ajuda && <span className="selo alerta">pediu ajuda</span>}
+                {i.extra && <small className="mudo">{i.extra}</small>}
+                {i.link && (i.link.startsWith("/")
+                  ? <div className="mt"><button type="button" className="btn s peq" onClick={() => abrirPortal(id, i.link as string)}>Abrir como a loja vê</button></div>
+                  : <div className="mt"><a className="btn s peq" href={i.link} target="_blank" rel="noopener">Abrir</a></div>)}
+              </div>
             </div>
           ))}
         </>

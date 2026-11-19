@@ -669,5 +669,90 @@ document.addEventListener('click',async e=>{
   setTimeout(()=>b.textContent=old,1600);
 });
 </script>
+<style>
+  #revBtn{position:fixed;right:18px;bottom:18px;z-index:50;background:#C9965F;color:#12100E;border:0;border-radius:24px;padding:12px 18px;font:800 12px Montserrat,sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+  #revBtn .c{display:inline-block;background:#12100E;color:#C9965F;border-radius:10px;padding:1px 7px;margin-left:8px}
+  body.rev [data-rev]{outline:1px dashed rgba(201,150,95,.45);outline-offset:3px;position:relative;cursor:copy}
+  body.rev [data-rev]:hover{outline:2px solid #C9965F}
+  .revAdd{display:none;position:absolute;top:6px;right:6px;z-index:20;background:#C9965F;color:#12100E;border:0;border-radius:14px;padding:4px 10px;font:800 10px Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  body.rev [data-rev]:hover>.revAdd{display:block}
+  .revPin{position:absolute;top:6px;left:6px;z-index:20;background:#FF5B1F;color:#fff;border-radius:50%;width:22px;height:22px;font:800 11px/22px Montserrat,sans-serif;text-align:center;display:none}
+  body.rev .revPin.on{display:block}
+  #revPanel{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);z-index:60;background:#1B1714;border-left:1px solid #2E2722;transform:translateX(100%);transition:transform .25s;display:flex;flex-direction:column;font-family:Montserrat,sans-serif}
+  body.rev #revPanel{transform:none}
+  #revPanel header{padding:16px 18px;border-bottom:1px solid #2E2722;display:flex;justify-content:space-between;align-items:center}
+  #revPanel header b{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#C9965F}
+  #revPanel header button{background:none;border:0;color:#A99D8E;font-size:20px;cursor:pointer}
+  #revHint{padding:12px 18px;font-size:12px;color:#A99D8E;border-bottom:1px solid #2E2722}
+  #revList{flex:1;overflow:auto;padding:12px 18px;display:flex;flex-direction:column;gap:10px}
+  .revItem{border:1px solid #2E2722;border-radius:6px;padding:10px 12px;font-size:13px;color:#F3EDE4}
+  .revItem .t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#C9965F;margin-bottom:4px;cursor:pointer}
+  .revItem .a{display:flex;gap:10px;margin-top:6px}
+  .revItem .a button{background:none;border:0;color:#A99D8E;font-size:11px;cursor:pointer;padding:0;text-decoration:underline}
+  #revForm{display:none;padding:14px 18px;border-top:1px solid #2E2722;background:#221d19}
+  #revForm.on{display:block}
+  #revForm .t{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#C9965F;margin-bottom:6px}
+  #revForm textarea{width:100%;min-height:90px;background:#12100E;color:#F3EDE4;border:1px solid #2E2722;border-radius:4px;padding:8px;font:14px Montserrat,sans-serif;resize:vertical}
+  #revForm .b{display:flex;gap:8px;margin-top:8px}
+  .rb{flex:1;background:#C9965F;color:#12100E;border:0;border-radius:4px;padding:9px;font:800 11px Montserrat,sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+  .rb.g{background:#2E2722;color:#F3EDE4}
+  #revFoot{padding:12px 18px;border-top:1px solid #2E2722;display:flex;gap:8px}
+</style>
+<button id="revBtn" type="button">✎ Revisar <span class="c" id="revCount">0</span></button>
+<aside id="revPanel">
+  <header><b>Observações da revisão</b><button type="button" id="revClose" aria-label="Fechar">×</button></header>
+  <div id="revHint">Passe o mouse sobre qualquer trecho e clique em <b>+ Obs</b> (no celular, toque no trecho). A observação fica presa naquele trecho.</div>
+  <div id="revList"></div>
+  <div id="revForm"><div class="t" id="revFormT"></div><textarea id="revText" placeholder="O que você quer mudar neste trecho?"></textarea><div class="b"><button class="rb g" type="button" id="revCancel">Cancelar</button><button class="rb" type="button" id="revSave">Salvar</button></div></div>
+  <div id="revFoot"><button class="rb" type="button" id="revCopy">Copiar todas</button><button class="rb g" type="button" id="revClear">Limpar</button></div>
+</aside>
+<script>
+(()=>{
+  const KEY='enc-revisao';
+  const store=(()=>{try{return window.localStorage}catch(e){return null}})();
+  let notes=[]; try{notes=JSON.parse(store&&store.getItem(KEY)||'[]')}catch(e){notes=[]}
+  const save=()=>{try{store&&store.setItem(KEY,JSON.stringify(notes))}catch(e){}};
+  const txt=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
+  const targets=[['header.hero',()=> 'Capa'],['.intro',()=> 'Texto de abertura'],['.mi',el=>'Moodboard · '+txt(el.querySelector('span'))],['.oc',el=>'Objetivo · '+txt(el.querySelector('h3'))],['.mrow',el=>'Entenda · '+txt(el.querySelector('.mlabel'))],['.rule',el=>'Regra · '+txt(el.querySelector('b'))],['.brands',()=> 'Identidade · marcas'],['.palette',()=> 'Identidade · paleta'],['.typo',()=> 'Identidade · tipografia'],['.mock',el=>'Modelo · '+txt(el.querySelector('.cap'))],['.rules2>div',el=>'Identidade · '+txt(el.querySelector('b'))],['.sellc',el=>'O que vender · '+txt(el.querySelector('h3'))],['.week',el=>'Calendário · '+txt(el.querySelector('h3'))],['.step .stephead',el=>'Roteiro · '+txt(el.querySelector('h2'))],['.film',()=> 'Roteiro do filme (tabela)'],['.opt',el=>'Roteiro · '+txt(el.closest('.step').querySelector('h2'))+' · '+txt(el.querySelector('h3'))],['.extra',el=>'Roteiro · '+txt(el.closest('.step')?.querySelector('h2'))+' · '+txt(el.querySelector('b'))],['.tcard',el=>'Top 10 · '+txt(el.querySelector('b'))],['.tline',()=> 'Top 10 · prazos'],['#prep',()=> 'Preparo']];
+  const els=[];
+  targets.forEach(([sel,lab])=>document.querySelectorAll(sel).forEach((el,i)=>{
+    if(el.hasAttribute('data-rev'))return;
+    const id=sel.replace(/[^a-z0-9]/gi,'')+'-'+i;
+    el.setAttribute('data-rev',id); el.dataset.revLabel=lab(el)||sel;
+    const b=document.createElement('button'); b.type='button'; b.className='revAdd'; b.textContent='+ Obs';
+    b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();openForm(el)}); el.appendChild(b);
+    const p=document.createElement('span'); p.className='revPin'; el.appendChild(p);
+    els.push(el);
+  }));
+  let cur=null, editIdx=-1;
+  const $=id=>document.getElementById(id);
+  function openForm(el,idx){cur=el; editIdx=idx??-1; document.body.classList.add('rev'); $('revForm').classList.add('on'); $('revFormT').textContent=el.dataset.revLabel; $('revText').value=editIdx>=0?notes[editIdx].t:''; setTimeout(()=>$('revText').focus(),50)}
+  function closeForm(){$('revForm').classList.remove('on'); cur=null; editIdx=-1}
+  function render(){
+    $('revCount').textContent=notes.length;
+    $('revList').innerHTML=notes.length?notes.map((n,i)=>`<div class="revItem"><div class="t" data-go="${n.id}">${i+1} · ${n.l}</div>${n.t.replace(/</g,'&lt;').replace(/\n/g,'<br>')}<div class="a"><button type="button" data-ed="${i}">Editar</button><button type="button" data-del="${i}">Apagar</button></div></div>`).join(''):'<div style="color:#A99D8E;font-size:13px">Nenhuma observação ainda.</div>';
+    els.forEach(el=>{const k=notes.filter(n=>n.id===el.dataset.rev).length; const p=el.querySelector(':scope>.revPin'); p.textContent=k; p.classList.toggle('on',k>0)});
+  }
+  $('revSave').onclick=()=>{const t=$('revText').value.trim(); if(!t||!cur){closeForm();return}
+    if(editIdx>=0){notes[editIdx].t=t}else{notes.push({id:cur.dataset.rev,l:cur.dataset.revLabel,t})}
+    save(); render(); closeForm()};
+  $('revCancel').onclick=closeForm;
+  $('revList').addEventListener('click',e=>{
+    const d=e.target.dataset;
+    if(d.del!==undefined){notes.splice(+d.del,1);save();render()}
+    else if(d.ed!==undefined){const n=notes[+d.ed];const el=document.querySelector(`[data-rev="${n.id}"]`); if(el)openForm(el,+d.ed)}
+    else if(d.go){const el=document.querySelector(`[data-rev="${d.go}"]`); if(el)el.scrollIntoView({behavior:'smooth',block:'center'})}
+  });
+  $('revBtn').onclick=()=>document.body.classList.toggle('rev');
+  $('revClose').onclick=()=>{document.body.classList.remove('rev');closeForm()};
+  document.addEventListener('click',e=>{ if(!document.body.classList.contains('rev'))return; if(e.target.closest('#revPanel,#revBtn,a,button,input,video'))return; const el=e.target.closest('[data-rev]'); if(el&&window.matchMedia('(hover: none)').matches){e.preventDefault();openForm(el)} },true);
+  $('revCopy').onclick=async()=>{const out='REVISÃO · Campanha ENCONTROS (Pitanga)\n\n'+notes.map((n,i)=>`${i+1}. [${n.l}]\n${n.t}`).join('\n\n'); const b=$('revCopy'),o=b.textContent; try{await navigator.clipboard.writeText(out);b.textContent='Copiado ✓'}catch(err){const ta=document.createElement('textarea');ta.value=out;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');b.textContent='Copiado ✓'}catch(e){b.textContent='Não copiou'}ta.remove()} setTimeout(()=>b.textContent=o,1800)};
+  $('revClear').onclick=()=>{ if($('revClear').dataset.c){notes=[];save();render();$('revClear').textContent='Limpar';delete $('revClear').dataset.c} else {$('revClear').dataset.c=1;$('revClear').textContent='Confirmar?';setTimeout(()=>{$('revClear').textContent='Limpar';delete $('revClear').dataset.c},2500)} };
+  const showBtn=()=>{const on=location.hash==='#revisar'; $('revBtn').style.display=(on||notes.length)?'':'none'; if(on)document.body.classList.add('rev')};
+  window.addEventListener('hashchange',showBtn); showBtn();
+  render();
+})();
+</script>
+
 </body>
 </html>

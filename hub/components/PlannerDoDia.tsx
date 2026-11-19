@@ -61,7 +61,8 @@ export function PlannerDoDia() {
   const [agora, setAgora] = useState(minutosAgora());
 
   useEffect(() => { const t = setInterval(() => setAgora(minutosAgora()), 60_000); return () => clearInterval(t); }, []);
-  useEffect(() => { try { setCam(localStorage.getItem("lm-planner-cam") === "1"); } catch { /* sem armazenamento */ } }, []);
+  // O nome das lojas aparece sempre: o modo câmera não fica lembrado, liga só no clique e desliga ao sair da tela.
+  useEffect(() => { try { localStorage.removeItem("lm-planner-cam"); } catch { /* sem armazenamento */ } }, []);
   useEffect(() => {
     if (!dados) return;
     setFoco(dados.registro?.foco ?? ""); setAmanha(dados.registro?.amanha ?? ""); setVitoria(dados.registro?.vitoria ?? "");
@@ -79,7 +80,7 @@ export function PlannerDoDia() {
 
   if (!dados) return <div style={{ ...cartao, background: C.bg, color: C.mudo, fontFamily: FONTE, marginBottom: 20 }}>Montando o seu dia…</div>;
 
-  const trocarCam = () => { const v = !cam; setCam(v); try { localStorage.setItem("lm-planner-cam", v ? "1" : "0"); } catch { /* sem armazenamento */ } };
+  const trocarCam = () => setCam(!cam);
   const lembrarFeito = (id: string) => { const n = [...new Set([...feitosHoje, id])]; setFeitosHoje(n); try { localStorage.setItem(`lm-planner-feitos-${dados.dia}`, JSON.stringify(n)); } catch { /* sem armazenamento */ } };
 
   const minhas = dados.fila.filter((i) => i.prioridade !== "cobrar");

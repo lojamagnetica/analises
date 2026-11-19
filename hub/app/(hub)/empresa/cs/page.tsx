@@ -9,6 +9,7 @@ import { linkZap, painelCs, type AlertaCs, type LojaCs, type Nivel } from "@/lib
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { PendenciasPorCliente } from "@/components/PendenciasPorCliente";
 import { OQueAconteceu } from "@/components/OQueAconteceu";
+import { CaixaDoDiaResumo, NovidadesDoDia } from "@/components/MeuDiaExtras";
 import { ContatosDoDia } from "@/components/ContatosDoDia";
 import { contatosDoDia } from "@/lib/contatos";
 import { aprovadasHoje, aprovar, chaveAlerta, chaveGrupo, liberarDirecao, painelDia, registrarEmLote, type GrupoAlerta } from "@/lib/painel-cs";
@@ -135,7 +136,7 @@ export default function InicioCs() {
 
   return (
     <>
-      <Titulo titulo={`Bom dia${nome ? `, ${nome.split(" ")[0]}` : ""}`} sub="Uma loja, um cartão. Resolva de cima para baixo: cada item traz a mensagem pronta, e a conversa que você registrar fecha o alerta." />
+      <Titulo titulo={`Meu dia${nome ? ` · ${nome.split(" ")[0]}` : ""}`} sub="Tudo o que pede você hoje, de cima para baixo: lembretes, o que as lojas fizeram, os alertas com a mensagem pronta e as pendências. Em cada item, conte o que aconteceu: fica no histórico da loja." />
 
       {podeVerComoCs && !comoCs && <p className="mb" style={{ marginTop: 0 }}><button type="button" className="btn s peq" onClick={() => verComoCs(true)}>👁 Ver como a Claudia</button></p>}
       {aprova && (
@@ -167,6 +168,9 @@ export default function InicioCs() {
           ))}
         </div>
       )}
+
+      <NovidadesDoDia />
+      <CaixaDoDiaResumo soDaCs={!aprova} />
 
       <p className="mb" style={{ marginTop: 0 }}><Link className="btn p peq" href="/equipe/contatos#novo">+ Registrar contato</Link></p>
 
@@ -235,7 +239,6 @@ export default function InicioCs() {
       <p className="ajuda" style={{ marginTop: 0 }}>O que falta pedir a cada loja e o que falta a equipe fazer. Os itens automáticos somem sozinhos quando o dado entra no Hub.</p>
       <PendenciasPorCliente />
 
-      <p className="ajuda"><Link href="/equipe/controle">Voltar ao Controle de clientes</Link></p>
     </>
   );
 }

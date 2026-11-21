@@ -81,8 +81,8 @@ export default function Mural() {
       <MensagemSemana d={d} guardar={guardar} />
 
       {/* Folha 1: missão, visão e valores */}
-      {(d.missao || d.visao || d.valores.length > 0) && (
-        <Folha id="mvv" titulo="Missão, visão e valores" paisagem onCopiar={[["Missão", d.missao], ["Visão", d.visao], ["Valores", d.valores.join("\n")]]}>
+      {!editando && (d.missao || d.visao || d.valores.length > 0) && (
+        <Folha id="mvv" titulo="Missão, visão e valores" paisagem>
           <div className="mu-pag mu-mvv" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
             {([["MISSÃO", d.missao, c.f1, c.f1 === c.f1 ? c.texto : c.texto, "alvo"], ["VISÃO", d.visao, c.f2, c.claro, "olho"], ["VALORES", d.valores.join("\n"), c.f3, c.texto, "coracao"]] as const).map(([r, t, fundo, cor, ic]) => (
               <div key={r} className="mu-faixa" style={{ background: fundo, color: cor }}>
@@ -96,8 +96,8 @@ export default function Mural() {
       )}
 
       {/* Folha 2: versículo */}
-      {d.versiculo && (
-        <Folha id="verso" titulo="Versículo" paisagem onCopiar={[["Versículo", `${d.versiculo} ${d.versiculo_ref}`.trim()]]}>
+      {!editando && d.versiculo && (
+        <Folha id="verso" titulo="Versículo" paisagem>
           <div className="mu-pag mu-verso" style={{ background: c.f3, fontFamily: "Poppins, Arial, sans-serif" }}>
             <p>{d.versiculo}</p><b>{d.versiculo_ref}</b>
             {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}

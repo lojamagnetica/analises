@@ -1,6 +1,6 @@
 // Rode com: node --experimental-strip-types lib/escala.test.ts
 import assert from "node:assert/strict";
-import { conferirEscala, regraDaSemana, horasDoDia, pessoaVazia } from "./escala.ts";
+import { conferirEscala, regraDaSemana, horasDoDia, pessoaVazia, pessoasDaEscala } from "./escala.ts";
 
 assert.equal(regraDaSemana("2026-12-14").horas, 44);   // semana que começa antes de 16/12: regra de hoje
 assert.equal(regraDaSemana("2026-12-21").horas, 42);   // primeira semana inteira da fase 1
@@ -33,3 +33,5 @@ console.log("escala ok");
   assert.ok(!a2.some((x) => /semana de 21\/12/.test(x.texto) && /42h/.test(x.regra)));
   console.log("escala com dias fechados ok");
 }
+assert.deepEqual(pessoasDaEscala(["Ana", "Bia"], { fora: ["Bia"], extras: ["Cris", "Ana"] }), ["Ana", "Cris"]);
+console.log("incluir e tirar da escala ok");

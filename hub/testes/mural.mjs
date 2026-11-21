@@ -38,5 +38,15 @@ const linha = esc.locator("tbody tr").filter({ hasText: "Vendedora Teste" });
 await linha.locator("td").nth(2).click();
 await page.waitForTimeout(400);
 ok(/"F"/.test(JSON.stringify(banco.tabelas.loja_mural[0].dados.escala ?? {})), "tocar no dia marca a folga e salva");
+// Incluir alguém à mão e tirar da escala (com confirmação).
+page.on("dialog", (x) => x.accept());
+await esc.getByRole("button", { name: "Time e horários" }).click();
+await esc.getByPlaceholder("Nome de quem entra na escala").fill("Temporária Natal");
+await esc.getByRole("button", { name: "+ Incluir na escala" }).click();
+await esc.locator("tbody tr").filter({ hasText: "Temporária Natal" }).first().waitFor();
+ok(true, "inclui uma pessoa na escala");
+await esc.locator("b").filter({ hasText: "Vendedor Outra" }).getByRole("button", { name: "tirar" }).click();
+await page.waitForTimeout(400);
+ok(await esc.locator("tbody tr").filter({ hasText: "Vendedor Outra" }).count() === 0, "tira uma pessoa da escala");
 await page.screenshot({ path: `${process.argv[3] ?? "."}/mural.png`, fullPage: true });
 await browser.close();

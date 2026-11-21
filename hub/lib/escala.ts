@@ -17,7 +17,11 @@ export type Horario = { entrada: string; saida: string; almoco: number };
 /** O horário da pessoa no mês; `sabado` quando o sábado tem outro horário (ex.: a loja fecha mais cedo). */
 export type PessoaEscala = Horario & { dias: Record<string, string>; sabado?: Horario };
 /** `fecha`: os dias da semana em que a loja fica fechada (0 = domingo, 1 = segunda...), além do domingo quando não abre. */
-export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala> };
+/** `fora`: quem do time a loja tirou da escala do mês; `extras`: quem a loja incluiu à mão (sem cadastro no time). */
+export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala>; fora?: string[]; extras?: string[] };
+/** Quem entra na escala do mês: o time (menos quem saiu) e quem a loja incluiu. */
+export const pessoasDaEscala = (time: string[], e: Pick<EscalaMes, "fora" | "extras">) =>
+  [...time, ...(e.extras ?? []).filter((n) => !time.includes(n))].filter((n) => !(e.fora ?? []).includes(n));
 /** A loja fica fechada nesse dia da semana? */
 export const lojaFechada = (e: Pick<EscalaMes, "abreDomingo" | "fecha">, diaDaSemana: number) => (diaDaSemana === 0 && !e.abreDomingo) || !!e.fecha?.includes(diaDaSemana);
 /** O horário da pessoa naquele dia da semana. */

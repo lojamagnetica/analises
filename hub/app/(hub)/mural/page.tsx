@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
-import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
@@ -383,8 +383,11 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
   const semana = (dd: string) => new Date(Date.UTC(a, m - 1, Number(dd))).getUTCDay();
   const LETRA = ["D", "S", "T", "Q", "Q", "S", "S"];
   const anterior = d.escala?.[somarMes(mes, -1)];
-  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {} };
-  const nomes = time ?? [];
+  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {}, fora: anterior?.fora ?? [], extras: anterior?.extras ?? [] };
+  const nomes = pessoasDaEscala(time ?? [], doMes);
+  const [nova, setNova] = useState("");
+  const incluir = () => { const n = nova.trim(); if (!n) return; salvarMes({ ...doMes, extras: [...new Set([...(doMes.extras ?? []), n])], fora: (doMes.fora ?? []).filter((x) => x !== n) }); setNova(""); };
+  const tirar = (n: string) => { if (!confirm(`Tirar ${n.split(" ")[0]} da escala de ${nomeMes(mes).toLowerCase()}?`)) return; salvarMes({ ...doMes, extras: (doMes.extras ?? []).filter((x) => x !== n), fora: (time ?? []).includes(n) ? [...new Set([...(doMes.fora ?? []), n])] : doMes.fora ?? [] }); };
   const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, sabado: anterior.pessoas[n].sabado } : {}) };
   const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
   const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
@@ -407,7 +410,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
         <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
           <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, -1))}>‹</button><span>{nomeMes(mes)}</span>
           <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, 1))}>›</button>
-          <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar" : "Horários do time"}</button>
+          <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar" : "Time e horários"}</button>
           <button type="button" className="btn p peq" onClick={() => imprimir("escala", false)}>Imprimir esta folha</button>
         </span>
       </div>
@@ -420,7 +423,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
           </div>
           {nomes.map((n) => { const x = pessoa(n); return (
             <div key={n} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
-              <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")}</b>
+              <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")} <button type="button" className="link-loja" style={{ color: "var(--red)", fontWeight: 400, fontSize: 12 }} onClick={() => tirar(n)}>tirar</button></b>
               <label className="ajuda">Entra<input type="time" value={x.entrada} onChange={(e) => mudar(n, { ...x, entrada: e.target.value })} /></label>
               <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x, saida: e.target.value })} /></label>
               <label className="ajuda">Almoço (min)<input type="number" min={0} step={15} value={x.almoco} onChange={(e) => mudar(n, { ...x, almoco: Number(e.target.value) || 0 })} style={{ width: 80 }} /></label>
@@ -434,6 +437,11 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
               </> : <button type="button" className="link-loja" onClick={() => mudar(n, { ...x, sabado: { entrada: x.entrada, saida: x.saida, almoco: x.almoco } })}>Sábado com outro horário</button>)}
             </div>
           ); })}
+          <div className="linha" style={{ gap: 6, flexWrap: "wrap", margin: "10px 0 6px", alignItems: "center" }}>
+            <input value={nova} onChange={(e) => setNova(e.target.value)} onKeyDown={(e) => e.key === "Enter" && incluir()} placeholder="Nome de quem entra na escala" style={{ maxWidth: 260 }} />
+            <button type="button" className="btn s peq" disabled={!nova.trim()} onClick={incluir}>+ Incluir na escala</button>
+          </div>
+          {(doMes.fora ?? []).length > 0 && <p className="ajuda" style={{ margin: "0 0 6px" }}>Fora da escala deste mês: {(doMes.fora ?? []).map((n) => <button key={n} type="button" className="link-loja" style={{ marginRight: 8 }} onClick={() => salvarMes({ ...doMes, fora: (doMes.fora ?? []).filter((x) => x !== n) })}>{n.split(" ")[0]} (voltar)</button>)}</p>}
           <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. No dia de meio período, marque &quot;só manhã&quot; ou &quot;só tarde&quot; na escala.</p>
         </div>
       )}
@@ -449,7 +457,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 <tr key={n}>
                   <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
                   <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
-                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) ? <td key={dd} className="mu-dom mu-fech" /> : (
+                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) && c !== "FÉ" ? <td key={dd} className="mu-fech" style={{ background: cor("F") }} title="Loja fechada: conta como folga">F</td> : (
                     <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
                       onClick={() => { const dias2 = { ...x.dias }; const p = proximoCodigo(c); if (p) dias2[dd] = p; else delete dias2[dd]; mudar(n, { ...x, dias: dias2 }); }}
                       title="Toque para trocar">{c}</td>
@@ -457,11 +465,11 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 </tr>
               ); })}
               {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
-              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-dom mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} />)}</tr>)}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={fechado(dd) ? { background: cor("F") } : undefined} />)}</tr>)}
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>
-            <span>Em branco: dia de trabalho · cinza: loja fechada ou feriado</span>
+            <span>Em branco: dia de trabalho · cinza: feriado · loja fechada conta como folga (F)</span>
             {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
           </p>
           {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}

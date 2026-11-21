@@ -201,7 +201,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
-        { href: "/conteudo/montador", rotulo: "Montador da coleção", icone: "pencil" },
+        { href: "/conteudo/montador", rotulo: "Montador de carrossel", icone: "pencil" },
         { href: "/conteudo/bio", rotulo: "Link da Bio", icone: "link" },
         { href: "/conteudo/desafio", rotulo: "Desafio Loja Viral", icone: "spark" },
       ],

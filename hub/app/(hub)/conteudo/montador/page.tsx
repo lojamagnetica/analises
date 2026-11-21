@@ -201,7 +201,7 @@ export default function MontadorColecao() {
 
   return (
     <>
-      <Titulo titulo={mont ? `Montador da coleção · ${mont.colecao}` : "Montador da coleção"} sub="Suba a foto que você fez com IA e baixe a imagem pronta, com as letras e as cores da sua campanha." />
+      <Titulo titulo={mont ? `Montador de carrossel · ${mont.colecao}` : "Montador de carrossel"} sub="Suba a foto que você fez com IA e baixe a imagem pronta, com as letras e as cores da sua campanha." />
       {!mont ? (
         <div className="card">
           <p style={{ margin: 0 }}>Quando a próxima campanha estiver pronta, o montador da sua coleção aparece aqui.</p>

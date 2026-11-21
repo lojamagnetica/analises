@@ -5,6 +5,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
+import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, pessoaVazia, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
@@ -125,6 +127,7 @@ export default function Mural() {
 
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
       <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
+      <EscalaDoMes portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
       <Calendario d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
@@ -358,6 +361,99 @@ function DiaDoConhecimento({ portalId, loja, varias, d, guardar }: { portalId: s
   );
 }
 
+/** Escala do mês: uma linha por pessoa do time, uma coluna por dia. Tocar no dia troca: folga, só manhã, só tarde, férias.
+ *  Embaixo, a conferência das regras da jornada (fim da escala 6x1 a partir de 16/12/2026), como na ferramenta Escala sem susto. */
+function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
+  const [mes, setMes] = useState(hoje().slice(0, 7));
+  const [editar, setEditar] = useState(false);
+  const { dados: time } = useDados(async () => {
+    const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja").eq("portal_id", portalId).eq("ativo", true).order("nome");
+    return ((data ?? []) as { nome: string; loja: string | null }[]).filter((p) => !varias || !loja || !p.loja || p.loja === loja).map((p) => p.nome);
+  }, [portalId, loja, varias]);
+  const [a, m] = mes.split("-").map(Number);
+  const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  const dias = Array.from({ length: nDias }, (_, i) => String(i + 1).padStart(2, "0"));
+  const semana = (dd: string) => new Date(Date.UTC(a, m - 1, Number(dd))).getUTCDay();
+  const LETRA = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const anterior = d.escala?.[somarMes(mes, -1)];
+  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, pessoas: {} };
+  const nomes = time ?? [];
+  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco } : {}) };
+  const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
+  const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
+  const cor = (c: string) => ESCALA.find((x) => x.c === c)?.cor;
+  // A conferência considera todo o time, mesmo quem ainda não tem nada marcado (dia normal em todos os dias).
+  const alertas = nomes.length ? conferirEscala(mes, { ...doMes, pessoas: Object.fromEntries(nomes.map((n) => [n, pessoa(n)])) }) : [];
+  const erros = alertas.filter((x) => x.erro).length;
+  const fechado = (dd: string) => semana(dd) === 0 && !doMes.abreDomingo;
+  const hora = (h: string) => { const [hh, mm] = h.split(":"); return `${Number(hh)}h${mm && mm !== "00" ? mm : ""}`; };
+  return (
+    <div className="card mb mu-folha" data-folha="escala">
+      <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
+        <b>Escala do mês</b>
+        <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, -1))}>‹</button><span>{nomeMes(mes)}</span>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, 1))}>›</button>
+          <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar" : "Horários do time"}</button>
+          <button type="button" className="btn p peq" onClick={() => imprimir("escala", false)}>Imprimir esta folha</button>
+        </span>
+      </div>
+      <div className="aviso mb">⚖️ {avisoDoMes(mes)}</div>
+      {editar && (
+        <div className="card mb" style={{ background: "var(--fundo, #faf7f3)" }}>
+          <label className="marcar" style={{ marginBottom: 8 }}><input type="checkbox" checked={doMes.abreDomingo} onChange={(e) => salvarMes({ ...doMes, abreDomingo: e.target.checked })} /><span>A loja abre no domingo</span></label>
+          {nomes.map((n) => { const x = pessoa(n); return (
+            <div key={n} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
+              <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")}</b>
+              <label className="ajuda">Entra<input type="time" value={x.entrada} onChange={(e) => mudar(n, { ...x, entrada: e.target.value })} /></label>
+              <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x, saida: e.target.value })} /></label>
+              <label className="ajuda">Almoço (min)<input type="number" min={0} step={15} value={x.almoco} onChange={(e) => mudar(n, { ...x, almoco: Number(e.target.value) || 0 })} style={{ width: 80 }} /></label>
+              <small className="mudo">{String(horasDoDia(x)).replace(".", ",")}h por dia</small>
+            </div>
+          ); })}
+          <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. No dia de meio período, marque &quot;só manhã&quot; ou &quot;só tarde&quot; na escala.</p>
+        </div>
+      )}
+      <div className="mu-moldura">
+        <div className="mu-pag mu-escala" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
+          <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>ESCALA DE {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
+          <table>
+            <thead>
+              <tr><th className="mu-nome">QUEM</th><th className="mu-hor">HORÁRIO</th>{dias.map((dd) => <th key={dd} className={semana(dd) === 0 || feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""}>{LETRA[semana(dd)]}<br />{Number(dd)}</th>)}</tr>
+            </thead>
+            <tbody>
+              {nomes.map((n) => { const x = pessoa(n); return (
+                <tr key={n}>
+                  <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}</td>
+                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}</td>
+                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) ? <td key={dd} className="mu-dom mu-fech" /> : (
+                    <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
+                      onClick={() => { const dias2 = { ...x.dias }; const p = proximoCodigo(c); if (p) dias2[dd] = p; else delete dias2[dd]; mudar(n, { ...x, dias: dias2 }); }}
+                      title="Toque para trocar">{c}</td>
+                  ); })}
+                </tr>
+              ); })}
+            </tbody>
+          </table>
+          <p className="mu-leg" style={{ marginTop: "2%" }}>
+            <span>Em branco: dia de trabalho · cinza: domingo e feriado</span>
+            {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
+          </p>
+          {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+        </div>
+      </div>
+      {!nomes.length && <p className="aviso mt">Cadastre o time em Minha equipe para montar a escala.</p>}
+      {nomes.length > 0 && (
+        <div className="mt">
+          <b>{alertas.length ? `Conferência das regras · ${erros ? `${erros} para corrigir` : "só avisos"}` : "✓ A escala segue todas as regras"}</b>
+          {alertas.map((x, i) => <p key={i} style={{ margin: "4px 0", color: x.erro ? "var(--red)" : undefined }}>{x.erro ? "⚠️" : "ℹ️"} <b>{x.regra}:</b> {x.texto}</p>)}
+        </div>
+      )}
+      <p className="ajuda" style={{ marginBottom: 0 }}>Toque no dia para trocar: folga, só manhã, só tarde, férias e de volta para o dia normal. Salva sozinho. A conferência segue a transição do fim da escala 6x1 (PEC 221/2019); a convenção coletiva da sua categoria pode ter regras próprias para domingo, feriado e banco de horas: confirme com o seu contador.</p>
+    </div>
+  );
+}
+
 function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) => void }) {
   const [mes, setMes] = useState(hoje().slice(0, 7));
   const [dia, setDia] = useState<string | null>(null);
@@ -474,6 +570,16 @@ const CSS = `
 .mu-conhec .mu-topo h1{font-size:clamp(12px,2.8vw,32px)}
 .mu-conhec h2{font-size:clamp(8px,1.5vw,18px)}
 .mu-conhec td.mu-tema{text-align:left;padding:0 2%;font-size:clamp(9px,1.8vw,21px);white-space:normal}
+.mu-escala table{border-collapse:collapse;margin:1% 2%;width:96%;table-layout:fixed}
+.mu-escala th,.mu-escala td{border:1px solid #111;text-align:center;padding:0;font-size:clamp(6px,1vw,12px);font-weight:600}
+.mu-escala th{background:#111;color:#fff;line-height:1.15;padding:.4% 0}
+.mu-escala th.mu-dom{background:#555}.mu-escala td.mu-dom{background:#eee}
+.mu-escala td{height:clamp(16px,2.8vw,34px);cursor:pointer}
+.mu-escala .mu-nome{width:14%;text-align:left;padding-left:.6%}.mu-escala .mu-hor{width:9%}
+.mu-escala td.mu-nome,.mu-escala td.mu-hor{cursor:default}
+.mu-escala input{width:100%;border:0;background:transparent;font:inherit;text-align:center;padding:0}
+.mu-escala .mu-leg{flex-wrap:wrap}
+.mu-escala td.mu-fech{cursor:default;background:#ddd}
 .mu-cal{padding:2% 3% 4%;display:flex;flex-direction:column;color:#000}
 .mu-cal h1{text-align:center;font-weight:800;font-size:clamp(16px,4vw,46px);margin:0 0 1.5%}
 .mu-quadro{background:#fff;border-radius:22px;padding:1.5% 2%;flex:1;display:flex;flex-direction:column}
@@ -497,6 +603,7 @@ const CSS = `
   body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura,body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura *,
   body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura,body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura *,
   body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura,body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura *,
+  body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura,body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura *,
   body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura,body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura *{visibility:visible!important}
   body[data-imprimir] [data-folha] .mu-moldura{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible}
   body[data-imprimir] .mu-pag{min-width:0;width:100vw;height:100vh;aspect-ratio:auto;max-width:none}

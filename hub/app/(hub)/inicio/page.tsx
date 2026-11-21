@@ -38,6 +38,8 @@ const ATALHOS = [
   { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
   // Conteúdo: abre direto a programação da semana (o Montador de carrossel entra quando a loja tem um liberado).
   { href: "/conteudo/semana", rotulo: "Conteúdo da semana", icone: "insta", cor: "var(--blue)" },
+  // O mural é atualizado toda semana (metas, dia do conhecimento, escala do mês e calendário).
+  { href: "/mural", rotulo: "Mural da semana", icone: "target", cor: "var(--orange)" },
 ];
 
 const PASSOS_ENTRADA = [

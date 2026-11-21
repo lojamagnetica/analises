@@ -457,7 +457,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 <tr key={n}>
                   <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
                   <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
-                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) ? <td key={dd} className="mu-dom mu-fech" /> : (
+                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) && c !== "FÉ" ? <td key={dd} className="mu-fech" style={{ background: cor("F") }} title="Loja fechada: conta como folga">F</td> : (
                     <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
                       onClick={() => { const dias2 = { ...x.dias }; const p = proximoCodigo(c); if (p) dias2[dd] = p; else delete dias2[dd]; mudar(n, { ...x, dias: dias2 }); }}
                       title="Toque para trocar">{c}</td>
@@ -465,11 +465,11 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 </tr>
               ); })}
               {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
-              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-dom mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} />)}</tr>)}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={fechado(dd) ? { background: cor("F") } : undefined} />)}</tr>)}
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>
-            <span>Em branco: dia de trabalho · cinza: loja fechada ou feriado</span>
+            <span>Em branco: dia de trabalho · cinza: feriado · loja fechada conta como folga (F)</span>
             {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
           </p>
           {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}

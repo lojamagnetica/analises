@@ -17,8 +17,8 @@ export type DadosMural = {
   metas_todas?: boolean;
   /** Meta da semana de cada vendedora (R$), escrita pela equipe a partir do caixa: segunda-feira da semana (AAAA-MM-DD) → id da pessoa → meta. Só a semana 1 sai calculada pelo plano; as outras saem em branco até a equipe preencher. */
   metas_semana?: Record<string, Record<string, number>>;
-  /** Mensagem motivacional de cada semana (segunda-feira AAAA-MM-DD → texto). Sem texto escrito, o Hub mostra uma sugestão pronta para a loja trocar. */
-  mensagens?: Record<string, string>;
+  /** Mensagem da semana para imprimir (segunda-feira AAAA-MM-DD → frase e versículo). Sem texto escrito, o Hub mostra uma sugestão pronta para a loja trocar. */
+  mensagens?: Record<string, { texto: string; ref: string }>;
   /** Cores da faixa 1, 2 e 3 do mural, do texto e do símbolo (da marca da loja). */
   cores: { f1: string; f2: string; f3: string; texto: string; destaque: string; claro: string; fundo: string; suave: string; tinta: string };
   /** Símbolos da marca (imagens pequenas, data URL). Só os símbolos, sem o nome da loja. */
@@ -85,16 +85,26 @@ export function bolinha(pa: number | null, tkm: number | null, metaPa: number, m
   return n === 2 ? "verde" : n === 1 ? "amarela" : "vermelha";
 }
 
-/** Sugestões de mensagem motivacional da semana (base para a loja trocar). Uma por semana, em rodízio. Texto sem dados de loja. */
-const MENSAGENS = [
-  "Semana nova, meta nova. Cada atendimento começa com um sorriso e termina com uma cliente que quer voltar. Hoje a gente vende a segunda peça e fecha o caixa no Hub.",
-  "A meta da semana é do time inteiro. Cada uma faz a sua parte: atender bem, oferecer o look completo e chamar a carteira. Quando uma vende, a loja inteira ganha.",
-  "Quem cuida da cliente hoje vende amanhã. Esta semana, antes de abrir, separe 5 clientes da sua carteira e chame cada uma pelo nome.",
-  "Vender bem é ouvir antes de mostrar. Nesta semana, pergunte a ocasião da cliente e monte o look para ela, não só a peça que ela entrou procurando.",
-  "Uma semana forte se faz um dia de cada vez. Comece o dia olhando a meta, termine o dia com o caixa lançado e leve o aprendizado para amanhã.",
+/** Frases e versículos para a folha "Mensagem da semana" (imprimir e colocar na parede). Texto sem dados de loja. A loja pode trocar. */
+export type MensagemSemana = { texto: string; ref: string; tema: string };
+export const BANCO_MENSAGENS: MensagemSemana[] = [
+  { tema: "Mentalidade", texto: "Tudo posso naquele que me fortalece.", ref: "Filipenses 4:13" },
+  { tema: "Time", texto: "Como o ferro afia o ferro, assim uma pessoa afia a outra.", ref: "Provérbios 27:17" },
+  { tema: "Foco", texto: "Olhe sempre para a frente e mantenha os olhos fixos no que está adiante.", ref: "Provérbios 4:25" },
+  { tema: "Mentalidade", texto: "A sua mentalidade decide o dia antes da primeira cliente entrar.", ref: "" },
+  { tema: "Time", texto: "Melhor serem dois do que um, porque têm melhor paga do seu trabalho.", ref: "Eclesiastes 4:9" },
+  { tema: "Foco", texto: "O que recebe a sua atenção cresce. Hoje, a meta recebe a sua.", ref: "" },
+  { tema: "Mentalidade", texto: "Seja forte e corajosa. Não se apavore nem desanime.", ref: "Josué 1:9" },
+  { tema: "Time", texto: "Sozinha a gente vende. Junto a gente constrói uma loja.", ref: "" },
+  { tema: "Foco", texto: "Os planos bem feitos levam à fartura.", ref: "Provérbios 21:5" },
+  { tema: "Mentalidade", texto: "Entregue o seu caminho ao Senhor, confie nele, e ele agirá.", ref: "Salmos 37:5" },
+  { tema: "Time", texto: "Tudo o que fizerem, façam de todo o coração.", ref: "Colossenses 3:23" },
+  { tema: "Foco", texto: "Disciplina é fazer o combinado mesmo quando não está com vontade.", ref: "" },
+  { tema: "Mentalidade", texto: "Que o favor do Senhor esteja sobre nós e confirme o trabalho das nossas mãos.", ref: "Salmos 90:17" },
+  { tema: "Time", texto: "Cliente bem atendida volta. Cliente que volta sustenta a loja de todas nós.", ref: "" },
 ];
-export function sugerirMensagem(semana: string, pa?: number, tkm?: number) {
-  const n = Math.floor(new Date(`${semana}T12:00:00Z`).getTime() / 604800000);
-  const base = MENSAGENS[((n % MENSAGENS.length) + MENSAGENS.length) % MENSAGENS.length];
-  return pa && tkm ? `${base}\nNossa meta: P.A. de ${pa.toLocaleString("pt-BR")} e ticket médio de R$ ${tkm.toLocaleString("pt-BR")}.` : base;
+/** Sugestão da semana: uma por semana, em rodízio. `desloc` pula para a próxima do banco (botão "Outra sugestão"). */
+export function sugerirMensagem(semana: string, desloc = 0): MensagemSemana {
+  const n = Math.floor(new Date(`${semana}T12:00:00Z`).getTime() / 604800000) + desloc;
+  return BANCO_MENSAGENS[((n % BANCO_MENSAGENS.length) + BANCO_MENSAGENS.length) % BANCO_MENSAGENS.length];
 }

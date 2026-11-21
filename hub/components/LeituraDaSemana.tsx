@@ -60,8 +60,9 @@ export function CaixaDaSemana() {
     if (semGestao) return null;
     // Os relatórios da semana (estoque e crediário), de qualquer loja do portal.
     const lojas = portal.lojas?.length > 1 ? portal.lojas : [""];
-    const [dias, ...envios] = await Promise.all([caixaDaSemana(portal.id), ...lojas.map((l) => listarEnvios(portal.id, l, semanaAtual()).catch(() => []))]);
-    return { dias, slots: new Set(envios.flat().map((e) => e.slot)) };
+    const [dias, anterior, lida, ...envios] = await Promise.all([caixaDaSemana(portal.id), caixaDaSemana(portal.id, semanaPassada()), buscarLeitura(portal.id, false).catch(() => null),
+      ...lojas.map((l) => listarEnvios(portal.id, l, semanaAtual()).catch(() => []))]);
+    return { dias, anterior, publicadaEm: lida?.leitura?.publicada_em ?? lida?.leitura?.updated_at ?? null, slots: new Set(envios.flat().map((e) => e.slot)) };
   }, [portal.id, semGestao]);
   if (semGestao) return <NumerosDaSemana />;
   if (!tudo) return null;
@@ -71,12 +72,30 @@ export function CaixaDaSemana() {
   const relFaltam = RELATORIOS_SEMANA.filter((r) => !tudo.slots.has(r.chave));
   // Sexta e sábado: a semana fecha no sábado; depois disso a análise só vem na semana seguinte.
   const dow = new Date(`${hoje()}T12:00:00Z`).getUTCDay();
-  const fecha = (dow === 5 || dow === 6) && (faltam > 0 || relFaltam.length > 0 || comErro.length > 0);
+  // Caixa da semana enviado: todo dia de loja lançado (até sábado) e sem número para corrigir.
+  const completo = (lista: typeof dados) => lista.every((d) => d.feriado || d.lancado) && !lista.some((d) => d.problemas.length);
+  // Sexta a domingo: fala da semana que está fechando. Segunda a quinta: da semana passada (a análise sai na segunda).
+  const fimDeSemana = dow === 5 || dow === 6 || dow === 0;
+  const semanaFalada = fimDeSemana ? tudo.dias : tudo.anterior;
+  const enviado = fimDeSemana ? dow !== 5 && completo(tudo.dias) : completo(tudo.anterior);
+  // A análise conta como liberada quando a Camilla publica a leitura depois da sexta da semana falada.
+  const sexta = semanaFalada[4]?.dia ?? "";
+  const liberada = !!tudo.publicadaEm && tudo.publicadaEm.slice(0, 10) >= sexta;
+  const fecha = (dow === 5 || dow === 6) && !enviado && (faltam > 0 || comErro.length > 0 || (dow === 6 && !dados[5]?.lancado && !dados[5]?.feriado));
   return (
     <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam || fecha || comErro.length ? "var(--red)" : "var(--feito)" }}>
-      {fecha && (
+      {liberada ? (
+        <p className="linha entre" style={{ margin: "0 0 10px", fontWeight: 700, gap: 8, flexWrap: "wrap" }}>
+          <span>✅ A Camilla liberou a sua análise da semana.</span>
+          <Link className="btn p peq" href="/leitura">Ver a análise</Link>
+        </p>
+      ) : enviado ? (
         <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
-          ⏰ {dow === 6 ? "Hoje é o último dia" : "Amanhã (sábado) é o último dia"} para mandar o caixa e os relatórios da semana. Mandando até sábado, a sua análise da semana chega na segunda. Sem isso, ela só vem na próxima semana.
+          🎉 Parabéns, você mandou o caixa da semana! Em breve a sua análise será feita e liberada pela Camilla.
+        </p>
+      ) : fecha && (
+        <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
+          ⏰ {dow === 6 ? "Hoje é o último dia" : "Amanhã (sábado) é o último dia"} para mandar o caixa da semana. Mandando até sábado, a sua análise da semana chega na segunda. Sem isso, ela só vem na próxima semana.
         </p>
       )}
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>

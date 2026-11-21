@@ -116,8 +116,7 @@ export async function salvarNumerosSemana(n: NumerosSemana) {
 }
 
 /** Dias da semana atual (segunda a sábado) com e sem caixa lançado. */
-export async function caixaDaSemana(portalId: string) {
-  const semana = semanaDe();
+export async function caixaDaSemana(portalId: string, semana = semanaDe()) {
   const [{ data }, { count }] = await Promise.all([
     sb().from("loja_caixa").select("dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem, justificativa").eq("portal_id", portalId).gte("dia", semana),
     sb().from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),

@@ -51,7 +51,7 @@ export const FUNCOES: Padrao[] = [
   { id: "parados", freq: "semanal", nome: "Produtos parados: estratégia", ajuda: "Escolha o que entra em ação e vira conteúdo.", dia: 3, hora: "15:00", minutos: 30, link: "/bussola/estoque" },
   { id: "compras", freq: "semanal", nome: "Decidir compras e reposição", ajuda: "O que repor, o que girar, o que não comprar.", dia: 4, hora: "10:00", minutos: 45, link: "/estoque" },
   { id: "conteudo", freq: "semanal", nome: "Planejar o conteúdo da semana", ajuda: "Estoque, giro, período, desejo e tendência.", dia: 5, hora: "10:00", minutos: 45, link: "/conteudo/semana" },
-  { id: "gravar", freq: "semanal", nome: "Gravar os vídeos", ajuda: "Tudo de uma vez, no dia e hora combinados.", dia: 5, hora: "14:00", minutos: 90, link: "/conteudo/roteiro" },
+  { id: "gravar", freq: "semanal", nome: "Gravar os vídeos", ajuda: "Tudo de uma vez, no dia e hora combinados.", dia: 5, hora: "14:00", minutos: 90, link: "/conteudo/semana" },
   { id: "fechamento", freq: "mensal", nome: "Fechar o mês e ver o resultado", ajuda: "Último dia do mês: números fechados, o que deu certo e o que não.", dia: 0, hora: "09:00", minutos: 60, link: "/gestao/resultado" },
   { id: "comprasmes", freq: "mensal", nome: "Plano de compras do mês", ajuda: "Com o estoque e o giro na mão, antes de comprar.", dia: 5, hora: "10:00", minutos: 60, link: "/gestao/compras" },
   { id: "metanova", freq: "mensal", nome: "Planejar a meta e as ações do próximo mês", ajuda: "O PLANEJE AQUI do mês seguinte.", dia: 20, hora: "10:00", minutos: 90, link: "/planeje" },
@@ -337,10 +337,9 @@ export function sugestoesDeConteudo(d: DadosHoje): Sugestao[] {
     .filter((i) => !i.postado_em && !temas.some((t) => t && t.includes(i.produto.toLowerCase())) && (i.objetivo || i.dias_parado >= 30))
     .sort((a, b) => peso(b) - peso(a)).slice(0, 3)
     .map((i) => ({
-      chave: `e-${i.id}`, origem: "estoque", titulo: `Mostrar: ${i.produto}`, href: "/conteudo/roteiro",
+      chave: `e-${i.id}`, origem: "estoque", titulo: `Mostrar: ${i.produto}`, href: "/conteudo/semana",
       texto: `${i.qtd} peça(s) paradas há ${i.dias_parado} dias${data ? `. ${data.titulo} é ${data.faltam === 0 ? "hoje" : `em ${data.faltam} dias`}: monte uma combinação para essa data` : ": mostre como usar com outras peças"}, e chame a cliente certa no direct.`,
     }));
-  for (const p of d.pautas.slice(0, 2)) lista.push({ chave: `p-${p.titulo}`, origem: "pauta", titulo: `Em alta: ${p.titulo}`, texto: p.angulo, href: "/conteudo/pautas" });
   if (data && !lista.some((s) => s.origem === "estoque")) lista.push({ chave: `d-${data.titulo}`, origem: "data", titulo: `${data.titulo} se aproxima`, texto: `Faltam ${data.faltam} dias. Planeje o conteúdo e as ações dessa data.`, href: "/conteudo/semana" });
   return lista;
 }

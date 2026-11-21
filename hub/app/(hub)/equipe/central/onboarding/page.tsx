@@ -102,7 +102,7 @@ const AREAS: { area: string; vem: string; itens: string[] }[] = [
   { area: "Gestão de pessoas", vem: "O time e o teste de perfil", itens: ["Minha equipe e o perfil de cada pessoa", "Reuniões prontas (semanal e do mês) e Dar retorno", "Desenvolvimento, gincanas, contratação e organograma"] },
   { area: "Vendas", vem: "Mix, preços e o que mais vende", itens: ["Ações do Mês", "Planeje aqui: o planejamento do mês"] },
   { area: "De cliente a fã", vem: "O cadastro de clientes", itens: ["Minhas clientes, com a carteira de cada vendedora", "Missão da semana e resgate de clientes", "Campanhas e experiência da cliente"] },
-  { area: "Conteúdo", vem: "Instagram, cliente ideal e inspirações", itens: ["Programação da semana e pautas quentes", "Criar roteiro e Link da Bio", "Resultados do Instagram"] },
+  { area: "Conteúdo", vem: "Instagram, cliente ideal e inspirações", itens: ["Programação da semana", "Montador da coleção", "Link da Bio"] },
   { area: "E mais", vem: "Tudo o que você contar", itens: ["Planner de gestão, com a rotina da sua loja", "Curso", "Mural e Nossa marca (abre na semana depois do Diagnóstico)"] },
 ];
 function Ferramentas() {

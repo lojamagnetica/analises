@@ -136,37 +136,44 @@ export default function Mural() {
   );
 }
 
-/** Mensagem motivacional da semana: já vem uma sugestão pronta; a loja pode trocar e a troca fica salva para aquela semana. */
+/** Mensagem da semana: frase ou versículo para imprimir e colocar na parede. Já vem uma sugestão; a loja troca, pede outra ou escreve a sua. */
 function MensagemSemana({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) => void }) {
   const semana = semanaDe(hoje());
-  const sugestao = sugerirMensagem(semana, d.pa, d.tkm);
+  const [desloc, setDesloc] = useState(0);
+  const sug = sugerirMensagem(semana, desloc);
   const salva = d.mensagens?.[semana];
-  const [texto, setTexto] = useState(salva ?? sugestao);
+  const atual = salva ?? { texto: sug.texto, ref: sug.ref };
   const [editando, setEditando] = useState(false);
-  useEffect(() => { setTexto(d.mensagens?.[semana] ?? sugestao); }, [semana, salva, sugestao]); // eslint-disable-line react-hooks/exhaustive-deps
-  const salvar = (t: string) => { guardar({ ...d, mensagens: { ...(d.mensagens ?? {}), [semana]: t } }); setEditando(false); };
+  const [rascunho, setRascunho] = useState(atual);
+  const c = d.cores;
+  const salvar = (m: { texto: string; ref: string }) => { guardar({ ...d, mensagens: { ...(d.mensagens ?? {}), [semana]: m } }); setEditando(false); };
   return (
-    <div className="card card-borda mb" style={{ ["--c" as string]: d.cores.destaque }}>
-      <div className="linha entre">
-        <b>Mensagem da semana</b>
-        <span className="linha" style={{ gap: 6 }}>
-          <Copiar texto={texto} />
-          <button type="button" className="btn s peq" onClick={() => setEditando(!editando)}>{editando ? "Cancelar" : "Trocar"}</button>
-        </span>
+    <>
+      <Folha id="msg" titulo="Mensagem da semana" paisagem onCopiar={[["Texto", `${atual.texto} ${atual.ref}`.trim()]]}>
+        <div className="mu-pag mu-verso" style={{ background: c.f3, fontFamily: "Poppins, Arial, sans-serif" }}>
+          <p>{atual.texto}</p><b>{atual.ref}</b>
+          {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+        </div>
+      </Folha>
+      <div className="linha mb" style={{ gap: 6, flexWrap: "wrap" }}>
+        {!salva && !editando && <span className="ajuda" style={{ margin: 0 }}>Sugestão pronta ({sug.tema.toLowerCase()}). Troque se quiser.</span>}
+        {!editando && <button type="button" className="btn s peq" onClick={() => { const n = sugerirMensagem(semana, desloc + 1); setDesloc(desloc + 1); guardar({ ...d, mensagens: { ...(d.mensagens ?? {}), [semana]: { texto: n.texto, ref: n.ref } } }); }}>Outra sugestão</button>}
+        {!editando && <button type="button" className="btn s peq" onClick={() => { setRascunho(atual); setEditando(true); }}>Escrever a minha</button>}
+        {!editando && salva && <button type="button" className="btn s peq" onClick={() => { const m = { ...(d.mensagens ?? {}) }; delete m[semana]; guardar({ ...d, mensagens: m }); }}>Voltar para a sugestão</button>}
       </div>
-      {editando ? (
-        <>
-          <textarea rows={4} value={texto} onChange={(e) => setTexto(e.target.value)} style={{ width: "100%", marginTop: 8 }} />
+      {editando && (
+        <div className="card mb">
+          <label style={{ display: "block", marginBottom: 8 }}><b>Frase</b>
+            <textarea rows={3} value={rascunho.texto} onChange={(e) => setRascunho({ ...rascunho, texto: e.target.value })} style={{ width: "100%" }} /></label>
+          <label style={{ display: "block" }}><b>De onde vem (opcional, ex.: Salmos 37:5)</b>
+            <input value={rascunho.ref} onChange={(e) => setRascunho({ ...rascunho, ref: e.target.value })} style={{ width: "100%" }} /></label>
           <div className="linha mt" style={{ gap: 6 }}>
-            <button type="button" className="btn p peq" onClick={() => salvar(texto)}>Salvar</button>
-            <button type="button" className="btn s peq" onClick={() => setTexto(sugestao)}>Voltar para a sugestão</button>
+            <button type="button" className="btn p peq" onClick={() => salvar(rascunho)}>Salvar</button>
+            <button type="button" className="btn s peq" onClick={() => setEditando(false)}>Cancelar</button>
           </div>
-        </>
-      ) : (
-        <p style={{ whiteSpace: "pre-line", margin: "8px 0 0" }}>{texto}</p>
+        </div>
       )}
-      {!salva && !editando && <p className="ajuda" style={{ marginBottom: 0 }}>Esta é uma sugestão pronta. Você pode trocar quando quiser.</p>}
-    </div>
+    </>
   );
 }
 

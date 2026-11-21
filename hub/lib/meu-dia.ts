@@ -10,7 +10,7 @@ import { hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { PA_IDEAL, buscarCaixa, fimDoMes, fmtPa, indicadores, somar, somarMes, type Caixa } from "@/lib/caixa";
 import { buscarPlano, diasDeLoja, metaDoPlano, metasDasPessoas, semanaDoDia, type LinhaPlano } from "@/lib/plano-mes";
-import { VANTAGEM, principal, quemVende, type Letra } from "@/lib/pessoas";
+import { VANTAGEM, ehDono, principal, quemVende, type Letra } from "@/lib/pessoas";
 import { FOCOS, focoSugerido } from "@/lib/missoes";
 export { VANTAGEM };
 import { moeda } from "@/lib/formato";
@@ -93,6 +93,8 @@ export type Vendedora = {
   id: string; nome: string; letra: Letra | null;
   faturamento: number; vendas: number; pecas: number; meta: number | null;
   pa: number | null; tkm: number | null; pm: number | null; problema: Problema; diagnostico: string;
+  /** Dona ou sócia que vende: aparece só com os números de venda, sem feedback nem ações. */
+  dono?: boolean;
   /** Referências do feedback: o preço médio do estoque e quanto ela está abaixo do ritmo da meta. */
   pmEstoque?: number | null; fontePm?: "estoque" | "loja"; faltaRitmo?: number | null;
 };
@@ -132,7 +134,9 @@ export async function buscarMeuDia(portalId: string, modo: Modo = {}, lojaPlanne
   return {
     agora, caixa, caixaOntem, plano, planoProx,
     // Só quem vende entra na meta e no placar da semana (administrativo e financeiro ficam de fora).
-    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null; loja?: string | null }[]),
+    // Quem já tem venda lançada no caixa entra mesmo com função de estoque, cadastro ou envios.
+    equipe: quemVende((equipe ?? []) as { id: string; nome: string; perfil: Record<Letra, number> | null; funcao: string | null; loja?: string | null }[],
+      Array.from(new Set(caixa.flatMap((c) => (c.vendedoras ?? []).filter((v) => v.pessoa_id && v.vendas > 0).map((v) => v.pessoa_id as string))))),
     rotina: { config: (rot?.config ?? {}) as Config, feitos: (rot?.feitos ?? {}) as Record<string, string[]> },
     clientes: (clientes ?? []) as { aniversario: string | null; ultima_compra: string | null; loja?: string | null }[],
     datas: (datas ?? []) as { mes: number; dia: number | null; titulo: string }[],
@@ -230,7 +234,7 @@ export function vendedoras(d: DadosMeuDia, pmEstoque: number | null): Vendedora[
       diagnostico = `${nome} está no ritmo${metaV ? ` da meta (${moeda(t.faturamento)} de ${moeda(metaV)})` : ""}${i.pa != null ? `, com PA ${fmtPa(i.pa)}` : ""}.`;
     }
     const faltaRitmo = metaV ? Math.max(0, metaV * passou - t.faturamento) : null;
-    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico, pmEstoque: pmRef, fontePm, faltaRitmo };
+    return { id: p.id, nome, letra: principal(p.perfil)?.letra ?? null, ...t, meta: metaV, pa: i.pa, tkm: i.tkm, pm: i.pm, problema, diagnostico, pmEstoque: pmRef, fontePm, faltaRitmo, dono: ehDono(p.funcao) };
   });
 }
 
@@ -426,7 +430,7 @@ export function tarefas(d: DadosMeuDia, p: ReturnType<typeof placar>, vs: Vended
   if (!comPlanner && cfg.planejamento && diaDoMes >= cfg.planejamento && diaDoMes <= 20 && !planoEnviado) {
     t.push({ chave: "planejamento", texto: `Montar o plano de ${proximo} no PLANEJE AQUI (até dia 20)`, href: `/planeje/mes?m=${somarMes(d.agora.slice(0, 7), 1)}` });
   }
-  for (const v of vs.filter((x) => x.problema === "pa" || x.problema === "pm" || x.problema === "volume")) {
+  for (const v of vs.filter((x) => !x.dono && (x.problema === "pa" || x.problema === "pm" || x.problema === "volume"))) {
     t.push({ chave: `feedback_${v.id}`, texto: `Chamar a ${v.nome}: ${SITUACOES[v.problema].titulo.replace(/^[A-Z][a-zá-ú]/, (x) => x.toLowerCase())}. O feedback está pronto abaixo.` });
   }
   const c = carteira(d);
@@ -458,7 +462,7 @@ export function acompanhamento(d: DadosMeuDia) {
 
 /** O problema que mais aparece no time (para escolher o conteúdo do dia). */
 export function problemaDaLoja(vs: Vendedora[], caixa: Caixa[]): Problema {
-  const contagem = (["pa", "pm", "volume"] as Problema[]).map((p) => ({ p, n: vs.filter((v) => v.problema === p).length })).sort((a, b) => b.n - a.n);
+  const contagem = (["pa", "pm", "volume"] as Problema[]).map((p) => ({ p, n: vs.filter((v) => !v.dono && v.problema === p).length })).sort((a, b) => b.n - a.n);
   if (contagem[0].n) return contagem[0].p;
   const i = indicadores(somar(caixa));
   return i.pa != null && i.pa < PA_ALERTA ? "pa" : "volume";

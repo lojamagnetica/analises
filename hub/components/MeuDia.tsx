@@ -163,14 +163,14 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           {padrao && <div className="aviso mb"><b>Padrão da loja:</b> {padrao.texto}</div>}
           <div className="grade g2 mb">
             {vs.map((v) => {
-              const fb = feedback(v);
+              const fb = v.dono ? null : feedback(v);
               const s = SITUACOES[v.problema];
               const ruim = v.problema === "pa" || v.problema === "pm" || v.problema === "volume";
               return (
                 <div key={v.id} className="card card-borda" style={{ ["--c" as string]: ruim ? "var(--red)" : v.problema === "ok" ? "var(--green)" : "var(--line)" }}>
                   <div className="linha entre">
                     <b>{v.nome}</b>
-                    <span className={`selo ${ruim ? "erro" : v.problema === "ok" ? "feito" : "espera"}`}>{s.titulo}</span>
+                    {v.dono ? <span className="selo espera">Dona · só a venda</span> : <span className={`selo ${ruim ? "erro" : v.problema === "ok" ? "feito" : "espera"}`}>{s.titulo}</span>}
                   </div>
                   {v.vendas > 0 && (
                     <div className="chips mt" style={NUM}>
@@ -180,7 +180,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
                       <span className="chip" style={v.problema === "pm" ? { borderColor: "var(--red)", color: "var(--red)" } : undefined}>PM {v.pm != null ? moeda(v.pm) : "—"}</span>
                     </div>
                   )}
-                  <p style={{ margin: "10px 0 6px" }}><b>O que está acontecendo:</b> {v.diagnostico}</p>
+                  {!v.dono && <p style={{ margin: "10px 0 6px" }}><b>O que está acontecendo:</b> {v.diagnostico}</p>}
                   {fb && (
                     <details open={ruim}>
                       <summary style={{ cursor: "pointer" }}><b>Feedback pronto</b>{v.letra && m ? <> · perfil {m.perfis[v.letra].nome}</> : ""}</summary>
@@ -197,8 +197,8 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
                         : <p className="ajuda" style={{ margin: 0 }}>Sem teste de perfil: <Link className="link-loja" href="/pessoas">faça o teste</Link> para o feedback sair no jeito dela.</p>}
                     </details>
                   )}
-                  <b>{s.acoes.length === 1 ? "O que fazer" : "3 ações"}</b>
-                  <ol style={{ margin: "4px 0 0 18px", padding: 0 }}>{s.acoes.map((a) => <li key={a}>{a}</li>)}</ol>
+                  {!v.dono && <><b>{s.acoes.length === 1 ? "O que fazer" : "3 ações"}</b>
+                  <ol style={{ margin: "4px 0 0 18px", padding: 0 }}>{s.acoes.map((a) => <li key={a}>{a}</li>)}</ol></>}
                 </div>
               );
             })}

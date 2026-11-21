@@ -3,7 +3,7 @@
 import { BASE } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Formato = "dupla" | "look" | "capa" | "story";
+export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -122,6 +122,15 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     return linhas.length;
   };
 
+  // Texto corrido centralizado, quebrando em linhas.
+  const corrido = (t: string, px: number, cx: number, y: number, max: number, cor: string, peso = 400) => {
+    x.font = `${peso} ${px}px MontMS, Arial`; x.fillStyle = cor; x.textAlign = "center";
+    const linhas: string[] = []; let l = "";
+    (t || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > max && l) { linhas.push(l); l = p; } else l = tt; });
+    linhas.push(l);
+    linhas.forEach((ln, k) => x.fillText(ln, cx, y + k * px * 1.45));
+    return linhas.length;
+  };
   x.fillStyle = c.fundo; x.fillRect(0, 0, w, h);
   if (formato === "dupla") {
     espacado(d.kic, 22, 540, 96, c.destaque, 600);
@@ -147,6 +156,40 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     foto(d.f1, 60, top, 960, 1350 - top - 200, true);
     x.fillStyle = c.destaque; x.fillRect(470, 1350 - 150, 140, 1);
     espacado(d.pre || id.rodape || "", 19, 540, 1350 - 92, c.texto);
+  }
+  if (formato === "frase") {
+    // Slide só de texto: a virada do carrossel.
+    const n = titulo(d.tit, 84, 540, 520, 900);
+    corrido(d.pre, 30, 540, 520 + n * 92 + 40, 820, c.destaque);
+    espacado(d.kic, 20, 540, 1350 - 120, c.destaque, 600);
+    logo(540, 1350 - 70, 110);
+  }
+  if (formato === "etiqueta") {
+    // Uma etiqueta desenhada com a frase dentro e a explicação embaixo.
+    x.save(); x.translate(540, 470); x.rotate(-0.12);
+    const W = 760, H = 420, r = 36, bico = 150;
+    const forma = () => {
+      x.beginPath();
+      x.moveTo(-W / 2 + bico, -H / 2);
+      x.lineTo(W / 2 - r, -H / 2); x.quadraticCurveTo(W / 2, -H / 2, W / 2, -H / 2 + r);
+      x.lineTo(W / 2, H / 2 - r); x.quadraticCurveTo(W / 2, H / 2, W / 2 - r, H / 2);
+      x.lineTo(-W / 2 + bico, H / 2); x.lineTo(-W / 2, 0); x.closePath();
+    };
+    x.translate(18, 18); forma(); x.fillStyle = c.apoio; x.fill(); x.translate(-18, -18);
+    forma(); x.fillStyle = c.fundo; x.fill(); x.lineWidth = 7; x.strokeStyle = c.texto; x.stroke();
+    x.beginPath(); x.arc(-W / 2 + 90, 0, 26, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.moveTo(-W / 2 + 90, -26); x.bezierCurveTo(-W / 2 + 40, -260, -W / 2 - 160, -200, -W / 2 - 60, -330); x.lineWidth = 6; x.stroke();
+    x.restore();
+    x.save(); x.translate(560, 470); x.rotate(-0.12);
+    x.font = "italic 300 56px MontCG, Georgia, serif"; x.fillStyle = c.texto; x.textAlign = "center";
+    const ls: string[] = []; let l = "";
+    (`“${d.tit}”`).split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > 520 && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l);
+    ls.forEach((ln, k) => x.fillText(ln, 40, (k - (ls.length - 1) / 2) * 62 + 18));
+    x.restore();
+    espacado(d.kic, 26, 540, 860, c.destaque, 600);
+    corrido(d.pre, 32, 540, 930, 900, c.texto);
+    logo(540, 1350 - 70, 110);
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
-import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, pessoaVazia, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
@@ -376,16 +376,22 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
   const semana = (dd: string) => new Date(Date.UTC(a, m - 1, Number(dd))).getUTCDay();
   const LETRA = ["D", "S", "T", "Q", "Q", "S", "S"];
   const anterior = d.escala?.[somarMes(mes, -1)];
-  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, pessoas: {} };
+  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {} };
   const nomes = time ?? [];
-  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco } : {}) };
+  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, sabado: anterior.pessoas[n].sabado } : {}) };
   const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
   const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
   const cor = (c: string) => ESCALA.find((x) => x.c === c)?.cor;
   // A conferência considera todo o time, mesmo quem ainda não tem nada marcado (dia normal em todos os dias).
   const alertas = nomes.length ? conferirEscala(mes, { ...doMes, pessoas: Object.fromEntries(nomes.map((n) => [n, pessoa(n)])) }) : [];
   const erros = alertas.filter((x) => x.erro).length;
-  const fechado = (dd: string) => semana(dd) === 0 && !doMes.abreDomingo;
+  const fechado = (dd: string) => lojaFechada(doMes, semana(dd));
+  const DIAS_FECHA = [["Domingo", 0], ["Segunda", 1], ["Terça", 2], ["Quarta", 3], ["Quinta", 4], ["Sexta", 5], ["Sábado", 6]] as const;
+  const marcarFecha = (wd: number, sim: boolean) => {
+    if (wd === 0) return salvarMes({ ...doMes, abreDomingo: !sim });
+    const f = new Set(doMes.fecha ?? []); if (sim) f.add(wd); else f.delete(wd);
+    salvarMes({ ...doMes, fecha: [...f].sort() });
+  };
   const hora = (h: string) => { const [hh, mm] = h.split(":"); return `${Number(hh)}h${mm && mm !== "00" ? mm : ""}`; };
   return (
     <div className="card mb mu-folha" data-folha="escala">
@@ -401,7 +407,10 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
       <div className="aviso mb">⚖️ {avisoDoMes(mes)}</div>
       {editar && (
         <div className="card mb" style={{ background: "var(--fundo, #faf7f3)" }}>
-          <label className="marcar" style={{ marginBottom: 8 }}><input type="checkbox" checked={doMes.abreDomingo} onChange={(e) => salvarMes({ ...doMes, abreDomingo: e.target.checked })} /><span>A loja abre no domingo</span></label>
+          <b>Dias em que a loja fica fechada</b>
+          <div className="linha" style={{ gap: 10, flexWrap: "wrap", margin: "4px 0 10px" }}>
+            {DIAS_FECHA.map(([r, wd]) => <label key={wd} className="marcar"><input type="checkbox" checked={lojaFechada(doMes, wd)} onChange={(e) => marcarFecha(wd, e.target.checked)} /><span>{r}</span></label>)}
+          </div>
           {nomes.map((n) => { const x = pessoa(n); return (
             <div key={n} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
               <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")}</b>
@@ -409,23 +418,30 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
               <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x, saida: e.target.value })} /></label>
               <label className="ajuda">Almoço (min)<input type="number" min={0} step={15} value={x.almoco} onChange={(e) => mudar(n, { ...x, almoco: Number(e.target.value) || 0 })} style={{ width: 80 }} /></label>
               <small className="mudo">{String(horasDoDia(x)).replace(".", ",")}h por dia</small>
+              {!lojaFechada(doMes, 6) && (x.sabado ? <>
+                <span className="mudo">· Sábado:</span>
+                <label className="ajuda">Entra<input type="time" value={x.sabado.entrada} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, entrada: e.target.value } })} /></label>
+                <label className="ajuda">Sai<input type="time" value={x.sabado.saida} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, saida: e.target.value } })} /></label>
+                <label className="ajuda">Almoço<input type="number" min={0} step={15} value={x.sabado.almoco} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, almoco: Number(e.target.value) || 0 } })} style={{ width: 70 }} /></label>
+                <button type="button" className="link-loja" onClick={() => { const y = { ...x }; delete y.sabado; mudar(n, y); }}>igual aos outros dias</button>
+              </> : <button type="button" className="link-loja" onClick={() => mudar(n, { ...x, sabado: { entrada: x.entrada, saida: x.saida, almoco: x.almoco } })}>Sábado com outro horário</button>)}
             </div>
           ); })}
           <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. No dia de meio período, marque &quot;só manhã&quot; ou &quot;só tarde&quot; na escala.</p>
         </div>
       )}
-      <div className="mu-moldura">
-        <div className="mu-pag mu-escala" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
+      <div className="mu-moldura"><EscalaA4>
+        <div className="mu-pag mu-e2" style={{ fontFamily: "Poppins, Arial, sans-serif", ["--lh" as string]: `${Math.min(14, Math.max(7, 132 / Math.max(1, nomes.length)))}mm` }}>
           <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>ESCALA DE {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
           <table>
             <thead>
-              <tr><th className="mu-nome">QUEM</th><th className="mu-hor">HORÁRIO</th>{dias.map((dd) => <th key={dd} className={semana(dd) === 0 || feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""}>{LETRA[semana(dd)]}<br />{Number(dd)}</th>)}</tr>
+              <tr><th className="mu-nome">QUEM</th><th className="mu-hor">HORÁRIO</th>{dias.map((dd) => <th key={dd} className={fechado(dd) || feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""}>{LETRA[semana(dd)]}<br />{Number(dd)}</th>)}</tr>
             </thead>
             <tbody>
               {nomes.map((n) => { const x = pessoa(n); return (
                 <tr key={n}>
                   <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}</td>
-                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}</td>
+                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
                   {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) ? <td key={dd} className="mu-dom mu-fech" /> : (
                     <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
                       onClick={() => { const dias2 = { ...x.dias }; const p = proximoCodigo(c); if (p) dias2[dd] = p; else delete dias2[dd]; mudar(n, { ...x, dias: dias2 }); }}
@@ -436,12 +452,12 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>
-            <span>Em branco: dia de trabalho · cinza: domingo e feriado</span>
+            <span>Em branco: dia de trabalho · cinza: loja fechada ou feriado</span>
             {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
           </p>
           {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
         </div>
-      </div>
+      </EscalaA4></div>
       {!nomes.length && <p className="aviso mt">Cadastre o time em Minha equipe para montar a escala.</p>}
       {nomes.length > 0 && (
         <div className="mt">
@@ -570,16 +586,21 @@ const CSS = `
 .mu-conhec .mu-topo h1{font-size:clamp(12px,2.8vw,32px)}
 .mu-conhec h2{font-size:clamp(8px,1.5vw,18px)}
 .mu-conhec td.mu-tema{text-align:left;padding:0 2%;font-size:clamp(9px,1.8vw,21px);white-space:normal}
-.mu-escala table{border-collapse:collapse;margin:1% 2%;width:96%;table-layout:fixed}
-.mu-escala th,.mu-escala td{border:1px solid #111;text-align:center;padding:0;font-size:clamp(6px,1vw,12px);font-weight:600}
-.mu-escala th{background:#111;color:#fff;line-height:1.15;padding:.4% 0}
-.mu-escala th.mu-dom{background:#555}.mu-escala td.mu-dom{background:#eee}
-.mu-escala td{height:clamp(16px,2.8vw,34px);cursor:pointer}
-.mu-escala .mu-nome{width:14%;text-align:left;padding-left:.6%}.mu-escala .mu-hor{width:9%}
-.mu-escala td.mu-nome,.mu-escala td.mu-hor{cursor:default}
-.mu-escala input{width:100%;border:0;background:transparent;font:inherit;text-align:center;padding:0}
-.mu-escala .mu-leg{flex-wrap:wrap}
-.mu-escala td.mu-fech{cursor:default;background:#ddd}
+.mu-e2{width:297mm;height:210mm;min-width:0;aspect-ratio:auto;padding:0;color:#111;display:flex;flex-direction:column}
+.mu-e2 .mu-topo{margin:8mm 10mm 0;padding:3mm 0}
+.mu-e2 .mu-topo h1{font-size:9mm}
+.mu-e2 table{border-collapse:collapse;margin:5mm 10mm 0;width:277mm;table-layout:fixed}
+.mu-e2 th,.mu-e2 td{border:.3mm solid #111;text-align:center;padding:0;font-size:3mm;font-weight:600}
+.mu-e2 th{background:#111;color:#fff;line-height:1.15;height:9mm;font-size:2.8mm}
+.mu-e2 th.mu-dom{background:#555}.mu-e2 td.mu-dom{background:#eee}
+.mu-e2 td{height:var(--lh,12mm);cursor:pointer;font-size:3.4mm;font-weight:700}
+.mu-e2 .mu-nome{width:34mm;text-align:left;padding-left:1.5mm}.mu-e2 .mu-hor{width:24mm;font-size:2.8mm}
+.mu-e2 td.mu-nome{font-size:3.4mm}.mu-e2 td.mu-hor small{font-size:2.4mm;font-weight:500}
+.mu-e2 td.mu-nome,.mu-e2 td.mu-hor{cursor:default}
+.mu-e2 td.mu-fech{cursor:default;background:#d6d6d6}
+.mu-e2 .mu-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6mm;font-size:3.2mm;margin:4mm 10mm 0}
+.mu-e2 .mu-leg i{width:4.5mm;height:4.5mm}
+.mu-e2 .mu-simb{left:8mm;bottom:5mm;height:14mm}
 .mu-cal{padding:2% 3% 4%;display:flex;flex-direction:column;color:#000}
 .mu-cal h1{text-align:center;font-weight:800;font-size:clamp(16px,4vw,46px);margin:0 0 1.5%}
 .mu-quadro{background:#fff;border-radius:22px;padding:1.5% 2%;flex:1;display:flex;flex-direction:column}
@@ -608,7 +629,11 @@ const CSS = `
   body[data-imprimir] [data-folha] .mu-moldura{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible}
   body[data-imprimir] .mu-pag{min-width:0;width:100vw;height:100vh;aspect-ratio:auto;max-width:none}
   body[data-imprimir] .mu-cartaz{max-width:none;margin:0}
-  body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura{width:297mm;height:210mm;overflow:hidden}
+  body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura,body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura{width:297mm;height:210mm;overflow:hidden}
+  body[data-imprimir="escala"] .mu-esc{height:210mm!important;width:297mm!important}
+  body[data-imprimir="escala"] .mu-a4{transform:none!important}
+  body[data-imprimir] .mu-pag.mu-e2{width:297mm;height:210mm;min-width:0;max-width:none}
+  html:has(body[data-imprimir="escala"]),body[data-imprimir="escala"]{height:210mm!important;max-height:210mm;overflow:hidden!important}
   body[data-imprimir] .mu-pag.mu-m2{width:297mm;height:210mm;min-width:0;max-width:none}
   body[data-imprimir="metas"] .mu-esc{height:210mm!important;width:297mm!important}
   body[data-imprimir="metas"] .mu-a4{transform:none!important}

@@ -13,8 +13,15 @@ export const ESCALA = [
 ];
 export const proximoCodigo = (c: string) => { const i = ESCALA.findIndex((x) => x.c === c); return i === ESCALA.length - 1 ? "" : ESCALA[i + 1].c; };
 
-export type PessoaEscala = { entrada: string; saida: string; almoco: number; dias: Record<string, string> };
-export type EscalaMes = { abreDomingo: boolean; pessoas: Record<string, PessoaEscala> };
+export type Horario = { entrada: string; saida: string; almoco: number };
+/** O horário da pessoa no mês; `sabado` quando o sábado tem outro horário (ex.: a loja fecha mais cedo). */
+export type PessoaEscala = Horario & { dias: Record<string, string>; sabado?: Horario };
+/** `fecha`: os dias da semana em que a loja fica fechada (0 = domingo, 1 = segunda...), além do domingo quando não abre. */
+export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala> };
+/** A loja fica fechada nesse dia da semana? */
+export const lojaFechada = (e: Pick<EscalaMes, "abreDomingo" | "fecha">, diaDaSemana: number) => (diaDaSemana === 0 && !e.abreDomingo) || !!e.fecha?.includes(diaDaSemana);
+/** O horário da pessoa naquele dia da semana. */
+export const horarioDoDia = (p: PessoaEscala, diaDaSemana: number): Horario => (diaDaSemana === 6 && p.sabado ? p.sabado : p);
 export const pessoaVazia = (): PessoaEscala => ({ entrada: "09:00", saida: "18:00", almoco: 60, dias: {} });
 
 /** As fases da lei: a partir da segunda-feira depois de cada data, vale a regra nova. */
@@ -31,7 +38,7 @@ export function regraDaSemana(seg: string) {
 
 const min = (h: string) => { const [a, b] = (h || "0:0").split(":").map(Number); return (a || 0) * 60 + (b || 0); };
 /** Horas trabalhadas num dia inteiro, sem o almoço. */
-export const horasDoDia = (p: PessoaEscala) => Math.max(0, (min(p.saida) - min(p.entrada) - (Number(p.almoco) || 0)) / 60);
+export const horasDoDia = (p: Horario) => Math.max(0, (min(p.saida) - min(p.entrada) - (Number(p.almoco) || 0)) / 60);
 const fmtH = (h: number) => (Number.isInteger(h) ? `${h}h` : `${h.toFixed(1).replace(".", ",")}h`);
 
 export type Alerta = { pessoa: string; regra: string; texto: string; erro: boolean };
@@ -50,17 +57,21 @@ export function conferirEscala(mes: string, e: EscalaMes): Alerta[] {
   const out: Alerta[] = [];
   for (const [nome, p] of Object.entries(e.pessoas)) {
     const primeiro = nome.split(" ")[0];
-    const h = horasDoDia(p);
     const add = (regra: string, texto: string, erro = true) => out.push({ pessoa: nome, regra, texto, erro });
     // O que cada dia é para a pessoa: horas trabalhadas (0 = folga, loja fechada ou férias).
     const codigo = (d: string) => p.dias[d.slice(8)] ?? "";
-    const fechado = (d: string) => diaSemana(d) === 0 && !e.abreDomingo;
-    const horas = (d: string) => { const c = codigo(d); if (c === "F" || c === "FÉ" || fechado(d)) return 0; return c === "M" || c === "T" ? h / 2 : h; };
-    if (h > 10) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} por dia. Nem com acordo de compensação passa de 10h.`);
-    else if (h > 8) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} por dia. Acima de 8h só com acordo de compensação (até 10h).`, false);
-    if (h > 6 && (Number(p.almoco) || 0) < 60) add("Almoço", `${primeiro} trabalha mais de 6h e o almoço tem ${p.almoco || 0} minutos. O mínimo é 1 hora.`);
-    const descanso = 24 - (min(p.saida) - min(p.entrada)) / 60;
-    if (descanso < 11) add("11h de descanso", `${primeiro} sai às ${p.saida} e volta às ${p.entrada}: só ${fmtH(descanso)} de descanso entre um dia e outro. O mínimo é 11h.`);
+    const fechado = (d: string) => lojaFechada(e, diaSemana(d));
+    const horas = (d: string) => { const c = codigo(d); if (c === "F" || c === "FÉ" || fechado(d)) return 0; const h = horasDoDia(horarioDoDia(p, diaSemana(d))); return c === "M" || c === "T" ? h / 2 : h; };
+    // O horário de todo dia e o do sábado (quando é outro): limite do dia, almoço e descanso.
+    for (const [qual, x] of [["por dia", p], ["no sábado", p.sabado]] as const) {
+      if (!x || (qual === "no sábado" && lojaFechada(e, 6))) continue;
+      const h = horasDoDia(x);
+      if (h > 10) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} ${qual}. Nem com acordo de compensação passa de 10h.`);
+      else if (h > 8) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} ${qual}. Acima de 8h só com acordo de compensação (até 10h).`, false);
+      if (h > 6 && (Number(x.almoco) || 0) < 60) add("Almoço", `${primeiro} trabalha mais de 6h ${qual} e o almoço tem ${x.almoco || 0} minutos. O mínimo é 1 hora.`);
+      const descanso = 24 - (min(x.saida) - min(x.entrada)) / 60;
+      if (descanso < 11) add("11h de descanso", `${primeiro} sai às ${x.saida} e volta às ${x.entrada}: só ${fmtH(descanso)} de descanso entre um dia e outro. O mínimo é 11h.`);
+    }
     // Semanas inteiras do mês: horas e folgas.
     for (const seg of dias.filter((d) => diaSemana(d) === 1)) {
       const semana = dias.slice(dias.indexOf(seg), dias.indexOf(seg) + 7);

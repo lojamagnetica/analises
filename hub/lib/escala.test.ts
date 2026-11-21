@@ -23,3 +23,13 @@ assert.ok(tipo(a, /Almoço/) && tipo(a, /11h de descanso/) && tipo(a, /8h por di
 a = conferirEscala("2026-11", { abreDomingo: true, pessoas: { Cris: pessoaVazia() } });
 assert.ok(tipo(a, /7º dia/) && tipo(a, /Domingo/));
 console.log("escala ok");
+// Loja fechada domingo e segunda, sábado até 16h30: em dezembro, depois da mudança, ter 2 folgas sai da própria loja fechada.
+{
+  const sab = { entrada: "09:00", saida: "16:30", almoco: 60 };
+  const e = { abreDomingo: false, fecha: [0, 1], pessoas: { Mel: { ...pessoaVazia(), sabado: sab } } };
+  const a2 = conferirEscala("2026-12", e);
+  assert.ok(!a2.some((x) => /folga/.test(x.regra)), JSON.stringify(a2));            // domingo e segunda fechados = 2 folgas
+  // ter a sex 4 × 8h + sáb 6,5h = 38,5h: dentro das 42h
+  assert.ok(!a2.some((x) => /semana de 21\/12/.test(x.texto) && /42h/.test(x.regra)));
+  console.log("escala com dias fechados ok");
+}

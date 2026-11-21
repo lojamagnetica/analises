@@ -3,7 +3,7 @@
 import { BASE } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Formato = "dupla" | "look" | "capa" | "story";
+export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -122,6 +122,15 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     return linhas.length;
   };
 
+  // Texto corrido centralizado, quebrando em linhas.
+  const corrido = (t: string, px: number, cx: number, y: number, max: number, cor: string, peso = 400) => {
+    x.font = `${peso} ${px}px MontMS, Arial`; x.fillStyle = cor; x.textAlign = "center";
+    const linhas: string[] = []; let l = "";
+    (t || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > max && l) { linhas.push(l); l = p; } else l = tt; });
+    linhas.push(l);
+    linhas.forEach((ln, k) => x.fillText(ln, cx, y + k * px * 1.45));
+    return linhas.length;
+  };
   x.fillStyle = c.fundo; x.fillRect(0, 0, w, h);
   if (formato === "dupla") {
     espacado(d.kic, 22, 540, 96, c.destaque, 600);
@@ -147,6 +156,77 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     foto(d.f1, 60, top, 960, 1350 - top - 200, true);
     x.fillStyle = c.destaque; x.fillRect(470, 1350 - 150, 140, 1);
     espacado(d.pre || id.rodape || "", 19, 540, 1350 - 92, c.texto);
+  }
+  if (formato === "frase") {
+    // Slide só de texto: a virada do carrossel.
+    const n = titulo(d.tit, 84, 540, 520, 900);
+    corrido(d.pre, 30, 540, 520 + n * 92 + 40, 820, c.destaque);
+    espacado(d.kic, 20, 540, 1350 - 120, c.destaque, 600);
+    logo(540, 1350 - 70, 110);
+  }
+  if (formato === "etiqueta") {
+    // Uma etiqueta desenhada com a frase dentro e a explicação embaixo.
+    x.save(); x.translate(540, 470); x.rotate(-0.12);
+    const W = 760, H = 420, r = 36, bico = 150;
+    const forma = () => {
+      x.beginPath();
+      x.moveTo(-W / 2 + bico, -H / 2);
+      x.lineTo(W / 2 - r, -H / 2); x.quadraticCurveTo(W / 2, -H / 2, W / 2, -H / 2 + r);
+      x.lineTo(W / 2, H / 2 - r); x.quadraticCurveTo(W / 2, H / 2, W / 2 - r, H / 2);
+      x.lineTo(-W / 2 + bico, H / 2); x.lineTo(-W / 2, 0); x.closePath();
+    };
+    x.translate(18, 18); forma(); x.fillStyle = c.apoio; x.fill(); x.translate(-18, -18);
+    forma(); x.fillStyle = c.fundo; x.fill(); x.lineWidth = 7; x.strokeStyle = c.texto; x.stroke();
+    x.beginPath(); x.arc(-W / 2 + 90, 0, 26, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.moveTo(-W / 2 + 90, -26); x.bezierCurveTo(-W / 2 + 40, -260, -W / 2 - 160, -200, -W / 2 - 60, -330); x.lineWidth = 6; x.stroke();
+    x.restore();
+    x.save(); x.translate(560, 470); x.rotate(-0.12);
+    x.font = "italic 300 56px MontCG, Georgia, serif"; x.fillStyle = c.texto; x.textAlign = "center";
+    const ls: string[] = []; let l = "";
+    (`“${d.tit}”`).split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > 520 && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l);
+    ls.forEach((ln, k) => x.fillText(ln, 40, (k - (ls.length - 1) / 2) * 62 + 18));
+    x.restore();
+    espacado(d.kic, 26, 540, 860, c.destaque, 600);
+    corrido(d.pre, 32, 540, 930, 900, c.texto);
+    logo(540, 1350 - 70, 110);
+  }
+  if (formato === "foto") {
+    // Foto cheia, limpa, só uma faixa fina embaixo (estilo "os mais pedidos").
+    foto(d.f1, 0, 0, 1080, 1350);
+    const g = x.createLinearGradient(0, 1050, 0, 1350); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.45)");
+    x.fillStyle = g; x.fillRect(0, 1050, 1080, 300);
+    x.save(); x.textAlign = "left"; x.fillStyle = "#fff";
+    x.font = "600 22px MontMS, Arial"; x.fillText((d.kic || "").toUpperCase(), 64, 1232);
+    x.font = "400 30px MontMS, Arial"; x.fillText(d.pre || "", 64, 1282); x.restore();
+  }
+  if (formato === "cena") {
+    // A peça no cenário, com o nome do encontro numa etiqueta clara no alto.
+    foto(d.f1, 0, 0, 1080, 1350);
+    x.save(); x.font = "600 22px MontMS, Arial";
+    const t = (d.kic || "").toUpperCase(); const sp = 22 * 0.3;
+    const largura = [...t].reduce((a, l) => a + x.measureText(l).width + sp, -sp) + 64;
+    x.fillStyle = c.fundo; x.beginPath(); x.roundRect(540 - largura / 2, 64, largura, 58, 29); x.fill(); x.restore();
+    espacado(d.kic, 22, 540, 101, c.destaque, 600);
+    if (d.tit) {
+      x.save(); x.fillStyle = "rgba(247,242,234,.92)"; x.fillRect(0, 1350 - 190, 1080, 190); x.restore();
+      titulo(d.tit, 52, 540, 1350 - 112, 940);
+      espacado(d.pre, 19, 540, 1350 - 48, c.texto);
+    }
+  }
+  if (formato === "preco") {
+    // Flat lay com a etiqueta de preço desenhada no canto.
+    foto(d.f1, 0, 0, 1080, 1350);
+    espacado(d.kic, 22, 540, 92, c.texto, 600);
+    x.save(); x.translate(800, 1090); x.rotate(-0.18);
+    const W = 360, H = 170;
+    x.beginPath(); x.moveTo(-W / 2 + 60, -H / 2); x.lineTo(W / 2, -H / 2); x.lineTo(W / 2, H / 2); x.lineTo(-W / 2 + 60, H / 2); x.lineTo(-W / 2, 0); x.closePath();
+    x.fillStyle = c.fundo; x.fill(); x.lineWidth = 4; x.strokeStyle = c.texto; x.stroke();
+    x.beginPath(); x.arc(-W / 2 + 40, 0, 12, 0, Math.PI * 2); x.stroke();
+    x.textAlign = "center"; x.fillStyle = c.texto;
+    x.font = "italic 300 40px MontCG, Georgia, serif"; x.fillText(d.tit || "", 30, -8);
+    x.font = "600 22px MontMS, Arial"; x.fillStyle = c.destaque; x.fillText((d.pre || "").toUpperCase(), 30, 40);
+    x.restore();
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

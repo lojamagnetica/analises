@@ -7,6 +7,8 @@ import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
 import { ESCALA, avisoDoMes, ehDona, codigoDoDia, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
+import { MesDaCliente } from "@/components/MesDaCliente";
+import { datasDoMes, seloDaData } from "@/lib/calendario-varejo";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
@@ -557,7 +559,7 @@ function Calendario({ portalId, d, guardar }: { portalId: string; d: DadosMural;
   const { dados: plano } = useDados(async () => {
     const [p, datas] = await Promise.all([
       buscarPlano(portalId, mes).catch(() => null),
-      supabaseBrowser().from("datas_comerciais").select("dia, titulo").eq("mes", Number(mes.slice(5, 7)) - 1).not("dia", "is", null).then((r) => (r.data ?? []) as { dia: number; titulo: string }[]),
+      supabaseBrowser().from("datas_comerciais").select("dia, titulo").eq("mes", Number(mes.slice(5, 7)) - 1).then((r) => (r.data ?? []) as { dia: number | null; titulo: string }[]),
     ]);
     return { dados: p?.dados, comemorativas: datas };
   }, [portalId, mes]);
@@ -566,7 +568,8 @@ function Calendario({ portalId, d, guardar }: { portalId: string; d: DadosMural;
   for (const a of plano?.dados?.acoes ?? []) if (a.inicio) por(a.inicio.slice(0, 10), a.titulo, 0);
   for (const x of plano?.dados?.datas ?? []) if (x.trabalhar && x.dia) por(`${mes}-${String(x.dia).padStart(2, "0")}`, x.titulo, 1);
   const ja = (dia: string, t: string) => [...(doPlano[dia] ?? []), ...(d.eventos[dia] ?? [])].some((e) => { const x = e.t.toLowerCase(), y = t.toLowerCase(); return x.includes(y) || y.includes(x); });
-  for (const x of plano?.comemorativas ?? []) { const dia = `${mes}-${String(x.dia).padStart(2, "0")}`; if (!ja(dia, x.titulo)) por(dia, x.titulo, 1); }
+  // As que mudam de dia todo ano (Mães, Páscoa, Black Friday...) entram no dia certo; as mais fortes ganham a estrela.
+  for (const x of datasDoMes(plano?.comemorativas ?? [], mes)) { if (x.dia == null) continue; const dia = `${mes}-${String(x.dia).padStart(2, "0")}`; if (!ja(dia, x.titulo)) por(dia, `${seloDaData(x.titulo) === "forte" ? "★ " : ""}${x.titulo.replace(/\s*\(.*\)$/, "")}`, 1); }
   for (const dia of gradeDoMes(mes).flat()) { const f = dia && feriadoNacional(dia); if (dia && f && !ja(dia, f)) por(dia, `${f} (feriado)`, 2); }
   const [dia, setDia] = useState<string | null>(null);
   const [txt, setTxt] = useState(""); const [cor, setCor] = useState(0);
@@ -619,6 +622,7 @@ function Calendario({ portalId, d, guardar }: { portalId: string; d: DadosMural;
           <button type="button" className="btn p peq" onClick={add}>Marcar</button>
         </>}
       </div>
+      <MesDaCliente mes={mes} />
       <p className="ajuda">As ações e as datas do Planeje do mês, as datas comemorativas e os feriados nacionais entram sozinhos no calendário (para mudar as ações, mude no Planeje). Os eventos que você marcar aqui você tira clicando neles. O nome de cada cor da legenda você pode trocar.</p>
     </div>
   );

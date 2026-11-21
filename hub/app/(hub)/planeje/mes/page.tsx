@@ -1,5 +1,7 @@
 "use client";
 
+import { MesDaCliente } from "@/components/MesDaCliente";
+import { datasDoMes } from "@/lib/calendario-varejo";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
@@ -62,7 +64,8 @@ function Plano({ mes }: { mes: string }) {
     const opcoes = acoes.filter((a) => a.publicada && (a.venda_inicio ?? a.data_acao) <= fim && a.fim >= `${mes}-01`);
     const linhasDiag = (diag ?? []).flatMap((d) => ((d.dados as { abc?: { linhas?: { nome: string }[] } })?.abc?.linhas ?? []).map((l) => l.nome)).slice(0, 6);
     return {
-      linha, datas: (datas ?? []) as { dia: number | null; titulo: string }[], venda, opcoes, linhasDiag,
+      // As datas que mudam de dia todo ano (Mães, Páscoa, Black Friday...) entram com o dia certo deste ano.
+      linha, datas: datasDoMes((datas ?? []) as { dia: number | null; titulo: string }[], mes), venda, opcoes, linhasDiag,
       time: (time ?? []) as { id: string; nome: string; funcao: string | null }[],
       antigo: (antigo ?? []).filter((b) => (b.texto as string).trim()) as { bloco: string; texto: string }[],
     };
@@ -238,6 +241,8 @@ function Plano({ mes }: { mes: string }) {
       </Passo>
 
       <Passo n={3} titulo="Datas especiais do mês" sub="Marque as que você vai trabalhar e com que ação. A campanha começa antes da data, não no dia.">
+        {/* Lembrete das datas: o que a cliente busca no mês, a data forte, o caixa rápido e ideias de campanha. */}
+        <div style={{ marginBottom: 12 }}><MesDaCliente mes={mes} datas={base.datas} /></div>
         {!d.datas.length && <p className="mudo" style={{ margin: 0 }}>Nenhuma data comercial cadastrada para este mês.</p>}
         {d.datas.map((x, i) => {
           const troca = (y: Partial<typeof x>) => muda({ datas: d.datas.map((z, j) => (j === i ? { ...z, ...y } : z)) });

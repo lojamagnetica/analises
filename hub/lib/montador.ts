@@ -1,4 +1,4 @@
-// Montador da coleção: a loja sobe a foto feita com IA e o montador põe a tipografia da campanha.
+// Montador de carrossel: a loja sobe a foto feita com IA e o montador põe a tipografia da campanha.
 // A identidade de cada coleção (logo, cores, textos) vem do banco (loja_montadores), nunca do código.
 import { BASE } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";

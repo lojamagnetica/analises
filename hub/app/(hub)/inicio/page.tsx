@@ -36,7 +36,7 @@ const ATALHOS = [
   { href: "/gestao/conferencia", rotulo: "Conferência do caixa", icone: "check", cor: "var(--green)" },
   // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
   { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
-  // Conteúdo: abre direto a programação da semana (o Montador da coleção entra quando a loja tem um liberado).
+  // Conteúdo: abre direto a programação da semana (o Montador de carrossel entra quando a loja tem um liberado).
   { href: "/conteudo/semana", rotulo: "Conteúdo da semana", icone: "insta", cor: "var(--blue)" },
 ];
 
@@ -112,7 +112,7 @@ export default function Inicio() {
   const atalhos = (consultoria ? ATALHOS.filter((a) => a.href !== "/plano") : ATALHOS)
     // A análise da semana e do mês fica à mão da gestão (consultoria).
     .concat(consultoria ? [{ href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users", cor: "var(--blue)" }] : [])
-    .concat(temMontador ? [{ href: "/conteudo/montador", rotulo: "Montador da coleção", icone: "pencil", cor: "var(--blue)" }] : [])
+    .concat(temMontador ? [{ href: "/conteudo/montador", rotulo: "Montador de carrossel", icone: "pencil", cor: "var(--blue)" }] : [])
     // Loja na mão: o atalho do caixa vira Registrar venda.
     .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))

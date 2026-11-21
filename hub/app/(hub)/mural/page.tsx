@@ -13,7 +13,7 @@ import { semanaDe } from "@/lib/leitura";
 import { buscarCaixa, fimDoMes, nomeMes, somarMes, type Caixa } from "@/lib/caixa";
 import { buscarPlano, metaDoPlano, metasDoTime } from "@/lib/plano-mes";
 import { quemVende, type Pessoa } from "@/lib/pessoas";
-import { CORES_EVENTO, bolinha, buscarMural, completarMural, gradeDoMes, salvarMural, semanasDoMes, sortear, type DadosMural } from "@/lib/mural";
+import { CORES_EVENTO, bolinha, buscarMural, completarMural, gradeDoMes, salvarMural, semanasDoMes, sortear, sugerirMensagem, type DadosMural } from "@/lib/mural";
 
 const somaDias = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -78,6 +78,8 @@ export default function Mural() {
         </div>
       )}
 
+      <MensagemSemana d={d} guardar={guardar} />
+
       {/* Folha 1: missão, visão e valores */}
       {(d.missao || d.visao || d.valores.length > 0) && (
         <Folha id="mvv" titulo="Missão, visão e valores" paisagem onCopiar={[["Missão", d.missao], ["Visão", d.visao], ["Valores", d.valores.join("\n")]]}>
@@ -126,11 +128,45 @@ export default function Mural() {
       )}
 
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
-      <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
       <EscalaDoMes portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
       <Calendario portalId={portal.id} d={d} guardar={guardar} />
+      <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
+  );
+}
+
+/** Mensagem motivacional da semana: já vem uma sugestão pronta; a loja pode trocar e a troca fica salva para aquela semana. */
+function MensagemSemana({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) => void }) {
+  const semana = semanaDe(hoje());
+  const sugestao = sugerirMensagem(semana, d.pa, d.tkm);
+  const salva = d.mensagens?.[semana];
+  const [texto, setTexto] = useState(salva ?? sugestao);
+  const [editando, setEditando] = useState(false);
+  useEffect(() => { setTexto(d.mensagens?.[semana] ?? sugestao); }, [semana, salva, sugestao]); // eslint-disable-line react-hooks/exhaustive-deps
+  const salvar = (t: string) => { guardar({ ...d, mensagens: { ...(d.mensagens ?? {}), [semana]: t } }); setEditando(false); };
+  return (
+    <div className="card card-borda mb" style={{ ["--c" as string]: d.cores.destaque }}>
+      <div className="linha entre">
+        <b>Mensagem da semana</b>
+        <span className="linha" style={{ gap: 6 }}>
+          <Copiar texto={texto} />
+          <button type="button" className="btn s peq" onClick={() => setEditando(!editando)}>{editando ? "Cancelar" : "Trocar"}</button>
+        </span>
+      </div>
+      {editando ? (
+        <>
+          <textarea rows={4} value={texto} onChange={(e) => setTexto(e.target.value)} style={{ width: "100%", marginTop: 8 }} />
+          <div className="linha mt" style={{ gap: 6 }}>
+            <button type="button" className="btn p peq" onClick={() => salvar(texto)}>Salvar</button>
+            <button type="button" className="btn s peq" onClick={() => setTexto(sugestao)}>Voltar para a sugestão</button>
+          </div>
+        </>
+      ) : (
+        <p style={{ whiteSpace: "pre-line", margin: "8px 0 0" }}>{texto}</p>
+      )}
+      {!salva && !editando && <p className="ajuda" style={{ marginBottom: 0 }}>Esta é uma sugestão pronta. Você pode trocar quando quiser.</p>}
+    </div>
   );
 }
 

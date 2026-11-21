@@ -265,13 +265,16 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
     const semMeta = new Set(time.filter((p) => dp.metas?.[p.id] === 0).map((p) => p.id));
     if (!semMeta.size || varias) return time.map(calcular);
     const visiveis = time.filter((p) => !semMeta.has(p.id)).map(calcular);
+    // A linha "Loja" é o que sobra da loja sem as vendedoras que têm meta pessoal: meta da loja menos a delas, e as vendas das demais (dona, apoio e vendas sem nome).
     const metaLojaMes = metaDoPlano(dp);
+    const comMeta = new Set(visiveis.map((v) => v.id));
+    const metaL = metaLojaMes ? Math.max(0, metaLojaMes - visiveis.reduce((t, v) => t + (v.mensal ?? 0), 0)) : null;
     let fatL = 0, vendasL = 0, pecasL = 0, antesL = 0;
-    for (const x of doDia) { fatL += Number(x.faturamento) || 0; vendasL += Number(x.vendas) || 0; pecasL += Number(x.pecas) || 0; }
-    for (const x of antes) antesL += Number(x.faturamento) || 0;
+    for (const x of doDia) for (const v of x.vendedoras ?? []) if (!v.pessoa_id || !comMeta.has(v.pessoa_id)) { fatL += Number(v.faturamento); vendasL += Number(v.vendas); pecasL += Number(v.pecas); }
+    for (const x of antes) for (const v of x.vendedoras ?? []) if (!v.pessoa_id || !comMeta.has(v.pessoa_id)) antesL += Number(v.faturamento);
     const paL = vendasL ? pecasL / vendasL : null, tkmL = vendasL ? fatL / vendasL : null;
-    const calcL = auto(metaLojaMes, antesL);
-    const linhaLoja = { id: "loja", nome: "Loja", loja: "", pa: paL, tkm: tkmL, fat: fatL, semanal: d.metas_semana?.[semana]?.loja ?? calcL, calculada: calcL, mensal: metaLojaMes, b: bolinha(paL, tkmL, d.pa, d.tkm) };
+    const calcL = auto(metaL, antesL);
+    const linhaLoja = { id: "loja", nome: "Loja", loja: "", pa: paL, tkm: tkmL, fat: fatL, semanal: d.metas_semana?.[semana]?.loja ?? calcL, calculada: calcL, mensal: metaL, b: bolinha(paL, tkmL, d.pa, d.tkm) };
     return [linhaLoja, ...visiveis];
   }, [dados, loja, varias, semana, mes, nSemana, d.pa, d.tkm, d.metas_todas, d.metas_semana]);
   if (!dados) return <Carregando />;

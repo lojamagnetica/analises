@@ -3,7 +3,7 @@
 import { BASE } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta";
+export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -190,6 +190,43 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     espacado(d.kic, 26, 540, 860, c.destaque, 600);
     corrido(d.pre, 32, 540, 930, 900, c.texto);
     logo(540, 1350 - 70, 110);
+  }
+  if (formato === "foto") {
+    // Foto cheia, limpa, só uma faixa fina embaixo (estilo "os mais pedidos").
+    foto(d.f1, 0, 0, 1080, 1350);
+    const g = x.createLinearGradient(0, 1050, 0, 1350); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.45)");
+    x.fillStyle = g; x.fillRect(0, 1050, 1080, 300);
+    x.save(); x.textAlign = "left"; x.fillStyle = "#fff";
+    x.font = "600 22px MontMS, Arial"; x.fillText((d.kic || "").toUpperCase(), 64, 1232);
+    x.font = "400 30px MontMS, Arial"; x.fillText(d.pre || "", 64, 1282); x.restore();
+  }
+  if (formato === "cena") {
+    // A peça no cenário, com o nome do encontro numa etiqueta clara no alto.
+    foto(d.f1, 0, 0, 1080, 1350);
+    x.save(); x.font = "600 22px MontMS, Arial";
+    const t = (d.kic || "").toUpperCase(); const sp = 22 * 0.3;
+    const largura = [...t].reduce((a, l) => a + x.measureText(l).width + sp, -sp) + 64;
+    x.fillStyle = c.fundo; x.beginPath(); x.roundRect(540 - largura / 2, 64, largura, 58, 29); x.fill(); x.restore();
+    espacado(d.kic, 22, 540, 101, c.destaque, 600);
+    if (d.tit) {
+      x.save(); x.fillStyle = "rgba(247,242,234,.92)"; x.fillRect(0, 1350 - 190, 1080, 190); x.restore();
+      titulo(d.tit, 52, 540, 1350 - 112, 940);
+      espacado(d.pre, 19, 540, 1350 - 48, c.texto);
+    }
+  }
+  if (formato === "preco") {
+    // Flat lay com a etiqueta de preço desenhada no canto.
+    foto(d.f1, 0, 0, 1080, 1350);
+    espacado(d.kic, 22, 540, 92, c.texto, 600);
+    x.save(); x.translate(800, 1090); x.rotate(-0.18);
+    const W = 360, H = 170;
+    x.beginPath(); x.moveTo(-W / 2 + 60, -H / 2); x.lineTo(W / 2, -H / 2); x.lineTo(W / 2, H / 2); x.lineTo(-W / 2 + 60, H / 2); x.lineTo(-W / 2, 0); x.closePath();
+    x.fillStyle = c.fundo; x.fill(); x.lineWidth = 4; x.strokeStyle = c.texto; x.stroke();
+    x.beginPath(); x.arc(-W / 2 + 40, 0, 12, 0, Math.PI * 2); x.stroke();
+    x.textAlign = "center"; x.fillStyle = c.texto;
+    x.font = "italic 300 40px MontCG, Georgia, serif"; x.fillText(d.tit || "", 30, -8);
+    x.font = "600 22px MontMS, Arial"; x.fillStyle = c.destaque; x.fillText((d.pre || "").toUpperCase(), 30, 40);
+    x.restore();
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

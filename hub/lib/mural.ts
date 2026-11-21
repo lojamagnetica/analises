@@ -16,6 +16,8 @@ export type DadosMural = {
   metas_todas?: boolean;
   /** Meta da semana de cada vendedora (R$), escrita pela equipe a partir do caixa: segunda-feira da semana (AAAA-MM-DD) → id da pessoa → meta. Só a semana 1 sai calculada pelo plano; as outras saem em branco até a equipe preencher. */
   metas_semana?: Record<string, Record<string, number>>;
+  /** Mensagem motivacional de cada semana (segunda-feira AAAA-MM-DD → texto). Sem texto escrito, o Hub mostra uma sugestão pronta para a loja trocar. */
+  mensagens?: Record<string, string>;
   /** Cores da faixa 1, 2 e 3 do mural, do texto e do símbolo (da marca da loja). */
   cores: { f1: string; f2: string; f3: string; texto: string; destaque: string; claro: string; fundo: string; suave: string; tinta: string };
   /** Símbolos da marca (imagens pequenas, data URL). Só os símbolos, sem o nome da loja. */
@@ -78,4 +80,18 @@ export function bolinha(pa: number | null, tkm: number | null, metaPa: number, m
   if (pa == null || tkm == null) return null;
   const n = (pa >= metaPa ? 1 : 0) + (tkm >= metaTkm ? 1 : 0);
   return n === 2 ? "verde" : n === 1 ? "amarela" : "vermelha";
+}
+
+/** Sugestões de mensagem motivacional da semana (base para a loja trocar). Uma por semana, em rodízio. Texto sem dados de loja. */
+const MENSAGENS = [
+  "Semana nova, meta nova. Cada atendimento começa com um sorriso e termina com uma cliente que quer voltar. Hoje a gente vende a segunda peça e fecha o caixa no Hub.",
+  "A meta da semana é do time inteiro. Cada uma faz a sua parte: atender bem, oferecer o look completo e chamar a carteira. Quando uma vende, a loja inteira ganha.",
+  "Quem cuida da cliente hoje vende amanhã. Esta semana, antes de abrir, separe 5 clientes da sua carteira e chame cada uma pelo nome.",
+  "Vender bem é ouvir antes de mostrar. Nesta semana, pergunte a ocasião da cliente e monte o look para ela, não só a peça que ela entrou procurando.",
+  "Uma semana forte se faz um dia de cada vez. Comece o dia olhando a meta, termine o dia com o caixa lançado e leve o aprendizado para amanhã.",
+];
+export function sugerirMensagem(semana: string, pa?: number, tkm?: number) {
+  const n = Math.floor(new Date(`${semana}T12:00:00Z`).getTime() / 604800000);
+  const base = MENSAGENS[((n % MENSAGENS.length) + MENSAGENS.length) % MENSAGENS.length];
+  return pa && tkm ? `${base}\nNossa meta: P.A. de ${pa.toLocaleString("pt-BR")} e ticket médio de R$ ${tkm.toLocaleString("pt-BR")}.` : base;
 }

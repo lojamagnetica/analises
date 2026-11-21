@@ -111,7 +111,10 @@ function FechamentoCaixa() {
   const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0, !!portal.regras_caixa) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
   // Com várias lojas, só o time da loja escolhida (quem está sem loja trabalha nas duas).
   const doTime = equipe.filter((p) => !varias || !p.loja || !f.loja || p.loja === f.loja);
-  const pessoas = [...doTime.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
+  // Primeiro nome; se duas pessoas têm o mesmo (Ana Lúcia e Ana Rita), vai o nome completo.
+  const prim1 = (n: string) => n.trim().split(" ")[0];
+  const nomeCurto = (n: string) => (equipe.filter((x) => prim1(x.nome) === prim1(n)).length > 1 ? n.trim() : prim1(n));
+  const pessoas = [...doTime.map((p) => ({ chave: p.id, nome: nomeCurto(p.nome) })), { chave: OUTRAS, nome: "Outras vendas" }];
   const linhasVend: LinhaVendedora[] = pessoas.map((p) => ({
     pessoa_id: p.chave === OUTRAS ? null : p.chave, nome: p.chave === OUTRAS ? "Outras vendas" : p.nome,
     faturamento: numeroDe(f.vend[p.chave]?.faturamento) ?? 0, vendas: numeroDe(f.vend[p.chave]?.vendas) ?? 0, pecas: numeroDe(f.vend[p.chave]?.pecas) ?? 0,
@@ -210,7 +213,10 @@ function FechamentoCaixa() {
           const prim = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().split(/\s+/)[0];
           const vend: Form["vend"] = {};
           for (const v of lido.vendedoras) {
-            const p = equipe.find((e) => prim(e.nome) === prim(v.nome));
+            // Nome completo primeiro; pelo primeiro nome só se ninguém mais da loja tiver o mesmo.
+            const cheio = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+            const mesmos = doTime.filter((e) => prim(e.nome) === prim(v.nome));
+            const p = doTime.find((e) => cheio(e.nome) === cheio(v.nome)) ?? (mesmos.length === 1 ? mesmos[0] : undefined);
             const k = p?.id ?? OUTRAS; const a = vend[k];
             vend[k] = { faturamento: texto((numeroDe(a?.faturamento) ?? 0) + v.faturamento), vendas: String((numeroDe(a?.vendas) ?? 0) + v.vendas), pecas: String((numeroDe(a?.pecas) ?? 0) + v.pecas) };
           }

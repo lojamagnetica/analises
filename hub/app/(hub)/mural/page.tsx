@@ -245,16 +245,34 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
     const dias = Number(fimDoMes(mes).slice(8));
     const fim = somaDias(semana, 6);
     const doDia = dados.caixas.filter((x: Caixa) => (!varias || todas || x.loja === loja) && x.dia >= semana && x.dia <= fim);
-    return time.map((p) => {
-      let fat = 0, vendas = 0, pecas = 0;
+    // Regra: a meta da semana é o que falta da meta do mês dividido pelas semanas que restam, olhando o que já foi vendido antes desta semana.
+    // O Hub recalcula sozinho toda semana, para todas as lojas; o que a equipe escrever na mão vale mais.
+    const semanasMes = semanasDoMes(mes);
+    const restantes = Math.max(1, semanasMes.length - Math.max(0, semanasMes.indexOf(semana)));
+    const antes = dados.caixas.filter((x: Caixa) => (!varias || todas || x.loja === loja) && x.dia.startsWith(mes) && x.dia < semana);
+    const auto = (mensal: number | null, vendido: number) => (mensal ? Math.max(0, Math.round(((mensal - vendido) / restantes) / 10) * 10) : null);
+    const calcular = (p: Pessoa) => {
+      let fat = 0, vendas = 0, pecas = 0, antesFat = 0;
       for (const x of doDia) for (const v of x.vendedoras ?? []) if (v.pessoa_id === p.id) { fat += Number(v.faturamento); vendas += Number(v.vendas); pecas += Number(v.pecas); }
+      for (const x of antes) for (const v of x.vendedoras ?? []) if (v.pessoa_id === p.id) antesFat += Number(v.faturamento);
       const pa = vendas ? pecas / vendas : null, tkm = vendas ? fat / vendas : null;
-      const calculada = metas[p.id] ? Math.round((metas[p.id] / (dias / 7)) / 10) * 10 : null;
-      // A meta que a equipe escreveu para esta semana (a partir do caixa) vale mais que a calculada; sem ela, só a semana 1 sai preenchida.
+      const calculada = auto(metas[p.id] ?? null, antesFat);
       const doCaixa = d.metas_semana?.[semana]?.[p.id];
-      const semanal = doCaixa ?? (nSemana === 1 ? calculada : null);
+      const semanal = doCaixa ?? calculada;
       return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, mensal: metas[p.id] ?? null, b: bolinha(pa, tkm, d.pa, d.tkm) };
-    });
+    };
+    // Quem tem meta pessoal 0 no plano (ex.: a dona que também vende) não aparece sozinha: as vendas dela entram na linha "Loja".
+    const semMeta = new Set(time.filter((p) => dp.metas?.[p.id] === 0).map((p) => p.id));
+    if (!semMeta.size || varias) return time.map(calcular);
+    const visiveis = time.filter((p) => !semMeta.has(p.id)).map(calcular);
+    const metaLojaMes = metaDoPlano(dp);
+    let fatL = 0, vendasL = 0, pecasL = 0, antesL = 0;
+    for (const x of doDia) { fatL += Number(x.faturamento) || 0; vendasL += Number(x.vendas) || 0; pecasL += Number(x.pecas) || 0; }
+    for (const x of antes) antesL += Number(x.faturamento) || 0;
+    const paL = vendasL ? pecasL / vendasL : null, tkmL = vendasL ? fatL / vendasL : null;
+    const calcL = auto(metaLojaMes, antesL);
+    const linhaLoja = { id: "loja", nome: "Loja", loja: "", pa: paL, tkm: tkmL, fat: fatL, semanal: d.metas_semana?.[semana]?.loja ?? calcL, calculada: calcL, mensal: metaLojaMes, b: bolinha(paL, tkmL, d.pa, d.tkm) };
+    return [linhaLoja, ...visiveis];
   }, [dados, loja, varias, semana, mes, nSemana, d.pa, d.tkm, d.metas_todas, d.metas_semana]);
   if (!dados) return <Carregando />;
   // Meta geral da loja no mês (do Planeje) e o que já vendeu no mês, pelo caixa.
@@ -283,11 +301,11 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
       {linhas.length > 0 && (
         <div className="card mb">
           <b style={{ fontSize: 14 }}>Meta desta semana (semana {nSemana}), por vendedora</b>
-          <p className="ajuda" style={{ margin: "4px 0 8px" }}>Só a semana 1 sai com a meta preenchida. Nas outras semanas, escreva aqui a meta nova depois de olhar o caixa e imprima de novo: a folha já sai com o valor.</p>
+          <p className="ajuda" style={{ margin: "4px 0 8px" }}>O Hub já calcula a meta de cada semana: o que falta da meta do mês dividido pelas semanas que restam, olhando o que a loja já vendeu. Se quiser outro valor, escreva aqui e imprima: o que você escrever vale mais.</p>
           <div className="linha" style={{ gap: 12, flexWrap: "wrap" }}>
             {linhas.map((l) => (
               <label key={`${semana}-${l.id}`} className="ajuda" style={{ display: "block" }}>{l.nome}{l.loja ? ` · ${l.loja}` : ""}
-                <input type="number" step="10" min="0" style={{ width: 110, display: "block" }} placeholder={nSemana === 1 && l.calculada ? String(l.calculada) : "R$"} defaultValue={d.metas_semana?.[semana]?.[l.id] ?? ""}
+                <input type="number" step="10" min="0" style={{ width: 110, display: "block" }} placeholder={l.calculada ? String(l.calculada) : "R$"} defaultValue={d.metas_semana?.[semana]?.[l.id] ?? ""}
                   onBlur={(e) => {
                     const v = e.target.value.trim() === "" ? null : Math.max(0, Number(e.target.value));
                     const atual = { ...(d.metas_semana ?? {}) };
@@ -323,7 +341,7 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
           </div>
         </EscalaA4>
       </div>
-      <p className="ajuda" style={{ marginBottom: 0 }}>P.A., TKM, o realizado e a bolinha vêm do fechamento de caixa de cada vendedora. A meta da semana 1 é a meta do mês dela no plano dividida pelas semanas do mês; nas outras semanas, a folha sai em branco até você escrever a meta nova acima. Folha A4 em medida exata: na impressão, deixe em tamanho real (100%).</p>
+      <p className="ajuda" style={{ marginBottom: 0 }}>P.A., TKM, o realizado e a bolinha vêm do fechamento de caixa de cada vendedora. A meta da semana é calculada pelo Hub: o que falta da meta do mês dividido pelas semanas que restam, atualizada a cada semana com o caixa. Quem tem meta pessoal 0 no plano entra na linha "Loja". Folha A4 em medida exata: na impressão, deixe em tamanho real (100%).</p>
     </div>
   );
 }

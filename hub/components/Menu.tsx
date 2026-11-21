@@ -201,6 +201,7 @@ export function grupos(equipe: boolean, temPortal: boolean, persFaltam: number, 
       itens: [
         { href: "/conteudo", rotulo: "Análise do Instagram", icone: "insta" },
         { href: "/conteudo/semana", rotulo: "Programação da semana", icone: "cal" },
+        { href: "/conteudo/montador", rotulo: "Montador da coleção", icone: "pencil" },
         { href: "/conteudo/pautas", rotulo: "Pautas quentes", icone: "spark" },
         { href: "/conteudo/roteiro", rotulo: "Criar roteiro", icone: "pencil" },
         { href: "/conteudo/bio", rotulo: "Link da Bio", icone: "link" },

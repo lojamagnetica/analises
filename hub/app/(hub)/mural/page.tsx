@@ -210,10 +210,13 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
       // A meta que a equipe escreveu para esta semana (a partir do caixa) vale mais que a calculada; sem ela, só a semana 1 sai preenchida.
       const doCaixa = d.metas_semana?.[semana]?.[p.id];
       const semanal = doCaixa ?? (nSemana === 1 ? calculada : null);
-      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, b: bolinha(pa, tkm, d.pa, d.tkm) };
+      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, mensal: metas[p.id] ?? null, b: bolinha(pa, tkm, d.pa, d.tkm) };
     });
   }, [dados, loja, varias, semana, mes, nSemana, d.pa, d.tkm, d.metas_todas, d.metas_semana]);
   if (!dados) return <Carregando />;
+  // Meta geral da loja no mês (do Planeje) e o que já vendeu no mês, pelo caixa.
+  const metaLoja = metaDoPlano(dados.plano?.dados ?? {});
+  const vendidoMes = dados.caixas.filter((x: Caixa) => x.dia.startsWith(mes)).reduce((t: number, x: Caixa) => t + (Number(x.faturamento) || 0), 0);
   const vazias = Math.max(0, 6 - linhas.length);
   // Altura de cada linha em mm: 14 até 7 linhas; mais que isso, o mínimo que ainda comporta a bolinha de 12 mm.
   const totalLinhas = linhas.length + vazias;
@@ -259,16 +262,16 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
         <EscalaA4>
           <div className="mu-pag mu-m2" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
             <div className="mu-m2-topo" style={{ background: d.cores.f2 }}><h1>METAS DA SEMANA {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
-            <h2>INDICADORES E ACOMPANHAMENTO</h2>
+            <h2>INDICADORES E ACOMPANHAMENTO · META DA LOJA EM {nomeMes(mes).split(" ")[0].toUpperCase()}: {metaLoja ? brl(metaLoja) : "R$ ______"} · VENDIDO NO MÊS: {vendidoMes > 0 ? brl(vendidoMes) : "R$ ______"}</h2>
             <table style={{ ["--lh" as string]: `${altLinha}mm` }}>
-              <colgroup><col style={{ width: "50mm" }} /><col style={{ width: "40mm" }} /><col style={{ width: "44mm" }} /><col style={{ width: "52mm" }} /><col style={{ width: "50mm" }} /><col style={{ width: "14mm" }} /></colgroup>
-              <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META DA SEMANA {nSemana}</th><th>REALIZADO</th><th style={{ fontSize: "2.2mm" }}>BOLINHA</th></tr></thead>
+              <colgroup><col style={{ width: "44mm" }} /><col style={{ width: "33mm" }} /><col style={{ width: "37mm" }} /><col style={{ width: "40mm" }} /><col style={{ width: "41mm" }} /><col style={{ width: "41mm" }} /><col style={{ width: "14mm" }} /></colgroup>
+              <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META DO MÊS</th><th>META DA SEMANA {nSemana}</th><th>REALIZADO NA SEMANA</th><th style={{ fontSize: "2.2mm" }}>BOLINHA</th></tr></thead>
               <tbody>
                 {linhas.map((l) => (
-                  <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "2.6mm" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td><td>{l.fat > 0 ? brl(l.fat) : ""}</td>
+                  <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "2.6mm" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.mensal ? brl(l.mensal) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td><td>{l.fat > 0 ? brl(l.fat) : ""}</td>
                     <td><span className="mu-b12" style={l.b ? { background: COR_BOLA[l.b], borderColor: COR_BOLA[l.b] } : undefined} /></td></tr>
                 ))}
-                {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td /><td><span className="mu-b12" /></td></tr>)}
+                {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td /><td /><td><span className="mu-b12" /></td></tr>)}
               </tbody>
             </table>
             <h3 style={{ top: `${topoLegenda}mm` }}>LEGENDA DA BOLINHA</h3>
@@ -363,13 +366,17 @@ function DiaDoConhecimento({ portalId, loja, varias, d, guardar }: { portalId: s
 
 /** Escala do mês: uma linha por pessoa do time, uma coluna por dia. Tocar no dia troca: folga, só manhã, só tarde, férias.
  *  Embaixo, a conferência das regras da jornada (fim da escala 6x1 a partir de 16/12/2026), como na ferramenta Escala sem susto. */
-function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
+function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
   const [mes, setMes] = useState(hoje().slice(0, 7));
+  const lojaDaPessoa = useRef<Record<string, string>>({});
   const [editar, setEditar] = useState(false);
   const { dados: time } = useDados(async () => {
     const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja").eq("portal_id", portalId).eq("ativo", true).order("nome");
-    return ((data ?? []) as { nome: string; loja: string | null }[]).filter((p) => !varias || !loja || !p.loja || p.loja === loja).map((p) => p.nome);
-  }, [portalId, loja, varias]);
+    // Todas as pessoas de todas as lojas do portal na mesma folha (com o nome da loja quando há mais de uma).
+    const lista = (data ?? []) as { nome: string; loja: string | null }[];
+    lojaDaPessoa.current = Object.fromEntries(lista.map((p) => [p.nome, varias ? p.loja ?? "" : ""]));
+    return lista.sort((x, y) => (x.loja ?? "").localeCompare(y.loja ?? "") || x.nome.localeCompare(y.nome)).map((p) => p.nome);
+  }, [portalId, varias]);
   const [a, m] = mes.split("-").map(Number);
   const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate();
   const dias = Array.from({ length: nDias }, (_, i) => String(i + 1).padStart(2, "0"));
@@ -431,7 +438,7 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
         </div>
       )}
       <div className="mu-moldura"><EscalaA4>
-        <div className="mu-pag mu-e2" style={{ fontFamily: "Poppins, Arial, sans-serif", ["--lh" as string]: `${Math.min(14, Math.max(7, 132 / Math.max(1, nomes.length)))}mm` }}>
+        <div className="mu-pag mu-e2" style={{ fontFamily: "Poppins, Arial, sans-serif", ["--lh" as string]: `${Math.min(14, Math.max(6.5, 132 / Math.max(1, nomes.length + Math.max(2, 8 - nomes.length))))}mm` }}>
           <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>ESCALA DE {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
           <table>
             <thead>
@@ -440,7 +447,7 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
             <tbody>
               {nomes.map((n) => { const x = pessoa(n); return (
                 <tr key={n}>
-                  <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}</td>
+                  <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
                   <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
                   {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) ? <td key={dd} className="mu-dom mu-fech" /> : (
                     <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
@@ -449,6 +456,8 @@ function EscalaDoMes({ portalId, loja, varias, d, guardar }: { portalId: string;
                   ); })}
                 </tr>
               ); })}
+              {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-dom mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} />)}</tr>)}
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>
@@ -570,7 +579,7 @@ const CSS = `
 .mu-m2{padding:0;color:#111;position:relative;width:297mm;height:210mm;min-width:0;aspect-ratio:auto}
 .mu-m2-topo{height:26mm;display:flex;align-items:center;justify-content:center;color:#fff}
 .mu-m2-topo h1{margin:0;color:#fff!important;font-weight:800;font-size:8.5mm}
-.mu-m2 h2{position:absolute;left:0;top:32mm;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
+.mu-m2 h2{position:absolute;left:0;top:32mm;width:297mm;text-align:center;font-weight:800;font-size:4mm;margin:0}
 .mu-m2 h3{position:absolute;left:0;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
 .mu-m2 table{position:absolute;left:23.5mm;top:44mm;width:250mm;border-collapse:collapse;table-layout:fixed}
 .mu-m2 th,.mu-m2 td{border:.3mm solid #111;padding:0;text-align:center;vertical-align:middle}
@@ -598,6 +607,8 @@ const CSS = `
 .mu-e2 td.mu-nome{font-size:3.4mm}.mu-e2 td.mu-hor small{font-size:2.4mm;font-weight:500}
 .mu-e2 td.mu-nome,.mu-e2 td.mu-hor{cursor:default}
 .mu-e2 td.mu-fech{cursor:default;background:#d6d6d6}
+.mu-e2 tr.mu-vazia td{cursor:default}
+.mu-e2 td.mu-nome small{font-size:2.4mm;font-weight:500;opacity:.7}
 .mu-e2 .mu-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6mm;font-size:3.2mm;margin:4mm 10mm 0}
 .mu-e2 .mu-leg i{width:4.5mm;height:4.5mm}
 .mu-e2 .mu-simb{left:8mm;bottom:5mm;height:14mm}

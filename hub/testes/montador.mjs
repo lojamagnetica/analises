@@ -33,8 +33,8 @@ await simular(page, { tabelas });
 await page.goto(`${BASE}/conteudo/montador/`);
 await page.getByRole("button", { name: "Usar no montador" }).waitFor();
 await page.waitForTimeout(800);
-const imagem = () => page.locator("canvas").evaluate((c) => c.toDataURL());
-const tamanho = () => page.locator("canvas").evaluate((c) => `${c.width}x${c.height}`);
+const imagem = () => page.locator('canvas[aria-label="Imagem montada"]').evaluate((c) => c.toDataURL());
+const tamanho = () => page.locator('canvas[aria-label="Imagem montada"]').evaluate((c) => `${c.width}x${c.height}`);
 
 const vistas = new Set();
 for (const f of ["Separei pra você", "Look do encontro", "Capa de carrossel", "Stories"]) {
@@ -50,9 +50,10 @@ ok(await tamanho() === "1080x1350", "volta para 1080x1350");
 
 await page.getByRole("button", { name: "Usar no montador" }).click();
 await page.waitForTimeout(300);
+ok(await page.locator("#montar canvas").count() === 7, "mostra a miniatura de cada slide");
 const dosSlides = new Set();
 for (const n of ["1", "2", "3", "4", "5", "6"]) {
-  await page.locator("#montar .chips button", { hasText: new RegExp(`^${n}`) }).first().click();
+  await page.getByRole("button", { name: `Slide ${n}`, exact: true }).click();
   await page.waitForTimeout(250);
   dosSlides.add(await imagem());
 }

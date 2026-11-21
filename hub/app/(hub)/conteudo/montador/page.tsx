@@ -43,6 +43,15 @@ function Subir({ rotulo, foto, mudar }: { rotulo: string; foto: Foto; mudar: (f:
   );
 }
 
+// Miniatura de um slide do modelo, para ver o carrossel inteiro de uma vez.
+function Miniatura({ slide, id, cta, fontes }: { slide: Slide; id: Identidade; cta: string; fontes: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: fotoVazia() }, id);
+  }, [slide, id, cta, fontes]);
+  return <canvas ref={ref} style={{ width: 84, height: "auto", display: "block", borderRadius: 4, boxShadow: "0 2px 6px rgba(20,18,16,.15)" }} />;
+}
+
 function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const [fontes, setFontes] = useState(false);
@@ -69,8 +78,9 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   useEffect(() => { if (cv.current) desenhar(cv.current, formatoAtual, dados, id); });
 
   const usarModelo = (m: ModeloMes) => {
-    setModelo(m); setAtual(0);
-    setSlides((m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10) })));
+    const lista = (m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10) }));
+    setModelo(m); setSlides(lista);
+    setAtual(Math.max(0, lista.findIndex((s) => s.tipo !== "capa")));
     document.getElementById("montar")?.scrollIntoView({ behavior: "smooth" });
   };
   const mudarSlide = (n: Partial<Slide>) => setSlides(slides.map((s, i) => (i === atual ? { ...s, ...n } : s)));
@@ -155,12 +165,21 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
 
           <div style={{ background: "var(--soft)", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             {modelo && (
-              <div className="chips" style={{ justifyContent: "center" }}>
-                {slides.map((s, i) => <button key={i} type="button" className={`chip ${i === atual ? "escolhido" : ""}`} onClick={() => setAtual(i)}>{i + 1}{s.foto.img ? " ✓" : ""}</button>)}
+              <div style={{ width: "100%" }}>
+                <small className="mudo">Os slides do carrossel · toque em um para montar</small>
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "6px 2px 4px" }}>
+                  {slides.map((s, i) => (
+                    <button key={i} type="button" aria-label={`Slide ${i + 1}`} onClick={() => setAtual(i)}
+                      style={{ flex: "0 0 auto", padding: 0, border: `2px solid ${i === atual ? "var(--accent)" : "transparent"}`, borderRadius: 6, background: "none", cursor: "pointer", position: "relative" }}>
+                      <Miniatura slide={s} id={id} cta={cta} fontes={fontes} />
+                      <span style={{ position: "absolute", top: 3, left: 5, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,.6)" }}>{i + 1}{s.foto.img ? " ✓" : ""}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
             {!fontes && <small className="mudo">Carregando as letras…</small>}
-            <canvas ref={cv} width={1080} height={1350} style={{ width: "100%", maxWidth: 420, height: "auto", boxShadow: "0 10px 28px rgba(20,18,16,.16)", borderRadius: 2 }} />
+            <canvas ref={cv} aria-label="Imagem montada" width={1080} height={1350} style={{ width: "100%", maxWidth: 420, height: "auto", boxShadow: "0 10px 28px rgba(20,18,16,.16)", borderRadius: 2 }} />
             <div className="linha" style={{ gap: 8, justifyContent: "center" }}>
               <button type="button" className="btn p" onClick={() => cv.current && baixarCanvas(cv.current, nome())}>Baixar imagem</button>
               {modelo && <button type="button" className="btn s" onClick={baixarTodos}>Baixar todos os slides</button>}

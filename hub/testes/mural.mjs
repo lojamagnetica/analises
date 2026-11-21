@@ -10,7 +10,7 @@ const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
 page.on("pageerror", (e) => console.log("erro na página:", e.message));
 const l = lojaBase({ tipo: "Consultoria" });
 l.tabelas.portais[0].lojas = ["Loja Um", "Loja Dois"];
-await simular(page, { tabelas: {
+const banco = await simular(page, { tabelas: {
   ...l.tabelas,
   loja_mural: [{ portal_id: l.portal, loja: "", dados: { missao: "Missão de teste.", visao: "Visão de teste.", valores: ["Valor um", "Valor dois"], versiculo: "Versículo de teste.", versiculo_ref: "Livro 1:1",
     cartaz: { titulo: "Nossos valores", rodape: "Loja", simbolos: [], itens: [{ pre: "Atenda com", nome: "RESPEITO", frase: "Frase.", pontos: ["a", "b"] }] }, eventos: { [`${hoje.slice(0, 7)}-11`]: [{ t: "Evento teste", c: 1 }] } } }],
@@ -28,5 +28,15 @@ ok(await page.getByText("LEGENDA DA BOLINHA").count() === 1, "legenda da bolinha
 ok(await page.getByText("Evento teste").count() >= 1, "calendário mostra o evento");
 await page.getByRole("cell", { name: "Vendedor", exact: false }).filter({ hasText: "Loja Dois" }).first().waitFor();
 ok(true, "mural único: as metas trazem as vendedoras das duas lojas");
+// Escala do mês: vai para dezembro (muda a regra) e marca uma folga.
+const esc = page.locator('[data-folha="escala"]');
+await esc.getByRole("button", { name: "›" }).click();
+await esc.getByText(/muda a regra/).first().waitFor();
+ok(true, "dezembro avisa a mudança da regra (fim da escala 6x1)");
+ok(await esc.getByText(/2 folgas por semana/).count() >= 1, "a conferência cobra as 2 folgas na semana nova");
+const linha = esc.locator("tbody tr").filter({ hasText: "Vendedora Teste" });
+await linha.locator("td").nth(2).click();
+await page.waitForTimeout(400);
+ok(/"F"/.test(JSON.stringify(banco.tabelas.loja_mural[0].dados.escala ?? {})), "tocar no dia marca a folga e salva");
 await page.screenshot({ path: `${process.argv[3] ?? "."}/mural.png`, fullPage: true });
 await browser.close();

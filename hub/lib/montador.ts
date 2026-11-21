@@ -3,7 +3,8 @@
 import { BASE } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
-export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco";
+export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco"
+  | "numero" | "quiz" | "manchete" | "lista" | "comparar" | "roteiro";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -227,6 +228,104 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     x.font = "italic 300 40px MontCG, Georgia, serif"; x.fillText(d.tit || "", 30, -8);
     x.font = "600 22px MontMS, Arial"; x.fillStyle = c.destaque; x.fillText((d.pre || "").toUpperCase(), 30, 40);
     x.restore();
+  }
+  // Itens separados por "|" (opções do quiz, manchetes, rótulos das fotos, paradas do roteiro).
+  const itens = (t: string) => (t || "").split("|").map((v) => v.trim()).filter(Boolean);
+  const pilula = (t: string, cx: number, cy: number, px: number, fundo: string, cor: string) => {
+    x.save(); x.font = `600 ${px}px MontMS, Arial`;
+    const tt = t.toUpperCase(), sp = px * 0.22;
+    const larg = [...tt].reduce((a, l) => a + x.measureText(l).width + sp, -sp) + px * 2.4;
+    x.fillStyle = fundo; x.beginPath(); x.roundRect(cx - larg / 2, cy - px * 1.25, larg, px * 2.5, px * 1.25); x.fill(); x.restore();
+    espacado(tt, px, cx, cy + px * 0.36, cor, 600);
+  };
+  if (formato === "numero") {
+    // Ranking: número grande sobre a foto cheia, nome e preço embaixo.
+    foto(d.f1, 0, 0, 1080, 1350);
+    const [num, ...resto] = (d.kic || "").split("·").map((v) => v.trim());
+    x.save(); x.fillStyle = c.fundo; x.fillRect(0, 0, 330, 300); x.restore();
+    x.font = "italic 300 190px MontCG, Georgia, serif"; x.fillStyle = c.destaque; x.textAlign = "center";
+    x.fillText(num || "", 165, 215, 290);
+    x.save(); x.fillStyle = "rgba(247,242,234,.94)"; x.fillRect(0, 1350 - 170, 1080, 170); x.restore();
+    if (resto.length) espacado(resto.join(" · "), 22, 540, 1350 - 104, c.texto, 600);
+    titulo(d.tit || d.pre, 46, 540, 1350 - 46, 940, 500);
+  }
+  if (formato === "quiz") {
+    // Pergunta em cima, foto no meio, opções em botões embaixo.
+    espacado(d.kic, 22, 540, 92, c.destaque, 600);
+    const n = titulo(d.tit, 64, 540, 172, 940);
+    const top = 172 + n * 70, ops = itens(d.pre), base = 1350 - 90 - ops.length * 0;
+    foto(d.f1, 90, top, 900, 1350 - top - 250);
+    const letras = ["A", "B", "C", "D"];
+    const lg = ops.length ? 900 / ops.length : 900;
+    ops.slice(0, 4).forEach((o, i) => {
+      const cx = 90 + lg * i + lg / 2;
+      x.save(); x.fillStyle = c.apoio; x.beginPath(); x.roundRect(cx - lg / 2 + 10, base - 120, lg - 20, 96, 48); x.fill(); x.restore();
+      x.font = "600 30px MontMS, Arial"; x.fillStyle = c.texto; x.textAlign = "center";
+      x.fillText(`${letras[i]}  ${o}`, cx, base - 60, lg - 50);
+    });
+  }
+  if (formato === "manchete") {
+    // Capa de revista: nome no alto, foto cheia, manchetes do lado.
+    foto(d.f1, 0, 0, 1080, 1350);
+    const g = x.createLinearGradient(0, 0, 0, 1350); g.addColorStop(0, "rgba(0,0,0,.35)"); g.addColorStop(.35, "rgba(0,0,0,0)"); g.addColorStop(.7, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.5)");
+    x.fillStyle = g; x.fillRect(0, 0, 1080, 1350);
+    espacado(d.kic, 70, 540, 150, "#fff", 600);
+    x.fillStyle = "#fff"; x.fillRect(64, 190, 952, 2);
+    x.save(); x.textAlign = "left"; x.fillStyle = "#fff"; x.shadowColor = "rgba(0,0,0,.55)"; x.shadowBlur = 14;
+    itens(d.pre).slice(0, 4).forEach((m, i) => {
+      x.font = "600 20px MontMS, Arial"; x.fillText(`0${i + 1}`, 64, 300 + i * 120);
+      x.font = "italic 500 40px MontCG, Georgia, serif"; x.fillText(m, 64, 350 + i * 120, 560);
+    });
+    x.restore();
+    x.save(); x.font = "italic 300 84px MontCG, Georgia, serif"; x.fillStyle = "#fff"; x.textAlign = "left";
+    const ls: string[] = []; let l = "";
+    (d.tit || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > 940 && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l); ls.forEach((ln, k) => x.fillText(ln, 64, 1350 - 80 - (ls.length - 1 - k) * 90));
+    x.restore();
+  }
+  if (formato === "lista") {
+    // Item de guia: foto no alto, número grande, título e explicação.
+    foto(d.f1, 60, 60, 960, 820);
+    const [num, ...resto] = (d.kic || "").split("·").map((v) => v.trim());
+    x.font = "italic 300 150px MontCG, Georgia, serif"; x.fillStyle = c.destaque; x.textAlign = "left";
+    x.fillText(num || "", 60, 1040, 300);
+    x.save(); x.textAlign = "left"; x.font = "600 22px MontMS, Arial"; x.fillStyle = c.destaque;
+    x.fillText(resto.join(" · ").toUpperCase(), 330, 960, 690);
+    x.font = "italic 300 56px MontCG, Georgia, serif"; x.fillStyle = c.texto; x.fillText(d.tit || "", 330, 1030, 690);
+    x.font = "400 28px MontMS, Arial"; x.fillText(d.pre || "", 330, 1085, 690); x.restore();
+    x.fillStyle = c.destaque; x.fillRect(60, 1150, 960, 1);
+    logo(540, 1350 - 80, 120);
+  }
+  if (formato === "comparar") {
+    // Duas fotos lado a lado com um rótulo em cada (antes e depois, este ou este).
+    const [r1, r2] = itens(d.pre);
+    espacado(d.kic, 22, 540, 92, c.destaque, 600);
+    foto(d.f1, 40, 140, 490, 1000); foto(d.f2, 550, 140, 490, 1000);
+    if (r1) pilula(r1, 285, 1080, 22, c.fundo, c.texto);
+    if (r2) pilula(r2, 795, 1080, 22, c.texto, c.fundo);
+    titulo(d.tit, 56, 540, 1240, 960);
+    logo(540, 1350 - 46, 100);
+  }
+  if (formato === "roteiro") {
+    // Foto de um lado, o roteiro (paradas, fases, dias) numerado do outro.
+    foto(d.f1, 0, 0, 560, 1350);
+    x.save(); x.textAlign = "left";
+    x.font = "600 22px MontMS, Arial"; x.fillStyle = c.destaque; x.fillText((d.kic || "").toUpperCase(), 620, 170, 420);
+    x.font = "italic 300 60px MontCG, Georgia, serif"; x.fillStyle = c.texto;
+    const ls: string[] = []; let l = "";
+    (d.tit || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > 410 && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l); ls.forEach((ln, k) => x.fillText(ln, 620, 250 + k * 66));
+    const y0 = 250 + ls.length * 66 + 60, ps = itens(d.pre).slice(0, 5);
+    x.strokeStyle = c.destaque; x.lineWidth = 2;
+    if (ps.length > 1) { x.beginPath(); x.moveTo(642, y0); x.lineTo(642, y0 + (ps.length - 1) * 150); x.stroke(); }
+    ps.forEach((p, i) => {
+      const y = y0 + i * 150;
+      x.fillStyle = c.fundo; x.beginPath(); x.arc(642, y, 22, 0, Math.PI * 2); x.fill(); x.stroke();
+      x.font = "600 20px MontMS, Arial"; x.fillStyle = c.destaque; x.textAlign = "center"; x.fillText(String(i + 1), 642, y + 7);
+      x.textAlign = "left"; x.font = "400 30px MontMS, Arial"; x.fillStyle = c.texto; x.fillText(p, 690, y + 10, 360);
+    });
+    x.restore();
+    logo(800, 1350 - 80, 120);
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

@@ -18,7 +18,9 @@ const FORMATOS: { id: Formato; rotulo: string }[] = [
   { id: "story", rotulo: "Stories" },
 ];
 const fotoVazia = (altura = 10): Foto => ({ img: null, zoom: 100, altura });
-type Slide = SlideModelo & { foto: Foto };
+type Slide = SlideModelo & { foto: Foto; foto2: Foto };
+// Formatos em que o campo de baixo guarda itens separados por "|".
+const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro"];
 
 function Ajuste({ foto, mudar }: { foto: Foto; mudar: (f: Foto) => void }) {
   return (
@@ -47,7 +49,7 @@ function Subir({ rotulo, foto, mudar }: { rotulo: string; foto: Foto; mudar: (f:
 function Miniatura({ slide, id, cta, fontes }: { slide: Slide; id: Identidade; cta: string; fontes: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: fotoVazia() }, id);
+    if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }, id);
   }, [slide, id, cta, fontes]);
   return <canvas ref={ref} style={{ width: 84, height: "auto", display: "block", borderRadius: 4, boxShadow: "0 2px 6px rgba(20,18,16,.15)" }} />;
 }
@@ -72,13 +74,13 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const slide = modelo ? slides[atual] : null;
   const formatoAtual: Formato = slide ? slide.tipo : formato;
   const dados: Dados = slide
-    ? { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: fotoVazia() }
+    ? { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }
     : { kic, tit, pre, cta, f1, f2 };
 
   useEffect(() => { if (cv.current) desenhar(cv.current, formatoAtual, dados, id); });
 
   const usarModelo = (m: ModeloMes) => {
-    const lista = (m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10) }));
+    const lista = (m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10), foto2: fotoVazia(10) }));
     setModelo(m); setSlides(lista);
     setAtual(Math.max(0, lista.findIndex((s) => s.tipo !== "capa")));
     document.getElementById("montar")?.scrollIntoView({ behavior: "smooth" });
@@ -94,7 +96,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
     if (!cv.current || !modelo) return;
     for (let i = 0; i < slides.length; i++) {
       const s = slides[i];
-      desenhar(cv.current, s.tipo, { kic: s.kic, tit: s.tit, pre: s.pre, cta, f1: s.foto, f2: fotoVazia() }, id);
+      desenhar(cv.current, s.tipo, { kic: s.kic, tit: s.tit, pre: s.pre, cta, f1: s.foto, f2: s.foto2 }, id);
       await baixarCanvas(cv.current, `montador-slide-${i + 1}.png`);
       await new Promise((r) => setTimeout(r, 400));
     }
@@ -139,7 +141,10 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
             <small className="mudo">Fotos</small>
             <div style={{ margin: "6px 0 12px" }}>
               {slide ? (
-                <Subir rotulo={`Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
+                <>
+                  <Subir rotulo={slide.tipo === "comparar" ? "Foto da esquerda" : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
+                  {slide.tipo === "comparar" && <div style={{ marginTop: 8 }}><Subir rotulo="Foto da direita" foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
+                </>
               ) : (
                 <>
                   <Subir rotulo={formato === "capa" ? "Foto da capa" : "Foto 1 · o look no corpo"} foto={f1} mudar={setF1} />
@@ -158,7 +163,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
             )}
             <label className="rotulo">Título</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
             <label className="rotulo">Linha de cima</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
-            <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
             {formatoAtual === "story" && <><label className="rotulo">Chamada</label><input type="text" value={cta} onChange={(e) => setCta(e.target.value)} /></>}
             {id.aviso && <div className="ajuda mt">{id.aviso}</div>}
           </div>

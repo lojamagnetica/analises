@@ -181,7 +181,6 @@ export async function atualizarPortal(id: string, form: FormData) {
     tipo: txt(form, "tipo", 40) || "Mentoria",
     inicio: txt(form, "inicio", 10) || null,
     plano_inicio: txt(form, "plano_inicio", 10) || null,
-    passo_atual: Math.min(7, Math.max(1, Number(form.get("passo_atual")) || 1)),
     meet_url: txt(form, "meet_url", 500) || null,
     apelidos: apelidos(txt(form, "apelidos", 500)),
     lojas: apelidos(txt(form, "lojas", 500)),

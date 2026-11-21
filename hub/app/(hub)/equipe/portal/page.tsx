@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { NovaTarefaPlano } from "@/components/NovaTarefaPlano";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -244,11 +245,9 @@ function EditarPortal() {
           <CamposPortal p={p} />
           <div className="grade g2" style={{ gap: 12 }}>
             <div>
-              <label className="rotulo">Passo atual da jornada</label>
-              <select name="passo_atual" defaultValue={p.passo_atual}>
-                {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>{n} · {dados.passos.find((x) => x.numero === n)?.titulo ?? ""}</option>)}
-              </select>
-              <p className="ajuda" style={{ margin: "4px 0 0" }}>É o passo que a loja vê como &quot;agora&quot; nos 7 passos. Os anteriores aparecem como feitos.</p>
+              <label className="rotulo">Passo da jornada (o que a loja vê)</label>
+              <p style={{ margin: 0 }}><b>{p.passo_atual} · {dados.passos.find((x) => x.numero === p.passo_atual)?.titulo ?? ""}</b></p>
+              <p className="ajuda" style={{ margin: "4px 0 0" }}>Segue sozinho a etapa da jornada da equipe. Para mudar, mude a etapa em <Link className="link-loja" href={`/equipe/central/cliente?id=${p.id}`}>Jornada da loja</Link>.</p>
             </div>
             <label className="marcar" style={{ alignSelf: "end" }}><input type="checkbox" name="ativo" defaultChecked={p.ativo} /><span>Portal ativo</span></label>
           </div>

@@ -56,6 +56,9 @@ export function blocoDoTeste(funcao: string | null | undefined): "venda" | "apoi
   return "venda";
 }
 
+/** A pessoa é dona ou sócia da loja? Dona que vende entra no placar de vendas, mas não recebe feedback de vendedora. */
+export const ehDono = (funcao: string | null | undefined) => /dono|dona|propriet|s[óo]ci/i.test(funcao ?? "");
+
 /** A função cadastrada é de venda (vendedora, consultora, atendimento)? */
 export const vendeNaLoja = (funcao: string | null | undefined) => /vend|consult|atend/i.test(funcao ?? "");
 

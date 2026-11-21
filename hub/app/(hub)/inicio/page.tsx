@@ -11,6 +11,7 @@ import { buscarPlanos, mesDoPlano, mesesDoInicio, semanaDoDia } from "@/lib/plan
 import { MESES } from "@/lib/conteudo";
 import { buscarConsultoria, mesDaConsultoria } from "@/lib/consultoria";
 import { SetePassos, type Passo } from "@/components/SetePassos";
+import { SempreComVoce } from "@/components/SempreComVoce";
 import { dadosCompletos, liberado, prazoDiagnostico, requisito, emOnboarding } from "@/lib/entrada";
 import { buscarMeuContrato, pertoDoFim, tempoDoContrato } from "@/lib/contrato";
 import { Renovacao } from "@/components/Renovacao";
@@ -283,6 +284,7 @@ export default function Inicio() {
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>
           <SetePassos passos={passos} atual={portal.passo_atual} />
+          <SempreComVoce />
         </>
       )}
       </>}

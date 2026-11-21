@@ -33,9 +33,13 @@ const esc = page.locator('[data-folha="escala"]');
 await esc.getByRole("button", { name: "›" }).click();
 await esc.getByText(/muda a regra/).first().waitFor();
 ok(true, "dezembro avisa a mudança da regra (fim da escala 6x1)");
-ok(await esc.getByText(/2 folgas por semana/).count() >= 1, "a conferência cobra as 2 folgas na semana nova");
+// Janeiro: semanas inteiras na regra nova (6 dias de trabalho não cabem).
+await esc.getByRole("button", { name: "›" }).click();
+await esc.getByText(/2 folgas por semana/).first().waitFor();
+ok(true, "a conferência cobra as 2 folgas na semana nova");
 const linha = esc.locator("tbody tr").filter({ hasText: "Vendedora Teste" });
-await linha.locator("td").nth(2).click();
+ok(await linha.locator("td").nth(2).innerText() === "FE" && await linha.locator("td").nth(3).innerText() === "T", "1º de janeiro sai como FE e o dia de trabalho com T");
+await linha.locator("td").nth(3).click();
 await page.waitForTimeout(400);
 ok(/"F"/.test(JSON.stringify(banco.tabelas.loja_mural[0].dados.escala ?? {})), "tocar no dia marca a folga e salva");
 // Incluir alguém à mão e tirar da escala (com confirmação).

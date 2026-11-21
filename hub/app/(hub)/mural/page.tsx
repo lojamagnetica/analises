@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
-import { ESCALA, avisoDoMes, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, proximoCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { ESCALA, avisoDoMes, ehDona, codigoDoDia, codigoPadrao, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
@@ -371,9 +371,9 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
   const lojaDaPessoa = useRef<Record<string, string>>({});
   const [editar, setEditar] = useState(false);
   const { dados: time } = useDados(async () => {
-    const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja").eq("portal_id", portalId).eq("ativo", true).order("nome");
-    // Todas as pessoas de todas as lojas do portal na mesma folha (com o nome da loja quando há mais de uma).
-    const lista = (data ?? []) as { nome: string; loja: string | null }[];
+    const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja, funcao").eq("portal_id", portalId).eq("ativo", true).order("nome");
+    // Todas as pessoas de todas as lojas do portal na mesma folha (com o nome da loja quando há mais de uma). Dona não entra.
+    const lista = ((data ?? []) as { nome: string; loja: string | null; funcao: string | null }[]).filter((p) => !ehDona(p.funcao));
     lojaDaPessoa.current = Object.fromEntries(lista.map((p) => [p.nome, varias ? p.loja ?? "" : ""]));
     return lista.sort((x, y) => (x.loja ?? "").localeCompare(y.loja ?? "") || x.nome.localeCompare(y.nome)).map((p) => p.nome);
   }, [portalId, varias]);
@@ -391,7 +391,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
   const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, sabado: anterior.pessoas[n].sabado } : {}) };
   const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
   const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
-  const cor = (c: string) => ESCALA.find((x) => x.c === c)?.cor;
+  const estilo = (c: string) => { const x = ESCALA.find((y) => y.c === c); return x ? { background: x.cor, color: x.letra } : undefined; };
   // A conferência considera todo o time, mesmo quem ainda não tem nada marcado (dia normal em todos os dias).
   const alertas = nomes.length ? conferirEscala(mes, { ...doMes, pessoas: Object.fromEntries(nomes.map((n) => [n, pessoa(n)])) }) : [];
   const erros = alertas.filter((x) => x.erro).length;
@@ -442,7 +442,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
             <button type="button" className="btn s peq" disabled={!nova.trim()} onClick={incluir}>+ Incluir na escala</button>
           </div>
           {(doMes.fora ?? []).length > 0 && <p className="ajuda" style={{ margin: "0 0 6px" }}>Fora da escala deste mês: {(doMes.fora ?? []).map((n) => <button key={n} type="button" className="link-loja" style={{ marginRight: 8 }} onClick={() => salvarMes({ ...doMes, fora: (doMes.fora ?? []).filter((x) => x !== n) })}>{n.split(" ")[0]} (voltar)</button>)}</p>}
-          <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. No dia de meio período, marque &quot;só manhã&quot; ou &quot;só tarde&quot; na escala.</p>
+          <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. Na escala, toque no dia para marcar folga, feriado ou férias.</p>
         </div>
       )}
       <div className="mu-moldura"><EscalaA4>
@@ -457,20 +457,19 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 <tr key={n}>
                   <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
                   <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
-                  {dias.map((dd) => { const c = x.dias[dd] ?? ""; return fechado(dd) && c !== "FÉ" ? <td key={dd} className="mu-fech" style={{ background: cor("F") }} title="Loja fechada: conta como folga">F</td> : (
-                    <td key={dd} className={feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={c ? { background: cor(c) } : undefined}
-                      onClick={() => { const dias2 = { ...x.dias }; const p = proximoCodigo(c); if (p) dias2[dd] = p; else delete dias2[dd]; mudar(n, { ...x, dias: dias2 }); }}
-                      title="Toque para trocar">{c}</td>
+                  {dias.map((dd) => { const dia = `${mes}-${dd}`; const c = codigoDoDia(doMes, x, dia); return (
+                    <td key={dd} style={estilo(c)} onClick={() => mudar(n, { ...x, dias: trocarCodigo(doMes, x, dia) })}
+                      title={fechado(dd) && c === "F" ? "Loja fechada: conta como folga" : feriadoNacional(dia) ? `${feriadoNacional(dia)} · toque para trocar` : "Toque para trocar"}>{c}</td>
                   ); })}
                 </tr>
               ); })}
               {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
-              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} className={fechado(dd) ? "mu-fech" : feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""} style={fechado(dd) ? { background: cor("F") } : undefined} />)}</tr>)}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => { const c = codigoPadrao(doMes, `${mes}-${dd}`); return <td key={dd} style={c === "T" ? undefined : estilo(c)}>{c === "T" ? "" : c}</td>; })}</tr>)}
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>
-            <span>Em branco: dia de trabalho · cinza: feriado · loja fechada conta como folga (F)</span>
             {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
+            <span>· loja fechada conta como folga</span>
           </p>
           {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
         </div>
@@ -482,7 +481,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
           {alertas.map((x, i) => <p key={i} style={{ margin: "4px 0", color: x.erro ? "var(--red)" : undefined }}>{x.erro ? "⚠️" : "ℹ️"} <b>{x.regra}:</b> {x.texto}</p>)}
         </div>
       )}
-      <p className="ajuda" style={{ marginBottom: 0 }}>Toque no dia para trocar: folga, só manhã, só tarde, férias e de volta para o dia normal. Salva sozinho. A conferência segue a transição do fim da escala 6x1 (PEC 221/2019); a convenção coletiva da sua categoria pode ter regras próprias para domingo, feriado e banco de horas: confirme com o seu contador.</p>
+      <p className="ajuda" style={{ marginBottom: 0 }}>Toque no dia para trocar: T (trabalha), F (folga), FE (feriado) e FS (férias). Loja fechada já sai como folga e feriado nacional como FE. Salva sozinho. A conferência segue a transição do fim da escala 6x1 (PEC 221/2019); a convenção coletiva da sua categoria pode ter regras próprias para domingo, feriado e banco de horas: confirme com o seu contador.</p>
     </div>
   );
 }

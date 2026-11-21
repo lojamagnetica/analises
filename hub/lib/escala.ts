@@ -4,14 +4,28 @@
 // Sem banco aqui (dá para testar). A convenção coletiva da categoria pode ter regras próprias: é orientação.
 import { feriadoNacional } from "./feriados.ts";
 
-/** Os códigos de cada dia: dia vazio é dia normal de trabalho. Tocar no dia passa para o próximo. */
+/** Os códigos de cada dia, sempre escritos na folha: T trabalha, F folga, FE feriado, FS férias. Tocar no dia passa para o próximo. */
 export const ESCALA = [
-  { c: "F", nome: "Folga", cor: "#F2C230" },
-  { c: "M", nome: "Só manhã", cor: "#9FD3B0" },
-  { c: "T", nome: "Só tarde", cor: "#9DB8E8" },
-  { c: "FÉ", nome: "Férias", cor: "#E8A0A0" },
+  { c: "T", nome: "Trabalha", cor: "#7BC47F", letra: "#111" },
+  { c: "F", nome: "Folga", cor: "#F2C230", letra: "#111" },
+  { c: "FE", nome: "Feriado", cor: "#D9332B", letra: "#fff" },
+  { c: "FS", nome: "Férias", cor: "#F28C28", letra: "#111" },
 ];
-export const proximoCodigo = (c: string) => { const i = ESCALA.findIndex((x) => x.c === c); return i === ESCALA.length - 1 ? "" : ESCALA[i + 1].c; };
+/** O código gravado, com o nome antigo de férias ("FÉ") convertido. */
+const gravado = (c: string | undefined) => (c === "FÉ" ? "FS" : c ?? "");
+/** O que o dia é quando ninguém marcou: loja fechada é folga; feriado nacional é feriado; o resto, trabalho. */
+export const codigoPadrao = (e: Pick<EscalaMes, "abreDomingo" | "fecha">, d: string) =>
+  lojaFechada(e, new Date(`${d}T12:00:00Z`).getUTCDay()) ? "F" : feriadoNacional(d) ? "FE" : "T";
+/** O código do dia da pessoa (o marcado ou o padrão). */
+export const codigoDoDia = (e: Pick<EscalaMes, "abreDomingo" | "fecha">, p: Pick<PessoaEscala, "dias">, d: string) => gravado(p.dias[d.slice(8)]) || codigoPadrao(e, d);
+/** Tocar no dia: passa para o próximo código e só grava o que for diferente do padrão. */
+export function trocarCodigo(e: Pick<EscalaMes, "abreDomingo" | "fecha">, p: Pick<PessoaEscala, "dias">, d: string): Record<string, string> {
+  const ordem = ESCALA.map((x) => x.c);
+  const prox = ordem[(ordem.indexOf(codigoDoDia(e, p, d)) + 1) % ordem.length];
+  const dias = { ...p.dias };
+  if (prox === codigoPadrao(e, d)) delete dias[d.slice(8)]; else dias[d.slice(8)] = prox;
+  return dias;
+}
 
 export type Horario = { entrada: string; saida: string; almoco: number };
 /** O horário da pessoa no mês; `sabado` quando o sábado tem outro horário (ex.: a loja fecha mais cedo). */
@@ -19,6 +33,8 @@ export type PessoaEscala = Horario & { dias: Record<string, string>; sabado?: Ho
 /** `fecha`: os dias da semana em que a loja fica fechada (0 = domingo, 1 = segunda...), além do domingo quando não abre. */
 /** `fora`: quem do time a loja tirou da escala do mês; `extras`: quem a loja incluiu à mão (sem cadastro no time). */
 export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala>; fora?: string[]; extras?: string[] };
+/** Dona, dono e sócios não entram na escala (dá para incluir à mão, se a loja quiser). */
+export const ehDona = (funcao: string | null | undefined) => /\b(dona|dono|s[óo]ci[ao]|propriet[áa]ri[ao])\b/i.test(funcao ?? "");
 /** Quem entra na escala do mês: o time (menos quem saiu) e quem a loja incluiu. */
 export const pessoasDaEscala = (time: string[], e: Pick<EscalaMes, "fora" | "extras">) =>
   [...time, ...(e.extras ?? []).filter((n) => !time.includes(n))].filter((n) => !(e.fora ?? []).includes(n));
@@ -63,9 +79,8 @@ export function conferirEscala(mes: string, e: EscalaMes): Alerta[] {
     const primeiro = nome.split(" ")[0];
     const add = (regra: string, texto: string, erro = true) => out.push({ pessoa: nome, regra, texto, erro });
     // O que cada dia é para a pessoa: horas trabalhadas (0 = folga, loja fechada ou férias).
-    const codigo = (d: string) => p.dias[d.slice(8)] ?? "";
-    const fechado = (d: string) => lojaFechada(e, diaSemana(d));
-    const horas = (d: string) => { const c = codigo(d); if (c === "F" || c === "FÉ" || fechado(d)) return 0; const h = horasDoDia(horarioDoDia(p, diaSemana(d))); return c === "M" || c === "T" ? h / 2 : h; };
+    const codigo = (d: string) => codigoDoDia(e, p, d);
+    const horas = (d: string) => (codigo(d) === "T" ? horasDoDia(horarioDoDia(p, diaSemana(d))) : 0);
     // O horário de todo dia e o do sábado (quando é outro): limite do dia, almoço e descanso.
     for (const [qual, x] of [["por dia", p], ["no sábado", p.sabado]] as const) {
       if (!x || (qual === "no sábado" && lojaFechada(e, 6))) continue;
@@ -80,7 +95,7 @@ export function conferirEscala(mes: string, e: EscalaMes): Alerta[] {
     for (const seg of dias.filter((d) => diaSemana(d) === 1)) {
       const semana = dias.slice(dias.indexOf(seg), dias.indexOf(seg) + 7);
       if (semana.length < 7) continue;
-      if (semana.every((d) => codigo(d) === "FÉ")) continue;
+      if (semana.every((d) => codigo(d) === "FS")) continue;
       const r = regraDaSemana(seg);
       const tot = semana.reduce((s, d) => s + horas(d), 0);
       const folgas = semana.filter((d) => horas(d) === 0).length;

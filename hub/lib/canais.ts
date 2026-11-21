@@ -2,6 +2,7 @@
 
 // Vendas e tempo por canal: a loja mede, por um período (ex.: 2 semanas), quanto cada canal vende e quanto tempo
 // ele toma. A equipe lança pelo link do celular (sem entrar no Hub); no Hub, a loja e a mentoria veem a venda por hora.
+import { SITE_HUB } from "@/lib/config";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 export const CANAIS_SUGERIDOS = ["Loja física", "Stories", "Grupo VIP", "WhatsApp", "Live", "Evento", "Site ou marketplace"];
@@ -10,12 +11,14 @@ export const rotuloTempo = (min: number) => (min < 60 ? `${min} min` : `${min / 
 
 export type Medicao = { id: string; portal_id: string; token: string; inicio: string; fim: string; canais: string[]; ativa: boolean; obs: string; created_at: string };
 export type Registro = { id: string; medicao_id: string; dia: string; canal: string; tipo: "venda" | "tempo"; valor: number; pecas: number; minutos: number; quem: string; created_at: string };
-export type Linha = { canal: string; valor: number; pecas: number; minutos: number; porHora: number | null; pct: number };
+export type Linha = { canal: string; valor: number; pecas: number; minutos: number; porHora: number | null; pct: number;
+  /** Cada lançamento de venda é uma venda: dá o P.A. e o ticket do canal. */
+  vendas: number; pa: number | null; ticket: number | null };
 
 const sb = () => supabaseBrowser();
 const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
 
-export const linkCanais = (token: string) => `${typeof window !== "undefined" ? window.location.origin : ""}/analises/portal/canais/?t=${token}`;
+export const linkCanais = (token: string) => `${SITE_HUB}/analises/portal/canais/?t=${token}`;
 
 export async function buscarMedicoes(portalId: string) {
   const { data } = await sb().from("loja_canais_medicao").select("*").eq("portal_id", portalId).order("inicio", { ascending: false });
@@ -44,7 +47,9 @@ export function resultado(canais: string[], regs: Registro[]) {
     const valor = rs.reduce((s, r) => s + (r.tipo === "venda" ? r.valor : 0), 0);
     const pecas = rs.reduce((s, r) => s + (r.tipo === "venda" ? r.pecas : 0), 0);
     const minutos = rs.reduce((s, r) => s + (r.tipo === "tempo" ? r.minutos : 0), 0);
-    return { canal, valor, pecas, minutos, porHora: minutos ? valor / (minutos / 60) : null, pct: total ? (valor / total) * 100 : 0 };
+    const vendas = rs.filter((r) => r.tipo === "venda").length;
+    return { canal, valor, pecas, minutos, porHora: minutos ? valor / (minutos / 60) : null, pct: total ? (valor / total) * 100 : 0,
+      vendas, pa: vendas ? pecas / vendas : null, ticket: vendas ? valor / vendas : null };
   });
   const dias = new Set(regs.map((r) => r.dia)).size;
   return { linhas, total, dias };

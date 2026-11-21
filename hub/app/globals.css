@@ -652,6 +652,10 @@ i.mes-ponto { min-width: 12px; width: 12px; height: 12px; background: var(--c); 
 .wa { --wa-fundo: #EFEAE2; --wa-minha: #D9FDD3; --wa-outra: #FFFFFF; --wa-texto: #111B21; --wa-sub: #667781; --wa-topo: #008069; --wa-barra: #F0F2F5; --wa-ticks: #53BDEB;
   display: flex; flex-direction: column; height: min(78vh, 760px); min-height: 460px; max-width: 820px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--wa-fundo); }
 :root[data-theme="dark"] .wa { --wa-fundo: #0B141A; --wa-minha: #005C4B; --wa-outra: #202C33; --wa-texto: #E9EDEF; --wa-sub: #8696A0; --wa-topo: #202C33; --wa-barra: #202C33; }
+/* App do celular (fora do portal): a conversa ocupa a tela inteira. */
+.wa.cheia { position: fixed; inset: 0; z-index: 60; height: auto; min-height: 0; max-width: none; border: 0; border-radius: 0; }
+.wa.cheia .wa-topo { padding-top: calc(10px + env(safe-area-inset-top)); }
+.wa.cheia .wa-rodape { padding-bottom: env(safe-area-inset-bottom); }
 .wa-topo { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--wa-topo); color: #fff; }
 .wa-topo b { display: block; font-size: 16px; line-height: 1.2; }
 .wa-topo small { opacity: .85; font-size: 12.5px; }

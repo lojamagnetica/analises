@@ -5,7 +5,7 @@
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { FORMAS, salvarCaixa, type Forma, type Pagamentos } from "@/lib/caixa";
-import { arrumarNome, type Cliente } from "@/lib/clientes";
+import { arrumarNome, lerData, type Cliente } from "@/lib/clientes";
 
 const sb = () => supabaseBrowser();
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -19,6 +19,16 @@ async function ok<T>(p: PromiseLike<{ data: T; error: { message: string } | null
 export const LINHAS = ["Ouro", "Prata 925", "Semijoia", "Bijuteria", "Acessório"];
 export const CATEGORIAS = ["Anel", "Brinco", "Colar", "Pulseira", "Conjunto", "Pingente", "Berloque", "Piercing", "Tornozeleira", "Relógio", "Outro"];
 export { FORMAS };
+
+/** Listas de cada loja (tipo de peça e linha/marca). Sem configuração, valem as de joias (padrão da primeira loja). */
+export type ListasVenda = { tipos?: string[]; linhas?: string[]; rotulo_linha?: string } | null | undefined;
+export function listasDaLoja(l: ListasVenda) {
+  return {
+    tipos: l?.tipos?.length ? l.tipos : CATEGORIAS,
+    linhas: l?.linhas?.length ? l.linhas : LINHAS,
+    rotuloLinha: l?.rotulo_linha || "Linha",
+  };
+}
 export const nomeForma = (f: string) => FORMAS.find((x) => x.chave === f)?.nome ?? f;
 /** Marca do caixa somado pelas vendas (assim dá para saber que o dia veio daqui). */
 const MARCA = "Somado das vendas do dia";
@@ -32,10 +42,14 @@ export async function buscarClientesSimples(portalId: string) {
 export type ClienteSimples = Awaited<ReturnType<typeof buscarClientesSimples>>[number];
 
 /** Só nome e WhatsApp: o resto a cliente vai ganhando com as compras. */
-export async function novaCliente(portalId: string, nome: string, whatsapp: string) {
+export async function novaCliente(portalId: string, nome: string, whatsapp: string, aniversario: string) {
   const n = arrumarNome(nome).slice(0, 120);
   if (!n) throw new Error("Escreva o nome da cliente.");
-  const data = await ok(sb().from("loja_clientes").insert({ portal_id: portalId, nome: n, whatsapp: whatsapp.trim().slice(0, 40) || null }).select("id, nome, whatsapp, aniversario, ultima_compra, n_compras, total").single());
+  // Cadastro completo: sem WhatsApp e aniversário não dá para fazer pós-venda nem o presente do mês.
+  if (whatsapp.replace(/\D/g, "").length < 10) throw new Error("Escreva o WhatsApp da cliente com DDD.");
+  const aniv = lerData(aniversario, true);
+  if (!aniv) throw new Error("Escreva o aniversário da cliente (dia/mês, ex.: 25/11).");
+  const data = await ok(sb().from("loja_clientes").insert({ portal_id: portalId, nome: n, whatsapp: whatsapp.trim().slice(0, 40), aniversario: aniv }).select("id, nome, whatsapp, aniversario, ultima_compra, n_compras, total").single());
   return data as ClienteSimples;
 }
 
@@ -77,12 +91,14 @@ const itensDe = (v: { itens?: unknown; categoria: string; linha: string | null; 
 const PLURAL: Record<string, string> = { anel: "anéis", colar: "colares", "relógio": "relógios" };
 const qtdTipo = (n: number, tipo: string) => {
   if (n <= 1) return tipo;
-  const t = tipo.toLowerCase();
-  return `${n} ${PLURAL[t] ?? (t.endsWith("s") ? t : `${t}s`)}`;
+  // Só a primeira palavra vai para o plural: "2 calças jeans", "2 shorts Liz".
+  const [primeira, ...resto] = tipo.toLowerCase().split(" ");
+  const pl = PLURAL[primeira] ?? (primeira.endsWith("s") ? primeira : `${primeira}s`);
+  return [`${n} ${pl}`, ...resto].join(" ");
 };
 /** O que saiu, numa linha: "Anel prata 925, 2 brincos semijoia". */
 export const descreverItens = (itens: ItemVenda[]) =>
-  itens.map((i) => [qtdTipo(i.pecas, i.categoria), i.linha?.toLowerCase(), i.produto ? `(${i.produto})` : null].filter(Boolean).join(" ")).join(", ");
+  itens.map((i) => [qtdTipo(i.pecas, i.categoria), i.linha && i.linha === i.linha.toUpperCase() ? i.linha : i.linha?.toLowerCase(), i.produto ? `(${i.produto})` : null].filter(Boolean).join(" ")).join(", ");
 
 export async function buscarVendas(portalId: string, de: string, ate: string) {
   const { data } = await sb().from("loja_vendas").select("id, dia, categoria, produto, valor, pecas, forma, cliente_id, maleta, created_at, linha, estoque_id, itens")

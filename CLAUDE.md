@@ -37,10 +37,12 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
 - Tudo o que a loja cadastra no Hub (pessoas, clientes, lançamentos, notas, arquivos) precisa ter **editar e excluir/remover**:
   a lojista pode errar ou precisar tirar alguém. Excluir sempre com confirmação.
 - Todo pedido de arquivo para a loja tem também um espaço para responder à mão (pode ser estimativa) ou marcar "Ainda não tenho". Nada trava por falta de arquivo.
+- Antes de apontar que falta um dado ou que algo não bate (caixa, relatórios, envios), o agente procura primeiro nos arquivos que a loja já anexou e preenche dali; só o que não estiver em nenhum arquivo vira aviso. A loja pode fechar com o motivo escrito ("O motivo foi…"), e a Camilla vê o motivo na análise.
 - Análises e conteúdos gerados para clientes ficam como rascunho até a Camilla liberar.
+- Toda pendência nova (combinado em `loja_combinados` ou lembrete em `equipe_lembretes`) nasce com `link`: o caminho de onde ela se resolve (página do Hub, post `/empresa/conteudo/post?id=`, página da campanha, link da reunião). É o botão "Resolver" do Meu dia. Sem link, o Hub deduz pelo texto (`hub/lib/pendencia.ts`).
 - Nunca perguntar à loja o que ela já respondeu (formulário, áudios, reuniões, arquivos, Hub). Todo agente procura a resposta no material antes de perguntar; se está em parte, pergunta só o que falta, no formato "Entendi que você já faz X, porém ainda preciso entender melhor Y". Pergunta repetida soa como desorganização.
 - Roteiros de gravação da Camilla: sempre em formato de teleprompter (só as falas, frases curtas, um bloco por respiração). No Hub, as falas ficam em linhas com "> " para o Teleprompter do Meu estúdio.
-- Notion não é mais usado (desde 08/11/2026): nada se lê nem se grava no Notion. Tudo fica no Hub.
+- Notion não é mais usado para nada novo (desde 08/11/2026): nada se grava no Notion e tudo fica no Hub. Os portais e áreas antigas do Notion podem ser consultados (só leitura), para trazer o histórico das lojas para o Hub antes de desativar.
 - Áreas do portal liberadas por etapa: as áreas novas nascem com cadeado (`portais.menu_trancado`; hoje `conteudo` e `marca`) e a Camilla libera uma área coerente com a etapa da loja a cada 15 dias, sempre bem feita antes de abrir.
   - "Nossa marca" (Nossa história + Guia das marcas) abre na semana depois do Diagnóstico.
 - Rotina de gestão = Planner de gestão (`/consultoria/planner`, no lugar da antiga Bússola), montado com o formulário da rotina de gestão (`/consultoria/planner/rotina`, etapa 20, fora dos Dados da loja): o que a loja já faz, quando e como, compras e estoque. Cada demanda leva a situação (já faz, sem constância, começar):

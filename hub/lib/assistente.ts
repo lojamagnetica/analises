@@ -150,7 +150,8 @@ export type Mensagem = {
 export function mensagensDe(lista: Solicitacao[]): Mensagem[] {
   const m: Mensagem[] = [];
   lista.forEach((s) => {
-    m.push({ id: s.id, solicitacao_id: s.id, da_loja: true, nome: s.autor_nome, texto: s.texto, audio: s.audio, transcricao: s.transcricao, created_at: s.created_at, tipo: s.tipo });
+    // Conversa aberta pela equipe (ex.: confirmação de reunião) nasce sem texto da loja: só as respostas aparecem.
+    if (s.texto || s.audio) m.push({ id: s.id, solicitacao_id: s.id, da_loja: true, nome: s.autor_nome, texto: s.texto, audio: s.audio, transcricao: s.transcricao, created_at: s.created_at, tipo: s.tipo });
     s.respostas.forEach((r) => m.push({ id: r.id, solicitacao_id: s.id, da_loja: !r.equipe, nome: r.autor_nome, texto: r.texto, audio: r.audio, transcricao: r.transcricao, created_at: r.created_at, automatica: r.automatica }));
   });
   return m.sort((a, b) => a.created_at.localeCompare(b.created_at));

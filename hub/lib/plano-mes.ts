@@ -45,6 +45,9 @@ export type DadosPlano = {
 export type FaixaMeta = { valor: number; comissao: number; gerente: number };
 export type MetaCanal = { canal: string; base: number | null; faixas: FaixaMeta[] };
 export const NOMES_FAIXA = ["Meta 1", "Meta 2", "Meta 3"];
+/** A loja pode abrir uma 4ª meta (ex.: R$ 34, 39, 44 e 49 mil). */
+export const MAX_FAIXAS = 4;
+export const nomeFaixa = (k: number) => `Meta ${k + 1}`;
 const NOME_CANAL: Record<string, string> = { loja: "Loja", site: "Site", atacado: "Atacado" };
 /** Os canais do plano: os já salvos e, se faltar, um em branco para cada canal da loja (a loja física sempre). */
 export function canaisDoPlano(d: Partial<DadosPlano>, canaisDaLoja: string[]): MetaCanal[] {
@@ -158,14 +161,16 @@ export function sugerirSemanas(mes: string, d: DadosPlano): SemanaPlano[] {
   const prod = (i: number) => (prods.length ? prods[i % prods.length] : "");
   return semanas.map((s, i) => {
     const naSemana = (dia: number | null) => dia != null && dia >= s.de && dia <= s.ate;
-    // A data da semana seguinte já entra na campanha desta.
-    const datasAqui = datas.filter((x) => naSemana(x.dia) || (x.dia != null && x.dia > s.ate && x.dia <= s.ate + 7));
+    // A data da semana seguinte já entra na campanha desta. O Natal vende desde a 1ª semana de dezembro: entra em todas as semanas até o dia.
+    const antes = (x: { titulo: string }) => (/natal/i.test(x.titulo) ? 31 : 7);
+    const datasAqui = datas.filter((x) => naSemana(x.dia) || (x.dia != null && x.dia > s.ate && x.dia <= s.ate + antes(x)));
     const lancamentos = d.acoes.filter((a) => a.titulo && a.inicio.startsWith(mes) && naSemana(Number(a.inicio.slice(8))));
     const p = prod(i);
 
     const foco: string[] = [];
     for (const a of lancamentos) foco.push(`Lançamento: ${a.titulo} (começa dia ${Number(a.inicio.slice(8))})`);
-    for (const x of datasAqui) foco.push(naSemana(x.dia) ? `${x.titulo}${x.acao ? `: ${x.acao}` : ""}` : `Preparar ${x.titulo} (dia ${x.dia})`);
+    for (const x of datasAqui) foco.push(naSemana(x.dia) ? `${x.titulo}${x.acao ? `: ${x.acao}` : ""}`
+      : /natal/i.test(x.titulo) ? `Natal: venda de presentes desde já (dia ${x.dia})` : `Preparar ${x.titulo} (dia ${x.dia})`);
     // Data sem dia certo (ex.: início da campanha de Natal) entra na última semana.
     if (i === 3) for (const x of datas.filter((x) => x.dia == null)) foco.push(`${x.titulo}${x.acao ? `: ${x.acao}` : ""}`);
     if (!foco.length) {

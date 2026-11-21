@@ -20,6 +20,10 @@ export const viewport: Viewport = { themeColor: "#141210", width: "device-width"
 // Aplica tema e tamanho de letra salvos antes de pintar a tela (evita piscar).
 const preferencias = `try{var r=document.documentElement,t=localStorage.getItem('lm_tema'),l=localStorage.getItem('lm_largo'),f=localStorage.getItem('lm_fs');if(t)r.dataset.theme=t;else if(matchMedia('(prefers-color-scheme: dark)').matches)r.dataset.theme='dark';if(l)r.dataset.largo=l;if(f)r.style.setProperty('--fs',f)}catch(e){}`;
 
+// Endereço antigo (github.io): leva para o endereço novo do Hub, mantendo a página. Só troca se o novo responder;
+// se não responder, fica no antigo, que continua de reserva.
+const enderecoNovo = `try{if(location.hostname==='lojamagnetica.github.io'){var n='https://hub.ometodolojamagnetica.com.br',c=new AbortController();setTimeout(function(){c.abort()},4000);fetch(n+'/analises/portal/icon.svg',{mode:'no-cors',cache:'no-store',signal:c.signal}).then(function(){location.replace(n+location.pathname+location.search+location.hash)}).catch(function(){})}}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
@@ -29,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,800&family=Outfit:wght@400;500&display=swap" rel="stylesheet" />
         <script dangerouslySetInnerHTML={{ __html: preferencias }} />
+        <script dangerouslySetInnerHTML={{ __html: enderecoNovo }} />
       </head>
       <body>{children}</body>
     </html>

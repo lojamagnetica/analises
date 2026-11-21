@@ -7,7 +7,9 @@ import { moeda } from "@/lib/formato";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Inclui = { reunioes?: string; grupo?: boolean; leitura?: boolean; visitas?: number; detalhes?: string; revisado?: boolean };
-type Plano = { id: string; nome: string; tipo: string; meses: number; valor: number | null; vendendo: boolean; inclui: Inclui };
+type Plano = { id: string; nome: string; tipo: string; meses: number; valor: number | null; valor_fecha: number | null; meses_call: number | null; vendendo: boolean; inclui: Inclui };
+/** Campo de valor ou de meses: vazio vira "sem valor". */
+const numero = (v: string) => { const n = Number(v.replace(/\./g, "").replace(",", ".")); return v.trim() && !Number.isNaN(n) && n > 0 ? n : null; };
 
 const REUNIOES = [
   { v: "semanal", rotulo: "Toda semana" },
@@ -29,6 +31,18 @@ function Cartao({ p, lojas, aoSalvar }: { p: Plano; lojas: number; aoSalvar: () 
         <span className={`selo ${i.revisado ? "feito" : "alerta"}`}>{i.revisado ? "revisado" : "a revisar"}</span>
       </div>
       <small className="mudo">{p.tipo} · {p.meses} meses{p.valor ? ` · ${moeda(p.valor)}` : ""} · {lojas} loja{lojas === 1 ? "" : "s"} · {p.vendendo ? "à venda" : "fora de venda"}</small>
+      {/* Valores da negociação: a equipe comercial vê nos Leads e em Registrar venda. */}
+      <div className="grade g3" style={{ gap: "0 10px" }}>
+        <label className="ajuda" style={{ display: "block" }}>Valor de tabela (R$)
+          <input inputMode="decimal" value={r.valor ?? ""} onChange={(e) => setR({ ...r, valor: numero(e.target.value) })} />
+        </label>
+        <label className="ajuda" style={{ display: "block" }}>Fecha até (R$)
+          <input inputMode="decimal" value={r.valor_fecha ?? ""} placeholder="sem desconto" onChange={(e) => setR({ ...r, valor_fecha: numero(e.target.value) })} />
+        </label>
+        <label className="ajuda" style={{ display: "block" }}>Meses se fechar na call
+          <input inputMode="numeric" value={r.meses_call ?? ""} placeholder={`${p.meses}`} onChange={(e) => setR({ ...r, meses_call: numero(e.target.value) })} />
+        </label>
+      </div>
       <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>Reunião individual</b>
         <select value={i.reunioes ?? "so_inicio"} onChange={(e) => muda({ reunioes: e.target.value })}>
           {REUNIOES.map((x) => <option key={x.v} value={x.v}>{x.rotulo}</option>)}
@@ -48,7 +62,8 @@ function Cartao({ p, lojas, aoSalvar }: { p: Plano; lojas: number; aoSalvar: () 
       {msg && <p className="ajuda" style={{ margin: "4px 0" }}>{msg}</p>}
       <button type="button" className="btn p peq mt" onClick={async () => {
         setMsg("");
-        const { error } = await supabaseBrowser().from("planos").update({ inclui: r.inclui }).eq("id", p.id);
+        if (r.valor && r.valor_fecha && r.valor_fecha > r.valor) { setMsg("O \"fecha até\" não pode ser maior que o valor de tabela."); return; }
+        const { error } = await supabaseBrowser().from("planos").update({ inclui: r.inclui, valor: r.valor, valor_fecha: r.valor_fecha, meses_call: r.meses_call }).eq("id", p.id);
         if (error) setMsg(error.message); else { setMsg("Salvo ✓"); aoSalvar(); }
       }}>Salvar</button>
     </div>
@@ -60,7 +75,7 @@ export default function Planos() {
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
     const [{ data: planos }, { data: fichas }, { data: portais }] = await Promise.all([
-      sb.from("planos").select("id, nome, tipo, meses, valor, vendendo, inclui").order("ordem"),
+      sb.from("planos").select("id, nome, tipo, meses, valor, valor_fecha, meses_call, vendendo, inclui").order("ordem"),
       sb.from("fichas").select("portal_id, plano_id"),
       sb.from("portais").select("id").eq("ativo", true),
     ]);

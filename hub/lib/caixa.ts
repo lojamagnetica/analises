@@ -2,6 +2,7 @@
 
 // Fechamento de caixa: os números de cada dia da loja e o que o Resultado do mês calcula com eles.
 // PA = peças ÷ vendas · TKM (ticket médio) = faturamento ÷ vendas · PM (preço médio) = faturamento ÷ peças. TKM = PA × PM.
+import { diaDeLoja } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje, moeda } from "@/lib/formato";
 import { MESES, type Respostas } from "@/lib/conteudo";
@@ -28,8 +29,12 @@ export type Caixa = {
   pagamentos: Pagamentos | null; vendedoras: LinhaVendedora[] | null; malinha: Malinha | null;
   /** Clientes novas cadastradas no dia (null = não informou). */
   cadastros: number | null;
+  /** "canais": o dia foi montado pelas vendas do link da equipe. */
+  origem?: string | null;
+  /** O motivo que a loja escreveu para fechar o dia com algo faltando ou que não bate. */
+  justificativa?: string | null;
 };
-export type NovoCaixa = Omit<Caixa, "id" | "cadastros"> & { id?: string; cadastros?: number | null };
+export type NovoCaixa = Omit<Caixa, "id" | "cadastros" | "origem"> & { id?: string; cadastros?: number | null };
 
 /** Peças por atendimento ideal do método. */
 export const PA_IDEAL = 2.5;
@@ -61,7 +66,7 @@ export const diaDaSemana = (d: string) =>
 const sb = () => supabaseBrowser();
 
 export async function buscarCaixa(portalId: string, mes: string) {
-  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros")
+  const { data } = await sb().from("loja_caixa").select("id, loja, dia, faturamento, vendas, pecas, obs, pagamentos, vendedoras, malinha, cadastros, origem, justificativa")
     .eq("portal_id", portalId).gte("dia", `${mes}-01`).lte("dia", fimDoMes(mes))
     .order("dia", { ascending: false }).order("loja");
   return (data ?? []).map((l) => ({ ...l, faturamento: Number(l.faturamento), vendas: Number(l.vendas), pecas: Number(l.pecas) })) as Caixa[];
@@ -76,6 +81,8 @@ export async function salvarCaixa(portalId: string, c: NovoCaixa) {
     vendedoras: c.vendedoras?.length ? c.vendedoras : null,
     malinha: c.malinha && (c.malinha.faturamento || c.malinha.vendas || c.malinha.pecas || c.malinha.saidas) ? c.malinha : null,
     cadastros: c.cadastros ?? null,
+    // Só mexe no motivo quando o lançamento manda (o relatório do sistema não manda).
+    ...(c.justificativa !== undefined ? { justificativa: c.justificativa?.trim().slice(0, 500) || null } : {}),
   };
   const { error } = c.id
     ? await sb().from("loja_caixa").update(linha).eq("id", c.id)
@@ -102,6 +109,34 @@ export function numeroDe(v: unknown) {
 
 /** Soma das formas de pagamento (0 se nenhuma foi informada). */
 export const somaPagamentos = (p: Pagamentos | null | undefined) => FORMAS.reduce((s, f) => s + (p?.[f.chave] ?? 0), 0);
+
+/** O que está faltando ou não bate num dia de caixa, em frases curtas para a loja.
+ * comEquipe: a loja tem time cadastrado no Hub (aí a venda por vendedora é obrigatória). */
+/** formasSeparadas: a loja tem venda (relatório de vendas) e dinheiro que entrou (relatório de faturamento) diferentes
+ *  por regra dela (Regras do caixa: consórcio, vale-crédito); aí as formas de pagamento não precisam bater com a venda. */
+export function problemasDoCaixa(c: Pick<Caixa, "faturamento" | "vendas" | "pecas" | "pagamentos" | "vendedoras"> & { origem?: string | null; justificativa?: string | null; dia?: string }, comEquipe: boolean, formasSeparadas = false): string[] {
+  // Dia fechado com o motivo escrito pela loja: não volta para a lista de correção.
+  if (c.justificativa?.trim()) return [];
+  const fat = Number(c.faturamento) || 0, vendas = Number(c.vendas) || 0, pecas = Number(c.pecas) || 0;
+  // Soma todas as formas gravadas (inclusive as que vêm do sistema com outro nome, como "cartão" ou "espécie").
+  const pag = Object.values(c.pagamentos ?? {}).reduce((s: number, v) => s + (Number(v) || 0), 0);
+  const vend = (c.vendedoras ?? []).reduce((s, v) => s + (Number(v.faturamento) || 0), 0);
+  const out: string[] = [];
+  // Dia salvo todo zerado (fora domingo e feriado, quando a loja costuma fechar): esconde o dia sem número.
+  const fechado = !!c.dia && !diaDeLoja(c.dia);
+  if (fat === 0 && vendas === 0 && pecas === 0 && !fechado) out.push("o dia foi salvo zerado (sem faturamento, vendas e peças)");
+  if (fat > 0 && vendas === 0) out.push("falta o número de vendas");
+  if (vendas > 0 && pecas === 0) out.push("falta o número de peças");
+  if (pecas > 0 && pecas < vendas) out.push(`tem menos peças (${pecas}) que vendas (${vendas})`);
+  // O dia montado pelas vendas do link da equipe (canais) não traz as formas: lá não se pergunta.
+  if (fat > 0 && pag === 0 && c.origem !== "canais") out.push("faltam as formas de pagamento");
+  if (!formasSeparadas && pag > 0 && Math.abs(pag - fat) > 1) out.push(`as formas de pagamento somam ${moeda(pag)} e o faturamento é ${moeda(fat)}`);
+  if (comEquipe && fat > 0 && !(c.vendedoras ?? []).length) out.push("falta a venda por vendedora");
+  if ((c.vendedoras ?? []).length && Math.abs(vend - fat) > 1) out.push(`a soma das vendedoras (${moeda(vend)}) é diferente do faturamento (${moeda(fat)})`);
+  return out;
+}
+/** Junta as frases: "a, b e c". */
+export const juntar = (l: string[]) => (l.length <= 1 ? l.join("") : `${l.slice(0, -1).join(", ")} e ${l[l.length - 1]}`);
 
 /** Total de cada forma no período. */
 export function somarPagamentos(lista: Pick<Caixa, "pagamentos">[]): Pagamentos {
@@ -287,4 +322,15 @@ export function fraseFoco(f: Foco, mesFechado: boolean) {
     return `Seu TKM hoje é ${moeda(f.tkmHoje)}. Só levando o PA de ${fmtPa(f.de)} para ${fmtPa(f.para)}, com o mesmo preço médio, ele vai para ${moeda(f.tkmNovo)} (${pct}). ${fim}`;
   }
   return `Seu preço médio vendido é ${moeda(f.de)} e o do estoque é ${moeda(f.para)}. Vendendo no preço médio do estoque, com o mesmo PA, o TKM vai de ${moeda(f.tkmHoje)} para ${moeda(f.tkmNovo)} (${pct}). ${fim}`;
+}
+
+/** O que o agente achou nos arquivos do caixa que a loja anexou no dia (null: sem arquivo ou sem leitura). */
+export type LidoDoArquivo = {
+  achou: boolean; faturamento: number | null; vendas: number | null; pecas: number | null;
+  pagamentos: Partial<Record<Forma, number>> | null; vendedoras: { nome: string; faturamento: number; vendas: number; pecas: number }[] | null; observacao: string;
+};
+export async function lerArquivosDoCaixa(portalId: string, dia: string, loja: string): Promise<LidoDoArquivo | null> {
+  const { data, error } = await sb().functions.invoke("caixa-arquivos", { body: { portal_id: portalId, dia, loja } });
+  if (error) return null;
+  return (data?.lido ?? null) as LidoDoArquivo | null;
 }

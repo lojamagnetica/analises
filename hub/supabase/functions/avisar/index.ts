@@ -9,14 +9,15 @@ const BASE = "/analises/portal";
 Deno.serve(async (req) => {
   const { data: cfg } = await sb.rpc("push_config");
   if (!cfg?.aviso_chave || req.headers.get("x-aviso") !== cfg.aviso_chave) return new Response("não autorizado", { status: 401 });
-  const { texto, link, para, para_lojas } = await req.json();
+  const { texto, link, para, para_lojas, titulo } = await req.json();
   webpush.setVapidDetails("https://lojamagnetica.github.io/analises/portal/", cfg.vapid_publica, cfg.vapid_privada);
   // para_lojas: lembretes para as pessoas das lojas (só quem ligou os avisos no celular).
   // para: só os celulares dessas pessoas da equipe (ex.: alteração de contrato vai só para Camilla e Claudia).
   const { data: destinos } = Array.isArray(para_lojas) && para_lojas.length
     ? await sb.rpc("push_destinos_lojas", { p: para_lojas })
     : Array.isArray(para) && para.length ? await sb.rpc("push_destinos_para", { p: para }) : await sb.rpc("push_destinos");
-  const msg = JSON.stringify({ titulo: "magnética.hub", texto, url: `${BASE}${link ?? (Array.isArray(para_lojas) && para_lojas.length ? "/inicio" : "/empresa/novidades")}` });
+  // titulo "Conversas": o celular usa o ícone do app das Conversas e avisa com som a cada mensagem.
+  const msg = JSON.stringify({ titulo: typeof titulo === "string" && titulo ? titulo.slice(0, 60) : "magnética.hub", texto, url: `${BASE}${link ?? (Array.isArray(para_lojas) && para_lojas.length ? "/inicio" : "/empresa/novidades")}` });
   let enviados = 0;
   for (const d of destinos ?? []) {
     try {

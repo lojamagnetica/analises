@@ -45,11 +45,23 @@ function Configurar({ inicial, aoSalvar, aoCancelar, rotulo }: { inicial?: Medic
   );
 }
 
-function Resultado({ m, regs, recarregar, setMsg }: { m: Medicao; regs: Registro[]; recarregar: () => void; setMsg: (s: string) => void }) {
+/** As semanas (segunda a domingo) que a medição cobre, da mais nova para a mais antiga. */
+function semanasDa(m: Medicao) {
+  const out: string[] = [];
+  const seg = (d: string) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7)); return x.toISOString().slice(0, 10); };
+  for (let d = seg(m.inicio); d <= m.fim; d = somaDias(d, 7)) out.unshift(d);
+  return out;
+}
+
+function Resultado({ m, regs: todos, recarregar, setMsg }: { m: Medicao; regs: Registro[]; recarregar: () => void; setMsg: (s: string) => void }) {
+  // Comparar semana a semana (ou o período todo).
+  const [semana, setSemana] = useState<string>("");
+  const regs = semana ? todos.filter((x) => x.dia >= semana && x.dia <= somaDias(semana, 6)) : todos;
   const r = resultado(m.canais, regs);
   const comHora = r.linhas.filter((l) => l.porHora != null && l.valor > 0).sort((a, b) => (b.porHora ?? 0) - (a.porHora ?? 0));
   const maisTempo = [...r.linhas].sort((a, b) => b.minutos - a.minutos)[0];
-  const diasPeriodo = Math.round((Date.parse(m.fim) - Date.parse(m.inicio)) / 86_400_000) + 1;
+  const diasPeriodo = semana ? 6 : Math.round((Date.parse(m.fim) - Date.parse(m.inicio)) / 86_400_000) + 1;
+  const dmCurto = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`;
   const corrigir = async (x: Registro) => {
     const atual = x.tipo === "venda" ? String(x.valor).replace(".", ",") : String(x.minutos);
     const v = prompt(x.tipo === "venda" ? "Valor certo da venda (R$):" : "Minutos certos:", atual);
@@ -61,14 +73,20 @@ function Resultado({ m, regs, recarregar, setMsg }: { m: Medicao; regs: Registro
   return (
     <>
       <div className="secao">O que cada canal rende</div>
+      <div className="chips mb">
+        <button type="button" className={`chip${!semana ? " escolhido" : ""}`} onClick={() => setSemana("")}>Período todo</button>
+        {semanasDa(m).map((s) => (
+          <button key={s} type="button" className={`chip${semana === s ? " escolhido" : ""}`} onClick={() => setSemana(s)}>Semana {dmCurto(s)} a {dmCurto(somaDias(s, 5))}</button>
+        ))}
+      </div>
       <div className="card mb" style={{ overflowX: "auto" }}>
         <p className="mudo" style={{ marginTop: 0 }}>{r.dias} de {diasPeriodo} dias com lançamento · total {moeda(r.total)}</p>
         <table className="tabela">
-          <thead><tr><th>Canal</th><th>Vendeu</th><th>% da venda</th><th>Peças</th><th>Tempo</th><th>Vende por hora</th></tr></thead>
+          <thead><tr><th>Canal</th><th>Vendeu</th><th>% da venda</th><th>Vendas</th><th>Peças</th><th>P.A.</th><th>Ticket</th><th>Tempo</th><th>Vende por hora</th></tr></thead>
           <tbody>
             {r.linhas.map((l) => (
               <tr key={l.canal}>
-                <td><b>{l.canal}</b></td><td>{moeda(l.valor)}</td><td>{l.pct.toFixed(0)}%</td><td>{l.pecas}</td><td>{horas(l.minutos)}</td>
+                <td><b>{l.canal}</b></td><td>{moeda(l.valor)}</td><td>{l.pct.toFixed(0)}%</td><td>{l.vendas}</td><td>{l.pecas}</td><td>{l.pa != null ? l.pa.toFixed(1).replace(".", ",") : "—"}</td><td>{l.ticket != null ? moeda(l.ticket) : "—"}</td><td>{horas(l.minutos)}</td>
                 <td><b>{l.porHora != null ? moeda(l.porHora) : "—"}</b></td>
               </tr>
             ))}
@@ -80,7 +98,7 @@ function Resultado({ m, regs, recarregar, setMsg }: { m: Medicao; regs: Registro
             {maisTempo && maisTempo.minutos > 0 && maisTempo.canal !== comHora[0].canal && <> O que mais toma tempo é <b>{maisTempo.canal}</b> ({horas(maisTempo.minutos)}{maisTempo.porHora != null ? `, ${moeda(maisTempo.porHora)} por hora` : ""}).</>}
           </p>
         )}
-        <p className="ajuda" style={{ marginBottom: 0 }}>Vende por hora = o que o canal vendeu ÷ as horas que a equipe gastou nele. Canal sem tempo lançado fica sem essa conta.</p>
+        <p className="ajuda" style={{ marginBottom: 0 }}>Vende por hora = o que o canal vendeu ÷ as horas que a equipe gastou nele. Canal sem tempo lançado fica sem essa conta. Cada venda lançada no link conta como uma venda: P.A. = peças por venda; ticket = valor médio da venda.</p>
       </div>
 
       <details className="card mb">

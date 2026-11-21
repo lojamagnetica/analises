@@ -4,13 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Titulo } from "@/components/Titulo";
+import { Excluir } from "@/components/Excluir";
 import { BASE } from "@/lib/config";
 import { Carregando, useDados, useEquipe } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
 import { somarDias } from "@/lib/acoes-mes";
 import { DIAS_SEMANA, diaDaSemana, segundaDe } from "@/lib/instagram";
 import {
-  FORMATOS_CASA, PERFIS, STATUS_CASA, criarPost, ehCarrossel, listarPosts, salvarPost, taxaEnvio,
+  FORMATOS_CASA, PERFIS, STATUS_CASA, apagarPost, criarPost, ehCarrossel, listarPosts, salvarPost, taxaEnvio,
   type Perfil, type PostCasa, type StatusCasa,
 } from "@/lib/conteudo-casa";
 
@@ -33,8 +34,14 @@ const GRUPOS: [string, (f: string) => boolean][] = [
 
 const seloStatus = (s: StatusCasa) => (s === "Postado" ? "feito" : s === "Ideia" ? "espera" : s === "Planejado" ? "alerta" : "andamento");
 
-function Cartao({ p, perfil }: { p: PostCasa; perfil: Perfil }) {
+/** Excluir um conteúdo que passou do tempo ou não serviu, direto da lista. */
+const apagar = (p: PostCasa, aoFim: () => void) => (
+  <Excluir pergunta={`Excluir "${p.titulo || p.gancho || "este post"}"? Não dá para desfazer.`} fazer={() => apagarPost(p.id)} aoFim={aoFim} />
+);
+
+function Cartao({ p, perfil, aoExcluir, mover }: { p: PostCasa; perfil: Perfil; aoExcluir: () => void; mover?: (data: string) => void }) {
   return (
+    <div draggable={!!mover} onDragStart={(e) => { e.dataTransfer.setData("text/plain", p.id); e.dataTransfer.effectAllowed = "move"; }}>
     <Link href={`/empresa/conteudo/post?id=${p.id}&perfil=${perfil}`} className="card" style={{ padding: 12, textDecoration: "none", color: "inherit", display: "block", opacity: p.status === "Postado" ? 0.7 : 1 }}>
       <div className="linha entre" style={{ gap: 4 }}>
         <small><b>{p.horario ?? "—"}</b> · {p.formato}</small>
@@ -44,6 +51,17 @@ function Cartao({ p, perfil }: { p: PostCasa; perfil: Perfil }) {
       {p.gancho && p.titulo && <small className="mudo" style={{ display: "block" }}>{p.gancho}</small>}
       {(p.funcao || p.palavra_chave) && <small className="mudo">{[p.funcao, p.palavra_chave && `palavra ${p.palavra_chave}`].filter(Boolean).join(" · ")}</small>}
     </Link>
+    <div className="linha entre" style={{ marginTop: 2, gap: 6, flexWrap: "nowrap" }}>
+      {/* Trocar o dia sem abrir o post (no computador, também dá para arrastar o cartão). */}
+      {mover ? (
+        <label className="linha" style={{ gap: 4, fontSize: 12.5, alignItems: "center" }}>
+          <span className="mudo">Mover para</span>
+          <input type="date" value={p.data ?? ""} style={{ padding: "2px 4px", fontSize: 12.5, width: 130 }} onChange={(e) => { if (e.target.value && e.target.value !== p.data) mover(e.target.value); }} />
+        </label>
+      ) : <span />}
+      {apagar(p, aoExcluir)}
+    </div>
+    </div>
   );
 }
 
@@ -59,6 +77,8 @@ function Conteudo() {
   const [busca, setBusca] = useState("");
   const [nova, setNova] = useState({ titulo: "", gancho: "", formato: FORMATOS_CASA[0] });
   const { dados: posts, recarregar } = useDados(() => listarPosts(perfil), [perfil]);
+  const [alvo, setAlvo] = useState<string | null>(null);
+  const mover = async (id: string, data: string) => { try { await salvarPost(id, { data }); recarregar(); } catch (e) { alert((e as Error).message); } };
   const cfg = PERFIS[perfil];
 
   const novoPost = async (extra: Partial<PostCasa>) => {
@@ -116,13 +136,15 @@ function Conteudo() {
               {dias.map((d) => {
                 const doDia = daSemana.filter((p) => p.data === d);
                 return (
-                  <div key={d} style={{ background: d === hoje() ? "var(--accent-soft)" : "var(--soft)", borderRadius: 14, padding: 10 }}>
+                  <div key={d} style={{ background: d === hoje() ? "var(--accent-soft)" : "var(--soft)", borderRadius: 14, padding: 10, outline: alvo === d ? "2px dashed var(--red)" : "none" }}
+                    onDragOver={(e) => { e.preventDefault(); if (alvo !== d) setAlvo(d); }} onDragLeave={() => setAlvo((a) => (a === d ? null : a))}
+                    onDrop={(e) => { e.preventDefault(); setAlvo(null); const id = e.dataTransfer.getData("text/plain"); if (id && posts.find((x) => x.id === id)?.data !== d) mover(id, d); }}>
                     <div className="linha entre" style={{ marginBottom: 8 }}>
                       <b>{DIAS_SEMANA[diaDaSemana(d)]} · {dia(d).slice(0, 5)}</b>
                       {d === hoje() && <span className="selo andamento">hoje</span>}
                     </div>
                     <div style={{ display: "grid", gap: 8 }}>
-                      {doDia.map((p) => <Cartao key={p.id} p={p} perfil={perfil} />)}
+                      {doDia.map((p) => <Cartao key={p.id} p={p} perfil={perfil} aoExcluir={recarregar} mover={(nova) => mover(p.id, nova)} />)}
                       {!doDia.length && <small className="mudo">Sem post ainda.</small>}
                       <button type="button" className="btn s peq" onClick={() => novoPost({ data: d })}>+ post</button>
                     </div>
@@ -157,7 +179,7 @@ function Conteudo() {
               {lista.map((p) => (
                 <div key={p.id}>
                   <small className="mudo">{p.data ? `${DIAS_SEMANA[diaDaSemana(p.data)]} ${dia(p.data).slice(0, 5)}` : "Sem data"}</small>
-                  <Cartao p={p} perfil={perfil} />
+                  <Cartao p={p} perfil={perfil} aoExcluir={recarregar} />
                 </div>
               ))}
             </div>
@@ -192,6 +214,7 @@ function Conteudo() {
                   <div className="linha mt" style={{ gap: 6 }}>
                     <Link className="btn s peq" href={`/empresa/conteudo/post?id=${p.id}&perfil=${perfil}`}>Abrir</Link>
                     <button type="button" className="btn p peq" onClick={async () => { await salvarPost(p.id, { status: "Planejado", data: p.data ?? hoje() }); router.push(`/empresa/conteudo/post?id=${p.id}&perfil=${perfil}`); }}>Planejar</button>
+                    {apagar(p, recarregar)}
                   </div>
                 </div>
               ))}

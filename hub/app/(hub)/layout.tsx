@@ -100,6 +100,12 @@ function Casca({ children }: { children: React.ReactNode }) {
       <Menu canais={hub.portal?.canais ?? []} trancados={equipe ? [] : hub.portal?.menu_trancado ?? []} cursoFechado={cursoFechado && hub.portal?.tipo !== "Curso"} ocultos={[...(hub.portal?.menu_oculto ?? []), ...(hub.portal?.medicao_canais ? [] : ["/gestao/canais"])]} equipe={equipe} temPortal={!!hub.portal} consultoria={hub.portal?.tipo === "Consultoria"} estudio={hub.estudio} aprova={hub.aprova} monta={hub.monta} conversas={hub.conversas} soCurso={hub.portal?.tipo === "Curso"} persFaltam={hub.persFaltam} trava={trava} semComece={completa && !!ent} soEnvio={onboarding} semEquipe={!!hub.portal?.sem_equipe} apoioConteudo={hub.portal?.apoio_conteudo} vendaDiaria={!!hub.portal?.venda_diaria}
         nome={hub.apresentacao ? (hub.portal?.responsavel || hub.portal?.loja || "") : hub.nome} email={hub.apresentacao ? "" : hub.email} foto={hub.apresentacao ? null : hub.foto} />
       <div className="main">
+        {hub.comoCs && (
+          <div className="faixa equipe">
+            👁 Você está vendo o Hub como a Claudia: só as demandas que você aprovou, sem a fila de aprovação.
+            <button type="button" onClick={() => hub.verComoCs(false)}>Voltar para a minha visão</button>
+          </div>
+        )}
         {demo ? null : hub.apresentacao ? (
           <button type="button" className="sair-apresentacao" onClick={() => hub.modoApresentacao(false)} title="Sair do modo apresentação (Esc)">✕</button>
         ) : hub.comoLoja && hub.portal ? (

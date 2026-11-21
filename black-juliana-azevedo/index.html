@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Black Friday · Plano de execução · Juliana Azevedo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0B0B; --card:#161616; --line:#262626;
+    --terra:#BC4914; --neon:#FF5B1F; --txt:#F5F1EA; --muted:#A9A397;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:Montserrat,Avenir,"Helvetica Neue",Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:var(--neon)}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+  .kicker{font-weight:300;letter-spacing:.35em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+  h1{font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:clamp(30px,6vw,56px);line-height:1.02;margin:10px 0 14px}
+  h1 span{color:var(--neon)}
+  .sub{color:var(--muted);max-width:640px;font-size:15px}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:28px 0 8px}
+  .rule{border:1px solid var(--line);background:var(--card);padding:14px 16px;border-radius:4px;font-size:14px}
+  .rule b{display:block;text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--neon);margin-bottom:4px}
+
+  /* linha do tempo */
+  .timeline{display:flex;gap:6px;overflow-x:auto;margin:36px 0 10px;padding-bottom:6px}
+  .tl{flex:1 0 120px;border-top:3px solid var(--line);padding-top:10px;text-decoration:none;color:var(--txt)}
+  .tl.on{border-color:var(--neon)}
+  .tl .d{font-weight:800;font-size:18px}
+  .tl .f{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .tl .h{font-size:12px;color:var(--neon);font-weight:600}
+
+  /* etapas */
+  .step{margin-top:56px;border-top:1px solid var(--line);padding-top:28px;scroll-margin-top:16px}
+  .stephead{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px}
+  .num{font-weight:900;font-size:44px;line-height:1;color:var(--neon)}
+  .stephead h2{margin:0;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(20px,3.6vw,30px)}
+  .when{display:inline-block;background:var(--neon);color:#0B0B0B;font-weight:800;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:2px}
+  .logic{margin:12px 0 4px;color:var(--muted);font-size:15px;max-width:760px}
+  .logic b{color:var(--txt)}
+  .done{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+  .done input{accent-color:var(--neon);width:18px;height:18px}
+
+  .opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:20px}
+  .opt{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;grid-template-columns:150px 1fr;gap:16px}
+  @media(max-width:420px){.opt{grid-template-columns:1fr}.media{max-width:220px}}
+  .media{position:relative}
+  .media video,.media img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:4px;background:#000;display:block}
+  .media .tag{position:absolute;top:6px;left:6px;background:rgba(11,11,11,.8);color:var(--txt);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 6px;border-radius:2px}
+  .noref{aspect-ratio:9/16;border:1px dashed var(--line);border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px;font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .reflink{display:block;font-size:11px;margin-top:6px;text-decoration:none}
+  .optname{font-weight:300;letter-spacing:.2em;text-transform:uppercase;font-size:11px;color:var(--neon)}
+  .opt h3{margin:2px 0 10px;font-weight:800;font-size:17px;text-transform:uppercase;letter-spacing:.03em}
+  .rows{display:grid;gap:8px;font-size:13.5px}
+  .row b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .screen{display:inline-block;background:#F5F1EA;color:#2C2C2A;font-weight:400;padding:4px 8px;border-radius:2px}
+  .say{border-left:2px solid var(--terra);padding-left:10px}
+  .say div{margin:2px 0}
+
+  .extras{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px}
+  .extra{border:1px solid var(--line);padding:12px 14px;border-radius:4px;font-size:13.5px}
+  .extra b{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--neon);margin-bottom:4px}
+  .copy{margin-top:8px;background:none;border:1px solid var(--line);color:var(--muted);font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:2px;cursor:pointer}
+  .copy:hover{border-color:var(--neon);color:var(--neon)}
+
+  .prep{margin-top:40px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:20px}
+  .prep h2{margin:0 0 4px;font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:20px}
+  .prep ul{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 20px}
+  .prep li label{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer}
+  .prep input{accent-color:var(--neon);margin-top:3px;width:16px;height:16px;flex:none}
+  .blank{color:var(--neon);font-weight:600}
+  footer{margin-top:64px;color:var(--muted);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">Plano de execução · 24 a 28 de novembro</div>
+  <h1>Black Friday<br><span>Juliana Azevedo</span></h1>
+  <p class="sub">2 dias de divulgação e 3 dias de Black, 100% na loja física. Cada etapa tem o dia, o horário, por que ela vem nesse ponto e duas opções de vídeo. Escolha uma para o feed e grave a outra como reel de teste, se der tempo.</p>
+
+  <div class="rules">
+    <div class="rule"><b>A lógica</b>Suspense → lançamento → desejo → é hoje → abriu → reposição → deu a doida. Cada vídeo responde à pergunta que o anterior deixou.</div>
+    <div class="rule"><b>CTA</b>Sempre data, hora e endereço. "Marca quem vai com você" e "salva para não esquecer". Sticker de localização em todo story.</div>
+    <div class="rule"><b>Horário de pico</b>Painel profissional › Público › Horários mais ativos. Postar 30 min antes. Sem esse dado: 20h.</div>
+    <div class="rule"><b>Padrão de vídeo</b>Texto fixo no topo desde o 1º segundo, cortes secos, até 35 s. Equipe de preto nos vídeos da campanha.</div>
+  </div>
+
+  <nav class="timeline" id="timeline"></nav>
+
+  <section class="prep" id="preparo">
+    <h2>Antes de começar · até 23/11</h2>
+    <div class="sub" style="font-size:13px">Grave as etapas 1, 2 e 3 antes. As outras se gravam no próprio dia.</div>
+    <ul id="prep"></ul>
+  </section>
+
+  <div id="steps"></div>
+
+  <footer>Por Camilla Ribeiro · Método Loja Magnética</footer>
+</div>
+
+<script>
+const V = s => ({video:'videos/'+s+'.mp4', poster:'videos/'+s+'.jpg'});
+const I = s => ({img:'refs/'+s+'.jpg'});
+const IG = c => 'https://www.instagram.com/p/'+c+'/';
+
+const prep = [
+  'Definir a hora de abertura do dia 26 e a de encerramento do dia 28',
+  'Definir os preços ou as faixas de desconto',
+  'Escolher 5 peças-herói (de preferência novas) com preço De/Por',
+  'Placa A3 preta: "26.11 · [hora] · BLACK FRIDAY · logo"',
+  '6 celulares com uma palavra em tela cheia, letra branca em fundo preto',
+  'Equipe toda de preto e óculos escuros para os vídeos',
+  'Tecido preto para cobrir uma arara (usado nos dias 24 e 28)',
+  'Separar a arara surpresa de preço fixo do dia 28 (ex.: R$ 39) e guardar fora da vista até o dia',
+  'Placa da Black na porta e na vitrine',
+  'Combinar com 2 ou 3 clientes para aparecer com a sacola',
+  'Escala da equipe de 26 a 28 com reforço no provador e no caixa',
+  'Gravar as etapas 1, 2 e 3'
+];
+
+const steps = [
+{
+  id:'suspense', dia:'24/11', sem:'Ter', fase:'Suspense', hora:'Horário de pico',
+  titulo:'Tem coisa escondida',
+  logica:'<b>Por que agora:</b> antes de contar qualquer coisa, a pessoa precisa querer saber. Nada de preço, nada de peça inteira. Só a data.',
+  opts:[
+    {nome:'A coletiva de imprensa', m:I('coletiva'), ref:['Amor de Peça',IG('CzvxmRJuNP1')],
+     cena:'Juliana sentada, séria, cercada de mãos segurando celulares como microfones (a equipe faz os repórteres, fora do quadro). Luz mais dramática, fundo da loja desfocado. As perguntas vêm rápidas e ela segura o segredo até o fim, com um sorriso. 15 a 20 s.',
+     tela:'Coletiva de imprensa: a Black da [LOJA]',
+     fala:['Equipe: "É verdade que vai ter Black?" · Juliana: "Não posso falar."','Equipe: "Vai ter peça nova?" · Juliana: "Sem comentários."','Equipe: "Quanto vai custar?" · Juliana: (ri) "Não posso falar."','Juliana, olhando para a câmera: "Só posso dizer uma coisa: dia 26, às [hora], aqui na loja."'],
+     leg:'Não posso contar nada. 🤐 Só a data: dia 26, às [hora], aqui na loja. São só 3 dias. Salva para não esquecer.'},
+    {nome:'A arara coberta', m:I('arara-coberta'), ref:['MAPA',IG('DB7KOhtRb7U')],
+     cena:'Luz baixa. Arara coberta com tecido preto. Uma mão puxa a ponta, aparece só um pedaço de uma peça (brilho, textura, cor) e corta para preto com a logo. 8 a 10 s, sem fala, áudio de tensão.',
+     tela:'Tem coisa aqui que ninguém pode ver antes do dia 26.',
+     fala:['Sem fala.'],
+     leg:'Dia 26, às [hora], na [LOJA]. Três dias. Marca quem vai com você.'}
+  ],
+  extras:[
+    ['Stories','Caixinha "chuta o que vem aí" · enquete "você vem dia 26?" · sticker de contagem regressiva para 26/11 às [hora].']
+  ]
+},
+{
+  id:'lancamento', dia:'25/11', sem:'Qua', fase:'Lançamento', hora:'Horário de pico',
+  titulo:'O anúncio da Black',
+  logica:'<b>Por que agora:</b> a curiosidade de ontem pede uma resposta. Este é o vídeo mais produzido da campanha: data, hora e "são só 3 dias", com a equipe toda.',
+  opts:[
+    {nome:'A placa no peito', m:V('lancamento-placa'), ref:['Amor de Peça',IG('DfzNn4ugQPF')],
+     cena:'Juliana e equipe de preto e óculos escuros correm pela loja tirando peças das araras e carregando braçadas de roupa. Juliana abre o blazer e revela a placa no peito. Caminha para a câmera como em desfile, equipe atrás. Música animada em alta.',
+     tela:'26.11 · [hora] · aqui na loja',
+     fala:['Sem fala, ou só no fim: "Dia 26. Só 3 dias."'],
+     leg:'É dia 26, às [hora], aqui na loja, e são só 3 dias. 🖤 Marca quem vai com você. 📍 [endereço]'},
+    {nome:'Palavra por palavra', m:V('lancamento-celular'), ref:['Amor de Peça',IG('Df1xdCkgVou')],
+     cena:'Abre com a equipe em roda, rindo e cochichando. Depois, cortes de 1 s: cada pessoa segura o celular na frente do rosto com uma palavra na tela. A frase se monta no corte. Última cena divertida: chuva de sacolas ou equipe pulando.',
+     tela:'Telas: VAI · COMEÇAR · A BLACK · [LOJA] · 26.11 · [HORA]',
+     fala:['Sem fala.'],
+     leg:'Vai começar. 26.11, às [hora], aqui na [LOJA]. Só 3 dias. 📍 [endereço]'}
+  ],
+  reserva:{nome:'Reserva: a escada dos descontos', m:I('escada-descontos'), ref:['Amor de Peça',IG('Df0MFC4gBqr')],
+     txt:'Equipe enfileirada (na escada ou no meio da loja), cada pessoa levanta uma placa com um desconto ou um preço fixo, e "VAI COMEÇAR…" no topo. Use se a Black for por faixas de desconto.'},
+  extras:[
+    ['Stories','Repostar o reel · 3 telas: "dia 26 às [hora]" / "só 3 dias" / "📍 endereço" · contagem regressiva.'],
+    ['WhatsApp · base toda, depois do reel','Oi, [nome]! Aqui é a Juliana, da [loja]. Amanhã, dia 26, às [hora], começa a nossa Black, e vai só até sábado. Separei peças lindas, algumas que acabaram de chegar. Vem cedo, que as novas vão primeiro. Te espero aqui na loja! 📍 [endereço]']
+  ]
+},
+{
+  id:'desejo', dia:'25/11', sem:'Qua', fase:'Desejo', hora:'1 h depois do lançamento',
+  titulo:'O que a pessoa vai encontrar',
+  logica:'<b>Por que agora:</b> quem viu o anúncio quer saber "o que vai ter e por quanto". Mostrar peça vestida, bonita e com preço tira a dúvida e faz a pessoa planejar a ida. Repostar nos stories na manhã do dia 26.',
+  opts:[
+    {nome:'Looks para aproveitar na Black', m:V('desejo-looks'), ref:['Amor de Peça',IG('Dfz6KT7gQ7K')],
+     cena:'Juliana (ou uma vendedora) abre ao lado dos cabides com as 5 peças-herói. Depois aparece vestindo cada uma, numerada, 3 a 4 s por look, no canto mais bonito da loja.',
+     tela:'Looks para aproveitar na Black da [LOJA] · em cada look: "1. [peça] · De R$ ___ / Por R$ ___"',
+     fala:['"Separei os looks que vão estar na Black."'],
+     leg:'Separei os looks que vão estar na Black, de 26 a 28, aqui na loja. Qual você vem provar? Marca quem vai com você.'},
+    {nome:'Peça nova com preço de Black', m:I('peca-nova'), ref:['Platô',IG('DfvOtXzPGYn')],
+     cena:'Uma pessoa com o look completo, luz natural, espelho. Caminha, gira, close no tecido e no acabamento. 10 a 15 s. Gravar 3 ou 4 versões, uma por peça-herói, para usar também nos dias 26 e 27.',
+     tela:'[Nome da peça] · chegou agora e já entra na Black: R$ ___',
+     fala:['Sem fala, ou: "Acabou de chegar e já vai estar na Black."'],
+     leg:'Lançamento com preço de Black, dia 26 na loja. Poucas unidades: quem chegar primeiro, leva.'}
+  ],
+  extras:[]
+},
+{
+  id:'e-hoje', dia:'26/11', sem:'Qui', fase:'É hoje', hora:'Bem cedo (7h–8h)',
+  titulo:'É hoje: como vai funcionar',
+  logica:'<b>Por que agora:</b> é a primeira coisa que a pessoa vê no dia. Lembrar a hora e explicar o que tem em cada canto da loja transforma o "vou ver" em "vou hoje".',
+  opts:[
+    {nome:'É hoje: o tour da Black', m:V('e-hoje'), ref:['Amor de Peça',IG('Df2yJ7FSDGO')],
+     cena:'Juliana fala para a câmera andando pela loja e para em cada setor. Cortes secos, legenda palavra por palavra, o desconto de cada setor aparece na tela quando ela aponta. 30 a 40 s.',
+     tela:'É HOJE · Black [LOJA] às [hora]',
+     fala:['"A nossa Black começa hoje, às [hora], aqui na loja."','"[Setor 1]: ___. [Setor 2]: ___. [Setor 3]: ___."','"Chega cedo, porque as peças novas vão primeiro."','"Hoje, amanhã e sábado. Depois, acabou."'],
+     leg:'É hoje! Black [LOJA] a partir das [hora]. Hoje, amanhã e sábado. 📍 [endereço]'},
+    {nome:'Palavra por palavra · É hoje', m:V('lancamento-celular'), ref:['Amor de Peça',IG('Df1xdCkgVou')],
+     cena:'O mesmo formato do lançamento, gravado na porta da loja antes de abrir. Quem viu o primeiro reconhece na hora.',
+     tela:'Telas: É · HOJE · ÀS · [HORA] · [LOJA]',
+     fala:['Sem fala.'],
+     leg:'É hoje, às [hora]. 📍 [endereço]'}
+  ],
+  extras:[
+    ['Stories','Repostar o reel de desejo de ontem · contagem "faltam X horas" · foto da porta ainda fechada.']
+  ]
+},
+{
+  id:'abriu', dia:'26/11', sem:'Qui', fase:'Abriu', hora:'Abertura + pico',
+  titulo:'Começou',
+  logica:'<b>Por que agora:</b> movimento chama movimento. Mostrar a loja abrindo, gente entrando e sacola saindo prova que a Black é de verdade e faz quem ficou em casa sair.',
+  opts:[
+    {nome:'A porta abriu', m:null,
+     cena:'Chave girando, porta abrindo, primeiras clientes entrando, mãos tirando peças da arara, sacolas no balcão. 15 s.',
+     tela:'Começou. São só 3 dias.',
+     fala:['"Começou. E o que é bom vai primeiro."'],
+     leg:'Black [LOJA] aberta: hoje, amanhã e sábado, das [hora] às [hora]. Vem provar. 📍 [endereço]'},
+    {nome:'Tudo o que eu levaria', m:I('tudo-que-eu-levaria'), ref:['Clea',IG('DQxVo54jnI5')],
+     cena:'Juliana anda pela loja e escolhe 5 peças, 3 s em cada, com o preço de Black na tela.',
+     tela:'Tudo o que eu levaria na Black da [LOJA]',
+     fala:['"Se eu fosse cliente, levava essas."'],
+     leg:'Minhas 5 escolhas da Black. Estão na loja até sábado, vem provar.'}
+  ],
+  extras:[
+    ['Stories ao vivo','Provador cheio · sacolas · cliente que autorizou com a sacola · "x peças já foram" · localização em todos.'],
+    ['WhatsApp · base toda, na abertura','Começou! 🖤 A Black da [loja] está aberta até [hora]. Te espero aqui na loja, vem provar!']
+  ]
+},
+{
+  id:'escassez', dia:'27/11', sem:'Sex', fase:'Reposição', hora:'Manhã + pico',
+  titulo:'Loja cheia de novo',
+  logica:'<b>Por que agora:</b> em cidade pequena, "o que sobrou" afasta quem não foi no primeiro dia. Por isso a sexta mostra a loja cheia de novo: o movimento de ontem vira prova social, e quem ainda não foi sente que chegou na hora certa.',
+  opts:[
+    {nome:'Repus a loja', m:null, ref:['Platô · reposição com preço de Black',IG('Df2VIMhPEjx')],
+     cena:'Cedo, antes de abrir: Juliana e equipe abrindo caixas, pendurando peças, enchendo as araras e arrumando a vitrine. Termina com a loja cheia e a Juliana virando a placa para "aberto". 15 a 20 s.',
+     tela:'Vocês esvaziaram a loja ontem. Hoje cedo eu repus tudo.',
+     fala:['"Ontem foi lindo, vocês levaram muita coisa."','"Então hoje cedo eu repus a loja, e tem peça que nem tinha saído ainda."','"A Black continua hoje e amanhã."'],
+     leg:'Repus a loja inteira para o segundo dia de Black, com peças que nem tinham saído ainda. 🖤 Hoje e amanhã. 📍 [endereço]'},
+    {nome:'Bastidor com número', m:I('bastidor-numero'), ref:['Platô',IG('Df0g8BqOkCO')],
+     cena:'Caixa cheio, sacolas saindo pela porta, provador ocupado, equipe comemorando no fim do dia. Só número verdadeiro; se não impressionar, mostre o caixa cheio e as sacolas.',
+     tela:'[número real] peças em 24 horas (ou clientes atendidas)',
+     fala:['"Olha a sacola da [cliente que autorizou]."'],
+     leg:'Obrigada por ontem! 🖤 A Black continua hoje e amanhã. Vem.'}
+  ],
+  extras:[
+    ['Stories','Antes/depois da arara repostada · peça que "nem tinha saído ainda" · cliente que autorizou com a sacola · localização em todos.'],
+    ['WhatsApp · base toda, manhã','Bom dia! Ontem foi lindo, e hoje cedo eu repus a loja, com peças que nem tinham saído ainda. 🖤 A Black continua hoje e amanhã. Te espero aqui! 📍 [endereço]']
+  ]
+},
+{
+  id:'ultimo', dia:'28/11', sem:'Sáb', fase:'Último dia', hora:'Abertura + 3 h antes de fechar',
+  titulo:'Deu a doida',
+  logica:'<b>Por que agora:</b> no terceiro dia, quem ainda não foi precisa de um motivo novo, não de ameaça. Em vez de "os preços voltam", entra um presente surpresa: uma arara extra de preço fixo, só hoje. A urgência vem de "até zerar", e a arara coberta do dia 24 fecha a história.',
+  opts:[
+    {nome:'Deu a doida: a arara surpresa', m:I('arara-coberta'), ref:['MAPA',IG('DB7KOhtRb7U')],
+     cena:'Juliana empurrando uma arara coberta com o tecido preto (a mesma do vídeo do dia 24) até o meio da loja, com a equipe em volta animada. Ela olha para a câmera, puxa o tecido de uma vez e revela a arara cheia. Corte para mãos pegando peças e alguém já indo para o provador. 15 a 20 s.',
+     tela:'DEU A DOIDA: mais uma arara · tudo R$ 39 · só hoje',
+     fala:['"Último dia, e deu a doida."','"Liberei mais uma arara. Tudo a R$ 39."','"É só hoje, e só até zerar. Quero ver vocês zerarem essa também."'],
+     leg:'Último dia da Black e deu a doida: liberei mais uma arara, tudo a R$ 39. 🖤 Só hoje, até zerar. Marca quem vem com você. 📍 [endereço]'},
+    {nome:'Palavra por palavra · final', m:V('lancamento-celular'), ref:['Amor de Peça',IG('Df1xdCkgVou')],
+     cena:'O mesmo formato do lançamento, fechando a série. Na última tela, a câmera vira para a arara surpresa cheia.',
+     tela:'Telas: DEU · A · DOIDA · MAIS UMA ARARA · R$ 39 · SÓ HOJE',
+     fala:['Sem fala.'],
+     leg:'Deu a doida: mais uma arara, tudo a R$ 39. Só hoje, até zerar. 📍 [endereço]'}
+  ],
+  extras:[
+    ['Stories ao longo do dia','A arara esvaziando, foto de hora em hora: "olha como ela está agora" · "restam X peças" · localização em todos.'],
+    ['WhatsApp · base toda, manhã','Último dia da Black e deu a doida: liberei mais uma arara, tudo a R$ 39! 🖤 É só hoje e só até acabar. Te espero aqui na loja! 📍 [endereço]'],
+    ['Fechamento','Story da equipe depois do expediente, com número real e "obrigada".']
+  ]
+}
+];
+
+const esc = s => s.replace(/\[([^\]]+)\]/g,'<span class="blank">[$1]</span>');
+const store = (()=>{try{return window.localStorage}catch(e){return null}})();
+const get = k => {try{return store&&store.getItem(k)==='1'}catch(e){return false}};
+const set = (k,v) => {try{store&&store.setItem(k,v?'1':'0')}catch(e){}};
+
+document.getElementById('timeline').innerHTML = steps.map((s,i)=>
+  `<a class="tl" href="#${s.id}" data-k="step-${s.id}"><div class="d">${s.dia}</div><div class="f">${i+1} · ${s.fase}</div><div class="h">${s.hora}</div></a>`).join('');
+
+document.getElementById('prep').innerHTML = prep.map((p,i)=>
+  `<li><label><input type="checkbox" data-k="prep-${i}"> <span>${esc(p)}</span></label></li>`).join('');
+
+function media(o){
+  if(!o.m) return `<div class="noref">Gravação simples<br>${o.ref?'sem imagem':'sem referência'}</div>` + (o.ref?`<a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">Ref: ${o.ref[0]} ↗</a>`:'');
+  const tag = o.ref ? `<span class="tag">Ref · ${o.ref[0]}</span>` : '';
+  const el = o.m.video
+    ? `<video src="${o.m.video}" poster="${o.m.poster}" controls playsinline preload="metadata"></video>`
+    : `<img src="${o.m.img}" alt="Referência: ${o.nome}" loading="lazy">`;
+  const link = o.ref ? `<a class="reflink" href="${o.ref[1]}" target="_blank" rel="noopener">${o.m.video?'Ver no Instagram ↗':'Assistir no Instagram ↗'}</a>` : '';
+  return `<div class="media">${tag}${el}</div>${link}`;
+}
+
+document.getElementById('steps').innerHTML = steps.map((s,i)=>`
+<section class="step" id="${s.id}">
+  <div class="stephead">
+    <div class="num">${String(i+1).padStart(2,'0')}</div>
+    <h2>${s.titulo}</h2>
+    <span class="when">${s.sem} ${s.dia} · ${s.hora}</span>
+  </div>
+  <p class="logic">${s.logica}</p>
+  <div class="opts">
+    ${s.opts.map((o,j)=>`
+    <div class="opt">
+      <div>${media(o)}</div>
+      <div>
+        <div class="optname">Opção ${'AB'[j]}</div>
+        <h3>${o.nome}</h3>
+        <div class="rows">
+          <div class="row"><b>Cena</b>${esc(o.cena)}</div>
+          <div class="row"><b>Texto na tela</b><span class="screen">${esc(o.tela)}</span></div>
+          <div class="row"><b>Fala</b><div class="say">${o.fala.map(f=>`<div>${esc(f)}</div>`).join('')}</div></div>
+          <div class="row"><b>Legenda</b>${esc(o.leg)}<br><button class="copy" data-copy="${o.leg.replace(/"/g,'&quot;')}">Copiar legenda</button></div>
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>
+  ${s.reserva?`
+  <div class="extras"><div class="extra" style="display:grid;grid-template-columns:90px 1fr;gap:12px;align-items:start">
+    <div>${media(s.reserva)}</div>
+    <div><b>${s.reserva.nome}</b>${esc(s.reserva.txt)}</div></div></div>`:''}
+  ${s.extras.length?`<div class="extras">${s.extras.map(e=>`<div class="extra"><b>${e[0]}</b>${esc(e[1])}${e[0].startsWith('WhatsApp')?`<br><button class="copy" data-copy="${e[1].replace(/"/g,'&quot;')}">Copiar mensagem</button>`:''}</div>`).join('')}</div>`:''}
+  <label class="done"><input type="checkbox" data-k="step-${s.id}"> Etapa postada</label>
+</section>`).join('');
+
+document.querySelectorAll('input[data-k]').forEach(cb=>{
+  cb.checked = get(cb.dataset.k);
+  cb.addEventListener('change',()=>{set(cb.dataset.k,cb.checked);paint()});
+});
+function paint(){
+  document.querySelectorAll('.tl').forEach(t=>t.classList.toggle('on',get(t.dataset.k)));
+}
+paint();
+
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('.copy'); if(!b) return;
+  const t=b.dataset.copy, old=b.textContent;
+  try{await navigator.clipboard.writeText(t); b.textContent='Copiado ✓'}
+  catch(err){b.textContent='Selecione e copie'}
+  setTimeout(()=>b.textContent=old,1600);
+});
+</script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 // No Início da loja: os combinados que ela fez com a Camilla (com check e prazo) e quem acompanha de perto, a CS.
 import { Carregando, useDados } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
@@ -24,6 +25,9 @@ export function SeusCombinados({ portalId }: { portalId: string }) {
             <input type="checkbox" checked={c.status === "feito"} onChange={async (e) => { await marcarCombinado(c.id, e.target.checked); recarregar(); }} />
             <span style={{ textDecoration: c.status === "feito" ? "line-through" : "none" }}>{c.texto}
               {c.prazo && c.status === "aberto" && <small className="mudo" style={{ display: "block", color: c.prazo < hoje() ? "var(--red)" : undefined }}>até {dataCurta(c.prazo)}</small>}
+              {c.link && c.status === "aberto" && (c.link.startsWith("/")
+                ? <Link className="btn p peq" style={{ marginTop: 6, display: "inline-block" }} href={c.link}>Abrir →</Link>
+                : <a className="btn p peq" style={{ marginTop: 6, display: "inline-block" }} href={c.link} target="_blank" rel="noopener">Abrir ↗</a>)}
             </span>
           </label>
         ))}

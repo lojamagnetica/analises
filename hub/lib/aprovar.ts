@@ -17,6 +17,8 @@ export type ItemAprovar = {
   /** Abre no portal da loja (destino) ou numa página da equipe (href). */
   destino?: string; href?: string;
   liberar?: () => Promise<unknown>;
+  /** Nome do botão de ação (padrão: Liberar). */
+  acao?: string;
 };
 
 export async function buscarParaAprovar(): Promise<{ itens: ItemAprovar[]; ativos: Map<string, string> }> {
@@ -96,5 +98,40 @@ export async function buscarParaAprovar(): Promise<{ itens: ItemAprovar[]; ativo
     chave: `rg${g.id}`, portal: g.portal_id && daLoja(g.portal_id as string) ? (g.portal_id as string) : null, tipo: "Reunião gravada", titulo: `${g.titulo ?? "Reunião"}${g.data ? ` (${dataCurta(g.data as string)})` : ""}`,
     quando: (g.criado_em as string) ?? null, href: "/equipe/reunioes-revisar",
   }));
+  // Reuniões de gestão que esperam a validação da Camilla.
+  const { data: gestaoR } = await sb.from("loja_reunioes").select("id, portal_id, tipo, data, dados").neq("tipo", "planejamento").gte("data", new Date(Date.now() - 45 * 86_400_000).toISOString().slice(0, 10));
+  ((gestaoR ?? []) as { id: string; portal_id: string; tipo: string; data: string; dados: { validado?: boolean; loja?: string; semana?: string } }[])
+    .filter((r) => !r.dados?.validado && daLoja(r.portal_id) && ["analise_semana", "feedback_time", "mensal", "analise"].includes(r.tipo))
+    .forEach((r) => itens.push({
+      chave: `rgest${r.id}`, portal: r.portal_id, tipo: "Reunião de gestão", quando: r.data,
+      titulo: `${({ analise_semana: "Análise da semana", feedback_time: "Feedback do time", mensal: "Reunião do mês", analise: "Análise do mês" } as Record<string, string>)[r.tipo] ?? r.tipo}${r.dados?.loja ? ` · ${r.dados.loja}` : ""} (${dataCurta(r.data)})`,
+      destino: "/consultoria/reunioes", acao: "Validar",
+      liberar: async () => { const { error } = await sb.from("loja_reunioes").update({ dados: { ...r.dados, validado: true } }).eq("id", r.id); if (error) throw new Error(error.message); },
+    }));
+  // Combinados: os que esperam revisão (rascunho, por loja) e o que a Camilla mesma ficou de fazer.
+  const { data: comb } = await sb.from("loja_combinados").select("id, portal_id, texto, prazo, quem, status, created_at").or("status.eq.rascunho,and(status.eq.aberto,quem.eq.camilla)");
+  const cs = (comb ?? []) as { id: string; portal_id: string; texto: string; prazo: string | null; quem: string; status: string; created_at: string }[];
+  const rasc = new Map<string, typeof cs>();
+  cs.filter((c) => c.status === "rascunho" && daLoja(c.portal_id)).forEach((c) => rasc.set(c.portal_id, [...(rasc.get(c.portal_id) ?? []), c]));
+  rasc.forEach((lista, pid) => itens.push({
+    chave: `cbr${pid}`, portal: pid, tipo: "Combinados para revisar", titulo: `${lista.length} ${lista.length === 1 ? "combinado" : "combinados"} em rascunho: liberar ou excluir na ficha da loja`,
+    quando: lista[0].created_at, href: `/equipe/loja?id=${pid}`, acao: "Liberar todos",
+    liberar: async () => { const { error } = await sb.from("loja_combinados").update({ status: "aberto" }).in("id", lista.map((c) => c.id)); if (error) throw new Error(error.message); },
+  }));
+  cs.filter((c) => c.status === "aberto" && daLoja(c.portal_id)).forEach((c) => itens.push({
+    chave: `cbc${c.id}`, portal: c.portal_id, tipo: "Você ficou de fazer", titulo: `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)}${c.prazo < new Date().toISOString().slice(0, 10) ? ", atrasado" : ""})` : ""}`,
+    quando: c.prazo ?? c.created_at, href: `/equipe/loja?id=${c.portal_id}`, acao: "Feito",
+    liberar: async () => { const { error } = await sb.from("loja_combinados").update({ status: "feito", feito_em: new Date().toISOString() }).eq("id", c.id); if (error) throw new Error(error.message); },
+  }));
+  // O que a CS passou para a Camilla ("Passar para a Camilla" no Meu dia).
+  const { data: eu } = await sb.auth.getUser();
+  if (eu.user) {
+    const { data: pedidos } = await sb.from("equipe_lembretes").select("id, portal_id, texto, quando, criado_por, created_at").eq("responsavel", eu.user.id).eq("feito", false).like("texto", "Da %");
+    ((pedidos ?? []) as { id: string; portal_id: string | null; texto: string; created_at: string }[]).forEach((p) => itens.push({
+      chave: `pc${p.id}`, portal: p.portal_id && daLoja(p.portal_id) ? p.portal_id : null, tipo: "Pedido da CS", titulo: p.texto, quando: p.created_at,
+      href: p.portal_id ? `/equipe/loja?id=${p.portal_id}&aba=conversas` : undefined, acao: "Resolvido",
+      liberar: async () => { const { error } = await sb.from("equipe_lembretes").update({ feito: true }).eq("id", p.id); if (error) throw new Error(error.message); },
+    }));
+  }
   return { itens, ativos };
 }

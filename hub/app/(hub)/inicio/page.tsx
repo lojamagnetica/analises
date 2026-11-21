@@ -31,6 +31,8 @@ const ATALHOS = [
   { href: "/gestao/pontos", rotulo: "Gamificação", icone: "target", cor: "var(--orange)" },
   { href: "/plano", rotulo: "Plano 90 dias", icone: "target", cor: "var(--purple)" },
   { href: "/gestao/caixa", rotulo: "Fechar o caixa", icone: "calc", cor: "var(--green)" },
+  // A dona confere o que o time lançou no caixa, dia a dia, e quem lançou.
+  { href: "/gestao/conferencia", rotulo: "Conferência do caixa", icone: "check", cor: "var(--green)" },
   // O Planeje do próximo mês: o nome do mês e o endereço são montados na tela.
   { href: "/planeje/mes", rotulo: "Planeje o próximo mês", icone: "cal", cor: "var(--green)" },
 ];
@@ -54,7 +56,7 @@ export default function Inicio() {
     const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
       sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
-      sb.from("datas_comerciais").select("dia, titulo").eq("mes", mes).order("dia", { nullsFirst: true }),
+      sb.from("datas_comerciais").select("mes, dia, titulo").in("mes", [mes, (mes + 1) % 12]).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
       consultoria ? buscarConsultoria(portal.id) : Promise.resolve(null),
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
@@ -91,7 +93,9 @@ export default function Inicio() {
   const pct = total ? Math.round((feitos / total) * 100) : 0;
   const passosEntrada = PASSOS_ENTRADA.filter((p) => !(portal.sem_equipe && p.chave === "equipe"));
   const etapa2 = pers.get(2)?.respostas;
-  const quem = donoDaLoja || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
+  // Loja com mais de uma responsável ("Fulana e Ciclana"): a boas-vindas fala com todas, no plural sem gênero (há sócios homens).
+  const socias = !donoDaLoja && /\s+e\s+/.test(portal.responsavel ?? "") ? (portal.responsavel as string) : "";
+  const quem = donoDaLoja || socias || (typeof etapa2?.seu_nome === "string" && etapa2.seu_nome) || (comoLoja && portal.responsavel) || primeiroNome(nome);
   const c = consult?.dados;
   const nMes = c ? mesDaConsultoria(c.inicio) : 0;
   const mesC = c ? c.meses[Math.min(Math.max(nMes, 1), c.meses.length) - 1] : null;
@@ -108,7 +112,7 @@ export default function Inicio() {
     .map((a) => (portal.venda_diaria && a.href === "/gestao/caixa" ? { ...a, href: "/gestao/vendas", rotulo: "Registrar venda" } : a))
     .map((a) => (a.href === "/planeje/mes" ? { ...a, href: `/planeje/mes?m=${mesProx}`, rotulo: `Planeje ${mesDoPlano(mesProx).toLowerCase()}` } : a))
     // Loja sem equipe não tem fila de atendimento.
-    .filter((a) => !((a.href === "/gestao/vez" || a.href === "/gestao/pontos") && portal.sem_equipe))
+    .filter((a) => !((a.href === "/gestao/vez" || a.href === "/gestao/pontos" || a.href === "/gestao/conferencia") && portal.sem_equipe))
     .filter((a) => !escondido(a.href));
   const comNovidade = (href: string) => {
     const k = chaveDoAtalho(href);
@@ -131,6 +135,10 @@ export default function Inicio() {
   const planoProx = planosMes.find((p) => p.mes === meses.proximo);
   const focoSemana = planoAtual?.dados?.semanas?.[semanaDoDia(Number(hoje().slice(8)))]?.foco?.trim();
   const ajustar = [planoAtual, planoProx].find((p) => p?.status === "ajustar");
+  // Cartão das datas: com o plano do mês atual já feito, ele já mostra o próximo mês para planejar.
+  const mesCard = planoAtual ? (mes + 1) % 12 : mes;
+  const mesCardIso = planoAtual ? meses.proximo : meses.atual;
+  const datasCard = (datas ?? []).filter((d) => d.mes === mesCard);
   const diagnosticoNovo = !!ent?.diagnosticoEm && Date.now() - new Date(ent.diagnosticoEm).getTime() < 15 * 86_400_000;
 
   return (
@@ -146,7 +154,7 @@ export default function Inicio() {
       )}
       <div className="heroi mt">
         <div>
-          <h1>Que bom ter você aqui, {quem}!</h1>
+          <h1>{socias ? `Que bom ter vocês aqui, ${socias}!` : `Que bom ter você aqui, ${quem}!`}</h1>
           <p>{portal.lojas?.length > 1
             ? `Este é o Hub da ${portal.lojas.join(" e ")}. Tudo das suas lojas em um lugar só.`
             : `Este é o Hub da ${portal.loja}. Tudo da sua loja em um lugar só.`}</p>
@@ -326,11 +334,11 @@ export default function Inicio() {
           </>
         )}
         <div className="card card-borda" style={{ ["--c" as string]: "var(--green)" }}>
-          <h3>Datas de {MESES[mes].toLowerCase()}</h3>
+          <h3>Datas de {MESES[mesCard].toLowerCase()}</h3>
           <p className="mudo">
-            {(datas ?? []).map((d) => (d.dia ? `${d.titulo} (${d.dia}/${MESES_ABREV[mes]})` : d.titulo)).join(" · ") || "Sem datas cadastradas"}
+            {datasCard.map((d) => (d.dia ? `${d.titulo} (${d.dia}/${MESES_ABREV[mesCard]})` : d.titulo)).join(" · ") || "Sem datas cadastradas"}
           </p>
-          <Link className="btn s peq" href={`/planeje/mes?m=${mes}`}>Planejar {MESES[mes].toLowerCase()}</Link>
+          <Link className="btn s peq" href={`/planeje/mes?m=${mesCardIso}`}>Planejar {MESES[mesCard].toLowerCase()}</Link>
         </div>
       </div>
       </>}

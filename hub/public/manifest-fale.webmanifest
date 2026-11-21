@@ -1,0 +1,13 @@
+{
+  "name": "Fale com a Camilla · Loja Magnética",
+  "short_name": "Camilla",
+  "start_url": "/analises/portal/fale/",
+  "scope": "/analises/portal/fale/",
+  "display": "standalone",
+  "background_color": "#B7400E",
+  "theme_color": "#008069",
+  "icons": [
+    { "src": "/analises/portal/icon-conversas-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/analises/portal/icon-conversas-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

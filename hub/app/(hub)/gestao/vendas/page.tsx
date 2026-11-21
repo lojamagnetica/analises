@@ -10,7 +10,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { linkWhats, semAcento } from "@/lib/clientes";
 import {
-  CATEGORIAS, FORMAS, LINHAS, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
+  FORMAS, listasDaLoja, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
   type ClienteSimples, type ItemVenda, type Venda, descreverItens,
 } from "@/lib/loja-na-mao";
 import { fimDoMes, type Forma } from "@/lib/caixa";
@@ -30,11 +30,13 @@ const passarDia = (d: string, n: number) => new Date(Date.parse(`${d}T12:00:00Z`
 
 export default function VendasDoDia() {
   const { portal } = usePortal();
+  const { tipos: CATEGORIAS, linhas: LINHAS, rotuloLinha } = listasDaLoja(portal.venda_listas);
   const [diaVer, setDiaVer] = useState(hoje());
   const [f, setF] = useState<Form>(() => novo());
   const [antes, setAntes] = useState<Venda | null>(null);
   const [busca, setBusca] = useState("");
   const [whats, setWhats] = useState("");
+  const [aniv, setAniv] = useState("");
   const [cadastrando, setCadastrando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
@@ -102,8 +104,8 @@ export default function VendasDoDia() {
   async function cadastrar() {
     setErro("");
     try {
-      const c = await novaCliente(portal.id, busca, whats);
-      mudar({ cliente: c }); setCadastrando(false); setBusca(""); setWhats(""); recarregar();
+      const c = await novaCliente(portal.id, busca, whats, aniv);
+      mudar({ cliente: c }); setCadastrando(false); setBusca(""); setWhats(""); setAniv(""); recarregar();
     } catch (x) { setErro((x as Error).message); }
   }
 
@@ -131,7 +133,7 @@ export default function VendasDoDia() {
           <div className="chips">
             {CATEGORIAS.map((c) => <button key={c} type="button" className={`chip ${f.categoria === c ? "escolhido" : ""}`} onClick={() => mudar({ categoria: c, estoque_id: null })}>{c}</button>)}
           </div>
-          <label className="rotulo">Linha</label>
+          <label className="rotulo">{rotuloLinha}</label>
           <div className="chips">
             {LINHAS.map((l) => <button key={l} type="button" className={`chip ${f.linha === l ? "escolhido" : ""}`} onClick={() => mudar({ linha: f.linha === l ? "" : l, estoque_id: null })}>{l}</button>)}
           </div>
@@ -181,8 +183,9 @@ export default function VendasDoDia() {
               )}
               {busca.trim().length >= 2 && !cadastrando && <button type="button" className="btn s peq mt" onClick={() => setCadastrando(true)}>+ Cadastrar &quot;{busca.trim()}&quot;</button>}
               {cadastrando && (
-                <div className="linha mt" style={{ gap: 8 }}>
-                  <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} />
+                <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} style={{ flex: "1 1 160px" }} />
+                  <input type="text" inputMode="numeric" placeholder="Aniversário (dia/mês)" value={aniv} onChange={(e) => setAniv(e.target.value)} style={{ flex: "1 1 140px" }} />
                   <button type="button" className="btn p peq" onClick={cadastrar}>Cadastrar</button>
                 </div>
               )}

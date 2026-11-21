@@ -8,7 +8,7 @@ import { abrirRelatorio, excluirRelatorio } from "@/lib/relatorios";
 
 export type SlotRelatorio = { chave: string; titulo: string; oque: string };
 
-/** O que a loja manda toda semana (vence na sexta, às 18h). */
+/** O que a loja manda toda semana (vence no sábado: é com ele que sai a análise de segunda). */
 export const RELATORIOS_SEMANA: SlotRelatorio[] = [
   { chave: "estoque_linha", titulo: "Estoque atualizado", oque: "O estoque de hoje, por categoria, para ver o que chegou de mercadoria e o que saiu (baixa)." },
   { chave: "crediario_semana", titulo: "Crediário atualizado", oque: "O contas a receber de hoje: quem deve, quanto e o que está vencido. Comparando uma semana com a outra, vemos quanto subiu e quanto foi dado baixa. Se não vende no crediário, pode pular." },

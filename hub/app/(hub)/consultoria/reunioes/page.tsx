@@ -139,7 +139,8 @@ function Registro({ r, equipe, aoEditar, aoMudar }: { r: ReuniaoGestao; equipe: 
     <div className="card mb">
       <div className="linha entre" style={{ flexWrap: "wrap", gap: 8 }}>
         <span><b>{rotuloDe(r.tipo, r.dados)}</b> <span className="mudo">· reunião em {dataCurta(r.data)}</span></span>
-        <span className={`selo ${r.dados.validado ? "feito" : "espera"}`}>{r.dados.validado ? "validada pela Camilla" : "aguardando a Camilla"}</span>
+        {/* A loja só vê o selo quando a Camilla já validou; o "aguardando" é aviso para a equipe. */}
+        {(r.dados.validado || equipe) && <span className={`selo ${r.dados.validado ? "feito" : "espera"}`}>{r.dados.validado ? "validada pela Camilla" : "aguardando a Camilla"}</span>}
       </div>
       {aberto && (
         <div className="mt">

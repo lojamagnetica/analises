@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Titulo } from "@/components/Titulo";
@@ -8,13 +8,15 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import {
   FORMAS, buscarCaixa, daLoja, diaDaSemana, fmtPa, indicadores, mensagemCaixa, mesDeHoje, mesValido, nomeMes, numeroDe, removerCaixa, salvarCaixa,
-  somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
+  juntar, lerArquivosDoCaixa, problemasDoCaixa, somaPagamentos, somar, somarCadastros, somarMalinha, somarMes, somarPagamentos, somarVendedoras, type Caixa, type Forma, type LinhaVendedora, type Pagamentos,
 } from "@/lib/caixa";
 import { supabaseBrowser } from "@/lib/supabase/client";
+import { feriadoNacional } from "@/lib/feriados";
 import { buscarPlano, metaDoPlano, metasDasPessoas } from "@/lib/plano-mes";
 import { quemVende } from "@/lib/pessoas";
 import { RelatoriosGestao } from "@/components/RelatoriosGestao";
 import { ArquivosDoCaixa } from "@/components/ArquivosDoCaixa";
+import { RegrasDoCaixa } from "@/components/RegrasDoCaixa";
 import { AulaDoCaixa } from "@/components/AulaDoCaixa";
 import { LerRelatorioDoCaixa } from "@/components/LerRelatorioDoCaixa";
 import { BoletosMes } from "@/components/BoletosMes";
@@ -24,6 +26,8 @@ const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 type Numeros = { faturamento: string; vendas: string; pecas: string };
 type Form = {
   id?: string; dia: string; loja: string; faturamento: string; vendas: string; pecas: string; obs: string; pag: Partial<Record<Forma, string>>;
+  /** Parte da venda paga com vale-troca (crédito de uma troca): conta na venda do dia, mas não é dinheiro recebido. */
+  vale: string;
   /** Por vendedora (chave = id da pessoa ou "outras"). */
   vend: Record<string, Numeros>;
   /** Lançar só o total da loja, sem dividir. */
@@ -32,15 +36,18 @@ type Form = {
   mal: Numeros & { saidas: string };
   /** Clientes novas cadastradas no dia. */
   cad: string;
+  /** O motivo de fechar com algo faltando ou que não bate. */
+  just: string;
 };
-const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "" });
+const novo = (loja: string, soTotal = false): Form => ({ dia: hoje(), loja, faturamento: "", vendas: "", pecas: "", obs: "", pag: {}, vale: "", vend: {}, soTotal, mal: { faturamento: "", vendas: "", pecas: "", saidas: "" }, cad: "", just: "" });
 const OUTRAS = "outras";
 const texto = (n: number) => String(n).replace(".", ",");
 const centavos = (n: number) => Math.round(n * 100);
 
 /** "Pix R$ 800 · Crédito R$ 1.200", só as formas com valor. */
 function ListaFormas({ p }: { p: Pagamentos }) {
-  return <>{FORMAS.filter((x) => p[x.chave]).map((x) => `${x.nome} ${moeda(p[x.chave]!)}`).join(" · ")}</>;
+  const vale = (p as Record<string, number>).vale_troca;
+  return <>{[...FORMAS.filter((x) => p[x.chave]).map((x) => `${x.nome} ${moeda(p[x.chave]!)}`), ...(vale ? [`Vale-troca ${moeda(vale)} (não é recebido)`] : [])].join(" · ")}</>;
 }
 
 function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vendas: number; pecas: number }) {
@@ -54,16 +61,23 @@ function Indicadores({ faturamento, vendas, pecas }: { faturamento: number; vend
 
 function FechamentoCaixa() {
   const params = useSearchParams();
-  const { portal, soCaixa, lojaTravada } = usePortal();
+  const { portal, soCaixa, lojaTravada, nome } = usePortal();
   const lojas = lojaTravada ? [lojaTravada] : portal.lojas ?? [];
   const varias = (portal.lojas ?? []).length > 1;
   const [mes, setMes] = useState(() => { const m = params.get("mes"); return mesValido(m) ? m : mesDeHoje(); });
   const [filtro, setFiltro] = useLojaFoco();
-  const [f, setF] = useState<Form>(() => novo(varias ? filtro || lojas[0] : ""));
+  const [f, setF] = useState<Form>(() => {
+    const n = novo(varias ? filtro || lojas[0] : "");
+    // Vindo da Conferência do caixa (?dia=): já abre no dia que ficou sem lançamento.
+    const d = params.get("dia");
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= hoje() ? { ...n, dia: d } : n;
+  });
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [enviar, setEnviar] = useState<string | null>(null);
+  // Dias em que o agente já procurou nos arquivos (para não procurar de novo a cada toque).
+  const [buscou, setBuscou] = useState<Record<string, string>>({});
   const { dados: tudo, recarregar } = useDados(async () => {
     const [caixa, { data: equipe }, plano] = await Promise.all([
       buscarCaixa(portal.id, mes),
@@ -76,12 +90,31 @@ function FechamentoCaixa() {
     const meta = plano ? metaDoPlano(plano.dados) : null;
     return { caixa, equipe: time, meta, planoDados: plano?.dados ?? null, premiacao: plano?.dados.premiacao?.trim() ?? "", metas: plano ? metasDasPessoas(plano.dados, time) : {} };
   }, [portal.id, mes]);
+  // Vindo da Conferência do caixa (?corrigir=<id>): já abre aquele dia para corrigir.
+  const [abriuDoLink, setAbriuDoLink] = useState(false);
+  useEffect(() => {
+    const id = params.get("corrigir");
+    if (abriuDoLink || !id || !tudo) return;
+    setAbriuDoLink(true);
+    const c = tudo.caixa.find((x) => x.id === id);
+    if (c) editar(c);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tudo]);
   if (!tudo) return <Carregando />;
   const dados = tudo.caixa;
   const equipe = tudo.equipe;
   // Com time cadastrado, o dia é lançado por vendedora e o total da loja é a soma.
   const porPessoa = equipe.length > 0 && !f.soTotal;
-  const pessoas = [...equipe.map((p) => ({ chave: p.id, nome: p.nome.split(" ")[0] })), { chave: OUTRAS, nome: "Outras vendas" }];
+  // O que falta ou não bate no que está digitado agora (o motivo só aparece quando precisa).
+  const faltaAgora = (fat: number, vendas: number, pecas: number) => problemasDoCaixa({ dia: f.dia, faturamento: fat, vendas, pecas, pagamentos: Object.keys(pag).length ? pag : null, vendedoras: porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null }, equipe.length > 0, !!portal.regras_caixa);
+  // Dias do mês com número faltando ou que não bate (a loja corrige daqui).
+  const comErro = dados.filter((c) => daLoja(c, filtro)).map((c) => ({ c, p: problemasDoCaixa(c, equipe.length > 0, !!portal.regras_caixa) })).filter((x) => x.p.length).sort((a, b) => b.c.dia.localeCompare(a.c.dia));
+  // Com várias lojas, só o time da loja escolhida (quem está sem loja trabalha nas duas).
+  const doTime = equipe.filter((p) => !varias || !p.loja || !f.loja || p.loja === f.loja);
+  // Primeiro nome; se duas pessoas têm o mesmo (Ana Lúcia e Ana Rita), vai o nome completo.
+  const prim1 = (n: string) => n.trim().split(" ")[0];
+  const nomeCurto = (n: string) => (equipe.filter((x) => prim1(x.nome) === prim1(n)).length > 1 ? n.trim() : prim1(n));
+  const pessoas = [...doTime.map((p) => ({ chave: p.id, nome: nomeCurto(p.nome) })), { chave: OUTRAS, nome: "Outras vendas" }];
   const linhasVend: LinhaVendedora[] = pessoas.map((p) => ({
     pessoa_id: p.chave === OUTRAS ? null : p.chave, nome: p.chave === OUTRAS ? "Outras vendas" : p.nome,
     faturamento: numeroDe(f.vend[p.chave]?.faturamento) ?? 0, vendas: numeroDe(f.vend[p.chave]?.vendas) ?? 0, pecas: numeroDe(f.vend[p.chave]?.pecas) ?? 0,
@@ -105,15 +138,34 @@ function FechamentoCaixa() {
   const valor = porPessoa ? somaVend : { faturamento: numeroDe(f.faturamento) ?? 0, vendas: numeroDe(f.vendas) ?? 0, pecas: numeroDe(f.pecas) ?? 0 };
   const pag: Pagamentos = {};
   for (const x of FORMAS) { const v = numeroDe(f.pag[x.chave]); if (v) pag[x.chave] = v; }
+  const vale = numeroDe(f.vale) ?? 0;
+  if (vale) (pag as Record<string, number>).vale_troca = vale;
   const malinha = { faturamento: numeroDe(f.mal.faturamento) ?? 0, vendas: numeroDe(f.mal.vendas) ?? 0, pecas: numeroDe(f.mal.pecas) ?? 0, saidas: numeroDe(f.mal.saidas) ?? 0 };
   const temMalinha = malinha.faturamento > 0 || malinha.vendas > 0 || malinha.pecas > 0 || malinha.saidas > 0;
-  const somaPag = somaPagamentos(pag);
+  const somaPag = somaPagamentos(pag) + vale;
+  const faltaNoForm = faltaAgora(valor.faturamento || somaPag, valor.vendas, valor.pecas);
   const difere = somaPag > 0 && valor.faturamento > 0 && centavos(somaPag) !== centavos(valor.faturamento);
   const malMes = somarMalinha(lista);
   const formasMes = somarPagamentos(lista);
   const cadMes = somarCadastros(lista);
   const somaMes = somaPagamentos(formasMes);
   const mudar = (campo: "dia" | "loja" | "faturamento" | "vendas" | "pecas" | "obs") => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [campo]: e.target.value });
+
+  /** Salva o dia como loja fechada (tudo zero e o motivo escrito). */
+  async function fecharDia(motivo: string) {
+    const texto = motivo === "Outro motivo" ? prompt("Qual foi o motivo de a loja ficar fechada?")?.trim() : motivo.toLowerCase();
+    if (!texto) return;
+    const loja = varias ? f.loja : null;
+    const ja = dados!.find((c) => c.dia === f.dia && (c.loja ?? "") === (loja ?? ""));
+    if (ja && !confirm(`Já tem fechamento em ${dia(f.dia)}${loja ? ` na ${loja}` : ""}. Trocar por "loja fechada"?`)) return;
+    setSalvando(true); setErro("");
+    try {
+      await salvarCaixa(portal.id, { id: f.id ?? ja?.id, loja, dia: f.dia, faturamento: 0, vendas: 0, pecas: 0, obs: null, pagamentos: null, vendedoras: null, malinha: null, justificativa: `Loja fechada: ${texto}` });
+      setAviso(`${dia(f.dia)} salvo como loja fechada (${texto}).`); setEnviar(null);
+      setF(novo(f.loja, f.soTotal));
+      recarregar();
+    } catch (x) { setErro((x as Error).message); } finally { setSalvando(false); }
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -125,7 +177,6 @@ function FechamentoCaixa() {
     if (f.dia > hoje()) return setErro("Esse dia ainda não chegou.");
     if (varias && !f.loja) return setErro("Escolha a loja.");
     if (faturamento < 0 || vendas < 0 || pecas < 0 || FORMAS.some((x) => (pag[x.chave] ?? 0) < 0)) return setErro("Os números não podem ser negativos.");
-    if (difere && !confirm(`A soma das formas de pagamento (${moeda(somaPag)}) está diferente do faturamento (${moeda(faturamento)}). Salvar assim mesmo?`)) return;
     if (!Number.isInteger(vendas) || !Number.isInteger(pecas)) return setErro("Vendas e peças são números inteiros.");
     if (porPessoa) {
       for (const v of linhasVend) {
@@ -144,8 +195,44 @@ function FechamentoCaixa() {
     }
     const cadastros = f.cad.trim() === "" ? null : numeroDe(f.cad);
     if (f.cad.trim() !== "" && (cadastros == null || cadastros < 0 || !Number.isInteger(cadastros))) return setErro("Clientes novas cadastradas: use um número inteiro (0 se nenhuma).");
-    if (faturamento > 0 && vendas === 0) return setErro("Teve faturamento: informe quantas vendas foram.");
-    if (vendas > 0 && pecas === 0) return setErro("Informe quantas peças saíram nessas vendas.");
+    // Antes de dizer que falta, o agente procura nos arquivos do caixa que a loja anexou e preenche o que estiver vazio.
+    const chaveBusca = `${f.dia}|${varias ? f.loja : ""}`;
+    if (faltaAgora(faturamento, vendas, pecas).length && !f.just.trim() && !(chaveBusca in buscou)) {
+      setSalvando(true); setAviso("Procurando nos arquivos do caixa deste dia…");
+      const lido = await lerArquivosDoCaixa(portal.id, f.dia, varias ? f.loja : "").catch(() => null);
+      setSalvando(false);
+      if (lido?.achou) {
+        const vazio = (x?: string) => !x || !x.trim();
+        const nf: Form = { ...f };
+        if (!porPessoa && vazio(f.faturamento) && lido.faturamento) nf.faturamento = texto(lido.faturamento);
+        if (!porPessoa && vazio(f.vendas) && lido.vendas) nf.vendas = String(lido.vendas);
+        if (!porPessoa && vazio(f.pecas) && lido.pecas) nf.pecas = String(lido.pecas);
+        if (!Object.values(f.pag).some((v) => !vazio(v)) && lido.pagamentos)
+          nf.pag = Object.fromEntries(FORMAS.filter((x) => (lido.pagamentos?.[x.chave] ?? 0) > 0).map((x) => [x.chave, texto(lido.pagamentos![x.chave]!)]));
+        if (porPessoa && !Object.values(f.vend).some((v) => !vazio(v.faturamento)) && lido.vendedoras?.length) {
+          const prim = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().split(/\s+/)[0];
+          const vend: Form["vend"] = {};
+          for (const v of lido.vendedoras) {
+            // Nome completo primeiro; pelo primeiro nome só se ninguém mais da loja tiver o mesmo.
+            const cheio = (n: string) => n.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim().replace(/\s+/g, " ");
+            const mesmos = doTime.filter((e) => prim(e.nome) === prim(v.nome));
+            const p = doTime.find((e) => cheio(e.nome) === cheio(v.nome)) ?? (mesmos.length === 1 ? mesmos[0] : undefined);
+            const k = p?.id ?? OUTRAS; const a = vend[k];
+            vend[k] = { faturamento: texto((numeroDe(a?.faturamento) ?? 0) + v.faturamento), vendas: String((numeroDe(a?.vendas) ?? 0) + v.vendas), pecas: String((numeroDe(a?.pecas) ?? 0) + v.pecas) };
+          }
+          nf.vend = vend;
+        }
+        setF(nf); setBuscou({ ...buscou, [chaveBusca]: lido.observacao });
+        setAviso(`Completei com os arquivos do caixa deste dia (${lido.observacao}) Confira os números e toque em salvar.`);
+        return;
+      }
+      setBuscou({ ...buscou, [chaveBusca]: "" }); setAviso("");
+    }
+    if (faturamento > 0 && vendas === 0 && !f.just.trim()) return setErro("Teve faturamento: informe quantas vendas foram, ou escreva abaixo o motivo.");
+    if (vendas > 0 && pecas === 0 && !f.just.trim()) return setErro("Informe quantas peças saíram nessas vendas, ou escreva abaixo o motivo.");
+    // O caixa só fecha completo e batendo: o que falta ou não bate aparece aqui e não deixa salvar.
+    const falta = faltaAgora(faturamento, vendas, pecas);
+    if (falta.length && !f.just.trim()) return setErro(`O caixa ainda não pode fechar: ${juntar(falta)}. Corrija, ou escreva abaixo o motivo para fechar assim.`);
     const loja = varias ? f.loja : null;
     let id = f.id;
     if (!id) {
@@ -158,7 +245,7 @@ function FechamentoCaixa() {
     setSalvando(true);
     try {
       const vendedoras = porPessoa ? linhasVend.filter((v) => v.faturamento || v.vendas || v.pecas) : null;
-      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null, cadastros };
+      const salvo = { loja, dia: f.dia, faturamento, vendas, pecas, obs: f.obs.trim() || null, pagamentos: Object.keys(pag).length ? pag : null, vendedoras, malinha: temMalinha ? malinha : null, cadastros, justificativa: falta.length ? f.just.trim() : null };
       await salvarCaixa(portal.id, { id, ...salvo });
       // Mês até este dia, sem contar a versão antiga do mesmo dia.
       const antes = dados!.filter((x) => x.id !== id);
@@ -180,11 +267,12 @@ function FechamentoCaixa() {
     setErro(""); setAviso(""); setEnviar(null);
     setF({ id: c.id, dia: c.dia, loja: c.loja ?? "", faturamento: texto(c.faturamento), vendas: String(c.vendas), pecas: String(c.pecas), obs: c.obs ?? "",
       pag: Object.fromEntries(FORMAS.filter((x) => c.pagamentos?.[x.chave]).map((x) => [x.chave, texto(c.pagamentos![x.chave]!)])),
+      vale: (c.pagamentos as Record<string, number> | null)?.vale_troca ? texto((c.pagamentos as Record<string, number>).vale_troca) : "",
       vend: Object.fromEntries((c.vendedoras ?? []).map((v) => [v.pessoa_id ?? OUTRAS, { faturamento: texto(v.faturamento), vendas: String(v.vendas), pecas: String(v.pecas) }])),
       // Dia antigo lançado só no total continua só no total.
       soTotal: !c.vendedoras?.length && c.faturamento > 0,
       mal: c.malinha ? { faturamento: texto(c.malinha.faturamento), vendas: String(c.malinha.vendas), pecas: String(c.malinha.pecas), saidas: c.malinha.saidas ? String(c.malinha.saidas) : "" } : { faturamento: "", vendas: "", pecas: "", saidas: "" },
-      cad: c.cadastros != null ? String(c.cadastros) : "" });
+      cad: c.cadastros != null ? String(c.cadastros) : "", just: c.justificativa ?? "" });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -203,6 +291,17 @@ function FechamentoCaixa() {
     <>
       <Titulo titulo="Fechamento de caixa" sub="Todo dia, ao fechar a loja: o que cada vendedora vendeu e as formas de pagamento. Depois é só mandar no WhatsApp. É daqui que saem o Resultado do mês e a performance do Diagnóstico." />
       <AulaDoCaixa />
+      {comErro.length > 0 && (
+        <div className="aviso mb" role="alert">
+          <b style={{ fontSize: 15.5 }}>⚠️ {comErro.length === 1 ? "1 dia do caixa precisa de correção" : `${comErro.length} dias do caixa precisam de correção`}</b>
+          {comErro.map(({ c, p }) => (
+            <div key={c.id} className="linha entre mt" style={{ gap: 8, flexWrap: "wrap" }}>
+              <span><b>{dia(c.dia)}{c.loja ? ` · ${c.loja}` : ""}</b>: {juntar(p)}.</span>
+              <button type="button" className="btn p peq" onClick={() => { editar(c); window.scrollTo({ top: 0, behavior: "smooth" }); }}>Corrigir</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <form className="card card-borda mb" style={{ ["--c" as string]: "var(--red)" }} onSubmit={salvar}>
         <div className="linha entre">
@@ -274,10 +373,8 @@ function FechamentoCaixa() {
         <div className="ajuda">
           Vendas = atendimentos que viraram venda (cupons). Peças = total de peças dessas vendas.
           {porPessoa && " \"Outras vendas\" é o que não foi de nenhuma vendedora (a dona, o online)."}
-          {equipe.length > 0 && (
-            <> <button type="button" className="link-loja" onClick={() => setF({ ...f, soTotal: !f.soTotal })}>
-              {f.soTotal ? "Lançar por vendedora" : "Lançar só o total da loja"}
-            </button></>
+          {equipe.length > 0 && f.soTotal && (
+            <> <button type="button" className="link-loja" onClick={() => setF({ ...f, soTotal: false })}>Lançar por vendedora</button></>
           )}
           {!equipe.length && !soCaixa && <> Cadastre o time em <Link className="link-loja" href="/pessoas">Minha equipe</Link> para lançar por vendedora.</>}
         </div>
@@ -285,6 +382,7 @@ function FechamentoCaixa() {
           <div className="kpi"><small>Total do dia</small><b style={{ fontSize: 20 }}>{moeda(valor.faturamento || somaPag)}</b></div>
         </div>
         <label className="rotulo" style={{ marginTop: 10 }}>Formas de pagamento (R$)</label>
+        <p className="ajuda" style={{ marginTop: 0 }}>Voucher e saldo de troca não entram: não é dinheiro novo no caixa. Se o sistema conta a venda paga com vale-troca, coloque esse valor em &quot;Vale-troca usado&quot;.</p>
         <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "0 12px" }}>
           {FORMAS.map((x) => (
             <div key={x.chave}>
@@ -293,6 +391,10 @@ function FechamentoCaixa() {
                 onChange={(e) => setF({ ...f, pag: { ...f.pag, [x.chave]: e.target.value } })} />
             </div>
           ))}
+          <div>
+            <label className="rotulo" htmlFor="cx-vale" style={{ fontWeight: 400 }}>Vale-troca usado</label>
+            <input id="cx-vale" type="text" inputMode="decimal" placeholder="0,00" value={f.vale} style={NUM} onChange={(e) => setF({ ...f, vale: e.target.value })} />
+          </div>
         </div>
         <div className="ajuda" style={difere ? { color: "var(--red)" } : undefined}>
           {somaPag > 0
@@ -303,22 +405,41 @@ function FechamentoCaixa() {
         </div>
         <label className="rotulo" htmlFor="cx-obs">Observação</label>
         <input id="cx-obs" type="text" maxLength={500} placeholder="Ex.: chuva forte, ação de sábado, vitrine nova" value={f.obs} onChange={mudar("obs")} />
+        {faltaNoForm.length > 0 && (valor.faturamento || somaPag) > 0 && (
+          <div className="aviso mt" role="status">
+            <b>Para fechar assim, falta corrigir: {juntar(faltaNoForm)}.</b>
+            <div className="ajuda" style={{ margin: "4px 0 0" }}>Anexou os arquivos do caixa do dia aqui embaixo? Ao salvar, o Hub procura neles primeiro e preenche o que faltar.</div>
+            <label className="rotulo" htmlFor="cx-just" style={{ marginTop: 8 }}>Não dá para corrigir agora? Escreva o motivo e feche assim mesmo</label>
+            <textarea id="cx-just" rows={2} maxLength={500} placeholder="O motivo foi… Ex.: a maquininha não separa por forma de pagamento; a vendedora não anotou as peças" value={f.just} onChange={(e) => setF({ ...f, just: e.target.value })} />
+          </div>
+        )}
         {valor.vendas > 0 && <div className="ajuda mt">Este dia: <Indicadores {...valor} faturamento={valor.faturamento || somaPag} /></div>}
-        {erro && <div className="aviso mt" role="alert">{erro}</div>}
+        {erro && <div className="aviso mt" role="alert" style={{ fontWeight: 700, fontSize: 15.5 }}>⚠️ {erro}</div>}
         {aviso && (
           <div className="aviso ok mt linha entre" role="status">
             <span>{aviso}</span>
             {enviar && <a className="btn p peq" href={enviar} target="_blank" rel="noopener">📲 Enviar no WhatsApp</a>}
           </div>
         )}
-        <div className="linha mt">
+        <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
           <button className="btn p" type="submit" disabled={salvando}>{salvando ? "Salvando…" : f.id ? "Salvar correção" : "Salvar o dia"}</button>
         </div>
+        {/* Loja não abriu: salva o dia fechado com o motivo (não fica como caixa faltando nem para corrigir). */}
+        <details className="mt">
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>A loja não abriu em {dia(f.dia)}?{feriadoNacional(f.dia) ? ` (${feriadoNacional(f.dia)})` : ""}</summary>
+          <p className="ajuda">Domingo e feriado nacional já não contam como caixa faltando. Use aqui para registrar outro dia em que a loja ficou fechada.</p>
+          <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>
+            {["Feriado", "Domingo", "Outro motivo"].map((m) => (
+              <button key={m} type="button" className="btn s peq" disabled={salvando} onClick={() => fecharDia(m)}>Loja fechada: {m.toLowerCase()}</button>
+            ))}
+          </div>
+        </details>
       </form>
 
       <LerRelatorioDoCaixa portalId={portal.id} loja={varias ? f.loja : ""} equipe={equipe.filter((p) => !varias || !p.loja || p.loja === f.loja).map((p) => ({ id: p.id, nome: p.nome }))} aoLancar={recarregar} />
       {f.dia && <ArquivosDoCaixa portalId={portal.id} dia={f.dia} loja={varias ? f.loja : ""} />}
 
+      {portal.regras_caixa && <RegrasDoCaixa portalId={portal.id} nome={nome} abertoDeInicio={params.get("regras") === "1"} />}
       <RelatoriosGestao portalId={portal.id} lojas={portal.lojas ?? []} />
       <BoletosMes portalId={portal.id} lojas={portal.lojas ?? []} />
 
@@ -420,6 +541,7 @@ function FechamentoCaixa() {
               {c.vendedoras && <div className="mudo" style={{ fontSize: 13, ...NUM }}>{c.vendedoras.map((v) => `${v.nome} ${moeda(v.faturamento)}`).join(" · ")}</div>}
               {c.pagamentos && <div className="mudo" style={{ fontSize: 13, ...NUM }}><ListaFormas p={c.pagamentos} /></div>}
               {c.obs && <div className="ajuda" style={{ margin: 0 }}>{c.obs}</div>}
+              {c.justificativa && <div className="ajuda" style={{ margin: 0 }}>Fechado com motivo: {c.justificativa}</div>}
             </div>
             <div className="linha" style={{ flexWrap: "nowrap", gap: 6 }}>
               <a className="btn s peq" href={linkWhats(c, mesAte(c))} target="_blank" rel="noopener" aria-label={`Enviar o fechamento de ${dia(c.dia)} no WhatsApp`}>📲</a>

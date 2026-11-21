@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { BASE } from "@/lib/config";
 
@@ -11,6 +11,10 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
   const [senha, setSenha] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; texto: string } | null>(erroInicial ? { ok: false, texto: erroInicial } : null);
   const [enviando, setEnviando] = useState(false);
+  // O endereço que a equipe manda já traz o e-mail (?email=): a pessoa só digita a senha.
+  useEffect(() => {
+    try { const e = new URLSearchParams(location.search).get("email"); if (e) setEmail(e); } catch { /* sem endereço */ }
+  }, []);
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +46,7 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
   return (
     <form className="card" onSubmit={entrar}>
       <h1>Entrar</h1>
-      <p className="mudo">Use o e-mail que você recebeu no convite.</p>
+      <p className="mudo">Digite o seu e-mail e a senha que a equipe Magnética mandou no WhatsApp.</p>
       <label className="rotulo" htmlFor="email">E-mail</label>
       <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <label className="rotulo" htmlFor="senha">Senha</label>
@@ -50,10 +54,13 @@ export function Login({ erroInicial }: { erroInicial?: string }) {
       {msg && <div className={`aviso mt ${msg.ok ? "ok" : ""}`}>{msg.texto}</div>}
       <div className="linha mt">
         <button className="btn p" disabled={enviando || !senha} type="submit">Entrar</button>
-        <button className="btn s" disabled={enviando} type="button" onClick={receberLink}>
-          Primeiro acesso ou esqueci a senha
-        </button>
       </div>
+      <p className="mudo" style={{ fontSize: 14, marginTop: 14 }}>
+        Esqueceu a senha ou é o seu primeiro acesso? Chame a equipe Magnética no WhatsApp: a gente te manda uma senha nova na hora.
+      </p>
+      <button className="link-loja" disabled={enviando} type="button" onClick={receberLink} style={{ fontSize: 13 }}>
+        Prefiro receber um link no meu e-mail
+      </button>
     </form>
   );
 }

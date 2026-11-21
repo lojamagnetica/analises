@@ -8,6 +8,7 @@ import { ETAPAS_LEAD, atrasado, buscarLeads, funil, linkWhatsapp, moverLead, sal
 import { PERIODOS, type Periodo } from "@/lib/gestao-clientes";
 import { dataCurta, moeda } from "@/lib/formato";
 import { normalizar } from "@/lib/agenda-regras";
+import { ValoresNegociacao } from "@/components/ValoresNegociacao";
 
 type Aba = "quadro" | "funil";
 const COR_ETAPA: Record<string, string> = { Novo: "var(--blue)", Conversando: "var(--orange)", Proposta: "var(--purple)", Fechou: "var(--green)" };
@@ -107,6 +108,7 @@ export default function LeadsEPipeline() {
     <>
       <Titulo voltar={{ href: "/equipe/comercial", rotulo: "Comercial" }} titulo="Leads e funil" sub="Quem está negociando com a equipe, em que etapa e quando é o próximo contato. Quando fecha, registre a venda e a cliente passa para a CS." />
       {erro && <div className="aviso mb">{erro}</div>}
+      <ValoresNegociacao />
 
       <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
         <div className="chips">

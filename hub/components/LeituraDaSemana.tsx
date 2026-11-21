@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { BASE } from "@/lib/config";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
-import { dia, moeda } from "@/lib/formato";
+import { dia, hoje, moeda } from "@/lib/formato";
+import { listarEnvios, RELATORIOS_SEMANA, semanaAtual } from "@/lib/rotina";
 import {
   buscarLeitura, buscarNumerosSemana, caixaDaSemana, salvarNumerosSemana, semanaPassada, despublicar, encaminharLeitura, excluirLeitura, marcarAcao, montarRascunho, numerosDaLoja, publicarLeitura, semanaDe, type Leitura,
 } from "@/lib/leitura";
@@ -55,21 +56,38 @@ function NumerosDaSemana() {
 export function CaixaDaSemana() {
   const { portal, soCaixa } = usePortal();
   const semGestao = (portal.menu_oculto ?? []).includes("gestao");
-  const { dados } = useDados(() => (semGestao ? Promise.resolve([]) : caixaDaSemana(portal.id)), [portal.id, semGestao]);
+  const { dados: tudo } = useDados(async () => {
+    if (semGestao) return null;
+    // Os relatórios da semana (estoque e crediário), de qualquer loja do portal.
+    const lojas = portal.lojas?.length > 1 ? portal.lojas : [""];
+    const [dias, ...envios] = await Promise.all([caixaDaSemana(portal.id), ...lojas.map((l) => listarEnvios(portal.id, l, semanaAtual()).catch(() => []))]);
+    return { dias, slots: new Set(envios.flat().map((e) => e.slot)) };
+  }, [portal.id, semGestao]);
   if (semGestao) return <NumerosDaSemana />;
-  if (!dados) return null;
-  const faltam = dados.filter((d) => d.passou && !d.lancado).length;
+  if (!tudo) return null;
+  const dados = tudo.dias;
+  const faltam = dados.filter((d) => d.passou && !d.lancado && !d.feriado).length;
+  const comErro = dados.filter((d) => d.problemas.length);
+  const relFaltam = RELATORIOS_SEMANA.filter((r) => !tudo.slots.has(r.chave));
+  // Sexta e sábado: a semana fecha no sábado; depois disso a análise só vem na semana seguinte.
+  const dow = new Date(`${hoje()}T12:00:00Z`).getUTCDay();
+  const fecha = (dow === 5 || dow === 6) && (faltam > 0 || relFaltam.length > 0 || comErro.length > 0);
   return (
-    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam ? "var(--red)" : "var(--feito)" }}>
+    <div className={`card mt card-borda`} style={{ ["--c" as string]: faltam || fecha || comErro.length ? "var(--red)" : "var(--feito)" }}>
+      {fecha && (
+        <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
+          ⏰ {dow === 6 ? "Hoje é o último dia" : "Amanhã (sábado) é o último dia"} para mandar o caixa e os relatórios da semana. Mandando até sábado, a sua análise da semana chega na segunda. Sem isso, ela só vem na próxima semana.
+        </p>
+      )}
       <div className="linha entre" style={{ gap: 10, flexWrap: "wrap", alignItems: "center" }}>
         <div>
           <b>🧾 Caixa desta semana</b>
           <div className="linha" style={{ gap: 6, marginTop: 6 }}>
             {dados.map((d, i) => (
-              <span key={d.dia} title={dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
+              <span key={d.dia} title={d.feriado ? `${dia(d.dia)} · ${d.feriado} (não precisa lançar)` : dia(d.dia)} style={{ textAlign: "center", fontSize: 11.5, width: 34 }}>
                 <span style={{ display: "block", width: 22, height: 22, margin: "0 auto 2px", borderRadius: 11, lineHeight: "22px", fontSize: 12,
-                  background: d.lancado ? "var(--feito)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || d.passou ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
-                  {d.lancado ? "✓" : d.passou ? "!" : ""}
+                  background: d.problemas.length ? "var(--orange)" : d.lancado ? "var(--feito)" : d.feriado ? "var(--soft)" : d.passou ? "var(--red)" : "var(--soft)", color: d.lancado || (d.passou && !d.feriado) ? "#fff" : "var(--text)", border: d.hoje ? "2px solid var(--ink)" : "none" }}>
+                  {d.problemas.length ? "?" : d.lancado ? "✓" : d.feriado ? "F" : d.passou ? "!" : ""}
                 </span>{DIAS[i]}
               </span>
             ))}
@@ -77,7 +95,23 @@ export function CaixaDaSemana() {
         </div>
         <Link className={`btn ${faltam ? "p" : "s"} peq`} href={portal.venda_diaria ? "/gestao/vendas" : "/gestao/caixa"}>{portal.venda_diaria ? "Registrar venda" : faltam ? `Lançar ${faltam === 1 ? "o dia que falta" : `os ${faltam} dias que faltam`}` : "Lançar o caixa de hoje"}</Link>
       </div>
-      <p className="ajuda" style={{ margin: "8px 0 0" }}>Na segunda, a Camilla analisa a semana das lojas que fecharam o caixa 100% e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado. Caixa incompleto na segunda: a análise vem só na segunda seguinte.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
+      {comErro.length > 0 && (
+        <div className="aviso mt" role="alert" style={{ fontWeight: 600 }}>
+          ⚠️ Caixa com número para corrigir:
+          <ul style={{ margin: "4px 0 6px", paddingLeft: 18, fontWeight: 400 }}>
+            {comErro.map((d) => <li key={d.dia}><b>{dia(d.dia)}</b>: {d.problemas.join("; ")}</li>)}
+          </ul>
+          <Link className="btn p peq" href="/gestao/caixa">Corrigir agora</Link>
+        </div>
+      )}
+      <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 10, alignItems: "center" }}>
+        <small className="mudo">Relatórios da semana:</small>
+        {RELATORIOS_SEMANA.map((r) => (
+          <span key={r.chave} className={`selo ${tudo.slots.has(r.chave) ? "feito" : "espera"}`}>{tudo.slots.has(r.chave) ? "✓" : "falta"} {r.titulo}</span>
+        ))}
+        {relFaltam.length > 0 && <Link className="btn s peq" href="/envios">Enviar os relatórios</Link>}
+      </div>
+      <p className="ajuda" style={{ margin: "8px 0 0" }}>Na segunda, a Camilla analisa a semana das lojas que fecharam o caixa 100% e mandaram os relatórios até sábado, e já personaliza o que você precisa fazer e como melhorar ainda mais o resultado. Caixa incompleto na segunda: a análise vem só na segunda seguinte.{portal.sem_equipe || soCaixa ? "" : " Quer passar isso para alguém da equipe, como o administrativo? Peça à Camilla um acesso só de envios."}</p>
     </div>
   );
 }
@@ -130,7 +164,7 @@ export function LeituraDaSemana() {
   const zap = (portal.whatsapp ?? "").replace(/\D/g, "");
   const avisar = zap && (
     <a className="btn p peq" target="_blank" rel="noopener"
-      href={`https://wa.me/55${zap.replace(/^55/, "")}?text=${encodeURIComponent(`Oi, ${portal.responsavel?.split(" ")[0] ?? ""}! A leitura da sua semana já está no Hub, com as 3 ações para esta semana: ${typeof window !== "undefined" ? window.location.origin : ""}${BASE}/inicio/`)}`}>
+      href={`https://wa.me/55${zap.replace(/^55/, "")}?text=${encodeURIComponent(`Oi, ${portal.responsavel?.split(" ")[0] ?? ""}! A leitura da sua semana já está no Hub, com as ações para esta semana: ${typeof window !== "undefined" ? window.location.origin : ""}${BASE}/inicio/`)}`}>
       Avisar a loja no WhatsApp
     </a>
   );
@@ -139,7 +173,7 @@ export function LeituraDaSemana() {
   if (equipe && (editando || !dados.publicadaNestaSemana)) {
     const r = dados.rascunho;
     const tx = texto ?? r?.texto ?? (editando ? l?.texto ?? "" : "");
-    const ac = acoes ?? [...(r?.acoes.map((a) => a.t) ?? (editando ? l?.acoes.map((a) => a.t) ?? [] : [])), "", "", ""].slice(0, 3);
+    const ac = acoes ?? [...(r?.acoes.map((a) => a.t) ?? (editando ? l?.acoes.map((a) => a.t) ?? [] : [])), "", "", "", "", ""].slice(0, 5);
     const n = dados.numeros;
     return (
       <div className="card card-borda mt" style={{ ["--c" as string]: "var(--purple)" }}>
@@ -158,12 +192,12 @@ export function LeituraDaSemana() {
         )}
         {n?.informados?.obs && <div className="aviso mb">💬 <b>A loja contou:</b> {n.informados.obs}</div>}
         {r?.rascunho?.para_camilla && <div className="aviso mb">🔎 <b>Para você conferir:</b> {r.rascunho.para_camilla}</div>}
-        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>O que os números mostram</b>
-          <textarea rows={4} value={tx} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: A semana fechou 18% abaixo do ritmo da meta. O ticket subiu, mas entraram menos clientes: o foco é trazer gente para a loja." />
+        <label className="ajuda" style={{ display: "block" }}><b style={{ color: "var(--ink)" }}>A análise da semana (resumo, equipe, produtos, estoque x giro e canais)</b>
+          <textarea rows={tx.length > 600 ? 16 : 4} value={tx} onChange={(e) => setTexto(e.target.value)} placeholder="Ex.: A semana fechou 18% abaixo do ritmo da meta. O ticket subiu, mas entraram menos clientes: o foco é trazer gente para a loja." />
         </label>
-        <b style={{ fontSize: 14 }}>As 3 ações da semana</b>
+        <b style={{ fontSize: 14 }}>As ações da semana (até 5; a vazia não entra)</b>
         {ac.map((a, i) => (
-          <input key={i} type="text" value={a} placeholder={`Ação ${i + 1}`} onChange={(e) => setAcoes(ac.map((x, j) => (j === i ? e.target.value : x)))} />
+          <textarea key={i} rows={a.length > 120 ? 3 : 1} value={a} placeholder={`Ação ${i + 1}`} onChange={(e) => setAcoes(ac.map((x, j) => (j === i ? e.target.value : x)))} />
         ))}
         {erro && <div className="aviso mb">{erro}</div>}
         <div className="linha" style={{ gap: 8, flexWrap: "wrap" }}>

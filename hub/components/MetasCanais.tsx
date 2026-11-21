@@ -2,12 +2,12 @@
 
 import { CampoReais } from "@/components/CampoReais";
 import { moeda } from "@/lib/formato";
-import { NOMES_FAIXA, faixaBatida, type DadosPlano, type MetaCanal } from "@/lib/plano-mes";
+import { MAX_FAIXAS, NOMES_FAIXA, faixaBatida, nomeFaixa, type DadosPlano, type MetaCanal } from "@/lib/plano-mes";
 
 const pct = (n: number) => `${String(n).replace(".", ",")}%`;
 const cresce = (c: MetaCanal, v: number) => (c.base && v ? ` (+${Math.round(((v - c.base) / c.base) * 1000) / 10}%)`.replace(".", ",") : "");
 
-/** Editar as metas por canal: o ano passado e as 3 faixas, cada uma com a comissão do time e da gerente. */
+/** Editar as metas por canal: o ano passado e as 3 faixas (ou 4), cada uma com a comissão do time e da gerente. */
 export function MetasCanaisEditar({ canais, bonus, mudar }: {
   canais: MetaCanal[]; bonus: DadosPlano["bonus_geral"]; mudar: (x: Partial<DadosPlano>) => void;
 }) {
@@ -16,19 +16,19 @@ export function MetasCanaisEditar({ canais, bonus, mudar }: {
   return (
     <div className="mt">
       <b>Metas por canal</b>
-      <p className="ajuda" style={{ marginTop: 2 }}>Cada canal com o que vendeu no mesmo mês do ano passado e 3 metas. Em cada meta: a comissão do time e a da gerente (em %). A Meta 1 da Loja é a meta do mês no Início e no fechamento de caixa.</p>
+      <p className="ajuda" style={{ marginTop: 2 }}>Cada canal com o que vendeu no mesmo mês do ano passado e 3 metas (dá para abrir a 4ª). Em cada meta: a comissão do time e a da gerente (em %). A Meta 1 da Loja é a meta do mês no Início e no fechamento de caixa.</p>
       {canais.map((c, i) => (
         <div key={c.canal} className="card mb" style={{ background: "var(--soft)", padding: 14 }}>
           <div className="linha entre" style={{ gap: 8, flexWrap: "wrap" }}>
             <h3 style={{ margin: 0 }}>{c.canal}</h3>
             <div style={{ minWidth: 220 }}><CampoReais rotulo="Vendeu no ano passado" vazio valor={c.base ?? 0} mudar={(v) => troca(i, { ...c, base: v || null })} /></div>
           </div>
-          <div className="grade g3" style={{ gap: "0 12px" }}>
+          <div className={`grade ${c.faixas.length > 3 ? "g4" : "g3"}`} style={{ gap: "0 12px" }}>
             {c.faixas.map((f, k) => {
               const tf = (x: Partial<typeof f>) => troca(i, { ...c, faixas: c.faixas.map((y, n) => (n === k ? { ...y, ...x } : y)) });
               return (
                 <div key={k}>
-                  <CampoReais rotulo={`${NOMES_FAIXA[k]}${cresce(c, f.valor)}`} vazio valor={f.valor} mudar={(v) => tf({ valor: v })} />
+                  <CampoReais rotulo={`${nomeFaixa(k)}${cresce(c, f.valor)}`} vazio valor={f.valor} mudar={(v) => tf({ valor: v })} />
                   <div className="grade g2" style={{ gap: "0 8px" }}>
                     <CampoReais sem vazio rotulo="Comissão time %" valor={f.comissao} mudar={(v) => tf({ comissao: v })} />
                     <CampoReais sem vazio rotulo="Gerente %" valor={f.gerente} mudar={(v) => tf({ gerente: v })} />
@@ -37,6 +37,9 @@ export function MetasCanaisEditar({ canais, bonus, mudar }: {
               );
             })}
           </div>
+          {c.faixas.length < MAX_FAIXAS
+            ? <button type="button" className="link-loja" onClick={() => troca(i, { ...c, faixas: [...c.faixas, { valor: 0, comissao: 0, gerente: 0 }] })}>+ {nomeFaixa(c.faixas.length)}</button>
+            : <button type="button" className="link-loja" onClick={() => { if (confirm(`Tirar a ${nomeFaixa(c.faixas.length - 1)} de ${c.canal}?`)) troca(i, { ...c, faixas: c.faixas.slice(0, NOMES_FAIXA.length) }); }}>Tirar a {nomeFaixa(c.faixas.length - 1)}</button>}
         </div>
       ))}
       <div className="card" style={{ background: "var(--soft)", padding: 14 }}>
@@ -59,10 +62,11 @@ export function MetasCanaisResumo({ canais, bonus, vendido }: { canais: MetaCana
   if (!comMeta.length) return null;
   const total = (k: number) => comMeta.reduce((s, c) => s + (c.faixas[k]?.valor ?? 0), 0);
   const baseTotal = comMeta.reduce((s, c) => s + (c.base ?? 0), 0);
+  const nomes = Array.from({ length: Math.max(NOMES_FAIXA.length, ...comMeta.map((c) => c.faixas.length)) }, (_, k) => nomeFaixa(k));
   return (
     <div>
       <div className="tabela-wrap"><table className="tabela">
-        <thead><tr><th>Canal</th><th>Ano passado</th>{NOMES_FAIXA.map((n) => <th key={n}>{n}</th>)}{vendido && <th>Vendido</th>}</tr></thead>
+        <thead><tr><th>Canal</th><th>Ano passado</th>{nomes.map((n) => <th key={n}>{n}</th>)}{vendido && <th>Vendido</th>}</tr></thead>
         <tbody>
           {comMeta.map((c) => {
             const v = vendido?.[c.canal];
@@ -77,12 +81,13 @@ export function MetasCanaisResumo({ canais, bonus, vendido }: { canais: MetaCana
                     {(f.comissao > 0 || f.gerente > 0) && <small className="mudo" style={{ display: "block" }}>{f.comissao ? `time ${pct(f.comissao)}` : ""}{f.comissao && f.gerente ? " · " : ""}{f.gerente ? `gerente ${pct(f.gerente)}` : ""}</small>}
                   </td>
                 ))}
-                {vendido && <td>{v != null ? <>{moeda(v)}<small className="mudo" style={{ display: "block" }}>{bateu ? `bateu a ${NOMES_FAIXA[bateu - 1]}` : "abaixo da Meta 1"}</small></> : "—"}</td>}
+                {nomes.slice(c.faixas.length).map((n) => <td key={n}>—</td>)}
+                {vendido && <td>{v != null ? <>{moeda(v)}<small className="mudo" style={{ display: "block" }}>{bateu ? `bateu a ${nomeFaixa(bateu - 1)}` : "abaixo da Meta 1"}</small></> : "—"}</td>}
               </tr>
             );
           })}
           {comMeta.length > 1 && (
-            <tr><td><b>Total</b></td><td>{baseTotal ? moeda(baseTotal) : "—"}</td>{NOMES_FAIXA.map((n, k) => <td key={n}><b>{moeda(total(k))}</b></td>)}{vendido && <td />}</tr>
+            <tr><td><b>Total</b></td><td>{baseTotal ? moeda(baseTotal) : "—"}</td>{nomes.map((n, k) => <td key={n}><b>{moeda(total(k))}</b></td>)}{vendido && <td />}</tr>
           )}
         </tbody>
       </table></div>

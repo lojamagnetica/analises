@@ -8,12 +8,18 @@ import { novaPendencia } from "@/lib/pendencias";
 export type TipoConversa = "Alinhamento" | "Pedido" | "Aviso" | "Urgente";
 export const TIPOS_CONVERSA: TipoConversa[] = ["Alinhamento", "Pedido", "Aviso", "Urgente"];
 export type Anexo = { caminho: string; nome: string; tipo: string; tamanho: number };
-export type Mensagem = { id: string; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
-export type Lembrete = { id: string; portal_id: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string };
+/** A pergunta da Assistente Magnética para confirmar uma reunião (ver a migração 0169). */
+export type AcaoReuniao = { tipo: "confirmar_reuniao"; reuniao_id: string; estado: "pendente" | "confirmada" | "nao"; minutos?: number; texto?: string; whatsapp?: string | null };
+export type Mensagem = { id: string; acao?: AcaoReuniao | null; arquivos?: Anexo[]; portal_id: string | null; tipo: TipoConversa; texto: string; autor: string | null; autor_nome: string | null; para: string | null; status: "aberta" | "concluida"; created_at: string };
+export type Lembrete = { id: string; portal_id: string | null; loja?: string | null; texto: string; quando: string | null; responsavel: string | null; feito: boolean; conversa_id: string | null; criado_por: string | null; created_at: string; link?: string | null };
 export type Pessoa = { id: string; nome: string };
 
 const sb = () => supabaseBrowser();
 const ok = async (p: PromiseLike<{ error: { message: string } | null }>) => { const { error } = await p; if (error) throw new Error(error.message); };
+
+/** Resposta da Camilla: minutos 0 = no horário, > 0 = começa depois, null = não mandar nada para a cliente. */
+export const confirmarReuniao = (conversaId: string, minutos: number | null) =>
+  ok(sb().rpc("reuniao_confirmar", { p_conversa: conversaId, p_minutos: minutos }));
 
 /** Quem entra nas conversas (Camilla e CS), para marcar "para quem é". */
 export async function buscarPessoas(): Promise<Pessoa[]> {
@@ -27,6 +33,14 @@ export async function buscarMensagens(portalId: string | null): Promise<Mensagem
   q = portalId ? q.eq("portal_id", portalId) : q.is("portal_id", null);
   const { data } = await q;
   return (data ?? []) as Mensagem[];
+}
+
+export type Resumo = Pick<Mensagem, "portal_id" | "texto" | "autor" | "autor_nome" | "status" | "created_at">;
+/** As mensagens dos últimos 90 dias, da mais nova para a mais antiga: a lista de conversas sai daqui (última, novas e em aberto). */
+export async function buscarResumo(): Promise<Resumo[]> {
+  const desde = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const { data } = await sb().from("equipe_conversas").select("portal_id, texto, autor, autor_nome, status, created_at").gte("created_at", desde).order("created_at", { ascending: false }).limit(2000);
+  return (data ?? []) as Resumo[];
 }
 
 /** Quantas mensagens abertas há em cada loja (para o selo na lista). */
@@ -80,6 +94,14 @@ export async function buscarLembretes(responsavel: string | null, abertos = true
   if (abertos) q = q.eq("feito", false);
   if (responsavel) q = q.eq("responsavel", responsavel);
   const { data } = await q;
-  return (data ?? []) as Lembrete[];
+  const lista = (data ?? []) as Lembrete[];
+  // O nome da loja vai junto, para o lembrete dizer de quem é.
+  const ids = [...new Set(lista.map((l) => l.portal_id).filter(Boolean))] as string[];
+  const { data: ps } = ids.length ? await sb().from("portais").select("id, loja").in("id", ids) : { data: [] };
+  const nome = new Map(((ps ?? []) as { id: string; loja: string }[]).map((x) => [x.id, x.loja]));
+  // Se o texto já diz a loja (ex.: "🧾 SCHIÊ MODA ÍNTIMA: ..."), não repete.
+  return lista.map((l) => { const loja = l.portal_id ? nome.get(l.portal_id) ?? null : null; return { ...l, loja: loja && !l.texto.toLowerCase().includes(loja.toLowerCase()) ? loja : null }; });
 }
 export const marcarLembrete = (id: string, feito: boolean) => ok(sb().from("equipe_lembretes").update({ feito }).eq("id", id));
+/** Depois do "O que aconteceu?": com data para retomar, o lembrete muda de dia; sem data, fica feito. */
+export const lembreteDepois = (id: string, retomar: string | null) => ok(sb().from("equipe_lembretes").update(retomar ? { quando: retomar } : { feito: true }).eq("id", id));

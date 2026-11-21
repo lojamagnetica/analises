@@ -2,6 +2,8 @@
 
 // Início da CS: o que precisa da Claudia hoje, loja por loja. Junta acesso, caixa, leitura, reunião, plano, jornada,
 // pendências e contrato em alertas simples, cada um com a mensagem pronta para a loja.
+import { fechaAlerta, foiConversa } from "@/lib/contato-resultado";
+import { diaDeLoja } from "@/lib/feriados";
 import { diasDesde, hoje } from "@/lib/formato";
 import { ETAPAS, atrasado, buscarJornada } from "@/lib/jornada";
 import { somarDias as somaDias } from "@/lib/acoes-mes";
@@ -38,7 +40,7 @@ const abertura = (l: { responsavel: string | null }) => `Oi, ${primeiro(l.respon
 /** Dias de loja aberta da semana (segunda a sábado) que já passaram, até ontem. */
 function diasDaSemanaAteOntem(semana: string) {
   const h = hoje(); const out: string[] = [];
-  for (let i = 0; i < 6; i++) { const d = somaDias(semana, i); if (d < h) out.push(d); }
+  for (let i = 0; i < 6; i++) { const d = somaDias(semana, i); if (d < h && diaDeLoja(d)) out.push(d); }
   return out;
 }
 
@@ -64,7 +66,7 @@ export async function painelCs(): Promise<PainelCs> {
     sb.from("loja_numeros_semana").select("portal_id").eq("semana", semanaPassada()),
     buscarJornada().catch(() => []),
     buscarPendencias().catch(() => []),
-    sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
+    sb.from("cs_contatos").select("portal_id, tipo, ref, feito_em, resumo, precisa_ajuda, resultado, retomar_em").gte("feito_em", new Date(Date.now() - 60 * 86_400_000).toISOString()).order("feito_em", { ascending: false }),
     sb.from("loja_combinados").select("*").order("prazo", { ascending: true }),
   ]);
   const lista = (portais ?? []).filter((p) => p.tipo !== "Curso" && p.cs_acompanha);
@@ -99,8 +101,9 @@ export async function painelCs(): Promise<PainelCs> {
     else if (!leit.publicada && leit.pronta) al.push({ chave: "leitura_pronta", txt: "Leitura encaminhada: falta a Camilla publicar", grave: false });
     else if (!leit.publicada) al.push({ chave: "leitura_rascunho", txt: "Rascunho da leitura pronto: revisar e encaminhar", grave: true, destino: "/inicio" });
 
-    const contatosLoja = (contatos ?? []).filter((c) => c.portal_id === p.id);
-    const contato = (contatosLoja[0] ?? null) as LojaCs["contato"];
+    // Só fecham o alerta os registros válidos (aguardando, não consegui e adiado voltam na data de retomar).
+    const contatosLoja = (contatos ?? []).filter((c) => c.portal_id === p.id && fechaAlerta(c));
+    const contato = ((contatos ?? []).find((c) => c.portal_id === p.id && foiConversa(c)) ?? null) as LojaCs["contato"];
     // A Camilla liberou a análise da semana: a CS confirma em 1 dia útil que a loja viu, entendeu e se precisa de ajuda.
     if (leit?.publicada && leit.publicada_em && !contatosLoja.some((c) => c.tipo === "leitura" && c.ref === semana)) {
       const entrou = !!ultimo && ultimo > (leit.publicada_em as string);
@@ -110,7 +113,7 @@ export async function painelCs(): Promise<PainelCs> {
     }
     // Combinados: a confirmação logo depois da reunião (a loja já conhece a CS, do onboarding) e a pergunta "como foi?" no prazo de cada um.
     const combinados = ((combinadosTodos ?? []) as Combinado[]).filter((c) => c.portal_id === p.id);
-    const lista = combinados.filter((c) => c.status === "aberto" && c.quem !== "camilla");
+    const lista = combinados.filter((c) => c.status === "aberto" && c.quem === "loja");
     if (lista.length && !contatosLoja.some((c) => c.tipo === "combinados_novos")) {
       const itens = lista.map((c) => `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)})` : ""}`).join("; ");
       al.push({ chave: "combinados_novos", txt: `A Camilla fechou os combinados com a loja (${lista.length}): confirme por onde ela começa e se precisa de ajuda`, grave: true, destino: "/inicio", registro: { tipo: "combinados_novos", ref: "entrega" },

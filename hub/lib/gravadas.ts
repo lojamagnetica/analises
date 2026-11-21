@@ -34,12 +34,14 @@ export async function aprovarGravada(g: Gravada, o: { por: string; liberarResumo
   // Reunião interna (sem loja): só os lembretes da CS são criados; combinados e resumo precisam de uma loja.
   if (interna && !g.para_claudia.some((c) => c.texto.trim())) throw new Error("Escolha a loja desta reunião (ou deixe itens para a Claudia, se for interna).");
   const feitos: string[] = [];
+  const cs = g.para_claudia.filter((c) => c.texto.trim());
+  // A decisão vai primeiro: o banco só aceita a aprovação da Camilla, e o aviso para a Claudia sai com os itens finais.
+  await ok(sb().from("reunioes_gravadas").update({ status: "aprovada", para_claudia: cs, decidido_em: new Date().toISOString(), decidido_por: o.por }).eq("id", g.id));
   const comb = interna ? [] : g.combinados.filter((c) => c.texto.trim());
   if (comb.length) {
     await ok(sb().from("loja_combinados").insert(comb.map((c) => ({ portal_id: g.portal_id, texto: c.texto.trim(), quem: c.quem, prazo: c.prazo || null, origem: "reuniao", criado_por: o.por }))));
     feitos.push(`${comb.length} ${comb.length === 1 ? "combinado" : "combinados"}`);
   }
-  const cs = g.para_claudia.filter((c) => c.texto.trim());
   if (cs.length) {
     await ok(sb().from("equipe_lembretes").insert(cs.map((c) => ({ portal_id: g.portal_id, texto: c.texto.trim(), quando: c.prazo || somarDias(hoje(), 1), responsavel: o.csId, criado_por: o.por }))));
     feitos.push(`${cs.length} ${cs.length === 1 ? "lembrete" : "lembretes"} para a CS`);
@@ -53,6 +55,5 @@ export async function aprovarGravada(g: Gravada, o: { por: string; liberarResumo
       if (o.liberarResumo) { await liberarResumo(reuniao.id, g.resumo_loja); feitos.push("resumo liberado para a loja"); } else feitos.push("resumo no rascunho da reunião");
     } else feitos.push("sem reunião no Hub nessa data: o resumo não foi enviado");
   }
-  await ok(sb().from("reunioes_gravadas").update({ status: "aprovada", decidido_em: new Date().toISOString(), decidido_por: o.por }).eq("id", g.id));
   return feitos;
 }

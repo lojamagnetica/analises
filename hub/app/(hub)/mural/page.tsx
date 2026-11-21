@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
-import { ESCALA, avisoDoMes, ehDona, codigoDoDia, codigoPadrao, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { ESCALA, avisoDoMes, ehDona, codigoDoDia, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
@@ -464,7 +464,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
                 </tr>
               ); })}
               {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
-              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => { const c = codigoPadrao(doMes, `${mes}-${dd}`); return <td key={dd} style={c === "T" ? undefined : estilo(c)}>{c === "T" ? "" : c}</td>; })}</tr>)}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} />)}</tr>)}
             </tbody>
           </table>
           <p className="mu-leg" style={{ marginTop: "2%" }}>

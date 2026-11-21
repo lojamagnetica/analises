@@ -128,7 +128,7 @@ export default function Mural() {
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
       <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
       <EscalaDoMes portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
-      <Calendario d={d} guardar={guardar} />
+      <Calendario portalId={portal.id} d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
   );
@@ -486,8 +486,24 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
   );
 }
 
-function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) => void }) {
+function Calendario({ portalId, d, guardar }: { portalId: string; d: DadosMural; guardar: (n: DadosMural) => void }) {
   const [mes, setMes] = useState(hoje().slice(0, 7));
+  // O que entrou no Planeje do mês aparece sozinho no calendário: as ações no dia de início e as datas especiais que a loja vai trabalhar.
+  // Também as datas comemorativas do mês (as mesmas do Planeje, para todas as lojas) e os feriados nacionais.
+  const { dados: plano } = useDados(async () => {
+    const [p, datas] = await Promise.all([
+      buscarPlano(portalId, mes).catch(() => null),
+      supabaseBrowser().from("datas_comerciais").select("dia, titulo").eq("mes", Number(mes.slice(5, 7)) - 1).not("dia", "is", null).then((r) => (r.data ?? []) as { dia: number; titulo: string }[]),
+    ]);
+    return { dados: p?.dados, comemorativas: datas };
+  }, [portalId, mes]);
+  const doPlano: Record<string, { t: string; c: number }[]> = {};
+  const por = (dia: string, t: string, c: number) => { if (!dia.startsWith(mes) || !t.trim()) return; if ((d.eventos[dia] ?? []).some((e) => e.t.trim().toLowerCase() === t.trim().toLowerCase())) return; (doPlano[dia] ??= []).push({ t: t.trim(), c }); };
+  for (const a of plano?.dados?.acoes ?? []) if (a.inicio) por(a.inicio.slice(0, 10), a.titulo, 0);
+  for (const x of plano?.dados?.datas ?? []) if (x.trabalhar && x.dia) por(`${mes}-${String(x.dia).padStart(2, "0")}`, x.titulo, 1);
+  const ja = (dia: string, t: string) => [...(doPlano[dia] ?? []), ...(d.eventos[dia] ?? [])].some((e) => { const x = e.t.toLowerCase(), y = t.toLowerCase(); return x.includes(y) || y.includes(x); });
+  for (const x of plano?.comemorativas ?? []) { const dia = `${mes}-${String(x.dia).padStart(2, "0")}`; if (!ja(dia, x.titulo)) por(dia, x.titulo, 1); }
+  for (const dia of gradeDoMes(mes).flat()) { const f = dia && feriadoNacional(dia); if (dia && f && !ja(dia, f)) por(dia, `${f} (feriado)`, 2); }
   const [dia, setDia] = useState<string | null>(null);
   const [txt, setTxt] = useState(""); const [cor, setCor] = useState(0);
   const grade = gradeDoMes(mes);
@@ -521,6 +537,7 @@ function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) =>
               {grade.flat().map((di, i) => (
                 <div key={i} className={`mu-dia ${di && di === dia ? "sel" : ""}`} onClick={() => di && setDia(di)}>
                   {di && <span className="mu-n">{Number(di.slice(8))}</span>}
+                  {di && (doPlano[di] ?? []).map((e, k) => <em key={`p${k}`} title="Vem do Planeje do mês (mude por lá)"><i style={{ background: CORES_EVENTO[e.c] }} />{e.t}</em>)}
                   {di && (d.eventos[di] ?? []).map((e, k) => <em key={k} onClick={(ev) => { ev.stopPropagation(); tirar(di, k); }} title="Clique para tirar"><i style={{ background: CORES_EVENTO[e.c] }} />{e.t}</em>)}
                 </div>
               ))}
@@ -538,7 +555,7 @@ function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) =>
           <button type="button" className="btn p peq" onClick={add}>Marcar</button>
         </>}
       </div>
-      <p className="ajuda">Clique em um evento no calendário para tirar. O nome de cada cor da legenda você pode trocar.</p>
+      <p className="ajuda">As ações e as datas do Planeje do mês, as datas comemorativas e os feriados nacionais entram sozinhos no calendário (para mudar as ações, mude no Planeje). Os eventos que você marcar aqui você tira clicando neles. O nome de cada cor da legenda você pode trocar.</p>
     </div>
   );
 }

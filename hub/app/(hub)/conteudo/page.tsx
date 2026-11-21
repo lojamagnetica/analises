@@ -174,13 +174,12 @@ function Analise() {
       <Cabecalho emoji="📈" titulo="O que o algoritmo precisa ver" sub="Valem para todo post, sem exceção" />
       <div className="grade g3">{m.algoritmo.map((r) => <div key={r.titulo} className="card"><div style={{ fontSize: 26 }}>{r.emoji}</div><b>{r.titulo}</b><p style={{ margin: "4px 0 0" }}>{r.texto}</p></div>)}</div>
 
-      <Cabecalho emoji="📋" titulo="Roteiros-modelo prontos" sub="Preencha os espaços no gerador de roteiro · até 30 segundos" />
+      <Cabecalho emoji="📋" titulo="Roteiros-modelo prontos" sub="Use como base para os seus vídeos · até 30 segundos" />
       <div className="grade g3">
         {a.roteiros.map((r) => (
           <div key={r.id} className="card">
             <b>{r.nome}</b>{r.quando && <p className="mudo" style={{ margin: "2px 0 8px", fontSize: 13.5 }}>{r.quando}</p>}
             {r.linhas.map((l) => <p key={l.rotulo} style={{ margin: "0 0 6px", fontSize: 14 }}><b style={{ color: "var(--accent)" }}>{l.rotulo}:</b> {l.fala}</p>)}
-            <Link className="btn s peq mt" href={`/conteudo/roteiro?m=${r.id}`}>Usar este modelo</Link>
           </div>
         ))}
       </div>

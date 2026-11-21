@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Excluir } from "@/components/Excluir";
-import { PautaCartao } from "@/components/PautaCartao";
-import { pautasDaLoja } from "@/lib/pautas";
 import { Titulo } from "@/components/Titulo";
 import { Trancado } from "@/components/Trancado";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
@@ -115,7 +113,6 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
           <label className="rotulo">Legenda</label><textarea rows={4} value={f.legenda} onChange={(e) => campo("legenda", e.target.value)} placeholder="Ocasião, faixa de preço, tamanhos e como comprar" />
           <div className="linha" style={{ gap: 6 }}>
             {f.legenda && <Copiar texto={f.legenda} rotulo="Copiar legenda" />}
-            <Link className="btn s peq" href={`/conteudo/roteiro?post=${p.id}${p.modelo ? `&m=${p.modelo}` : ""}`}>Preencher no gerador</Link>
           </div>
           <div className="grade g2" style={{ gap: "0 8px" }}>
             <div><label className="rotulo">Etapa</label><select value={f.status} onChange={(e) => campo("status", e.target.value as Post["status"])}>{STATUS.map((x) => <option key={x}>{x}</option>)}</select></div>
@@ -134,7 +131,6 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
 
 export default function Semana() {
   const { portal, pers, comoLoja } = usePortal();
-  const segmento = (pers.get(1)?.respostas?.segmento as string | undefined) ?? null;
   const [segunda, setSegunda] = useState(segundaDe(hoje()));
   const [ajustes, setAjustes] = useState<Ajustes | null>(null);
   const [aviso, setAviso] = useState("");
@@ -143,19 +139,18 @@ export default function Semana() {
   const [mesInicio, setMesInicio] = useState(hoje().slice(0, 8) + "01");
   const { dados, recarregar } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [c, datas, la, pautas, planos] = await Promise.all([
+    const [c, datas, la, planos] = await Promise.all([
       carregarConteudo(portal.id, comoLoja),
       sb.from("datas_comerciais").select("mes, dia, titulo"),
       sb.from("loja_acoes").select("acao_id").eq("portal_id", portal.id),
-      pautasDaLoja(segundaDe(hoje()), segmento),
       buscarPlanos(portal.id).catch(() => []),
     ]);
     const ids = (la.data ?? []).map((x) => x.acao_id as string);
     const acoes = ids.length ? (await sb.from("acoes").select("id, titulo, venda_inicio, data_acao").in("id", ids)).data ?? [] : [];
     // As ações do plano do mês (PLANEJE AQUI) também ganham stories de espera.
     const doPlano = planos.flatMap((pl) => (pl.dados.acoes ?? []).filter((x) => x.titulo && x.inicio && !(x.acao_id && ids.includes(x.acao_id))).map((x) => ({ titulo: x.titulo, data: x.inicio })));
-    return { ...c, pautas, planos, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: [...acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })), ...doPlano] };
-  }, [portal.id, comoLoja, segmento]);
+    return { ...c, planos, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: [...acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })), ...doPlano] };
+  }, [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
   const { m, a, conteudo, posts } = dados;
   if (!a) return <Trancado titulo="Programação da semana" texto={m.textos.trancado} />;
@@ -186,18 +181,6 @@ export default function Semana() {
         ))}
       </div>
       {aviso && <div className="aviso ok mb">{aviso}</div>}
-
-      {dados.pautas.length > 0 && (
-        <div className="mb">
-          <div className="linha entre" style={{ marginBottom: 8 }}>
-            <b>🔥 Pautas quentes da semana</b>
-            <Link className="link-loja" style={{ fontSize: 13.5 }} href="/conteudo/pautas">Ver todas →</Link>
-          </div>
-          <div className="grade g3">
-            {dados.pautas.slice(0, 3).map((p) => <PautaCartao key={p.id} p={p} portalId={portal.id} hora={aj.hora || m.textos.hora_padrao} compacta aoColocar={recarregar} />)}
-          </div>
-        </div>
-      )}
 
       {vista === "mes" ? (
         <Mes inicio={mesInicio} posts={posts} datas={dados.datas} lancamentos={dados.lancamentos}

@@ -1,18 +1,18 @@
 "use client";
 
 import Link from "next/link";
-// No Início da loja: os combinados que ela fez com a Camilla (com check e prazo) e quem acompanha de perto, a CS.
+// No Início da loja: os combinados que ela fez com a Camilla (com check e prazo).
 import { Carregando, useDados } from "@/lib/hub";
 import { dataCurta, hoje } from "@/lib/formato";
-import { buscarCombinados, buscarCs, marcarCombinado } from "@/lib/combinados";
+import { buscarCombinados, marcarCombinado } from "@/lib/combinados";
 
 export function SeusCombinados({ portalId }: { portalId: string }) {
   const { dados, recarregar } = useDados(async () => {
-    const [c, cs] = await Promise.all([buscarCombinados(portalId), buscarCs()]);
-    return { combinados: c.filter((x) => x.quem === "loja"), cs };
+    const c = await buscarCombinados(portalId);
+    return { combinados: c.filter((x) => x.quem === "loja") };
   }, [portalId]);
   if (!dados) return <Carregando />;
-  const { combinados, cs } = dados;
+  const { combinados } = dados;
   if (!combinados.length) return null;
   const abertos = combinados.filter((c) => c.status === "aberto").length;
   return (
@@ -31,11 +31,6 @@ export function SeusCombinados({ portalId }: { portalId: string }) {
             </span>
           </label>
         ))}
-      </div>
-      <div className="card mb linha" style={{ gap: 12, alignItems: "center" }}>
-        <span aria-hidden style={{ fontSize: 28 }}>🤝</span>
-        <span><b>{cs.nome} é a sua CS e acompanha você de perto.</b><br /><span className="mudo">Ela olha o seu Hub e fala com você para ajudar a cumprir cada combinado.</span></span>
-        {cs.whatsapp && <a className="btn s peq" href={`https://wa.me/55${cs.whatsapp.replace(/\D/g, "").replace(/^55/, "")}`} target="_blank" rel="noopener">Falar com a {cs.nome}</a>}
       </div>
     </>
   );

@@ -3,6 +3,7 @@
 // A leitura da semana: toda segunda às 12h o Hub monta o rascunho de cada loja com os números (o agente);
 // a equipe revisa e encaminha, a Camilla publica (o banco garante). Cada publicação guarda o par rascunho → versão final para o agente aprender.
 import { diaDeLoja, feriadoNacional } from "@/lib/feriados";
+import { lojaFechada, type EscalaMes } from "@/lib/escala";
 import { fimDoMes, problemasDoCaixa, type Caixa } from "@/lib/caixa";
 import { hoje } from "@/lib/formato";
 import { diasComArquivoDoCaixa } from "@/lib/rotina";
@@ -116,13 +117,15 @@ export async function salvarNumerosSemana(n: NumerosSemana) {
 }
 
 /** Dias da semana atual (segunda a sábado) com e sem caixa lançado. */
-export async function caixaDaSemana(portalId: string) {
-  const semana = semanaDe();
+export async function caixaDaSemana(portalId: string, semana = semanaDe()) {
   const [{ data }, { count }] = await Promise.all([
     sb().from("loja_caixa").select("dia, loja, faturamento, vendas, pecas, pagamentos, vendedoras, origem, justificativa").eq("portal_id", portalId).gte("dia", semana),
     sb().from("loja_equipe").select("id", { count: "exact", head: true }).eq("portal_id", portalId).eq("ativo", true),
   ]);
   const { data: pt } = await sb().from("portais").select("regras_caixa").eq("id", portalId).maybeSingle();
+  // Dias em que a loja fica fechada, marcados na Escala do mês do mural (ex.: fecha às segundas): não contam como caixa faltando.
+  const { data: murais } = await sb().from("loja_mural").select("dados").eq("portal_id", portalId);
+  const fechadaNoDia = (d: string) => (murais ?? []).some((mu) => { const e = (mu.dados as { escala?: Record<string, EscalaMes> } | null)?.escala?.[d.slice(0, 7)]; return !!e && new Date(`${d}T12:00:00Z`).getUTCDay() !== 0 && lojaFechada(e, new Date(`${d}T12:00:00Z`).getUTCDay()); });
   const lancados = new Set((data ?? []).map((c) => c.dia as string));
   // O que falta ou não bate em cada dia lançado (com o nome da loja, no portal com mais de uma).
   const problemas = new Map<string, string[]>();
@@ -132,7 +135,7 @@ export async function caixaDaSemana(portalId: string) {
   }
   const h = hoje();
   // Dia sem número digitado mas com os arquivos do caixa enviados também conta como lançado.
-  const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d) && diaDeLoja(d));
+  const semNumero = [0, 1, 2, 3, 4, 5].map((i) => somaDias(semana, i)).filter((d) => d <= h && !lancados.has(d) && diaDeLoja(d) && !fechadaNoDia(d));
   const comArquivo = await diasComArquivoDoCaixa(portalId, semNumero).catch(() => new Set<string>());
-  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h, problemas: problemas.get(d) ?? [], feriado: feriadoNacional(d) }; });
+  return [0, 1, 2, 3, 4, 5].map((i) => { const d = somaDias(semana, i); return { dia: d, lancado: lancados.has(d) || comArquivo.has(d), passou: d < h, hoje: d === h, problemas: problemas.get(d) ?? [], feriado: feriadoNacional(d) ?? (fechadaNoDia(d) ? "Loja fechada" : null) }; });
 }

@@ -5,6 +5,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
+import { ESCALA, avisoDoMes, ehDona, codigoDoDia, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { feriadoNacional } from "@/lib/feriados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { hoje } from "@/lib/formato";
 import { semanaDe } from "@/lib/leitura";
@@ -126,7 +128,8 @@ export default function Mural() {
       )}
 
       <Metas portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
-      <Calendario d={d} guardar={guardar} />
+      <EscalaDoMes portalId={portal.id} loja={loja} varias={lojas.length > 1} d={d} guardar={guardar} />
+      <Calendario portalId={portal.id} d={d} guardar={guardar} />
       <DiaDoConhecimento portalId={portal.id} loja={loja} varias={false} d={d} guardar={guardar} />
       {!!recarregar && null}
     </>
@@ -243,10 +246,13 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
       // A meta que a equipe escreveu para esta semana (a partir do caixa) vale mais que a calculada; sem ela, só a semana 1 sai preenchida.
       const doCaixa = d.metas_semana?.[semana]?.[p.id];
       const semanal = doCaixa ?? (nSemana === 1 ? calculada : null);
-      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, b: bolinha(pa, tkm, d.pa, d.tkm) };
+      return { id: p.id, nome: p.nome.split(" ")[0], loja: todas ? lojaDe(p) : "", pa, tkm, fat, semanal, calculada, mensal: metas[p.id] ?? null, b: bolinha(pa, tkm, d.pa, d.tkm) };
     });
   }, [dados, loja, varias, semana, mes, nSemana, d.pa, d.tkm, d.metas_todas, d.metas_semana]);
   if (!dados) return <Carregando />;
+  // Meta geral da loja no mês (do Planeje) e o que já vendeu no mês, pelo caixa.
+  const metaLoja = metaDoPlano(dados.plano?.dados ?? {});
+  const vendidoMes = dados.caixas.filter((x: Caixa) => x.dia.startsWith(mes)).reduce((t: number, x: Caixa) => t + (Number(x.faturamento) || 0), 0);
   const vazias = Math.max(0, 6 - linhas.length);
   // Altura de cada linha em mm: 14 até 7 linhas; mais que isso, o mínimo que ainda comporta a bolinha de 12 mm.
   const totalLinhas = linhas.length + vazias;
@@ -292,16 +298,16 @@ function Metas({ portalId, loja, varias, d, guardar }: { portalId: string; loja:
         <EscalaA4>
           <div className="mu-pag mu-m2" style={{ fontFamily: "Poppins, Arial, sans-serif" }}>
             <div className="mu-m2-topo" style={{ background: d.cores.f2 }}><h1>METAS DA SEMANA {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
-            <h2>INDICADORES E ACOMPANHAMENTO</h2>
+            <h2>INDICADORES E ACOMPANHAMENTO · META DA LOJA EM {nomeMes(mes).split(" ")[0].toUpperCase()}: {metaLoja ? brl(metaLoja) : "R$ ______"} · VENDIDO NO MÊS: {vendidoMes > 0 ? brl(vendidoMes) : "R$ ______"}</h2>
             <table style={{ ["--lh" as string]: `${altLinha}mm` }}>
-              <colgroup><col style={{ width: "50mm" }} /><col style={{ width: "40mm" }} /><col style={{ width: "44mm" }} /><col style={{ width: "52mm" }} /><col style={{ width: "50mm" }} /><col style={{ width: "14mm" }} /></colgroup>
-              <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META DA SEMANA {nSemana}</th><th>REALIZADO</th><th style={{ fontSize: "2.2mm" }}>BOLINHA</th></tr></thead>
+              <colgroup><col style={{ width: "44mm" }} /><col style={{ width: "33mm" }} /><col style={{ width: "37mm" }} /><col style={{ width: "40mm" }} /><col style={{ width: "41mm" }} /><col style={{ width: "41mm" }} /><col style={{ width: "14mm" }} /></colgroup>
+              <thead><tr><th>VENDEDORA</th><th>P.A. <i>(Meta: {fmt1(d.pa)})</i></th><th>TKM <i>(Meta: {brl(d.tkm)})</i></th><th>META DO MÊS</th><th>META DA SEMANA {nSemana}</th><th>REALIZADO NA SEMANA</th><th style={{ fontSize: "2.2mm" }}>BOLINHA</th></tr></thead>
               <tbody>
                 {linhas.map((l) => (
-                  <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "2.6mm" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td><td>{l.fat > 0 ? brl(l.fat) : ""}</td>
+                  <tr key={l.id}><td>{l.nome}{l.loja && <small style={{ display: "block", fontWeight: 400, opacity: .7, fontSize: "2.6mm" }}>{l.loja}</small>}</td><td>{l.pa != null ? fmt1(l.pa) : ""}</td><td>{l.tkm != null ? brl(l.tkm) : ""}</td><td>{l.mensal ? brl(l.mensal) : ""}</td><td>{l.semanal ? brl(l.semanal) : ""}</td><td>{l.fat > 0 ? brl(l.fat) : ""}</td>
                     <td><span className="mu-b12" style={l.b ? { background: COR_BOLA[l.b], borderColor: COR_BOLA[l.b] } : undefined} /></td></tr>
                 ))}
-                {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td /><td><span className="mu-b12" /></td></tr>)}
+                {Array.from({ length: vazias }, (_, i) => <tr key={`v${i}`}><td /><td /><td /><td /><td /><td /><td><span className="mu-b12" /></td></tr>)}
               </tbody>
             </table>
             <h3 style={{ top: `${topoLegenda}mm` }}>LEGENDA DA BOLINHA</h3>
@@ -394,8 +400,146 @@ function DiaDoConhecimento({ portalId, loja, varias, d, guardar }: { portalId: s
   );
 }
 
-function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) => void }) {
+/** Escala do mês: uma linha por pessoa do time, uma coluna por dia. Tocar no dia troca: folga, só manhã, só tarde, férias.
+ *  Embaixo, a conferência das regras da jornada (fim da escala 6x1 a partir de 16/12/2026), como na ferramenta Escala sem susto. */
+function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja: string; varias: boolean; d: DadosMural; guardar: (n: DadosMural) => void }) {
   const [mes, setMes] = useState(hoje().slice(0, 7));
+  const lojaDaPessoa = useRef<Record<string, string>>({});
+  const [editar, setEditar] = useState(false);
+  const { dados: time } = useDados(async () => {
+    const { data } = await supabaseBrowser().from("loja_equipe").select("nome, loja, funcao").eq("portal_id", portalId).eq("ativo", true).order("nome");
+    // Todas as pessoas de todas as lojas do portal na mesma folha (com o nome da loja quando há mais de uma). Dona não entra.
+    const lista = ((data ?? []) as { nome: string; loja: string | null; funcao: string | null }[]).filter((p) => !ehDona(p.funcao));
+    lojaDaPessoa.current = Object.fromEntries(lista.map((p) => [p.nome, varias ? p.loja ?? "" : ""]));
+    return lista.sort((x, y) => (x.loja ?? "").localeCompare(y.loja ?? "") || x.nome.localeCompare(y.nome)).map((p) => p.nome);
+  }, [portalId, varias]);
+  const [a, m] = mes.split("-").map(Number);
+  const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate();
+  const dias = Array.from({ length: nDias }, (_, i) => String(i + 1).padStart(2, "0"));
+  const semana = (dd: string) => new Date(Date.UTC(a, m - 1, Number(dd))).getUTCDay();
+  const LETRA = ["D", "S", "T", "Q", "Q", "S", "S"];
+  const anterior = d.escala?.[somarMes(mes, -1)];
+  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {}, fora: anterior?.fora ?? [], extras: anterior?.extras ?? [] };
+  const nomes = pessoasDaEscala(time ?? [], doMes);
+  const [nova, setNova] = useState("");
+  const incluir = () => { const n = nova.trim(); if (!n) return; salvarMes({ ...doMes, extras: [...new Set([...(doMes.extras ?? []), n])], fora: (doMes.fora ?? []).filter((x) => x !== n) }); setNova(""); };
+  const tirar = (n: string) => { if (!confirm(`Tirar ${n.split(" ")[0]} da escala de ${nomeMes(mes).toLowerCase()}?`)) return; salvarMes({ ...doMes, extras: (doMes.extras ?? []).filter((x) => x !== n), fora: (time ?? []).includes(n) ? [...new Set([...(doMes.fora ?? []), n])] : doMes.fora ?? [] }); };
+  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, sabado: anterior.pessoas[n].sabado } : {}) };
+  const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
+  const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
+  const estilo = (c: string) => { const x = ESCALA.find((y) => y.c === c); return x ? { background: x.cor, color: x.letra } : undefined; };
+  // A conferência considera todo o time, mesmo quem ainda não tem nada marcado (dia normal em todos os dias).
+  const alertas = nomes.length ? conferirEscala(mes, { ...doMes, pessoas: Object.fromEntries(nomes.map((n) => [n, pessoa(n)])) }) : [];
+  const erros = alertas.filter((x) => x.erro).length;
+  const fechado = (dd: string) => lojaFechada(doMes, semana(dd));
+  const DIAS_FECHA = [["Domingo", 0], ["Segunda", 1], ["Terça", 2], ["Quarta", 3], ["Quinta", 4], ["Sexta", 5], ["Sábado", 6]] as const;
+  const marcarFecha = (wd: number, sim: boolean) => {
+    if (wd === 0) return salvarMes({ ...doMes, abreDomingo: !sim });
+    const f = new Set(doMes.fecha ?? []); if (sim) f.add(wd); else f.delete(wd);
+    salvarMes({ ...doMes, fecha: [...f].sort() });
+  };
+  const hora = (h: string) => { const [hh, mm] = h.split(":"); return `${Number(hh)}h${mm && mm !== "00" ? mm : ""}`; };
+  return (
+    <div className="card mb mu-folha" data-folha="escala">
+      <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
+        <b>Escala do mês</b>
+        <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, -1))}>‹</button><span>{nomeMes(mes)}</span>
+          <button type="button" className="btn s peq" onClick={() => setMes(somarMes(mes, 1))}>›</button>
+          <button type="button" className="btn s peq" onClick={() => setEditar(!editar)}>{editar ? "Fechar" : "Time e horários"}</button>
+          <button type="button" className="btn p peq" onClick={() => imprimir("escala", false)}>Imprimir esta folha</button>
+        </span>
+      </div>
+      <div className="aviso mb">⚖️ {avisoDoMes(mes)}</div>
+      {editar && (
+        <div className="card mb" style={{ background: "var(--fundo, #faf7f3)" }}>
+          <b>Dias em que a loja fica fechada</b>
+          <div className="linha" style={{ gap: 10, flexWrap: "wrap", margin: "4px 0 10px" }}>
+            {DIAS_FECHA.map(([r, wd]) => <label key={wd} className="marcar"><input type="checkbox" checked={lojaFechada(doMes, wd)} onChange={(e) => marcarFecha(wd, e.target.checked)} /><span>{r}</span></label>)}
+          </div>
+          {nomes.map((n) => { const x = pessoa(n); return (
+            <div key={n} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
+              <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")} <button type="button" className="link-loja" style={{ color: "var(--red)", fontWeight: 400, fontSize: 12 }} onClick={() => tirar(n)}>tirar</button></b>
+              <label className="ajuda">Entra<input type="time" value={x.entrada} onChange={(e) => mudar(n, { ...x, entrada: e.target.value })} /></label>
+              <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x, saida: e.target.value })} /></label>
+              <label className="ajuda">Almoço (min)<input type="number" min={0} step={15} value={x.almoco} onChange={(e) => mudar(n, { ...x, almoco: Number(e.target.value) || 0 })} style={{ width: 80 }} /></label>
+              <small className="mudo">{String(horasDoDia(x)).replace(".", ",")}h por dia</small>
+              {!lojaFechada(doMes, 6) && (x.sabado ? <>
+                <span className="mudo">· Sábado:</span>
+                <label className="ajuda">Entra<input type="time" value={x.sabado.entrada} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, entrada: e.target.value } })} /></label>
+                <label className="ajuda">Sai<input type="time" value={x.sabado.saida} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, saida: e.target.value } })} /></label>
+                <label className="ajuda">Almoço<input type="number" min={0} step={15} value={x.sabado.almoco} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, almoco: Number(e.target.value) || 0 } })} style={{ width: 70 }} /></label>
+                <button type="button" className="link-loja" onClick={() => { const y = { ...x }; delete y.sabado; mudar(n, y); }}>igual aos outros dias</button>
+              </> : <button type="button" className="link-loja" onClick={() => mudar(n, { ...x, sabado: { entrada: x.entrada, saida: x.saida, almoco: x.almoco } })}>Sábado com outro horário</button>)}
+            </div>
+          ); })}
+          <div className="linha" style={{ gap: 6, flexWrap: "wrap", margin: "10px 0 6px", alignItems: "center" }}>
+            <input value={nova} onChange={(e) => setNova(e.target.value)} onKeyDown={(e) => e.key === "Enter" && incluir()} placeholder="Nome de quem entra na escala" style={{ maxWidth: 260 }} />
+            <button type="button" className="btn s peq" disabled={!nova.trim()} onClick={incluir}>+ Incluir na escala</button>
+          </div>
+          {(doMes.fora ?? []).length > 0 && <p className="ajuda" style={{ margin: "0 0 6px" }}>Fora da escala deste mês: {(doMes.fora ?? []).map((n) => <button key={n} type="button" className="link-loja" style={{ marginRight: 8 }} onClick={() => salvarMes({ ...doMes, fora: (doMes.fora ?? []).filter((x) => x !== n) })}>{n.split(" ")[0]} (voltar)</button>)}</p>}
+          <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. Na escala, toque no dia para marcar folga, feriado ou férias.</p>
+        </div>
+      )}
+      <div className="mu-moldura"><EscalaA4>
+        <div className="mu-pag mu-e2" style={{ fontFamily: "Poppins, Arial, sans-serif", ["--lh" as string]: `${Math.min(14, Math.max(6.5, 132 / Math.max(1, nomes.length + Math.max(2, 8 - nomes.length))))}mm` }}>
+          <div className="mu-topo" style={{ background: d.cores.f2 }}><h1>ESCALA DE {nomeMes(mes).split(" ")[0].toUpperCase()}</h1></div>
+          <table>
+            <thead>
+              <tr><th className="mu-nome">QUEM</th><th className="mu-hor">HORÁRIO</th>{dias.map((dd) => <th key={dd} className={fechado(dd) || feriadoNacional(`${mes}-${dd}`) ? "mu-dom" : ""}>{LETRA[semana(dd)]}<br />{Number(dd)}</th>)}</tr>
+            </thead>
+            <tbody>
+              {nomes.map((n) => { const x = pessoa(n); return (
+                <tr key={n}>
+                  <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
+                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
+                  {dias.map((dd) => { const dia = `${mes}-${dd}`; const c = codigoDoDia(doMes, x, dia); return (
+                    <td key={dd} style={estilo(c)} onClick={() => mudar(n, { ...x, dias: trocarCodigo(doMes, x, dia) })}
+                      title={fechado(dd) && c === "F" ? "Loja fechada: conta como folga" : feriadoNacional(dia) ? `${feriadoNacional(dia)} · toque para trocar` : "Toque para trocar"}>{c}</td>
+                  ); })}
+                </tr>
+              ); })}
+              {/* Linhas em branco para quem entrar no mês (escreve à mão na folha impressa). */}
+              {Array.from({ length: Math.max(2, 8 - nomes.length) }, (_, i) => <tr key={`v${i}`} className="mu-vazia"><td className="mu-nome" /><td className="mu-hor" />{dias.map((dd) => <td key={dd} />)}</tr>)}
+            </tbody>
+          </table>
+          <p className="mu-leg" style={{ marginTop: "2%" }}>
+            {ESCALA.map((x) => <span key={x.c}><i style={{ background: x.cor }} /><b>{x.c}</b> {x.nome}</span>)}
+            <span>· loja fechada conta como folga</span>
+          </p>
+          {d.simbolo && <img className="mu-simb" src={d.simbolo} alt="" />}
+        </div>
+      </EscalaA4></div>
+      {!nomes.length && <p className="aviso mt">Cadastre o time em Minha equipe para montar a escala.</p>}
+      {nomes.length > 0 && (
+        <div className="mt">
+          <b>{alertas.length ? `Conferência das regras · ${erros ? `${erros} para corrigir` : "só avisos"}` : "✓ A escala segue todas as regras"}</b>
+          {alertas.map((x, i) => <p key={i} style={{ margin: "4px 0", color: x.erro ? "var(--red)" : undefined }}>{x.erro ? "⚠️" : "ℹ️"} <b>{x.regra}:</b> {x.texto}</p>)}
+        </div>
+      )}
+      <p className="ajuda" style={{ marginBottom: 0 }}>Toque no dia para trocar: T (trabalha), F (folga), FE (feriado) e FS (férias). Loja fechada já sai como folga e feriado nacional como FE. Salva sozinho. A conferência segue a transição do fim da escala 6x1 (PEC 221/2019); a convenção coletiva da sua categoria pode ter regras próprias para domingo, feriado e banco de horas: confirme com o seu contador.</p>
+    </div>
+  );
+}
+
+function Calendario({ portalId, d, guardar }: { portalId: string; d: DadosMural; guardar: (n: DadosMural) => void }) {
+  const [mes, setMes] = useState(hoje().slice(0, 7));
+  // O que entrou no Planeje do mês aparece sozinho no calendário: as ações no dia de início e as datas especiais que a loja vai trabalhar.
+  // Também as datas comemorativas do mês (as mesmas do Planeje, para todas as lojas) e os feriados nacionais.
+  const { dados: plano } = useDados(async () => {
+    const [p, datas] = await Promise.all([
+      buscarPlano(portalId, mes).catch(() => null),
+      supabaseBrowser().from("datas_comerciais").select("dia, titulo").eq("mes", Number(mes.slice(5, 7)) - 1).not("dia", "is", null).then((r) => (r.data ?? []) as { dia: number; titulo: string }[]),
+    ]);
+    return { dados: p?.dados, comemorativas: datas };
+  }, [portalId, mes]);
+  const doPlano: Record<string, { t: string; c: number }[]> = {};
+  const por = (dia: string, t: string, c: number) => { if (!dia.startsWith(mes) || !t.trim()) return; if ((d.eventos[dia] ?? []).some((e) => e.t.trim().toLowerCase() === t.trim().toLowerCase())) return; (doPlano[dia] ??= []).push({ t: t.trim(), c }); };
+  for (const a of plano?.dados?.acoes ?? []) if (a.inicio) por(a.inicio.slice(0, 10), a.titulo, 0);
+  for (const x of plano?.dados?.datas ?? []) if (x.trabalhar && x.dia) por(`${mes}-${String(x.dia).padStart(2, "0")}`, x.titulo, 1);
+  const ja = (dia: string, t: string) => [...(doPlano[dia] ?? []), ...(d.eventos[dia] ?? [])].some((e) => { const x = e.t.toLowerCase(), y = t.toLowerCase(); return x.includes(y) || y.includes(x); });
+  for (const x of plano?.comemorativas ?? []) { const dia = `${mes}-${String(x.dia).padStart(2, "0")}`; if (!ja(dia, x.titulo)) por(dia, x.titulo, 1); }
+  for (const dia of gradeDoMes(mes).flat()) { const f = dia && feriadoNacional(dia); if (dia && f && !ja(dia, f)) por(dia, `${f} (feriado)`, 2); }
   const [dia, setDia] = useState<string | null>(null);
   const [txt, setTxt] = useState(""); const [cor, setCor] = useState(0);
   const grade = gradeDoMes(mes);
@@ -429,6 +573,7 @@ function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) =>
               {grade.flat().map((di, i) => (
                 <div key={i} className={`mu-dia ${di && di === dia ? "sel" : ""}`} onClick={() => di && setDia(di)}>
                   {di && <span className="mu-n">{Number(di.slice(8))}</span>}
+                  {di && (doPlano[di] ?? []).map((e, k) => <em key={`p${k}`} title="Vem do Planeje do mês (mude por lá)"><i style={{ background: CORES_EVENTO[e.c] }} />{e.t}</em>)}
                   {di && (d.eventos[di] ?? []).map((e, k) => <em key={k} onClick={(ev) => { ev.stopPropagation(); tirar(di, k); }} title="Clique para tirar"><i style={{ background: CORES_EVENTO[e.c] }} />{e.t}</em>)}
                 </div>
               ))}
@@ -446,7 +591,7 @@ function Calendario({ d, guardar }: { d: DadosMural; guardar: (n: DadosMural) =>
           <button type="button" className="btn p peq" onClick={add}>Marcar</button>
         </>}
       </div>
-      <p className="ajuda">Clique em um evento no calendário para tirar. O nome de cada cor da legenda você pode trocar.</p>
+      <p className="ajuda">As ações e as datas do Planeje do mês, as datas comemorativas e os feriados nacionais entram sozinhos no calendário (para mudar as ações, mude no Planeje). Os eventos que você marcar aqui você tira clicando neles. O nome de cada cor da legenda você pode trocar.</p>
     </div>
   );
 }
@@ -494,7 +639,7 @@ const CSS = `
 .mu-m2{padding:0;color:#111;position:relative;width:297mm;height:210mm;min-width:0;aspect-ratio:auto}
 .mu-m2-topo{height:26mm;display:flex;align-items:center;justify-content:center;color:#fff}
 .mu-m2-topo h1{margin:0;color:#fff!important;font-weight:800;font-size:8.5mm}
-.mu-m2 h2{position:absolute;left:0;top:32mm;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
+.mu-m2 h2{position:absolute;left:0;top:32mm;width:297mm;text-align:center;font-weight:800;font-size:4mm;margin:0}
 .mu-m2 h3{position:absolute;left:0;width:297mm;text-align:center;font-weight:800;font-size:5mm;margin:0}
 .mu-m2 table{position:absolute;left:23.5mm;top:44mm;width:250mm;border-collapse:collapse;table-layout:fixed}
 .mu-m2 th,.mu-m2 td{border:.3mm solid #111;padding:0;text-align:center;vertical-align:middle}
@@ -510,6 +655,23 @@ const CSS = `
 .mu-conhec .mu-topo h1{font-size:clamp(12px,2.8vw,32px)}
 .mu-conhec h2{font-size:clamp(8px,1.5vw,18px)}
 .mu-conhec td.mu-tema{text-align:left;padding:0 2%;font-size:clamp(9px,1.8vw,21px);white-space:normal}
+.mu-e2{width:297mm;height:210mm;min-width:0;aspect-ratio:auto;padding:0;color:#111;display:flex;flex-direction:column}
+.mu-e2 .mu-topo{margin:8mm 10mm 0;padding:3mm 0}
+.mu-e2 .mu-topo h1{font-size:9mm}
+.mu-e2 table{border-collapse:collapse;margin:5mm 10mm 0;width:277mm;table-layout:fixed}
+.mu-e2 th,.mu-e2 td{border:.3mm solid #111;text-align:center;padding:0;font-size:3mm;font-weight:600}
+.mu-e2 th{background:#111;color:#fff;line-height:1.15;height:9mm;font-size:2.8mm}
+.mu-e2 th.mu-dom{background:#555}.mu-e2 td.mu-dom{background:#eee}
+.mu-e2 td{height:var(--lh,12mm);cursor:pointer;font-size:3.4mm;font-weight:700}
+.mu-e2 .mu-nome{width:34mm;text-align:left;padding-left:1.5mm}.mu-e2 .mu-hor{width:24mm;font-size:2.8mm}
+.mu-e2 td.mu-nome{font-size:3.4mm}.mu-e2 td.mu-hor small{font-size:2.4mm;font-weight:500}
+.mu-e2 td.mu-nome,.mu-e2 td.mu-hor{cursor:default}
+.mu-e2 td.mu-fech{cursor:default;background:#d6d6d6}
+.mu-e2 tr.mu-vazia td{cursor:default}
+.mu-e2 td.mu-nome small{font-size:2.4mm;font-weight:500;opacity:.7}
+.mu-e2 .mu-leg{display:flex;flex-wrap:wrap;justify-content:center;gap:6mm;font-size:3.2mm;margin:4mm 10mm 0}
+.mu-e2 .mu-leg i{width:4.5mm;height:4.5mm}
+.mu-e2 .mu-simb{left:8mm;bottom:5mm;height:14mm}
 .mu-cal{padding:2% 3% 4%;display:flex;flex-direction:column;color:#000}
 .mu-cal h1{text-align:center;font-weight:800;font-size:clamp(16px,4vw,46px);margin:0 0 1.5%}
 .mu-quadro{background:#fff;border-radius:22px;padding:1.5% 2%;flex:1;display:flex;flex-direction:column}
@@ -533,11 +695,16 @@ const CSS = `
   body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura,body[data-imprimir="cartaz"] [data-folha="cartaz"] .mu-moldura *,
   body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura,body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura *,
   body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura,body[data-imprimir="conhec"] [data-folha="conhec"] .mu-moldura *,
+  body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura,body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura *,
   body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura,body[data-imprimir="cal"] [data-folha="cal"] .mu-moldura *{visibility:visible!important}
   body[data-imprimir] [data-folha] .mu-moldura{position:fixed;left:0;top:0;width:100vw;height:100vh;overflow:visible}
   body[data-imprimir] .mu-pag{min-width:0;width:100vw;height:100vh;aspect-ratio:auto;max-width:none}
   body[data-imprimir] .mu-cartaz{max-width:none;margin:0}
-  body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura{width:297mm;height:210mm;overflow:hidden}
+  body[data-imprimir="metas"] [data-folha="metas"] .mu-moldura,body[data-imprimir="escala"] [data-folha="escala"] .mu-moldura{width:297mm;height:210mm;overflow:hidden}
+  body[data-imprimir="escala"] .mu-esc{height:210mm!important;width:297mm!important}
+  body[data-imprimir="escala"] .mu-a4{transform:none!important}
+  body[data-imprimir] .mu-pag.mu-e2{width:297mm;height:210mm;min-width:0;max-width:none}
+  html:has(body[data-imprimir="escala"]),body[data-imprimir="escala"]{height:210mm!important;max-height:210mm;overflow:hidden!important}
   body[data-imprimir] .mu-pag.mu-m2{width:297mm;height:210mm;min-width:0;max-width:none}
   body[data-imprimir="metas"] .mu-esc{height:210mm!important;width:297mm!important}
   body[data-imprimir="metas"] .mu-a4{transform:none!important}

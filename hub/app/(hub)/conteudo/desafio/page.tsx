@@ -105,7 +105,6 @@ export default function Desafio() {
                     return <label key={k} className="marcar"><input type="checkbox" checked={feitas.includes(k)} onChange={() => salvar({ ...ds, feitas: feitas.includes(k) ? feitas.filter((y) => y !== k) : [...feitas, k] })} /><span>{t}</span></label>;
                   })}
                   {x.dica && <p className="ajuda">{x.dica}</p>}
-                  {x.roteiro && <Link className="btn s peq mt" href={`/conteudo/roteiro?m=${x.roteiro}`}>Criar o roteiro do dia</Link>}
                 </div>
               );
             })}

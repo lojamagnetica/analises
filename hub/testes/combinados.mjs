@@ -27,7 +27,7 @@ const browser = await chromium.launch();
   const t = await page.locator("main").innerText();
   ok(/Lançar o caixa todos os dias/.test(t), "a loja vê o combinado dela");
   ok(!/Combinado da Claudia com a Camilla/.test(t), "não mostra o que é da equipe");
-  ok(/Claudia é a sua CS e acompanha você de perto/.test(t), "mostra quem acompanha a loja");
+  ok(!/acompanha você de perto/.test(t), "não mostra o cartão da CS");
   await page.getByRole("checkbox").first().click();
   await page.waitForTimeout(500);
   ok(banco.chamadas.some((c) => c.rpc === "combinado_marcar" && c.args.p_feito === true && c.args.p_id === "c1"), "marcar o combinado chama o banco");

@@ -3,6 +3,7 @@
 // Mural da loja: as folhas que vão na parede (missão/visão/valores, versículo, metas da semana e calendário).
 // O texto de cada loja fica no banco (nada de loja no código). P.A. e TKM da semana são digitáveis.
 import { supabaseBrowser } from "@/lib/supabase/client";
+import type { EscalaMes } from "@/lib/escala";
 
 export type CorEvento = { cor: string; nome: string };
 export type DadosMural = {
@@ -29,6 +30,8 @@ export type DadosMural = {
   legenda: CorEvento[];
   /** Dia do conhecimento, por mês (AAAA-MM): os temas que a gestão definiu e, por semana, o tema sorteado e quem apresenta. */
   conhecimento: Record<string, Conhecimento>;
+  /** Escala do mês (AAAA-MM): se a loja abre no domingo e, por pessoa, entrada, saída, almoço e o código de cada dia (lib/escala.ts). */
+  escala?: Record<string, EscalaMes>;
 };
 export type Conhecimento = { temas: string[]; semanas: Record<string, { tema: string; pessoa: string }> };
 
@@ -43,7 +46,7 @@ export const muralVazio = (): DadosMural => ({
 });
 export const completarMural = (d?: Partial<DadosMural>): DadosMural => {
   const v = muralVazio();
-  return { ...v, ...d, cartaz: { ...v.cartaz, ...(d?.cartaz ?? {}) }, cores: { ...v.cores, ...(d?.cores ?? {}) }, legenda: d?.legenda?.length ? d.legenda : v.legenda, eventos: d?.eventos ?? {}, valores: d?.valores ?? [], conhecimento: d?.conhecimento ?? {} };
+  return { ...v, ...d, cartaz: { ...v.cartaz, ...(d?.cartaz ?? {}) }, cores: { ...v.cores, ...(d?.cores ?? {}) }, legenda: d?.legenda?.length ? d.legenda : v.legenda, eventos: d?.eventos ?? {}, valores: d?.valores ?? [], conhecimento: d?.conhecimento ?? {}, escala: d?.escala ?? {} };
 };
 
 export async function buscarMural(portalId: string, loja: string) {

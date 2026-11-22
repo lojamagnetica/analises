@@ -5,7 +5,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco"
   | "numero" | "quiz" | "manchete" | "lista" | "comparar" | "roteiro"
-  | "chamada" | "passos" | "post" | "meme" | "tendencia" | "destaque" | "tweet";
+  | "chamada" | "passos" | "post" | "meme" | "tendencia" | "destaque" | "tweet"
+  | "live" | "celular" | "motivo";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -462,6 +463,69 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     rico(d.tit, 62, 90, y, 900, c.texto, c.texto, "left", 1.25);
     x.fillStyle = c.texto; x.globalAlpha = .35; x.fillRect(90, 1350 - 130, 900, 2); x.globalAlpha = 1;
     espacado(d.pre || id.perfil?.assinatura || id.perfil?.nome || "", 18, 540, 1350 - 80, c.texto);
+  }
+  if (formato === "live" || formato === "motivo") {
+    // Divulgação de live: linha "ao vivo" com a bolinha, título grande e o texto de apoio. Sem foto.
+    logo(160, 120, 150);
+    const bol = (y: number) => {
+      x.font = "600 24px MontMS, Arial"; const t = (d.kic || "").toUpperCase(), sp = 24 * 0.3;
+      x.fillStyle = c.destaque; x.beginPath(); x.arc(94, y - 8, 9, 0, Math.PI * 2); x.fill();
+      x.fillStyle = c.texto; x.textAlign = "left"; let p = 122; [...t].forEach((l) => { x.fillText(l, p, y); p += x.measureText(l).width + sp; });
+    };
+    const tituloEsq = (t: string, px: number, y: number, max: number) => {
+      x.font = `italic 300 ${px}px MontCG, Georgia, serif`; x.fillStyle = c.texto; x.textAlign = "left";
+      const ls: string[] = []; let l = "";
+      (t || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > max && l) { ls.push(l); l = p; } else l = tt; });
+      ls.push(l); ls.forEach((ln, k) => x.fillText(ln, 84, y + k * px * 1.08)); return ls.length;
+    };
+    if (formato === "live") {
+      bol(420);
+      const n = tituloEsq(d.tit, 100, 560, 900);
+      if (d.pre) rico(d.pre, 32, 84, 560 + (n - 1) * 108 + 90, 820, c.texto, c.destaque);
+      espacado(id.perfil?.assinatura || id.rodape || "", 20, 540, 1350 - 80, c.texto);
+    } else {
+      bol(380);
+      const n = tituloEsq(d.tit, 90, 510, 900);
+      let y = 510 + (n - 1) * 97 + 110;
+      const lista = itens(d.pre), chamada = lista.find((v) => v.startsWith("→"));
+      lista.filter((v) => !v.startsWith("→")).slice(0, 4).forEach((it) => {
+        x.fillStyle = c.destaque; x.fillRect(84, y - 11, 24, 3);
+        const k = rico(it, 32, 132, y, 820, c.texto, c.destaque, "left", 1.3); y += k * 32 * 1.3 + 34;
+      });
+      if (chamada) {
+        x.fillStyle = c.texto; x.fillRect(84, 1350 - 230, 600, 2);
+        rico(chamada.replace(/^→\s*/, ""), 30, 84, 1350 - 170, 820, c.texto, c.destaque);
+      }
+      espacado(id.perfil?.arroba || "", 20, 540, 1350 - 70, c.texto);
+    }
+  }
+  if (formato === "celular") {
+    // Moldura de celular "ao vivo": a foto da peça na tela, a frase em cima e o recado embaixo.
+    logo(160, 120, 150);
+    if (d.kic) { x.font = "italic 300 56px MontCG, Georgia, serif"; x.fillStyle = c.texto; x.textAlign = "center"; x.fillText(d.kic, 540, 250, 940); }
+    const PX = 300, PY = 300, PW = 480, PH = 900, R = 66, B = 16;
+    x.save(); x.shadowColor = "rgba(0,0,0,.22)"; x.shadowBlur = 50; x.shadowOffsetY = 24;
+    x.fillStyle = "#121212"; x.beginPath(); x.roundRect(PX, PY, PW, PH, R); x.fill(); x.restore();
+    x.save(); x.beginPath(); x.roundRect(PX + B, PY + B, PW - 2 * B, PH - 2 * B, R - B); x.clip();
+    foto(d.f1, PX + B, PY + B, PW - 2 * B, PH - 2 * B);
+    const g = x.createLinearGradient(0, PY + PH - 380, 0, PY + PH); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.55)");
+    x.fillStyle = g; x.fillRect(PX, PY + PH - 380, PW, 380);
+    x.restore();
+    x.fillStyle = "#121212"; x.beginPath(); x.roundRect(540 - 60, PY + 30, 120, 30, 15); x.fill();
+    // selo "AO VIVO" e o @ da loja
+    x.fillStyle = "#E0245E"; x.beginPath(); x.roundRect(PX + 38, PY + 80, 118, 38, 7); x.fill();
+    x.fillStyle = "#fff"; x.font = "600 19px MontMS, Arial"; x.textAlign = "center"; x.fillText("AO VIVO", PX + 97, PY + 106);
+    const arroba = id.perfil?.arroba || "";
+    if (arroba) { x.font = "600 19px MontMS, Arial"; const aw = x.measureText(arroba).width + 26; x.fillStyle = "rgba(0,0,0,.45)"; x.beginPath(); x.roundRect(PX + PW - 38 - aw, PY + 80, aw, 38, 7); x.fill(); x.fillStyle = "#fff"; x.fillText(arroba, PX + PW - 38 - aw / 2, PY + 106); }
+    // comentários de quem está assistindo
+    x.textAlign = "left"; x.font = "400 20px MontMS, Arial"; x.fillStyle = "#fff"; x.shadowColor = "rgba(0,0,0,.6)"; x.shadowBlur = 6;
+    ["eu quero!!", "qual o tamanho?", "separa pra mim"].forEach((t, i) => x.fillText(t, PX + 40, PY + PH - 230 + i * 36));
+    x.shadowBlur = 0;
+    if (d.tit) {
+      x.fillStyle = "rgba(255,255,255,.94)"; x.beginPath(); x.roundRect(PX + 34, PY + PH - 106, PW - 68, 70, 16); x.fill();
+      x.fillStyle = c.texto; x.font = "600 21px MontMS, Arial"; x.textAlign = "center"; x.fillText(d.tit, 540, PY + PH - 63, PW - 100);
+    }
+    if (d.pre) rico(d.pre, 30, 540, 1350 - 90, 900, c.texto, c.destaque, "center", 1.3);
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

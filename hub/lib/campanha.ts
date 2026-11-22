@@ -14,7 +14,41 @@ export type Campanha = {
   preparo_desde: string; inicio: string; fim: string; aprovada_em: string | null; livro: string | null;
   antes: PassoCampanha[]; dias: Record<string, DiaCampanha>; feitos: Record<string, string>;
   abas: Aba[]; status: "rascunho" | "liberada";
+  visual?: Visual; foto?: string | null;
 };
+export type Cores = { fundo?: string; texto?: string; cor?: string };
+export type Visual = Cores & { fases?: (Cores & { desde: string })[] };
+
+/** As cores da campanha hoje: a fase que já começou (ex.: depois do Natal, o dourado) vale sobre a base. */
+export function coresDeHoje(c: Campanha, dia = hoje()): Required<Cores> | null {
+  const v = c.visual;
+  if (!v?.fundo) return null;
+  const fase = [...(v.fases ?? [])].filter((f) => f.desde <= dia).sort((a, b) => a.desde.localeCompare(b.desde)).pop();
+  return { fundo: fase?.fundo ?? v.fundo, texto: fase?.texto ?? v.texto ?? "#141210", cor: fase?.cor ?? v.cor ?? "#7A1E2A" };
+}
+
+/** A loja põe (ou troca) a foto da campanha. */
+export async function subirFotoCampanha(c: Campanha, arquivo: File) {
+  if (!arquivo.type.startsWith("image/")) throw new Error("Escolha uma foto.");
+  if (arquivo.size > 25 * 1024 * 1024) throw new Error("A foto passa de 25 MB.");
+  const limpo = arquivo.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.-]+/g, "_").slice(-60);
+  const path = `${c.portal_id}/campanha/${c.id}/${Date.now()}__${limpo}`;
+  const { error } = await sb().storage.from("relatorios").upload(path, arquivo, { upsert: false, contentType: arquivo.type });
+  if (error) throw new Error("Não deu para subir a foto. Confira a internet e tente de novo.");
+  const { error: e2 } = await sb().rpc("campanha_foto", { p_id: c.id, p_foto: path });
+  if (e2) throw new Error(e2.message);
+  if (c.foto) await sb().storage.from("relatorios").remove([c.foto]).catch(() => null);
+  return path;
+}
+export async function tirarFotoCampanha(c: Campanha) {
+  const { error } = await sb().rpc("campanha_foto", { p_id: c.id, p_foto: "" });
+  if (error) throw new Error(error.message);
+  if (c.foto) await sb().storage.from("relatorios").remove([c.foto]).catch(() => null);
+}
+export async function urlFotoCampanha(path: string) {
+  const { data } = await sb().storage.from("relatorios").createSignedUrl(path, 3600);
+  return data?.signedUrl ?? "";
+}
 
 const sb = () => supabaseBrowser();
 const DIA = 86_400_000;
@@ -44,7 +78,7 @@ export function semanaDaCampanha(c: Campanha, dia = hoje()) {
   const total = Math.max(1, Math.ceil((ms(c.fim) - ms(c.inicio) + DIA) / (7 * DIA)));
   const atual = ms(dia) < ms(c.inicio) ? 0 : Math.min(total, Math.floor((ms(dia) - ms(c.inicio)) / (7 * DIA)) + 1);
   const ini = new Date(ms(c.inicio) + Math.max(0, atual - 1) * 7 * DIA).toISOString().slice(0, 10);
-  const fimSem = new Date(ms(ini) + 6 * DIA).toISOString().slice(0, 10);
+  const fimSem = [new Date(ms(ini) + 6 * DIA).toISOString().slice(0, 10), c.fim].sort()[0]; // a última semana acaba no fim da campanha
   return { atual, total, ini, fim: fimSem, pct: atual ? Math.round((atual / total) * 100) : 0 };
 }
 

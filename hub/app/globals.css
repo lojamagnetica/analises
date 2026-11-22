@@ -734,3 +734,20 @@ i.mes-ponto { min-width: 12px; width: 12px; height: 12px; background: var(--c); 
 .dobra-c { border-radius: 12px; background: var(--soft); border: 1px dashed var(--line); padding: 11px 14px; margin-top: 16px; }
 .dobra-c > summary { cursor: pointer; font-size: 13.5px; color: var(--muted); list-style: none; display: flex; justify-content: space-between; gap: 10px; }
 .dobra-c > summary b { color: var(--ink); }
+/* Campanha com identidade própria (cores da campanha, letra fina espaçada e itálico, moldura da foto) */
+.heroi .campanha.com-visual { background: var(--cf); color: var(--ct); border: 0; padding: 18px; }
+.heroi .campanha.com-visual small { color: var(--cc); font-family: MontMS, var(--font); font-weight: 600; letter-spacing: .22em; font-size: 10.5px; opacity: 1; }
+.heroi .campanha.com-visual .nome { font-family: MontCGR, Georgia, serif; font-weight: 300; font-size: 28px; letter-spacing: .26em; margin: 6px 0 10px; }
+.heroi .campanha.com-visual .corpo { display: flex; gap: 14px; align-items: flex-end; }
+.heroi .campanha.com-visual .texto { flex: 1; min-width: 0; }
+.heroi .campanha.com-visual .semana { font-size: 13px; }
+.heroi .campanha.com-visual .barra { background: color-mix(in srgb, var(--ct) 14%, transparent); height: 3px; margin: 8px 0 12px; }
+.heroi .campanha.com-visual .barra i { background: var(--cc); }
+.heroi .campanha.com-visual .hoje { font-family: MontCG, Georgia, serif; font-style: italic; font-weight: 300; font-size: 20px; line-height: 1.2; margin-bottom: 12px; }
+.heroi .campanha.com-visual .abrir { background: var(--ct); color: var(--cf); border-radius: 99px; font-family: MontMS, var(--font); letter-spacing: .04em; }
+.heroi .campanha.com-visual .foto-c { flex: 0 0 104px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.heroi .campanha.com-visual .moldura { width: 104px; aspect-ratio: 4 / 5; border: 1.5px dashed var(--cc); border-radius: 12px; background: color-mix(in srgb, var(--ct) 5%, var(--cf)); display: grid; place-items: center; text-align: center; color: var(--cc); cursor: pointer; overflow: hidden; font-family: MontMS, var(--font); font-weight: 600; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; line-height: 1.4; }
+.heroi .campanha.com-visual .moldura b { display: block; font-size: 22px; font-weight: 400; margin-bottom: 4px; }
+.heroi .campanha.com-visual .moldura.cheia { border-style: solid; }
+.heroi .campanha.com-visual .moldura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.heroi .campanha.com-visual .tirar { background: none; border: 0; color: var(--cc); font-size: 11.5px; text-decoration: underline; cursor: pointer; padding: 0; }

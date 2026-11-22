@@ -712,3 +712,25 @@ i.mes-ponto { min-width: 12px; width: 12px; height: 12px; background: var(--c); 
 .wa-loja small { display: block; color: var(--muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 190px; }
 .wa-loja .num { margin-left: auto; align-self: center; background: #25D366; color: #fff; border-radius: 999px; font-size: 11.5px; font-weight: 700; padding: 1px 7px; }
 @media (max-width: 800px) { .wa-caixa { grid-template-columns: 1fr; } .wa { height: 72vh; } .wa-fundo { padding: 10px 3%; } .wa-bolha { max-width: 86%; } }
+
+/* Campanha da loja (/campanha e o modo campanha do Início) */
+.abas-campanha { display: flex; gap: 8px; margin: 4px 0 14px; }
+.aba-c { flex: 1; white-space: nowrap; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); color: var(--muted); font-weight: 700; font-size: 12.5px; cursor: pointer; }
+.aba-c.on { background: var(--ink); color: var(--card); border-color: var(--ink); }
+.passo-c { display: flex; gap: 12px; padding: 13px 0; border-top: 1px solid var(--line); }
+.num-c { flex: 0 0 30px; width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink); font-weight: 800; font-size: 13px; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.num-c:hover { border-color: var(--red); }
+.num-c.ok { background: var(--feito); border-color: var(--feito); color: #fff; }
+.heroi > .meet:not(.foco) { order: 2; }
+.heroi .campanha { order: 1; flex: 1 1 100%; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); border-radius: 16px; padding: 14px 16px; color: inherit; text-decoration: none; display: block; }
+.heroi .campanha small { display: block; opacity: .85; letter-spacing: .06em; text-transform: uppercase; font-size: 11.5px; font-weight: 700; }
+.heroi .campanha .nome { font-size: 21px; font-weight: 800; letter-spacing: .04em; margin: 2px 0 4px; }
+.heroi .campanha .barra { background: rgba(255,255,255,.2); height: 7px; margin: 6px 0 10px; }
+.heroi .campanha .barra i { background: #fff; }
+.item-c { display: flex; gap: 10px; align-items: flex-start; padding: 11px 0; border-top: 1px solid var(--line); }
+.item-c:first-of-type { border-top: 0; }
+.item-c .t { flex: 1; min-width: 0; line-height: 1.35; }
+.item-c .t small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.dobra-c { border-radius: 12px; background: var(--soft); border: 1px dashed var(--line); padding: 11px 14px; margin-top: 16px; }
+.dobra-c > summary { cursor: pointer; font-size: 13.5px; color: var(--muted); list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+.dobra-c > summary b { color: var(--ink); }

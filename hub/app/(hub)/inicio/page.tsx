@@ -24,6 +24,8 @@ import { buscarNovidades } from "@/lib/novidades-atalhos";
 import { RankingDoMes } from "@/components/RankingVendedoras";
 import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 import { areaFechada } from "@/lib/bussola";
+import { buscarCampanhaAtiva, buscarPostsDoDia } from "@/lib/campanha";
+import { CampanhaNoTopo, HojeNaCampanha } from "@/components/HojeNaCampanha";
 
 const ATALHOS = [
   { href: "/consultoria/planner", rotulo: "Planner de gestão", icone: "cal", cor: "var(--red)" },
@@ -82,6 +84,12 @@ export default function Inicio() {
     const { data } = await supabaseBrowser().rpc("responsaveis_das_lojas", { p: portal.id });
     return (data ?? []) as { loja: string; nome: string }[];
   }, [portal.id]);
+  // Modo campanha: com uma campanha valendo (do preparo ao fim), ela sobe para o topo e o time fica recolhido.
+  const { dados: camp } = useDados(async () => {
+    const c = await buscarCampanhaAtiva(portal.id).catch(() => null);
+    return c ? { c, posts: await buscarPostsDoDia(portal.id).catch(() => []) } : null;
+  }, [portal.id]);
+  const campanha = camp?.c ?? null;
   const donoDaLoja = lojaFoco ? donos?.find((x) => x.loja === lojaFoco)?.nome : undefined;
   if (!dados) return <Carregando />;
   const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
@@ -111,7 +119,8 @@ export default function Inicio() {
   const escondido = (href: string) => ocultos.includes(href.split("?")[0]) || (ocultos.includes("gestao") && /^\/(gestao|metas)/.test(href)) || (ocultos.includes("clientes") && href.startsWith("/clientes"));
   const mesProx = mesesDoInicio().proximo;
   // Consultoria: sem o atalho do Plano 90 dias nem o da própria Consultoria (a gestão usa o Planner, a Lista da vez e as Reuniões).
-  const atalhos = (consultoria ? ATALHOS.filter((a) => a.href !== "/plano") : ATALHOS)
+  const atalhos = (campanha ? [{ href: "/campanha", rotulo: `Campanha ${campanha.nome}`, icone: "gift", cor: "var(--red)" }] : [])
+    .concat(consultoria ? ATALHOS.filter((a) => a.href !== "/plano") : ATALHOS)
     // A análise da semana e do mês fica à mão da gestão (consultoria).
     .concat(consultoria ? [{ href: "/consultoria/reunioes", rotulo: "Reuniões de gestão", icone: "users", cor: "var(--blue)" }] : [])
     .concat(temMontador ? [{ href: "/conteudo/montador", rotulo: "Montador de carrossel", icone: "pencil", cor: "var(--blue)" }] : [])
@@ -183,6 +192,7 @@ export default function Inicio() {
             </div>
           )}
         </div>
+        {!onboarding && campanha && <CampanhaNoTopo c={campanha} />}
         {/* Contrato de Foco: faixa larga e baixa logo abaixo do nome (o resultado à esquerda, a meta e o de acordo à direita). */}
         {!onboarding && foco?.resultado && (
           <Link href="/painel" className="meet foco" style={{ color: "inherit", textDecoration: "none" }}>
@@ -198,6 +208,7 @@ export default function Inicio() {
         )}
       </div>
 
+      {!onboarding && campanha && camp && <HojeNaCampanha c={campanha} posts={camp.posts} />}
       {!equipe && <AvisosDaLoja />}
       {!onboarding && <CaixaDaSemana />}
 
@@ -285,7 +296,7 @@ export default function Inicio() {
 
       {/* Sua rotina de hoje logo abaixo dos atalhos; antes do Diagnóstico (caixa trancado), a loja ainda vê os 7 passos. */}
       {!trancado("/gestao/caixa") && !escondido("/gestao/caixa") ? (
-        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} lateral={<RankingDoMes compacto />} /></div>
+        <div className="mt"><MeuDia portalId={portal.id} estoque={pers.get(8)?.respostas} modo={{ solo: !!portal.sem_equipe, vendaDiaria: !!portal.venda_diaria, apoio: portal.apoio_conteudo }} lojas={portal.lojas ?? []} canais={portal.canais ?? []} lateral={<RankingDoMes compacto />} campanha={!!campanha} /></div>
       ) : !consultoria && passos.length > 0 && !escondido("/jornada") && (
         <>
           <div className="secao">Os 7 passos da sua mentoria</div>

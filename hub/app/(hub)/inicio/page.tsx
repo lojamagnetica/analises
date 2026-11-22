@@ -22,7 +22,6 @@ import { SeusCombinados } from "@/components/SeusCombinados";
 import { chaveDoAtalho, lerVisto, marcarVisto, temNovidade } from "@/lib/atalho-novo";
 import { buscarNovidades } from "@/lib/novidades-atalhos";
 import { RankingDoMes } from "@/components/RankingVendedoras";
-import { buscarEncontro, linkAgenda, proximoEncontro } from "@/lib/encontro";
 import { areaFechada } from "@/lib/bussola";
 import { buscarCampanhaAtiva, buscarPostsDoDia } from "@/lib/campanha";
 import { CampanhaNoTopo, HojeNaCampanha } from "@/components/HojeNaCampanha";
@@ -61,8 +60,7 @@ export default function Inicio() {
   const { dados: temMontador } = useDados(async () => ((await supabaseBrowser().from("loja_montadores").select("id").eq("portal_id", portal.id).eq("ativo", true).eq("liberado", true).limit(1)).data ?? []).length > 0, [portal.id]);
   const { dados } = useDados(async () => {
     const sb = supabaseBrowser();
-    const [{ data: prox }, { data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes, grupo] = await Promise.all([
-      sb.from("reunioes").select("titulo, data").eq("portal_id", portal.id).gte("data", new Date().toISOString()).neq("selecionar", "Adiado").order("data").limit(1).maybeSingle(),
+    const [{ data: plano }, { data: datas }, { data: passos }, consult, { count: respondidas }, contrato, planosMes] = await Promise.all([
       sb.from("plano_itens").select("feito").eq("portal_id", portal.id),
       sb.from("datas_comerciais").select("mes, dia, titulo").in("mes", [mes, (mes + 1) % 12]).order("dia", { nullsFirst: true }),
       sb.from("jornada_passos").select("numero, titulo, descricao").order("numero"),
@@ -70,9 +68,8 @@ export default function Inicio() {
       sb.from("solicitacoes").select("id", { count: "exact", head: true }).eq("portal_id", portal.id).eq("status", "Respondida"),
       buscarMeuContrato(portal.id).catch(() => null),
       buscarPlanos(portal.id).catch(() => []),
-      portal.tipo === "Mentoria" ? buscarEncontro().catch(() => null) : Promise.resolve(null),
     ]);
-    return { prox, plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes, grupo };
+    return { plano, datas, passos: (passos ?? []) as Passo[], consult, respondidas: respondidas ?? 0, contrato, planosMes };
   }, [portal.id]);
   // Contrato de Foco vigente: fica no topo para lembrar o resultado nº 1 sempre que entrar (o da loja em foco, quando há várias).
   const [lojaFoco] = useLojaFoco();
@@ -92,12 +89,7 @@ export default function Inicio() {
   const campanha = camp?.c ?? null;
   const donoDaLoja = lojaFoco ? donos?.find((x) => x.loja === lojaFoco)?.nome : undefined;
   if (!dados) return <Carregando />;
-  const { prox, plano, datas, passos, consult, respondidas, contrato, planosMes, grupo } = dados;
-  // No quadro do Meet vale o encontro mais próximo: a reunião individual ou o encontro em grupo.
-  const pg = grupo ? proximoEncontro(grupo) : null;
-  const usaGrupo = !!grupo && !!pg && (!prox || pg.iso < new Date(prox.data).toISOString());
-  const proxEncontro = usaGrupo ? { data: pg!.iso, titulo: grupo!.titulo } : prox;
-  const salaMeet = usaGrupo ? grupo!.link : portal.meet_url;
+  const { plano, datas, passos, consult, respondidas, contrato, planosMes } = dados;
   // 45 dias antes do fim do contrato: aviso de renovação.
   const fimContrato = contrato?.atual && pertoDoFim(contrato.atual) ? tempoDoContrato(contrato.atual) : null;
   const passo = passos.find((p) => p.numero === portal.passo_atual);
@@ -175,23 +167,7 @@ export default function Inicio() {
             ? `Este é o Hub da ${portal.lojas.join(" e ")}. Tudo das suas lojas em um lugar só.`
             : `Este é o Hub da ${portal.loja}. Tudo da sua loja em um lugar só.`}</p>
         </div>
-        <div className="meet">
-          <small>Próximo encontro no Meet</small>
-          {proxEncontro ? (
-            <>
-              <b style={{ textTransform: "capitalize" }}>{dataHora(proxEncontro.data)}</b>
-              <div style={{ opacity: 0.9 }}>{proxEncontro.titulo}</div>
-            </>
-          ) : (
-            <b>Ainda sem data marcada</b>
-          )}
-          {salaMeet && (
-            <div className="mt">
-              <a className="btn b peq" href={salaMeet} target="_blank" rel="noopener">Entrar na sala</a>
-              {usaGrupo && <a className="link-loja" style={{ marginLeft: 10, color: "inherit" }} href={linkAgenda(grupo!)} target="_blank" rel="noopener">📅 Colocar na agenda</a>}
-            </div>
-          )}
-        </div>
+        {/* O quadro "Próximo encontro no Meet" saiu do Início (pedido da Camilla, 22/11/2026). */}
         {!onboarding && campanha && <CampanhaNoTopo c={campanha} />}
         {/* Contrato de Foco: faixa larga e baixa logo abaixo do nome (o resultado à esquerda, a meta e o de acordo à direita). */}
         {!onboarding && foco?.resultado && (

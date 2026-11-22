@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { dataCurta, hoje } from "@/lib/formato";
 import { coresDeHoje, itensDeHoje, marcarCampanha, semanaDaCampanha, subirFotoCampanha, tirarFotoCampanha, urlFotoCampanha, type Campanha } from "@/lib/campanha";
 import { carregarFontes } from "@/lib/montador";
+import { BASE } from "@/lib/config";
 import type { Post } from "@/lib/instagram";
 
 /** O bloco da campanha dentro do herói: com a identidade da campanha (cores e letras) e a moldura da foto da loja. */
@@ -57,6 +58,10 @@ export function CampanhaNoTopo({ c: inicial }: { c: Campanha }) {
           {destaque && <div className="hoje" dangerouslySetInnerHTML={{ __html: negrito(destaque).replace(/<\/?b>/g, "") }} />}
           <Link href="/campanha" className="btn peq abrir">Abrir a campanha →</Link>
         </div>
+        {cores.foto ? (
+          // A capa da campanha (fixa, muda sozinha na data): a loja não precisa fazer nada.
+          <div className="foto-c"><div className="moldura cheia"><img src={/^(https?:|data:)/.test(cores.foto) ? cores.foto : `${BASE}${cores.foto}`} alt={`Capa da campanha ${c.nome}`} /></div></div>
+        ) : (
         <div className="foto-c">
           <label className={`moldura${url ? " cheia" : ""}`} title={url ? "Trocar a foto" : "Pôr a foto da campanha"}>
             {url ? <img src={url} alt={`Foto da campanha ${c.nome}`} /> : <span><b>＋</b>{enviando ? "Enviando…" : <>Foto da<br />campanha</>}</span>}
@@ -64,6 +69,7 @@ export function CampanhaNoTopo({ c: inicial }: { c: Campanha }) {
           </label>
           {url && <button className="tirar" onClick={tirar}>tirar</button>}
         </div>
+        )}
       </div>
       {erro && <div className="ajuda" style={{ color: "var(--cc)" }}>{erro}</div>}
     </div>

@@ -16,15 +16,16 @@ export type Campanha = {
   abas: Aba[]; status: "rascunho" | "liberada";
   visual?: Visual; foto?: string | null;
 };
-export type Cores = { fundo?: string; texto?: string; cor?: string };
+export type Cores = { fundo?: string; texto?: string; cor?: string; foto?: string };
 export type Visual = Cores & { fases?: (Cores & { desde: string })[] };
 
 /** As cores da campanha hoje: a fase que já começou (ex.: depois do Natal, o dourado) vale sobre a base. */
-export function coresDeHoje(c: Campanha, dia = hoje()): Required<Cores> | null {
+export function coresDeHoje(c: Campanha, dia = hoje()): (Required<Omit<Cores, "foto">> & { foto: string | null }) | null {
   const v = c.visual;
   if (!v?.fundo) return null;
   const fase = [...(v.fases ?? [])].filter((f) => f.desde <= dia).sort((a, b) => a.desde.localeCompare(b.desde)).pop();
-  return { fundo: fase?.fundo ?? v.fundo, texto: fase?.texto ?? v.texto ?? "#141210", cor: fase?.cor ?? v.cor ?? "#7A1E2A" };
+  // foto: a capa da campanha naquela fase (ex.: presentes até o dia 24, o brinde depois). Sem capa, a loja põe a dela.
+  return { fundo: fase?.fundo ?? v.fundo, texto: fase?.texto ?? v.texto ?? "#141210", cor: fase?.cor ?? v.cor ?? "#7A1E2A", foto: fase?.foto ?? v.foto ?? null };
 }
 
 /** A loja põe (ou troca) a foto da campanha. */

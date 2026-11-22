@@ -50,17 +50,20 @@ function Subir({ rotulo, foto, mudar }: { rotulo: string; foto: Foto; mudar: (f:
 }
 
 // Miniatura de um slide do modelo, para ver o carrossel inteiro de uma vez.
-function Miniatura({ slide, id, cta, fontes }: { slide: Slide; id: Identidade; cta: string; fontes: boolean }) {
+function Miniatura({ slide, id, cta, fontes, tick }: { slide: Slide; id: Identidade; cta: string; fontes: boolean; tick: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }, id);
-  }, [slide, id, cta, fontes]);
+  }, [slide, id, cta, fontes, tick]);
   return <canvas ref={ref} style={{ width: 84, height: "auto", display: "block", borderRadius: 4, boxShadow: "0 2px 6px rgba(20,18,16,.15)" }} />;
 }
 
 function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const [fontes, setFontes] = useState(false);
+  // a imagem do canto (símbolo da campanha) chega depois: desenha de novo quando carregar
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const f = () => setTick((t) => t + 1); window.addEventListener("montador-imagem", f); return () => window.removeEventListener("montador-imagem", f); }, []);
   const [formato, setFormato] = useState<Formato>("dupla");
   const [modelo, setModelo] = useState<ModeloMes | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -183,7 +186,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
                   {slides.map((s, i) => (
                     <button key={i} type="button" aria-label={`Slide ${i + 1}`} onClick={() => setAtual(i)}
                       style={{ flex: "0 0 auto", padding: 0, border: `2px solid ${i === atual ? "var(--accent)" : "transparent"}`, borderRadius: 6, background: "none", cursor: "pointer", position: "relative" }}>
-                      <Miniatura slide={s} id={id} cta={cta} fontes={fontes} />
+                      <Miniatura slide={s} id={id} cta={cta} fontes={fontes} tick={tick} />
                       <span style={{ position: "absolute", top: 3, left: 5, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,.6)" }}>{i + 1}{s.foto.img ? " ✓" : ""}</span>
                     </button>
                   ))}

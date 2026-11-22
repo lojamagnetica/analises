@@ -16,11 +16,13 @@ const FORMATOS: { id: Formato; rotulo: string }[] = [
   { id: "look", rotulo: "Look do encontro" },
   { id: "capa", rotulo: "Capa de carrossel" },
   { id: "story", rotulo: "Stories" },
+  { id: "tweet", rotulo: "Frase da semana" },
 ];
 const fotoVazia = (altura = 10): Foto => ({ img: null, zoom: 100, altura });
 type Slide = SlideModelo & { foto: Foto; foto2: Foto };
 // Formatos em que o campo de baixo guarda itens separados por "|".
-const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro"];
+const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro", "passos"];
+const DUAS_FOTOS: Formato[] = ["comparar", "tendencia"];
 
 function Ajuste({ foto, mudar }: { foto: Foto; mudar: (f: Foto) => void }) {
   return (
@@ -89,6 +91,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const escolherFormato = (f: Formato) => {
     setModelo(null); setFormato(f);
     setKic(f === "dupla" ? id.linha_de_cima?.dupla ?? "" : f === "capa" ? id.linha_de_cima?.capa ?? id.linha_de_cima?.outros ?? "" : id.linha_de_cima?.outros ?? "");
+    if (f === "tweet") { setKic(""); setTit("*Comece com a parte forte.* E termine a frase aqui."); setPre(id.perfil?.assinatura ?? ""); return; }
     if (f === "capa") { setTit(id.frase ?? tit); setPre(id.rodape ?? ""); } else if (pre === id.rodape) setPre(id.precos_exemplo ?? "");
   };
   const nome = () => `montador-${modelo ? `slide-${atual + 1}` : formato}.png`;
@@ -142,8 +145,8 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
             <div style={{ margin: "6px 0 12px" }}>
               {slide ? (
                 <>
-                  <Subir rotulo={slide.tipo === "comparar" ? "Foto da esquerda" : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
-                  {slide.tipo === "comparar" && <div style={{ marginTop: 8 }}><Subir rotulo="Foto da direita" foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
+                  <Subir rotulo={DUAS_FOTOS.includes(slide.tipo) ? "Foto da esquerda" : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
+                  {DUAS_FOTOS.includes(slide.tipo) && <div style={{ marginTop: 8 }}><Subir rotulo="Foto da direita" foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
                 </>
               ) : (
                 <>
@@ -161,8 +164,8 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
                 {id.frase && <option value={id.frase}>Frase da campanha</option>}
               </select>
             )}
-            <label className="rotulo">Título</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
-            <label className="rotulo">Linha de cima</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "tweet" ? "Frase (o que estiver entre *asteriscos* sai em negrito)" : "Título"}</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "tweet" ? "Nome · @perfil (em branco usa o da loja)" : "Linha de cima"}</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
             <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
             {formatoAtual === "story" && <><label className="rotulo">Chamada</label><input type="text" value={cta} onChange={(e) => setCta(e.target.value)} /></>}
             {id.aviso && <div className="ajuda mt">{id.aviso}</div>}

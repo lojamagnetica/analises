@@ -5,7 +5,8 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 
 export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco"
   | "numero" | "quiz" | "manchete" | "lista" | "comparar" | "roteiro"
-  | "chamada" | "passos" | "post" | "meme" | "tendencia" | "destaque" | "tweet";
+  | "chamada" | "passos" | "post" | "meme" | "tendencia" | "destaque" | "tweet"
+  | "live" | "celular" | "motivo";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -22,7 +23,19 @@ export type Identidade = {
   cenarios?: string;
   aviso?: string;
   perfil?: { nome?: string; arroba?: string; assinatura?: string };
+  campanha?: string; // nome da campanha escrito no rodapé das peças de live (ex.: ENCONTROS)
+  canto_img?: string; // imagem do símbolo da campanha que entra de lado no canto de baixo (link, data URL ou arquivo de public/, ex.: simbolos/presentes-veludo.webp)
 };
+
+// Imagem do canto: carrega uma vez e avisa a tela para desenhar de novo quando chegar.
+const cantos = new Map<string, HTMLImageElement>();
+function imagemDoCanto(src?: string) {
+  if (!src || typeof Image === "undefined") return null;
+  if (!/^(data:|https?:|\/)/.test(src)) src = `${BASE}/${src}`;
+  let im = cantos.get(src);
+  if (!im) { im = new Image(); im.onload = () => window.dispatchEvent(new Event("montador-imagem")); im.src = src; cantos.set(src, im); }
+  return im.complete && im.naturalWidth ? im : null;
+}
 
 export type Montador = { id: string; portal_id: string; colecao: string; liberado: boolean; identidade: Identidade };
 
@@ -65,6 +78,7 @@ export function carregarFontes() {
   fontesProntas = Promise.all([
     f("MontCG", "cormorant-300-italico.woff2", "italic", "300"),
     f("MontCG", "cormorant-500-italico.woff2", "italic", "500"),
+    f("MontCGR", "cormorant-300.woff2", "normal", "300"),
     f("MontMS", "montserrat-400.woff2", "normal", "400"),
     f("MontMS", "montserrat-600.woff2", "normal", "600"),
   ]).then(() => undefined).catch(() => undefined);
@@ -462,6 +476,81 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     rico(d.tit, 62, 90, y, 900, c.texto, c.texto, "left", 1.25);
     x.fillStyle = c.texto; x.globalAlpha = .35; x.fillRect(90, 1350 - 130, 900, 2); x.globalAlpha = 1;
     espacado(d.pre || id.perfil?.assinatura || id.perfil?.nome || "", 18, 540, 1350 - 80, c.texto);
+  }
+  // Peças de live: centralizadas, com a logo no alto, a bolinha de "ao vivo", o nome da campanha e o símbolo de lado no canto.
+  const canto = (largura: number) => {
+    const im = imagemDoCanto(id.canto_img); if (!im) return;
+    const hh = largura * im.naturalHeight / im.naturalWidth;
+    x.save(); x.translate(1080 - largura * 0.22, 1350 - hh * 0.2); x.rotate(-0.14); x.drawImage(im, -largura / 2, -hh / 2, largura, hh); x.restore();
+  };
+  const aoVivo = (y: number) => {
+    x.font = "600 24px MontMS, Arial"; const t = (d.kic || "").toUpperCase(), sp = 24 * 0.32;
+    const larg = [...t].reduce((a, l) => a + x.measureText(l).width + sp, -sp) + 34;
+    let p = 540 - larg / 2;
+    x.fillStyle = c.destaque; x.beginPath(); x.arc(p + 9, y - 8, 9, 0, Math.PI * 2); x.fill(); p += 34;
+    x.fillStyle = c.texto; x.textAlign = "left"; [...t].forEach((l) => { x.fillText(l, p, y); p += x.measureText(l).width + sp; });
+  };
+  const marca = (y: number) => {
+    if (id.campanha) { x.font = "300 30px MontCGR, Georgia, serif"; x.fillStyle = c.texto; x.textAlign = "left"; const t = id.campanha.toUpperCase(), sp = 30 * 0.32; const lg = [...t].reduce((a, l) => a + x.measureText(l).width + sp, -sp); let p = 540 - lg / 2; [...t].forEach((l) => { x.fillText(l, p, y); p += x.measureText(l).width + sp; }); }
+    if (id.perfil?.arroba) espacado(`no perfil ${id.perfil.arroba}`, 18, 540, y + 40, c.texto);
+  };
+  const tituloCentro = (t: string, px: number, y: number, max: number) => {
+    x.font = `italic 300 ${px}px MontCG, Georgia, serif`;
+    const ls: string[] = []; let l = "";
+    (t || "").split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > max && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l); x.fillStyle = c.texto; x.textAlign = "center"; ls.forEach((ln, k) => x.fillText(ln, 540, y + k * px * 1.08)); return ls.length;
+  };
+  if (formato === "live") {
+    canto(520);
+    logo(540, 150, 170);
+    aoVivo(360);
+    const n = tituloCentro(d.tit, 112, 515, 860);
+    let y = 515 + (n - 1) * 121 + 80;
+    if (d.pre) { const k = rico(d.pre, 32, 540, y, 760, "#3a3a3a", c.destaque, "center", 1.4); y += k * 45 + 40; }
+    x.fillStyle = c.texto; x.globalAlpha = .3; x.fillRect(480, y, 120, 2); x.globalAlpha = 1;
+    marca(y + 70);
+  }
+  if (formato === "motivo") {
+    canto(450);
+    logo(540, 150, 170);
+    aoVivo(330);
+    const n = tituloCentro(d.tit, 96, 465, 860);
+    let y = 465 + (n - 1) * 104 + 90;
+    const lista = itens(d.pre), chamada = lista.find((v) => v.startsWith("→"));
+    lista.filter((v) => !v.startsWith("→")).slice(0, 4).forEach((it, i) => {
+      if (i) { x.fillStyle = c.texto; x.globalAlpha = .18; x.fillRect(440, y - 52, 200, 1); x.globalAlpha = 1; }
+      const k = rico(it, 31, 540, y, 760, "#3a3a3a", c.destaque, "center", 1.35); y += k * 42 + 50;
+    });
+    if (chamada) { y += 10; rico(chamada.replace(/^→\s*/, ""), 31, 540, y, 760, c.texto, c.destaque, "center", 1.35); y += 70; }
+    x.fillStyle = c.texto; x.globalAlpha = .3; x.fillRect(480, y, 120, 2); x.globalAlpha = 1;
+    marca(y + 70);
+  }
+  if (formato === "celular") {
+    // Moldura de celular "ao vivo": a foto da peça na tela, a frase em cima e o recado embaixo.
+    canto(340);
+    logo(540, 120, 150);
+    if (d.kic) { x.font = "italic 300 58px MontCG, Georgia, serif"; x.fillStyle = c.texto; x.textAlign = "center"; x.fillText(d.kic, 540, 255, 940); }
+    const PX = 300, PY = 300, PW = 480, PH = 880, R = 66, B = 16;
+    x.save(); x.shadowColor = "rgba(0,0,0,.22)"; x.shadowBlur = 50; x.shadowOffsetY = 24;
+    x.fillStyle = "#121212"; x.beginPath(); x.roundRect(PX, PY, PW, PH, R); x.fill(); x.restore();
+    x.save(); x.beginPath(); x.roundRect(PX + B, PY + B, PW - 2 * B, PH - 2 * B, R - B); x.clip();
+    foto(d.f1, PX + B, PY + B, PW - 2 * B, PH - 2 * B);
+    const g = x.createLinearGradient(0, PY + PH - 380, 0, PY + PH); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.55)");
+    x.fillStyle = g; x.fillRect(PX, PY + PH - 380, PW, 380);
+    x.restore();
+    x.fillStyle = "#121212"; x.beginPath(); x.roundRect(540 - 60, PY + 30, 120, 30, 15); x.fill();
+    x.fillStyle = "#E0245E"; x.beginPath(); x.roundRect(PX + 38, PY + 80, 118, 38, 7); x.fill();
+    x.fillStyle = "#fff"; x.font = "600 19px MontMS, Arial"; x.textAlign = "center"; x.fillText("AO VIVO", PX + 97, PY + 106);
+    const arroba = id.perfil?.arroba || "";
+    if (arroba) { x.font = "600 19px MontMS, Arial"; const aw = x.measureText(arroba).width + 26; x.fillStyle = "rgba(0,0,0,.45)"; x.beginPath(); x.roundRect(PX + PW - 38 - aw, PY + 80, aw, 38, 7); x.fill(); x.fillStyle = "#fff"; x.fillText(arroba, PX + PW - 38 - aw / 2, PY + 106); }
+    x.textAlign = "left"; x.font = "400 20px MontMS, Arial"; x.fillStyle = "#fff"; x.shadowColor = "rgba(0,0,0,.6)"; x.shadowBlur = 6;
+    ["eu quero!!", "qual o tamanho?", "separa pra mim"].forEach((t, i) => x.fillText(t, PX + 40, PY + PH - 230 + i * 36));
+    x.shadowBlur = 0;
+    if (d.tit) {
+      x.fillStyle = "rgba(255,255,255,.94)"; x.beginPath(); x.roundRect(PX + 34, PY + PH - 106, PW - 68, 70, 16); x.fill();
+      x.fillStyle = c.texto; x.font = "600 21px MontMS, Arial"; x.textAlign = "center"; x.fillText(d.tit, 540, PY + PH - 63, PW - 100);
+    }
+    if (d.pre) { const k = rico(d.pre, 28, 540, 0, 560, c.texto, c.destaque, "center", 1.3, false); rico(d.pre, 28, 540, 1350 - 70 - (k - 1) * 36, 560, c.texto, c.destaque, "center", 1.3); }
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

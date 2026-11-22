@@ -73,6 +73,7 @@ function Mes({ inicio, posts, datas, lancamentos, aoMudarMes, aoAbrirDia }: {
   );
 }
 
+
 function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: () => void }) {
   const [aberto, setAberto] = useState(false);
   const [f, setF] = useState(p);
@@ -81,7 +82,7 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
   const salvar = async (extra: Partial<Post> = {}) => {
     setErro("");
     try {
-      const { id: _id, portal_id: _p, created_at: _c, ...resto } = { ...f, ...extra };
+      const { id: _id, portal_id: _p, created_at: _c, imagens: _i, fazer: _f, ...resto } = { ...f, ...extra };
       await postSalvar(p.id, resto); setAberto(false); aoMudar();
     } catch (e) { setErro((e as Error).message); }
   };
@@ -93,8 +94,11 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
       </div>
       <div style={{ fontWeight: 700, margin: "6px 0 2px", fontSize: 14 }}>{p.gancho || p.tema}</div>
       <small className="mudo">{p.tema}</small>
+      {(p.imagens?.length ?? 0) > 0 && <div className="mt"><span className="selo feito" style={{ fontSize: 11 }}>✅ Pronto para postar · {p.imagens!.length} {p.imagens!.length === 1 ? "arquivo" : "arquivos"}</span></div>}
+      {!!p.fazer?.trim() && p.status !== "Publicado" && <div className="mt"><span className="selo alerta" style={{ fontSize: 11 }}>Tem um passo para você</span></div>}
       <div className="linha mt" style={{ gap: 6 }}>
-        <button type="button" className="btn s peq" onClick={() => setAberto(!aberto)}>{aberto ? "Fechar" : "Abrir"}</button>
+        <Link className="btn p peq" href={`/conteudo/post?id=${p.id}`}>Abrir</Link>
+        <button type="button" className="btn s peq" onClick={() => setAberto(!aberto)}>{aberto ? "Fechar edição" : "Editar aqui"}</button>
         {p.status !== "Publicado" && (
           <button type="button" className="btn s peq" onClick={() => salvar({ status: STATUS[STATUS.indexOf(p.status) + 1] })}>→ {STATUS[STATUS.indexOf(p.status) + 1]}</button>
         )}

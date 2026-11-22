@@ -17,11 +17,13 @@ const FORMATOS: { id: Formato; rotulo: string }[] = [
   { id: "capa", rotulo: "Capa de carrossel" },
   { id: "story", rotulo: "Stories" },
   { id: "tweet", rotulo: "Frase da semana" },
+  { id: "live", rotulo: "Live · convite" },
+  { id: "celular", rotulo: "Moldura de celular" },
 ];
 const fotoVazia = (altura = 10): Foto => ({ img: null, zoom: 100, altura });
 type Slide = SlideModelo & { foto: Foto; foto2: Foto };
 // Formatos em que o campo de baixo guarda itens separados por "|".
-const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro", "passos"];
+const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro", "passos", "motivo"];
 const DUAS_FOTOS: Formato[] = ["comparar", "tendencia"];
 
 function Ajuste({ foto, mudar }: { foto: Foto; mudar: (f: Foto) => void }) {
@@ -48,17 +50,20 @@ function Subir({ rotulo, foto, mudar }: { rotulo: string; foto: Foto; mudar: (f:
 }
 
 // Miniatura de um slide do modelo, para ver o carrossel inteiro de uma vez.
-function Miniatura({ slide, id, cta, fontes }: { slide: Slide; id: Identidade; cta: string; fontes: boolean }) {
+function Miniatura({ slide, id, cta, fontes, tick }: { slide: Slide; id: Identidade; cta: string; fontes: boolean; tick: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }, id);
-  }, [slide, id, cta, fontes]);
+  }, [slide, id, cta, fontes, tick]);
   return <canvas ref={ref} style={{ width: 84, height: "auto", display: "block", borderRadius: 4, boxShadow: "0 2px 6px rgba(20,18,16,.15)" }} />;
 }
 
 function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const [fontes, setFontes] = useState(false);
+  // a imagem do canto (símbolo da campanha) chega depois: desenha de novo quando carregar
+  const [tick, setTick] = useState(0);
+  useEffect(() => { const f = () => setTick((t) => t + 1); window.addEventListener("montador-imagem", f); return () => window.removeEventListener("montador-imagem", f); }, []);
   const [formato, setFormato] = useState<Formato>("dupla");
   const [modelo, setModelo] = useState<ModeloMes | null>(null);
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -92,6 +97,8 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
     setModelo(null); setFormato(f);
     setKic(f === "dupla" ? id.linha_de_cima?.dupla ?? "" : f === "capa" ? id.linha_de_cima?.capa ?? id.linha_de_cima?.outros ?? "" : id.linha_de_cima?.outros ?? "");
     if (f === "tweet") { setKic(""); setTit("*Comece com a parte forte.* E termine a frase aqui."); setPre(id.perfil?.assinatura ?? ""); return; }
+    if (f === "live") { setKic("Live · quarta · à noite"); setTit("O tema da live de hoje"); setPre("O que você vai mostrar, ao vivo."); return; }
+    if (f === "celular") { setKic("Uma das peças da live"); setTit("Preço só na live"); setPre("Peça única. Quem pedir primeiro na live, leva."); return; }
     if (f === "capa") { setTit(id.frase ?? tit); setPre(id.rodape ?? ""); } else if (pre === id.rodape) setPre(id.precos_exemplo ?? "");
   };
   const nome = () => `montador-${modelo ? `slide-${atual + 1}` : formato}.png`;
@@ -145,12 +152,12 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
             <div style={{ margin: "6px 0 12px" }}>
               {slide ? (
                 <>
-                  <Subir rotulo={DUAS_FOTOS.includes(slide.tipo) ? "Foto da esquerda" : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
+                  <Subir rotulo={DUAS_FOTOS.includes(slide.tipo) ? "Foto da esquerda" : slide.tipo === "celular" ? `Foto da peça · slide ${atual + 1} (vai na tela do celular)` : slide.tipo === "live" || slide.tipo === "motivo" ? `Slide ${atual + 1} não usa foto` : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
                   {DUAS_FOTOS.includes(slide.tipo) && <div style={{ marginTop: 8 }}><Subir rotulo="Foto da direita" foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
                 </>
               ) : (
                 <>
-                  <Subir rotulo={formato === "capa" ? "Foto da capa" : "Foto 1 · o look no corpo"} foto={f1} mudar={setF1} />
+                  <Subir rotulo={formato === "capa" ? "Foto da capa" : formato === "celular" ? "Foto da peça (vai na tela do celular)" : formato === "live" ? "Este formato não usa foto" : "Foto 1 · o look no corpo"} foto={f1} mudar={setF1} />
                   {formato === "dupla" && <div style={{ marginTop: 8 }}><Subir rotulo="Foto 2 · a peça" foto={f2} mudar={setF2} /></div>}
                 </>
               )}
@@ -164,9 +171,9 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
                 {id.frase && <option value={id.frase}>Frase da campanha</option>}
               </select>
             )}
-            <label className="rotulo">{formatoAtual === "tweet" ? "Frase (o que estiver entre *asteriscos* sai em negrito)" : "Título"}</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
-            <label className="rotulo">{formatoAtual === "tweet" ? "Nome · @perfil (em branco usa o da loja)" : "Linha de cima"}</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
-            <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "tweet" ? "Frase (o que estiver entre *asteriscos* sai em negrito)" : formatoAtual === "celular" ? "Etiqueta na tela do celular" : "Título"}</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "tweet" ? "Nome · @perfil (em branco usa o da loja)" : formatoAtual === "celular" ? "Frase em cima do celular" : formatoAtual === "live" || formatoAtual === "motivo" ? "Linha ao vivo (dia e horário)" : "Linha de cima"}</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : formatoAtual === "motivo" ? "Itens (separe com | ; a chamada final começa com →)" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : formatoAtual === "celular" ? "Recado embaixo do celular" : formatoAtual === "live" ? "Texto de apoio" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
             {formatoAtual === "story" && <><label className="rotulo">Chamada</label><input type="text" value={cta} onChange={(e) => setCta(e.target.value)} /></>}
             {id.aviso && <div className="ajuda mt">{id.aviso}</div>}
           </div>
@@ -179,7 +186,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
                   {slides.map((s, i) => (
                     <button key={i} type="button" aria-label={`Slide ${i + 1}`} onClick={() => setAtual(i)}
                       style={{ flex: "0 0 auto", padding: 0, border: `2px solid ${i === atual ? "var(--accent)" : "transparent"}`, borderRadius: 6, background: "none", cursor: "pointer", position: "relative" }}>
-                      <Miniatura slide={s} id={id} cta={cta} fontes={fontes} />
+                      <Miniatura slide={s} id={id} cta={cta} fontes={fontes} tick={tick} />
                       <span style={{ position: "absolute", top: 3, left: 5, fontSize: 11, fontWeight: 700, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,.6)" }}>{i + 1}{s.foto.img ? " ✓" : ""}</span>
                     </button>
                   ))}

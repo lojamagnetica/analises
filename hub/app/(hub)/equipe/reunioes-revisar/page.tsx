@@ -47,6 +47,7 @@ function Cartao({ g0, lojas, csId, recarregar, aoResultado }: { g0: Gravada; loj
               <div style={{ gridColumn: "span 3" }}><input type="text" value={c.texto} disabled={decidida} onChange={(e) => mudarComb(i, { texto: e.target.value })} /></div>
               <div><label className="rotulo">Prazo</label><input type="date" value={c.prazo ?? ""} disabled={decidida} onChange={(e) => mudarComb(i, { prazo: e.target.value || null })} /></div>
               <div><label className="rotulo">Quem faz</label><select value={c.quem} disabled={decidida} onChange={(e) => mudarComb(i, { quem: e.target.value as CombinadoRascunho["quem"] })}>{QUEM.map(([v, r]) => <option key={v} value={v}>{r}</option>)}</select></div>
+              {c.quem === "loja" && <div><label className="rotulo">Impacta o resultado?</label><select value={c.impacta == null ? "" : c.impacta ? "sim" : "rotina"} disabled={decidida} onChange={(e) => mudarComb(i, { impacta: e.target.value === "" ? null : e.target.value === "sim" })}><option value="">Não sei (Claudia acompanha)</option><option value="sim">Sim · Claudia acompanha</option><option value="rotina">Rotina · o Hub lembra</option></select></div>}
               {!decidida && <div><button type="button" className="btn s peq" onClick={() => setG({ ...g, combinados: g.combinados.filter((_, j) => j !== i) })}>Tirar</button></div>}
             </div>
           ))}

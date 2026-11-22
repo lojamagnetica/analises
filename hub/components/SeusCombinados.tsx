@@ -23,7 +23,7 @@ export function SeusCombinados({ portalId }: { portalId: string }) {
         {combinados.map((c) => (
           <label key={c.id} className="marcar" style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "6px 0", borderTop: "1px solid var(--line)" }}>
             <input type="checkbox" checked={c.status === "feito"} onChange={async (e) => { await marcarCombinado(c.id, e.target.checked); recarregar(); }} />
-            <span style={{ textDecoration: c.status === "feito" ? "line-through" : "none" }}>{c.texto}
+            <span style={{ textDecoration: c.status === "feito" ? "line-through" : "none" }}>{c.status === "aberto" && c.prazo && c.prazo <= hoje() && <span className="alerta-lj" title={c.prazo < hoje() ? "Atrasado" : "É para hoje"}>!</span>}{c.texto}
               {c.prazo && c.status === "aberto" && <small className="mudo" style={{ display: "block", color: c.prazo < hoje() ? "var(--red)" : undefined }}>até {dataCurta(c.prazo)}</small>}
               {c.link && c.status === "aberto" && (c.link.startsWith("/")
                 ? <Link className="btn p peq" style={{ marginTop: 6, display: "inline-block" }} href={c.link}>Abrir →</Link>

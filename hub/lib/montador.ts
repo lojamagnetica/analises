@@ -377,9 +377,11 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     tag(760, 250, 420, 900, 0.03, "rgba(255,255,255,.35)");
     tag(470, 180, 700, 1080, -0.015, c.fundo);
     x.save(); x.translate(470, 180); x.rotate(-0.015);
-    x.font = "600 44px MontMS, Arial"; const tw = x.measureText(d.kic || "").width;
+    let pk = 44; x.font = `600 ${pk}px MontMS, Arial`;
+    while (x.measureText(d.kic || "").width > 560 && pk > 26) { pk -= 2; x.font = `600 ${pk}px MontMS, Arial`; }
+    const tw = x.measureText(d.kic || "").width;
     moldura(-300, 120, tw + 50, 80, c.destaque);
-    x.fillStyle = c.destaque; x.textAlign = "left"; x.fillText(d.kic || "", -275, 176);
+    x.fillStyle = c.destaque; x.textAlign = "left"; x.fillText(d.kic || "", -275, 160 + pk * 0.36);
     let y = 300;
     itens(d.pre).slice(0, 4).forEach((p) => {
       x.fillStyle = c.destaque; x.font = "600 40px MontMS, Arial"; x.fillText("✦", -300, y + 4);
@@ -393,8 +395,8 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     // Cartão de post (estilo tweet) com a foto embaixo: humor do dia a dia da cliente.
     x.fillStyle = c.apoio; x.fillRect(0, 0, 1080, 1350);
     x.fillStyle = c.fundo; x.beginPath(); x.roundRect(80, 200, 920, 1010, 36); x.fill();
-    x.fillStyle = c.destaque; x.beginPath(); x.arc(190, 320, 64, 0, Math.PI * 2); x.fill();
-    if (logoPath) { x.save(); x.beginPath(); x.arc(190, 320, 64, 0, Math.PI * 2); x.clip(); const s2 = 100 / vb[2]; x.translate(190 - 50 - vb[0] * s2, 320 - (vb[3] * s2) / 2 - vb[1] * s2); x.scale(s2, s2); x.fillStyle = c.fundo; x.fill(logoPath); x.restore(); }
+    x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(190, 320, 64, 0, Math.PI * 2); x.fill(); x.lineWidth = 2; x.strokeStyle = "rgba(0,0,0,.12)"; x.stroke();
+    if (logoPath) { x.save(); x.beginPath(); x.arc(190, 320, 64, 0, Math.PI * 2); x.clip(); const s2 = 100 / vb[2]; x.translate(190 - 50 - vb[0] * s2, 320 - (vb[3] * s2) / 2 - vb[1] * s2); x.scale(s2, s2); x.fillStyle = "#151515"; x.fill(logoPath); x.restore(); }
     const [nome, arroba] = (d.kic || "").split("·").map((v) => v.trim());
     x.textAlign = "left"; x.font = "600 36px MontMS, Arial"; x.fillStyle = c.destaque; x.fillText(nome || "", 280, 312);
     x.font = "400 26px MontMS, Arial"; x.fillStyle = c.texto; x.fillText(arroba || "", 280, 352);
@@ -447,8 +449,9 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
     const [nome0, arroba0] = (d.kic || "").split("·").map((v) => v.trim());
     const nome = nome0 || id.perfil?.nome || "", arroba = arroba0 || id.perfil?.arroba || "";
     const cx = 150, cy = 330, r = 62;
-    x.fillStyle = c.apoio; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill();
-    if (logoPath) { x.save(); x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.clip(); const lw = r * 1.55, s2 = lw / vb[2]; x.translate(cx - lw / 2 - vb[0] * s2, cy - (vb[3] * s2) / 2 - vb[1] * s2); x.scale(s2, s2); x.fillStyle = c.texto; x.fill(logoPath); x.restore(); }
+    // a bolinha repete a foto do perfil: fundo branco e a logo escura
+    x.fillStyle = "#FFFFFF"; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); x.lineWidth = 2; x.strokeStyle = "rgba(0,0,0,.12)"; x.stroke();
+    if (logoPath) { x.save(); x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.clip(); const lw = r * 1.55, s2 = lw / vb[2]; x.translate(cx - lw / 2 - vb[0] * s2, cy - (vb[3] * s2) / 2 - vb[1] * s2); x.scale(s2, s2); x.fillStyle = "#151515"; x.fill(logoPath); x.restore(); }
     x.textAlign = "left"; x.font = "600 38px MontMS, Arial"; x.fillStyle = c.texto; x.fillText(nome, 240, 322);
     const nw = x.measureText(nome).width;
     if (nome) { x.fillStyle = c.destaque; x.beginPath(); x.arc(240 + nw + 30, 309, 17, 0, Math.PI * 2); x.fill();

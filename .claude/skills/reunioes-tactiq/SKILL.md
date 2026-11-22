@@ -17,7 +17,11 @@ Nada daqui vai para a loja sem a Camilla aprovar. Repositório PÚBLICO: nunca e
 ## Como escrever
 - **resumo_loja** (a loja pode ler): português simples, na voz da Camilla. Três blocos: "O que trouxemos da análise", "Correções pendentes" (se houver) e "Direcionamentos". Linha de gestão: o problema com número quando houver, o que ela já faz bem, a solução e o combinado que sai dela. Segunda pessoa e responsabilidade com a pessoa. Nada de "balcão", "LDS" ou "Loja de Sucesso". Não repita pergunta que a loja já respondeu.
 - **interno** (só equipe): tudo que não é para a loja ler: conflito com pessoas do time, saúde e família, dificuldade financeira, números de crediário e dívidas, avaliações de pessoas, risco de saída, opinião sobre terceiros.
-- **combinados** (`[{texto, quem, prazo}]`): o que a loja se comprometeu a começar a fazer, com as palavras dela. `quem` = `loja`, `claudia` ou `camilla`. `prazo` em AAAA-MM-DD; se a conversa disse "hoje", "amanhã" ou "sexta", calcule a data. Só o que foi dito de fato, nada inventado.
+- **combinados** (`[{texto, quem, prazo, impacta}]`): o que a loja se comprometeu a começar a fazer, com as palavras dela. `quem` = `loja`, `claudia` ou `camilla`. `prazo` em AAAA-MM-DD; se a conversa disse "hoje", "amanhã" ou "sexta", calcule a data. Só o que foi dito de fato, nada inventado.
+  - **impacta** (só nos de `quem = loja`): "esse passo vira o resultado?". `true` = a Claudia acompanha; `false` = rotina, o Hub lembra a loja sozinho; `null` = não deu para saber (a Claudia acompanha). A loja vê e é alertada de todos os combinados de qualquer jeito.
+    - `true` se: mexe direto na meta do mês ou no Contrato de Foco (campanha, evento, live de venda, compra, reativação de clientes, preço e promoção); tem data e o atraso custa venda; destrava a próxima etapa da mentoria (dados do Diagnóstico, plano do mês aprovado, contratação); ou é decisão de gestão de pessoas (meta individual, feedback, premiação).
+    - `false` se: é hábito que se repete (lançar o caixa, mensagem de direção do dia, missão da semana, cadastrar cliente); o próprio Hub confere se foi feito (caixa lançado, relatório enviado); é aprender ou testar uma ferramenta; ou é organização que não muda a venda do mês.
+    - Na dúvida, `null`.
 - **para_claudia** (`[{texto, prazo}]`): o que a CS confirma ou acompanha (primeiro lançamento do caixa, acesso criado, sessão prática, prazo vencendo). Cada item é uma ação curta com data.
 - Valores e números só como foram ditos, marcando "aproximado" quando a pessoa também disse assim.
 

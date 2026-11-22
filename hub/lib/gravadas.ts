@@ -7,7 +7,8 @@ import { salvarRascunho, liberarResumo } from "@/lib/reunioes";
 import { somarDias } from "@/lib/acoes-mes";
 import { hoje } from "@/lib/formato";
 
-export type CombinadoRascunho = { texto: string; quem: "loja" | "claudia" | "camilla"; prazo: string | null };
+/** `impacta`: o agente sugere se o passo vira o resultado (a CS acompanha) ou é rotina (o Hub lembra a loja); null = não deu para saber. */
+export type CombinadoRascunho = { texto: string; quem: "loja" | "claudia" | "camilla"; prazo: string | null; impacta?: boolean | null };
 export type ParaClaudia = { texto: string; prazo: string | null };
 export type Gravada = {
   id: string; tactiq_id: string; tactiq_url: string | null; portal_id: string | null; titulo: string | null; data: string | null; duracao_min: number | null;
@@ -39,7 +40,7 @@ export async function aprovarGravada(g: Gravada, o: { por: string; liberarResumo
   await ok(sb().from("reunioes_gravadas").update({ status: "aprovada", para_claudia: cs, decidido_em: new Date().toISOString(), decidido_por: o.por }).eq("id", g.id));
   const comb = interna ? [] : g.combinados.filter((c) => c.texto.trim());
   if (comb.length) {
-    await ok(sb().from("loja_combinados").insert(comb.map((c) => ({ portal_id: g.portal_id, texto: c.texto.trim(), quem: c.quem, prazo: c.prazo || null, origem: "reuniao", criado_por: o.por }))));
+    await ok(sb().from("loja_combinados").insert(comb.map((c) => ({ portal_id: g.portal_id, texto: c.texto.trim(), quem: c.quem, prazo: c.prazo || null, impacta: c.quem === "loja" ? c.impacta ?? null : null, origem: "reuniao", criado_por: o.por }))));
     feitos.push(`${comb.length} ${comb.length === 1 ? "combinado" : "combinados"}`);
   }
   if (cs.length) {

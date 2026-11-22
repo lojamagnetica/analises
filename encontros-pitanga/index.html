@@ -94,6 +94,33 @@
 .simtx .c span{position:absolute;left:0;right:0;font-family:"Cormorant Garamond",serif;font-style:italic;font-size:15px;opacity:0;animation:simc 15s infinite}
 .simtx .c span:nth-child(1){animation-delay:0s}.simtx .c span:nth-child(2){animation-delay:3s}.simtx .c span:nth-child(3){animation-delay:6s}.simtx .c span:nth-child(4){animation-delay:9s}
 @keyframes simc{0%{opacity:0}2%{opacity:1}18%{opacity:1}20%{opacity:0}100%{opacity:0}}
+</style><style>
+.ap{display:flex;gap:8px;align-items:center;margin-top:12px;flex-wrap:wrap}
+.ap button{font:700 10.5px Montserrat,sans-serif;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:20px;padding:8px 13px;cursor:pointer;line-height:1}
+.ap .lk.on{background:var(--neon);border-color:var(--neon);color:#12100E}
+.ap .nt.on{border-color:var(--neon);color:var(--neon)}
+.ap textarea{flex-basis:100%;width:100%;min-height:64px;background:#0f0d0b;border:1px solid var(--line);color:var(--txt);font:14px Montserrat,sans-serif;padding:10px;border-radius:6px;display:none}
+.ap.open textarea{display:block}
+.mi .ap{position:absolute;top:8px;right:8px;margin:0;z-index:3}
+.mi .ap button{background:rgba(18,16,14,.75);border-color:rgba(255,255,255,.25);color:#F3EDE4;padding:7px 10px}
+.mi .ap textarea{position:absolute;top:38px;right:0;width:220px;flex-basis:auto}
+.apmark{outline:2px solid var(--neon);outline-offset:3px}
+#apBar{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;z-index:60;background:#C9965F;color:#12100E;border:0;border-radius:28px;padding:13px 20px;font:800 11.5px Montserrat,sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 28px rgba(0,0,0,.5);white-space:nowrap}
+#apBar .c{display:inline-block;background:#12100E;color:#C9965F;border-radius:10px;padding:1px 8px;margin-left:8px}
+#apPanel{position:fixed;inset:auto 0 0 0;max-height:82vh;overflow:auto;z-index:70;background:#1B1714;border-top:1px solid #C9965F;padding:22px 20px 90px;transform:translateY(105%);transition:transform .3s;color:var(--txt)}
+#apPanel.on{transform:none}
+#apPanel h3{font:800 13px Montserrat,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--neon);margin:0 0 4px}
+#apPanel .it{border-bottom:1px solid var(--line);padding:10px 0;font-size:14px}
+#apPanel .it b{display:block;font-weight:600}
+#apPanel .it i{color:var(--muted);font-size:13px}
+#apPanel textarea{width:100%;min-height:90px;background:#0f0d0b;border:1px solid var(--line);color:var(--txt);font:14px Montserrat,sans-serif;padding:10px;border-radius:6px;margin:8px 0 14px}
+#apPanel .btns{display:flex;gap:10px;flex-wrap:wrap}
+#apPanel .btns button{font:800 11px Montserrat,sans-serif;letter-spacing:.14em;text-transform:uppercase;border-radius:22px;padding:12px 16px;cursor:pointer;border:1px solid #C9965F}
+#apPanel .b1{background:#C9965F;color:#12100E}#apPanel .b2{background:transparent;color:#C9965F}
+#apPanel .x{position:absolute;top:12px;right:16px;background:none;border:0;color:var(--muted);font-size:26px;cursor:pointer}
+.apintro{border:1px solid var(--neon);padding:16px 18px;margin:22px auto 0;max-width:820px;font-size:14px;color:var(--muted)}
+.apintro b{color:var(--txt)}
+@media print{#apBar,#apPanel,.ap{display:none!important}}
 </style></head>
 <style>
   .goal{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:26px 0 0}
@@ -240,7 +267,7 @@
   </nav>
   <section class="intro">
     <p>Num tempo em que todo mundo está online e distante, o fim de ano é sobre <b>presença</b>. A campanha mostra os encontros que importam e coloca as duas Pitangas como o lugar do <b>presente</b> para cada pessoa e do <b>look</b> para cada ocasião.</p>
-  </section>
+  </section><div class="apintro"><b>Como aprovar:</b> em cada trecho da campanha tem o botão <b>♡ Gostei</b> (nos vídeos, <b>♡ Quero fazer</b>) e o campo <b>✎ Observação</b>. Marque tudo o que você gostou, comente o que quiser ajustar e, no fim, toque em <b>Minhas escolhas</b> (botão no rodapé) para enviar tudo para a Camilla pelo WhatsApp.</div>
   <div class="mood"><a class="mi tall" href="https://br.pinterest.com/pin/1002262092082751752/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/37/d2/7d/37d27d5c87b8120d5eca3bac0fa3f47c.jpg" alt="Família" loading="lazy" referrerpolicy="no-referrer"><span>Família</span></a><a class="mi " href="https://br.pinterest.com/pin/1150458667339696922/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/c8/6e/28/c86e2865ee1cbaad214d93732e8d7c57.jpg" alt="O presente" loading="lazy" referrerpolicy="no-referrer"><span>O presente</span></a><a class="mi tall" href="https://br.pinterest.com/pin/780952391681497969/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/70/89/ea/7089eabb7dfcdcbe3390797109eb7601.jpg" alt="Amigos" loading="lazy" referrerpolicy="no-referrer"><span>Amigos</span></a><a class="mi " href="https://br.pinterest.com/pin/134122895149528013/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/b0/c3/e3/b0c3e327301bb1175fabb6d32d9902ac.jpg" alt="Fé" loading="lazy" referrerpolicy="no-referrer"><span>Fé</span></a><a class="mi " href="https://br.pinterest.com/pin/1117666832559805781/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/1a/f9/34/1af934bb3e69bbc299aa559853dc6c97.jpg" alt="A mesa" loading="lazy" referrerpolicy="no-referrer"><span>A mesa</span></a><a class="mi tall" href="https://br.pinterest.com/pin/952581758710315820/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/e4/b0/f7/e4b0f784464e458875dba000ceacb786.jpg" alt="A dois" loading="lazy" referrerpolicy="no-referrer"><span>A dois</span></a><a class="mi tall" href="https://br.pinterest.com/pin/1142858842972549813/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/a2/da/3c/a2da3cd088dfcda9fff87e2d395ba4e3.jpg" alt="Ele" loading="lazy" referrerpolicy="no-referrer"><span>Ele</span></a><a class="mi " href="https://br.pinterest.com/pin/1127377719245598094/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/54/20/1c/54201c09cf01805c583234e3e1094286.jpg" alt="O brinde" loading="lazy" referrerpolicy="no-referrer"><span>O brinde</span></a><a class="mi tall" href="https://br.pinterest.com/pin/515521488618308900/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/52/60/d9/5260d9a9175b84969d495738c421584a.jpg" alt="A virada" loading="lazy" referrerpolicy="no-referrer"><span>A virada</span></a><a class="mi " href="https://br.pinterest.com/pin/4603452970995589888/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/04/63/7f/04637f66f38edf45569a90d4f777b839.jpg" alt="Embrulho" loading="lazy" referrerpolicy="no-referrer"><span>Embrulho</span></a><a class="mi " href="https://br.pinterest.com/pin/63683782252492030/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/05/5b/9d/055b9d7b4fa7f4bd805361212c9503ac.jpg" alt="Presença" loading="lazy" referrerpolicy="no-referrer"><span>Presença</span></a><a class="mi " href="https://br.pinterest.com/pin/48765608461114120/" target="_blank" rel="noopener"><img src="https://i.pinimg.com/736x/e0/de/ac/e0deac9e75e85f6f793b65bfe4ebcbf8.jpg" alt="Silêncio" loading="lazy" referrerpolicy="no-referrer"><span>Silêncio</span></a></div>
   <div class="moodcap">Moodboard · a emoção da campanha (referências via Pinterest)</div>
 
@@ -880,5 +907,81 @@ document.addEventListener('click',async e=>{
 })();
 </script>
 
+<button id="apBar" type="button">♡ Minhas escolhas <span class="c" id="apCount">0</span></button>
+<aside id="apPanel"><button class="x" type="button" id="apX">×</button>
+<h3>Minhas escolhas</h3><p style="color:var(--muted);font-size:13px;margin:0 0 10px">Tudo o que você marcou com ♡ e as suas observações. Quando terminar, envie para a Camilla.</p>
+<div id="apList"></div>
+<h3 style="margin-top:18px">Observação geral</h3>
+<textarea id="apGeral" placeholder="Algo mais que você quer comentar sobre a campanha?"></textarea>
+<div class="btns"><button class="b1" type="button" id="apWa">Enviar no WhatsApp</button><button class="b2" type="button" id="apCopy">Copiar</button><button class="b2" type="button" id="apClear">Limpar tudo</button></div>
+</aside>
+<script>
+(function(){
+  const K='enc-aprov-v1'; const $=id=>document.getElementById(id);
+  let st={}; try{st=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}
+  st.items=st.items||{}; st.geral=st.geral||'';
+  const save=()=>{try{localStorage.setItem(K,JSON.stringify(st))}catch(e){} render()};
+  const t=el=>el?el.textContent.replace(/\s+/g,' ').trim():'';
+  const T=[
+    ['.mi',el=>'Moodboard · '+t(el.querySelector('span'))],
+    ['.oc',el=>'Objetivo · '+t(el.querySelector('h3'))],
+    ['.mc',el=>'Entenda · '+t(el.querySelector('b'))],
+    ['.rule',el=>'Regra · '+t(el.querySelector('b'))],
+    ['.brands',()=> 'Identidade · símbolos das lojas'],
+    ['.palette',()=> 'Identidade · paleta de cores'],
+    ['.typo',()=> 'Identidade · tipografia'],
+    ['.mock',el=>'Modelo · '+t(el.querySelector('.cap'))],
+    ['.sellc',el=>'O que vender · '+t(el.querySelector('h3'))],
+    ['.week',el=>'Calendário · '+t(el.querySelector('h3'))],
+    ['.nvref',()=> 'Filme · inspiração NV'],
+    ['.film',()=> 'Filme · roteiro completo (tabela)'],
+    ['.opt',el=>'Roteiro · '+t(el.closest('.step')?.querySelector('h2'))+' · '+t(el.querySelector('h3'))],
+    ['.extra',el=>'Roteiro · '+t(el.closest('.step')?.querySelector('h2'))+' · '+t(el.querySelector('b'))],
+    ['.tcard',el=>'Club Pitanga · '+t(el.querySelector('b'))],
+    ['.tline',()=> 'Club Pitanga · cronograma']
+  ];
+  function attach(){
+    const seen=new Set();
+    T.forEach(([sel,name])=>document.querySelectorAll(sel).forEach((el,i)=>{
+      if(el.querySelector(':scope > .ap'))return;
+      let label=name(el)||sel; let id=label; let n=2; while(seen.has(id)){id=label+' ('+n+++')'} seen.add(id);
+      if(getComputedStyle(el).position==='static')el.style.position='relative';
+      const ap=document.createElement('div'); ap.className='ap'; ap.dataset.id=id;
+      const W=(sel==='.opt'||sel==='.week')?'Quero fazer':'Gostei'; ap.dataset.w=W; ap.innerHTML='<button type="button" class="lk">♡ '+W+'</button><button type="button" class="nt">✎ Observação</button><textarea placeholder="Sua observação sobre este trecho"></textarea>';
+      const lk=ap.querySelector('.lk'), nt=ap.querySelector('.nt'), ta=ap.querySelector('textarea');
+      const sync=()=>{const v=st.items[id]||{}; lk.classList.toggle('on',!!v.like); lk.textContent=(v.like?'♥ ':'♡ ')+ap.dataset.w; nt.classList.toggle('on',!!v.note); ta.value=v.note||''; el.classList.toggle('apmark',!!v.like)};
+      lk.onclick=e=>{e.stopPropagation(); const v=st.items[id]=st.items[id]||{}; v.like=!v.like; v.label=id; tidy(id); save(); sync()};
+      nt.onclick=e=>{e.stopPropagation(); ap.classList.toggle('open'); if(ap.classList.contains('open'))ta.focus()};
+      ta.oninput=()=>{const v=st.items[id]=st.items[id]||{}; v.note=ta.value; v.label=id; tidy(id); save(); nt.classList.toggle('on',!!ta.value)};
+      ta.onclick=e=>e.stopPropagation();
+      if((st.items[id]||{}).note)ap.classList.add('open');
+      el.appendChild(ap); sync();
+    }));
+  }
+  function tidy(id){const v=st.items[id]; if(v&&!v.like&&!(v.note||'').trim())delete st.items[id]}
+  function list(){return Object.entries(st.items).filter(([k,v])=>v.like||(v.note||'').trim())}
+  function render(){
+    const L=list(); $('apCount').textContent=L.length;
+    $('apList').innerHTML=L.length?L.map(([k,v])=>'<div class="it"><b>'+(v.like?'♥ ':'✎ ')+k.replace(/</g,'&lt;')+'</b>'+((v.note||'').trim()?'<i>'+v.note.replace(/</g,'&lt;')+'</i>':'')+'</div>').join(''):'<p style="color:var(--muted);font-size:14px">Ainda nada marcado. Toque em ♡ Gostei nos trechos da campanha.</p>';
+  }
+  function texto(){
+    const L=list(); const g=L.filter(([k,v])=>v.like), o=L.filter(([k,v])=>!v.like);
+    let out='*Campanha ENCONTROS · minhas escolhas*\n\n';
+    if(g.length){out+='*Escolhi (gostei / quero fazer):*\n'+g.map(([k,v])=>'♥ '+k+((v.note||'').trim()?'\n   ✎ '+v.note.trim():'')).join('\n')+'\n\n'}
+    if(o.length){out+='*Observações:*\n'+o.map(([k,v])=>'✎ '+k+': '+v.note.trim()).join('\n')+'\n\n'}
+    if(st.geral.trim())out+='*Observação geral:*\n'+st.geral.trim();
+    return out.trim();
+  }
+  $('apBar').onclick=()=>$('apPanel').classList.toggle('on');
+  $('apX').onclick=()=>$('apPanel').classList.remove('on');
+  $('apGeral').value=st.geral; $('apGeral').oninput=e=>{st.geral=e.target.value; try{localStorage.setItem(K,JSON.stringify(st))}catch(_){}};
+  $('apWa').onclick=()=>window.open('https://wa.me/?text='+encodeURIComponent(texto()),'_blank');
+  $('apCopy').onclick=async()=>{const tx=texto(); try{await navigator.clipboard.writeText(tx); $('apCopy').textContent='Copiado ✓'}catch(e){const a=document.createElement('textarea');a.value=tx;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();$('apCopy').textContent='Copiado ✓'} setTimeout(()=>$('apCopy').textContent='Copiar',2000)};
+  $('apClear').onclick=()=>{if(!confirm('Apagar todas as escolhas e observações?'))return; st={items:{},geral:''}; $('apGeral').value=''; save(); document.querySelectorAll('.ap').forEach(a=>{a.remove()}); attach()};
+  const go=()=>{attach(); render()};
+  if(document.readyState==='complete')setTimeout(go,300); else window.addEventListener('load',()=>setTimeout(go,300));
+  const rb=document.getElementById('revBtn'); if(rb)rb.style.bottom='78px';
+})();
+</script>
 </body>
 </html>

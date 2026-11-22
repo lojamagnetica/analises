@@ -59,7 +59,8 @@ export type Post = {
   roteiro: string; legenda: string; cta: string; origem: string | null; status: Status; com_rosto: boolean | null;
   views: number | null; comentarios: number | null; mensagens: number | null; vendas: number | null;
   alcance: number | null; envios: number | null; salvamentos: number | null; modelo: string | null; created_at: string;
-  imagens?: ImagemPost[]; // imagens prontas para baixar e postar
+  imagens?: ImagemPost[]; // imagens e vídeos prontos para baixar e postar
+  fazer?: string; // "O que você precisa fazer": passos, um por linha
 };
 export type ImagemPost = { path: string; nome: string };
 
@@ -157,12 +158,19 @@ export const postSalvar = (id: string, campos: Partial<Post>) => ok(sb().from("l
 export const postApagar = (id: string) => ok(sb().from("loja_posts").delete().eq("id", id));
 
 // Imagens prontas do post: ficam no balde "relatorios", na pasta do portal.
+export async function lerPostLoja(id: string) {
+  const { data, error } = await sb().from("loja_posts").select("*").eq("id", id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as Post | null;
+}
+export const ehVideo = (nome: string) => /\.(mp4|mov|m4v|webm)$/i.test(nome);
+
 export async function postImagemSubir(portalId: string, postId: string, arquivo: File): Promise<ImagemPost> {
-  if (arquivo.size > 15 * 1024 * 1024) throw new Error("A imagem passa de 15 MB.");
+  if (arquivo.size > 200 * 1024 * 1024) throw new Error("O arquivo passa de 200 MB.");
   const limpo = arquivo.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.-]+/g, "_").slice(-80);
   const path = `${portalId}/posts/${postId}/${Date.now()}__${limpo}`;
   const { error } = await sb().storage.from("relatorios").upload(path, arquivo, { upsert: false, contentType: arquivo.type || undefined });
-  if (error) throw new Error("Não deu para subir a imagem. Confira a internet e tente de novo.");
+  if (error) throw new Error("Não deu para subir o arquivo. Confira a internet e tente de novo.");
   return { path, nome: arquivo.name };
 }
 export async function postImagemTirar(img: ImagemPost) { await sb().storage.from("relatorios").remove([img.path]); }
@@ -174,7 +182,7 @@ export async function postImagemUrl(path: string) {
 export async function postImagemBaixar(img: ImagemPost) {
   const url = await postImagemUrl(img.path); if (!url) throw new Error("Não deu para abrir a imagem.");
   const b = await (await fetch(url)).blob();
-  const f = new File([b], img.nome, { type: b.type || "image/png" });
+  const f = new File([b], img.nome, { type: b.type || (ehVideo(img.nome) ? "video/mp4" : "image/png") });
   try {
     if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f] }); return; }
   } catch { return; }

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { Excluir } from "@/components/Excluir";
 import { Titulo } from "@/components/Titulo";
@@ -15,7 +15,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlanos, mesDoPlano, semanaDoDia } from "@/lib/plano-mes";
 import {
   COR_OBJETIVO, DIAS_SEMANA, OBJETIVOS, STATUS, agendaIcs, baixar, carregarConteudo, conteudoSalvar, datasProximas, diaDaSemana,
-  gerarSemana, postApagar, postSalvar, postsCriar, postImagemBaixar, postImagemSubir, postImagemTirar, postImagemUrl, type ImagemPost, roteirosDaLoja, segundaDe, type Ajustes, type MetodoConteudo, type Post,
+  gerarSemana, postApagar, postSalvar, postsCriar, roteirosDaLoja, segundaDe, type Ajustes, type MetodoConteudo, type Post,
   type Status,
 } from "@/lib/instagram";
 
@@ -74,58 +74,6 @@ function Mes({ inicio, posts, datas, lancamentos, aoMudarMes, aoAbrirDia }: {
 }
 
 
-/** Imagens prontas do post: miniaturas com "Baixar" (no celular vai para a galeria) e, editando, subir ou tirar. */
-function ProntoParaPostar({ p, editar, aoMudar }: { p: Post; editar: boolean; aoMudar: () => void }) {
-  const imgs = p.imagens ?? [];
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [ocupado, setOcupado] = useState("");
-  const [erro, setErro] = useState("");
-  useEffect(() => {
-    let vivo = true;
-    Promise.all(imgs.map(async (i) => [i.path, await postImagemUrl(i.path)] as const)).then((xs) => { if (vivo) setUrls(Object.fromEntries(xs)); });
-    return () => { vivo = false; };
-  }, [p.imagens]); // eslint-disable-line react-hooks/exhaustive-deps
-  const salvarLista = async (lista: ImagemPost[]) => { await postSalvar(p.id, { imagens: lista }); aoMudar(); };
-  const subir = async (fs: FileList | null) => {
-    if (!fs?.length) return; setErro(""); setOcupado("subindo");
-    try { const novas: ImagemPost[] = []; for (const f of Array.from(fs)) novas.push(await postImagemSubir(p.portal_id, p.id, f)); await salvarLista([...imgs, ...novas]); }
-    catch (e) { setErro((e as Error).message); } finally { setOcupado(""); }
-  };
-  const tirar = async (i: ImagemPost) => {
-    if (!confirm("Tirar esta imagem do post?")) return;
-    try { await postImagemTirar(i); await salvarLista(imgs.filter((x) => x.path !== i.path)); } catch (e) { setErro((e as Error).message); }
-  };
-  const baixarTodas = async () => { setOcupado("baixando"); try { for (const i of imgs) await postImagemBaixar(i); } catch (e) { setErro((e as Error).message); } finally { setOcupado(""); } };
-  if (!imgs.length && !editar) return null;
-  return (
-    <div className="mt" style={{ background: "var(--bg2, #f6f3ee)", borderRadius: 8, padding: 10 }}>
-      {imgs.length > 0 && (<>
-        <div className="linha entre" style={{ gap: 6 }}>
-          <small><b>✅ Pronto para postar</b> · {imgs.length === 1 ? "1 imagem" : `${imgs.length} imagens, nesta ordem`}</small>
-          {imgs.length > 1 && <button type="button" className="btn s peq" disabled={!!ocupado} onClick={baixarTodas}>{ocupado === "baixando" ? "Baixando…" : "Baixar todas"}</button>}
-        </div>
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 8 }}>
-          {imgs.map((i, k) => (
-            <div key={i.path} style={{ flex: "0 0 auto", width: 96, textAlign: "center" }}>
-              {urls[i.path] ? <img src={urls[i.path]} alt={`Imagem ${k + 1}`} style={{ width: 96, height: 120, objectFit: "cover", borderRadius: 4, display: "block" }} /> : <div style={{ width: 96, height: 120, background: "#ddd", borderRadius: 4 }} />}
-              <button type="button" className="btn s peq" style={{ marginTop: 4, width: "100%" }} onClick={() => postImagemBaixar(i).catch((e) => setErro(e.message))}>Baixar</button>
-              {editar && <button type="button" className="link-loja" style={{ fontSize: 11 }} onClick={() => tirar(i)}>tirar</button>}
-            </div>
-          ))}
-        </div>
-        {p.legenda && <div className="mt"><Copiar texto={p.legenda} rotulo="Copiar legenda" /></div>}
-      </>)}
-      {editar && (
-        <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>
-          {ocupado === "subindo" ? "Subindo…" : imgs.length ? "Adicionar imagens" : "Subir imagens prontas"}
-          <input type="file" accept="image/*" multiple hidden onChange={(e) => { subir(e.target.files); e.target.value = ""; }} />
-        </label>
-      )}
-      {erro && <div className="aviso mt">{erro}</div>}
-    </div>
-  );
-}
-
 function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: () => void }) {
   const [aberto, setAberto] = useState(false);
   const [f, setF] = useState(p);
@@ -134,7 +82,7 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
   const salvar = async (extra: Partial<Post> = {}) => {
     setErro("");
     try {
-      const { id: _id, portal_id: _p, created_at: _c, imagens: _i, ...resto } = { ...f, ...extra };
+      const { id: _id, portal_id: _p, created_at: _c, imagens: _i, fazer: _f, ...resto } = { ...f, ...extra };
       await postSalvar(p.id, resto); setAberto(false); aoMudar();
     } catch (e) { setErro((e as Error).message); }
   };
@@ -146,9 +94,11 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
       </div>
       <div style={{ fontWeight: 700, margin: "6px 0 2px", fontSize: 14 }}>{p.gancho || p.tema}</div>
       <small className="mudo">{p.tema}</small>
-      {!aberto && <ProntoParaPostar p={p} editar={false} aoMudar={aoMudar} />}
+      {(p.imagens?.length ?? 0) > 0 && <div className="mt"><span className="selo feito" style={{ fontSize: 11 }}>✅ Pronto para postar · {p.imagens!.length} {p.imagens!.length === 1 ? "arquivo" : "arquivos"}</span></div>}
+      {!!p.fazer?.trim() && p.status !== "Publicado" && <div className="mt"><span className="selo alerta" style={{ fontSize: 11 }}>Tem um passo para você</span></div>}
       <div className="linha mt" style={{ gap: 6 }}>
-        <button type="button" className="btn s peq" onClick={() => setAberto(!aberto)}>{aberto ? "Fechar" : "Abrir"}</button>
+        <Link className="btn p peq" href={`/conteudo/post?id=${p.id}`}>Abrir</Link>
+        <button type="button" className="btn s peq" onClick={() => setAberto(!aberto)}>{aberto ? "Fechar edição" : "Editar aqui"}</button>
         {p.status !== "Publicado" && (
           <button type="button" className="btn s peq" onClick={() => salvar({ status: STATUS[STATUS.indexOf(p.status) + 1] })}>→ {STATUS[STATUS.indexOf(p.status) + 1]}</button>
         )}
@@ -161,7 +111,6 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
             <div><label className="rotulo">Formato</label><select value={f.formato} onChange={(e) => campo("formato", e.target.value)}>{[...new Set([...m.formatos, f.formato])].map((x) => <option key={x}>{x}</option>)}</select></div>
             <div><label className="rotulo">Objetivo</label><select value={f.objetivo} onChange={(e) => campo("objetivo", e.target.value as Post["objetivo"])}>{OBJETIVOS.map((x) => <option key={x}>{x}</option>)}</select></div>
           </div>
-          <ProntoParaPostar p={p} editar aoMudar={aoMudar} />
           <label className="rotulo">Gancho (falado e escrito na tela)</label><input type="text" value={f.gancho} onChange={(e) => campo("gancho", e.target.value)} />
           <label className="rotulo">Roteiro</label><textarea rows={6} value={f.roteiro} onChange={(e) => campo("roteiro", e.target.value)} />
           <label className="rotulo">CTA</label><input type="text" value={f.cta} onChange={(e) => campo("cta", e.target.value)} />

@@ -49,9 +49,12 @@ export default function Mural() {
   const [msg, setMsg] = useState("");
   useEffect(() => { if (base) setD(base); }, [base]);
 
+  // O último estado gravado: cada gravação manda só o que mudou desde ele, sem apagar o que mudou por fora.
+  const gravado = useRef<DadosMural | null>(null);
+  useEffect(() => { if (base) gravado.current = base; }, [base]);
   async function guardar(novo: DadosMural) {
     setD(novo);
-    try { await salvarMural(portal.id, chave, novo); setMsg("Salvo ✓"); } catch (e) { setMsg(`Não salvou: ${(e as Error).message}`); }
+    try { await salvarMural(portal.id, chave, novo, gravado.current ?? undefined); gravado.current = novo; setMsg("Salvo ✓"); } catch (e) { setMsg(`Não salvou: ${(e as Error).message}`); }
     setTimeout(() => setMsg(""), 2000);
   }
   if (!d) return <Carregando />;

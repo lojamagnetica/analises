@@ -113,7 +113,8 @@ export async function painelCs(): Promise<PainelCs> {
     }
     // Combinados: a confirmação logo depois da reunião (a loja já conhece a CS, do onboarding) e a pergunta "como foi?" no prazo de cada um.
     const combinados = ((combinadosTodos ?? []) as Combinado[]).filter((c) => c.portal_id === p.id);
-    const lista = combinados.filter((c) => c.status === "aberto" && c.quem === "loja");
+    // A CS acompanha só o que vira o resultado; a rotina o Hub lembra a loja sozinho.
+    const lista = combinados.filter((c) => c.status === "aberto" && c.quem === "loja" && c.impacta !== false);
     if (lista.length && !contatosLoja.some((c) => c.tipo === "combinados_novos")) {
       const itens = lista.map((c) => `${c.texto}${c.prazo ? ` (até ${dataCurta(c.prazo)})` : ""}`).join("; ");
       al.push({ chave: "combinados_novos", txt: `A Camilla fechou os combinados com a loja (${lista.length}): confirme por onde ela começa e se precisa de ajuda`, grave: true, destino: "/inicio", registro: { tipo: "combinados_novos", ref: "entrega" },

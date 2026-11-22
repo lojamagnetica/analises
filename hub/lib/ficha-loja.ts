@@ -13,7 +13,7 @@ export type FichaLoja = {
   mes: { vendido: number; vendas: number; pecas: number; dias: number; meta: number | null };
   proxima: { titulo: string; data: string } | null;
   ultima: { titulo: string; data: string } | null;
-  combinados: { id: string; texto: string; prazo: string | null; quem: string; status: string }[];
+  combinados: { id: string; texto: string; prazo: string | null; quem: string; status: string; impacta: boolean | null }[];
   /** Combinados que o agente ou a importação deixaram em rascunho: a Camilla revisa antes de a loja ver. */
   rascunhos: FichaLoja["combinados"];
   lembretes: { id: string; texto: string; quando: string | null }[];
@@ -31,7 +31,7 @@ export async function buscarFicha(id: string): Promise<FichaLoja | null> {
     sb.from("loja_caixa").select("faturamento, vendas, pecas").eq("portal_id", id).gte("dia", `${mes}-01`),
     sb.from("loja_plano_mes").select("dados").eq("portal_id", id).eq("mes", mes).maybeSingle(),
     sb.from("reunioes").select("titulo, data, status").eq("portal_id", id).order("data"),
-    sb.from("loja_combinados").select("id, texto, prazo, quem, status").eq("portal_id", id).in("status", ["aberto", "rascunho"]).order("prazo", { ascending: true }),
+    sb.from("loja_combinados").select("id, texto, prazo, quem, status, impacta").eq("portal_id", id).in("status", ["aberto", "rascunho"]).order("prazo", { ascending: true }),
     sb.from("equipe_lembretes").select("id, texto, quando").eq("portal_id", id).eq("feito", false).order("quando"),
     sb.from("loja_leituras").select("semana, publicada").eq("portal_id", id).order("semana", { ascending: false }).limit(1).maybeSingle(),
   ]);

@@ -4,6 +4,7 @@
 // O texto de cada loja fica no banco (nada de loja no código). P.A. e TKM da semana são digitáveis.
 import { supabaseBrowser } from "@/lib/supabase/client";
 import type { EscalaMes } from "@/lib/escala";
+import { juntarMural } from "@/lib/mural-juntar";
 
 export type CorEvento = { cor: string; nome: string };
 export type DadosMural = {
@@ -53,8 +54,15 @@ export async function buscarMural(portalId: string, loja: string) {
   const { data } = await supabaseBrowser().from("loja_mural").select("dados").eq("portal_id", portalId).eq("loja", loja).maybeSingle();
   return completarMural(data?.dados as Partial<DadosMural> | undefined);
 }
-export async function salvarMural(portalId: string, loja: string, dados: DadosMural) {
-  const { error } = await supabaseBrowser().from("loja_mural").upsert({ portal_id: portalId, loja, dados, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" });
+/** Grava só o que mudou desde `antes` (o que a página carregou ou gravou por último), sobre o que está no banco agora. */
+export async function salvarMural(portalId: string, loja: string, dados: DadosMural, antes?: DadosMural) {
+  const sb = supabaseBrowser();
+  let gravar: Record<string, unknown> = dados as unknown as Record<string, unknown>;
+  if (antes) {
+    const { data } = await sb.from("loja_mural").select("dados").eq("portal_id", portalId).eq("loja", loja).maybeSingle();
+    gravar = juntarMural((data?.dados ?? {}) as Record<string, unknown>, antes as unknown as Record<string, unknown>, gravar);
+  }
+  const { error } = await sb.from("loja_mural").upsert({ portal_id: portalId, loja, dados: gravar, updated_at: new Date().toISOString() }, { onConflict: "portal_id,loja" });
   if (error) throw new Error(error.message);
 }
 

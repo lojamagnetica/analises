@@ -198,6 +198,11 @@ p { margin: 0 0 .8em; }
 }
 .atalho:hover { border-color: var(--red); transform: translateY(-1px); }
 .atalho.novo { border: 2px solid var(--orange); background: var(--orange-soft); }
+/* Novidade: o ícone laranja de alerta no canto, no lugar de mais um aviso no Início. */
+.atalho.novo { position: relative; }
+/* Alerta laranja do combinado de hoje ou atrasado (o Hub lembra a loja). */
+.alerta-lj { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: var(--orange); color: #fff; font-weight: 900; font-size: 12px; line-height: 18px; text-align: center; margin-right: 6px; vertical-align: 1px; }
+.atalho.novo::after { content: "!"; position: absolute; top: 6px; right: 8px; width: 18px; height: 18px; border-radius: 50%; background: var(--orange); color: #fff; font-weight: 900; font-size: 12px; line-height: 18px; text-align: center; }
 .atalho .novidade { color: var(--orange); font-weight: 800; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .atalho .quadrado, .tudo h3 .quadrado { background: var(--soft); color: var(--ink); }
 .atalho:hover .quadrado { color: var(--red); }

@@ -12,6 +12,8 @@ export type Combinado = {
   status: "aberto" | "feito"; origem: string; criado_por: string | null; created_at: string; feito_em: string | null;
   /** Onde se resolve (página do Hub ou link). */
   link?: string | null;
+  /** Esse passo vira o resultado? true: a CS acompanha. false: rotina, só o Hub lembra a loja. null: ainda não decidido (a CS acompanha). */
+  impacta?: boolean | null;
 };
 export type NovoCombinado = { texto: string; quem: Quem; prazo: string | null };
 
@@ -55,6 +57,8 @@ export async function liberarAcompanhamento(portalId: string, itens: NovoCombina
 }
 
 export const marcarCombinado = (id: string, feito: boolean) => sb().rpc("combinado_marcar", { p_id: id, p_feito: feito });
+/** A pergunta de todo combinado da loja: vira o resultado (a CS acompanha) ou é rotina (o Hub lembra a loja)? */
+export const marcarImpacto = (id: string, impacta: boolean) => sb().from("loja_combinados").update({ impacta }).eq("id", id);
 export const excluirCombinado = (id: string) => sb().from("loja_combinados").delete().eq("id", id);
 
 /** Quem acompanha a loja (a CS): nome e, se cadastrado, o WhatsApp. */

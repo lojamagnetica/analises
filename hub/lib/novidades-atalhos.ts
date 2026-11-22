@@ -8,7 +8,7 @@ const maisNova = (l: (string | null | undefined)[]) => l.filter(Boolean).sort().
 
 /** Endereço do atalho → quando foi atualizado pela última vez. Só entra o que tem novidade para a pessoa ver. */
 export async function buscarNovidades(portalId: string, equipe: boolean): Promise<Record<string, string>> {
-  const [leitura, respostas, plano, reunioes, montador, posts] = await Promise.all([
+  const [leitura, respostas, plano, reunioes, montador, posts, mural] = await Promise.all([
     // A loja vê a leitura publicada; a equipe, a que está esperando revisão ou publicação.
     sb().from("loja_leituras").select("publicada, publicada_em, updated_at").eq("portal_id", portalId).order("semana", { ascending: false }).limit(2),
     sb().from("solicitacoes").select("updated_at").eq("portal_id", portalId).eq("status", "Respondida").order("updated_at", { ascending: false }).limit(1),
@@ -17,6 +17,8 @@ export async function buscarNovidades(portalId: string, equipe: boolean): Promis
     // Montador de carrossel liberado e posts novos na programação da semana.
     sb().from("loja_montadores").select("updated_at").eq("portal_id", portalId).eq("ativo", true).eq("liberado", true).order("updated_at", { ascending: false }).limit(1),
     sb().from("loja_posts").select("created_at").eq("portal_id", portalId).order("created_at", { ascending: false }).limit(1),
+    // Mural atualizado (missão, visão e valores, metas, escala, calendário).
+    sb().from("loja_mural").select("updated_at").eq("portal_id", portalId).order("updated_at", { ascending: false }).limit(1),
   ]);
   const l = (leitura.data ?? []) as { publicada: boolean; publicada_em: string | null; updated_at: string }[];
   const n: Record<string, string> = {};
@@ -28,5 +30,6 @@ export async function buscarNovidades(portalId: string, equipe: boolean): Promis
   const m = (montador.data ?? [])[0] as { updated_at: string } | undefined; if (m) n["/conteudo/montador"] = m.updated_at;
   const dSemana = maisNova([m?.updated_at, ((posts.data ?? [])[0] as { created_at: string } | undefined)?.created_at]);
   if (dSemana) n["/conteudo/semana"] = dSemana;
+  const mu = (mural.data ?? [])[0] as { updated_at: string } | undefined; if (mu) n["/mural"] = mu.updated_at;
   return n;
 }

@@ -3,6 +3,7 @@
 // PLANEJE AQUI: o plano de ação do mês, montado com a loja no jeito da Camilla planejar.
 // 1. Meta: o mesmo mês do ano passado + 20% (a loja pode mudar). 2. O que foi feito no ano passado e se repete.
 // 3. Datas especiais. 4. Produtos em destaque. 5. As 4 semanas (foco, conteúdo e exposição). Depois vai para a Camilla.
+import { juntarMural } from "@/lib/mural-juntar";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { MESES } from "@/lib/conteudo";
 import { fimDoMes, nomeMes, somarMes } from "@/lib/caixa";
@@ -221,8 +222,15 @@ export async function buscarPlanos(portalId: string) {
   return (data ?? []) as LinhaPlano[];
 }
 
-export async function salvarPlano(portalId: string, mes: string, dados: DadosPlano, status?: StatusPlano) {
-  const linha: Record<string, unknown> = { portal_id: portalId, mes, dados, updated_at: new Date().toISOString() };
+/** Grava o plano. Com `antes` (o que a página carregou ou gravou por último), manda só o que mudou, por cima do que está
+ *  no banco agora: uma página aberta há tempo não apaga o que mudou por fora (a meta, as ações, a premiação). */
+export async function salvarPlano(portalId: string, mes: string, dados: DadosPlano, status?: StatusPlano, antes?: DadosPlano) {
+  let gravar: unknown = dados;
+  if (antes) {
+    const { data } = await sb().from("loja_plano_mes").select("dados").eq("portal_id", portalId).eq("mes", mes).maybeSingle();
+    if (data?.dados) gravar = juntarMural(data.dados as Record<string, unknown>, antes as unknown as Record<string, unknown>, dados as unknown as Record<string, unknown>, ["metas"]);
+  }
+  const linha: Record<string, unknown> = { portal_id: portalId, mes, dados: gravar, updated_at: new Date().toISOString() };
   if (status) linha.status = status;
   if (status === "enviado") linha.enviado_em = new Date().toISOString();
   const { error } = await sb().from("loja_plano_mes").upsert(linha, { onConflict: "portal_id,mes" });

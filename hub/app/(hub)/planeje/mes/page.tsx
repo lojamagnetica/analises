@@ -45,8 +45,11 @@ function Passo({ n, titulo, sub, children }: { n: number | string; titulo: strin
   );
 }
 
+/** Meta, premiação ou horário da loja escritos como ação: não é ação de venda (vai para o passo certo). */
+const naoEhAcao = (t: string) => /^\s*(metas?|premia[çc][ãa]o)\b/i.test(t) || /\b(domingo|segunda)[^.]{0,20}fechad|hor[áa]rio da loja/i.test(t);
+
 function Plano({ mes }: { mes: string }) {
-  const { portal } = usePortal();
+  const { portal, aprova } = usePortal();
   const nMes = Number(mes.slice(5, 7)) - 1;
   const anoPassado = Number(mes.slice(0, 4)) - 1;
   const { dados: base, recarregar } = useDados(async () => {
@@ -93,14 +96,16 @@ function Plano({ mes }: { mes: string }) {
   // Salva sozinho enquanto a loja escreve.
   useEffect(() => {
     if (!d || JSON.stringify(d) === salvo.current) return;
+    // Plano aprovado: nada muda sozinho. A loja ajusta e manda de novo para a Camilla (só a Camilla grava direto).
+    if (status === "ok" && !aprova) return;
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       setEstado("salvando"); setErro("");
-      try { await salvarPlano(portal.id, mes, d); salvo.current = JSON.stringify(d); setEstado("salvo"); }
+      try { await salvarPlano(portal.id, mes, d, undefined, salvo.current ? JSON.parse(salvo.current) : undefined); salvo.current = JSON.stringify(d); setEstado("salvo"); }
       catch (e) { setErro((e as Error).message); setEstado(""); }
     }, 900);
     return () => clearTimeout(timer.current);
-  }, [d, portal.id, mes]);
+  }, [d, portal.id, mes, status, aprova]);
 
   if (!base || !d) return <Carregando />;
   const muda = (x: Partial<DadosPlano>) => setD({ ...d, ...x });
@@ -119,7 +124,7 @@ function Plano({ mes }: { mes: string }) {
   const linha = base.linha;
   const enviar = async () => {
     setErro("");
-    try { await salvarPlano(portal.id, mes, d, "enviado"); salvo.current = JSON.stringify(d); setStatus("enviado"); recarregar(); }
+    try { await salvarPlano(portal.id, mes, d, "enviado", salvo.current ? JSON.parse(salvo.current) : undefined); salvo.current = JSON.stringify(d); setStatus("enviado"); recarregar(); }
     catch (e) { setErro((e as Error).message); }
   };
 
@@ -129,7 +134,7 @@ function Plano({ mes }: { mes: string }) {
         sub={`Monte o plano de ação do mês e mande para a Camilla até ${dia(prazo)}. Tudo salva sozinho enquanto você escreve.`} />
       <div className="linha mb" style={{ gap: 8 }}>
         <span className={`selo ${st.classe}`}>{st.texto}</span>
-        <small className="mudo">{estado === "salvando" ? "salvando…" : estado === "salvo" ? "salvo ✓" : ""}</small>
+        <small className="mudo">{status === "ok" && !aprova ? (JSON.stringify(d) !== salvo.current ? "aprovado · o que você mudou vale quando mandar de novo" : "aprovado pela Camilla") : estado === "salvando" ? "salvando…" : estado === "salvo" ? "salvo ✓" : ""}</small>
       </div>
 
       {linha?.retorno && (status === "ok" || status === "ajustar") && (
@@ -221,12 +226,13 @@ function Plano({ mes }: { mes: string }) {
           const troca = (x: Partial<typeof a>) => muda({ acoes: d.acoes.map((y, j) => (j === i ? { ...y, ...x } : y)) });
           return (
             <div key={i} className="linha" style={{ gap: 8, flexWrap: "nowrap", marginBottom: 8 }}>
-              <input type="text" value={a.titulo} placeholder="Nome da ação" onChange={(e) => troca({ titulo: e.target.value })} />
+              <input type="text" value={a.titulo} placeholder="Nome da ação" onChange={(e) => troca({ titulo: e.target.value })} aria-describedby={naoEhAcao(a.titulo) ? `nao-acao-${i}` : undefined} />
               <input type="date" style={{ maxWidth: 170 }} value={a.inicio} min={`${mes}-01`} max={fimDoMes(mes)} aria-label="Começa a vender em" onChange={(e) => troca({ inicio: e.target.value })} />
               <Excluir pergunta="Tirar esta ação do plano?" fazer={async () => {}} aoFim={() => muda({ acoes: d.acoes.filter((_, j) => j !== i) })} rotulo="✕" />
             </div>
           );
         })}
+        {d.acoes.map((a, i) => naoEhAcao(a.titulo) && <p key={`n${i}`} id={`nao-acao-${i}`} className="aviso" style={{ margin: "0 0 8px" }}>⚠️ &quot;{a.titulo.slice(0, 60)}&quot; não é uma ação de venda. A meta e a premiação ficam no passo da meta, e o horário da loja nas observações: assim o calendário e as semanas ficam certos.</p>)}
         <button type="button" className="btn s peq" onClick={() => muda({ acoes: [...d.acoes, { titulo: "", inicio: "" }] })}>+ Ação deste mês</button>
         {base.opcoes.some((o) => !d.acoes.some((a) => a.acao_id === o.id)) && (
           <div className="mt">

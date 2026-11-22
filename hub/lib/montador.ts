@@ -24,13 +24,14 @@ export type Identidade = {
   aviso?: string;
   perfil?: { nome?: string; arroba?: string; assinatura?: string };
   campanha?: string; // nome da campanha escrito no rodapé das peças de live (ex.: ENCONTROS)
-  canto_img?: string; // imagem do símbolo da campanha que entra de lado no canto de baixo (data URL ou link)
+  canto_img?: string; // imagem do símbolo da campanha que entra de lado no canto de baixo (link, data URL ou arquivo de public/, ex.: simbolos/presentes-veludo.webp)
 };
 
 // Imagem do canto: carrega uma vez e avisa a tela para desenhar de novo quando chegar.
 const cantos = new Map<string, HTMLImageElement>();
 function imagemDoCanto(src?: string) {
   if (!src || typeof Image === "undefined") return null;
+  if (!/^(data:|https?:|\/)/.test(src)) src = `${BASE}/${src}`;
   let im = cantos.get(src);
   if (!im) { im = new Image(); im.onload = () => window.dispatchEvent(new Event("montador-imagem")); im.src = src; cantos.set(src, im); }
   return im.complete && im.naturalWidth ? im : null;

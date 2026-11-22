@@ -17,8 +17,19 @@ import {
 const NUM = { fontVariantNumeric: "tabular-nums" } as const;
 const COR = { CRM: "var(--purple)", Conteúdo: "var(--blue)", Ação: "var(--orange)" } as const;
 
+/** Na campanha (alto fluxo), o time, o ranking e as atitudes ficam recolhidos numa linha, à mão se a dona quiser. */
+function dobra(campanha: boolean, conteudo: React.ReactNode) {
+  if (!campanha) return conteudo;
+  return (
+    <details className="dobra-c mb">
+      <summary><span>👥 Seu time, o ranking e as atitudes do dia: guardados até a campanha acabar</span><b>ver</b></summary>
+      {conteudo}
+    </details>
+  );
+}
+
 /** O norte do dia no Início: placar, rotina, o time e as atitudes de atração, tudo a partir dos números. */
-export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], lateral }: { lateral?: React.ReactNode; portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
+export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], lateral, campanha = false }: { lateral?: React.ReactNode; campanha?: boolean; portalId: string; estoque: Respostas | undefined; modo?: Modo; lojas?: string[]; canais?: string[] }) {
   // Mais de uma loja: vale a loja em foco do portal inteiro (seletor no topo).
   const [loja] = useLojaFoco();
   // O planner é de cada loja: com as lojas juntas, ele não aparece aqui.
@@ -151,9 +162,11 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           );
         })}
       </div>
-      {lateral && <div style={{ flex: "1 1 240px", minWidth: 0, maxWidth: 400 }}>{lateral}</div>}
+      {lateral && !campanha && <div style={{ flex: "1 1 240px", minWidth: 0, maxWidth: 400 }}>{lateral}</div>}
       </div>
 
+      {dobra(campanha, <>
+      {campanha && lateral && <div className="mt" style={{ maxWidth: 400 }}>{lateral}</div>}
       {vs.length > 0 && (
         <>
           <div className="linha entre">
@@ -223,6 +236,7 @@ export function MeuDia({ portalId, estoque, modo = {}, lojas = [], canais = [], 
           </div>
         ))}
       </div>
+      </>)}
 
       {planner ? (
         <Link href="/consultoria/planner" className="card mb linha entre" style={{ textDecoration: "none", color: "inherit" }}>

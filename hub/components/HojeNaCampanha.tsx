@@ -2,26 +2,71 @@
 
 // Modo campanha do Início: a campanha no topo (dentro do herói) e o "Hoje na campanha".
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { dataCurta, hoje } from "@/lib/formato";
-import { itensDeHoje, marcarCampanha, semanaDaCampanha, type Campanha } from "@/lib/campanha";
+import { coresDeHoje, itensDeHoje, marcarCampanha, semanaDaCampanha, subirFotoCampanha, tirarFotoCampanha, urlFotoCampanha, type Campanha } from "@/lib/campanha";
+import { carregarFontes } from "@/lib/montador";
 import type { Post } from "@/lib/instagram";
 
-/** O bloco da campanha dentro do herói: nome, semana, o destaque de hoje e o botão para a página da campanha. */
-export function CampanhaNoTopo({ c }: { c: Campanha }) {
+/** O bloco da campanha dentro do herói: com a identidade da campanha (cores e letras) e a moldura da foto da loja. */
+export function CampanhaNoTopo({ c: inicial }: { c: Campanha }) {
+  const [c, setC] = useState(inicial);
   const s = semanaDaCampanha(c);
   const destaque = c.dias[hoje()]?.destaque;
+  const cores = coresDeHoje(c);
+  const [url, setUrl] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState("");
+  useEffect(() => { if (cores) carregarFontes(); }, [cores]);
+  useEffect(() => { let vivo = true; if (c.foto) urlFotoCampanha(c.foto).then((u) => vivo && setUrl(u)); else setUrl(""); return () => { vivo = false; }; }, [c.foto]);
+  const semana = s.atual ? `Semana ${s.atual} de ${s.total} · ${dataCurta(s.ini).slice(0, 5)} a ${dataCurta(s.fim).slice(0, 5)}` : `Semana de preparo · começa em ${dataCurta(c.inicio).slice(0, 5)}`;
+
+  // Campanha sem identidade cadastrada: o bloco simples, com as cores do Hub.
+  if (!cores) {
+    return (
+      <Link href="/campanha" className="campanha">
+        <small>🎁 {c.chamada || "Sua campanha"}</small>
+        <div className="nome">{c.nome}</div>
+        <div style={{ fontSize: 13, opacity: 0.9 }}>{semana}</div>
+        <div className="barra"><i style={{ width: `${Math.max(s.pct, 4)}%` }} /></div>
+        {destaque && <div style={{ fontSize: 14, lineHeight: 1.4, marginBottom: 10 }} dangerouslySetInnerHTML={{ __html: negrito(destaque) }} />}
+        <span className="btn b peq">Abrir a campanha →</span>
+      </Link>
+    );
+  }
+
+  const escolher = async (arquivo: File | undefined) => {
+    if (!arquivo) return;
+    setEnviando(true); setErro("");
+    try { const foto = await subirFotoCampanha(c, arquivo); setC({ ...c, foto }); } catch (e) { setErro((e as Error).message); }
+    setEnviando(false);
+  };
+  const tirar = async () => {
+    if (!confirm("Tirar a foto da campanha?")) return;
+    setErro("");
+    try { await tirarFotoCampanha(c); setC({ ...c, foto: null }); } catch (e) { setErro((e as Error).message); }
+  };
   return (
-    <Link href="/campanha" className="campanha">
-      <small>🎁 {c.chamada || "Sua campanha"}</small>
+    <div className="campanha com-visual" style={{ ["--cf" as string]: cores.fundo, ["--ct" as string]: cores.texto, ["--cc" as string]: cores.cor }}>
+      <small>{c.chamada || "Sua campanha"}</small>
       <div className="nome">{c.nome}</div>
-      <div style={{ fontSize: 13, opacity: 0.9 }}>
-        {s.atual ? `Semana ${s.atual} de ${s.total} · ${dataCurta(s.ini).slice(0, 5)} a ${dataCurta(s.fim).slice(0, 5)}` : `Semana de preparo · começa em ${dataCurta(c.inicio).slice(0, 5)}`}
+      <div className="corpo">
+        <div className="texto">
+          <div className="semana">{semana}</div>
+          <div className="barra"><i style={{ width: `${Math.max(s.pct, 4)}%` }} /></div>
+          {destaque && <div className="hoje" dangerouslySetInnerHTML={{ __html: negrito(destaque).replace(/<\/?b>/g, "") }} />}
+          <Link href="/campanha" className="btn peq abrir">Abrir a campanha →</Link>
+        </div>
+        <div className="foto-c">
+          <label className={`moldura${url ? " cheia" : ""}`} title={url ? "Trocar a foto" : "Pôr a foto da campanha"}>
+            {url ? <img src={url} alt={`Foto da campanha ${c.nome}`} /> : <span><b>＋</b>{enviando ? "Enviando…" : <>Foto da<br />campanha</>}</span>}
+            <input type="file" accept="image/*" hidden onChange={(e) => { escolher(e.target.files?.[0]); e.target.value = ""; }} />
+          </label>
+          {url && <button className="tirar" onClick={tirar}>tirar</button>}
+        </div>
       </div>
-      <div className="barra"><i style={{ width: `${Math.max(s.pct, 4)}%` }} /></div>
-      {destaque && <div style={{ fontSize: 14, lineHeight: 1.4, marginBottom: 10 }} dangerouslySetInnerHTML={{ __html: negrito(destaque) }} />}
-      <span className="btn b peq">Abrir a campanha →</span>
-    </Link>
+      {erro && <div className="ajuda" style={{ color: "var(--cc)" }}>{erro}</div>}
+    </div>
   );
 }
 

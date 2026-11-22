@@ -13,7 +13,7 @@ import { buscarLojas, linhaDoTempo } from "@/lib/contatos";
 import { linkZap } from "@/lib/cs";
 import { ProntaCs } from "@/components/ProntaCs";
 import { Recolhivel } from "@/components/Recolhivel";
-import { excluirCombinado } from "@/lib/combinados";
+import { excluirCombinado, marcarImpacto } from "@/lib/combinados";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
 const ABAS = [
@@ -68,6 +68,15 @@ function Ficha({ id }: { id: string }) {
     if (error) alert(error.message); else atualizar();
   };
   const excluir = async (id: string) => { const { error } = await excluirCombinado(id); if (error) alert(error.message); else atualizar(); };
+  const impacto = async (id: string, v: boolean) => { const { error } = await marcarImpacto(id, v); if (error) alert(error.message); else atualizar(); };
+  // A pergunta de todo combinado da loja: vira o resultado (a Claudia acompanha) ou é rotina (o Hub lembra a loja)?
+  const Impacto = ({ c }: { c: { id: string; quem: string; impacta: boolean | null } }) => c.quem !== "loja" ? null : (
+    <span className="linha" style={{ gap: 4, flexWrap: "wrap", marginTop: 4 }} role="group" aria-label="Esse passo impacta o resultado?">
+      <small className="mudo">Impacta o resultado?</small>
+      <button type="button" className={`chip${c.impacta === true ? " escolhido" : ""}`} aria-pressed={c.impacta === true} onClick={() => impacto(c.id, true)}>Sim · Claudia acompanha</button>
+      <button type="button" className={`chip${c.impacta === false ? " escolhido" : ""}`} aria-pressed={c.impacta === false} onClick={() => impacto(c.id, false)}>Rotina · o Hub lembra</button>
+    </span>
+  );
   const pct = f.mes.meta ? Math.round((f.mes.vendido / f.mes.meta) * 100) : null;
   const ultimoAcesso = f.acessos.map((a) => a.ultimo_acesso).filter(Boolean).sort().reverse()[0] ?? null;
 
@@ -117,7 +126,7 @@ function Ficha({ id }: { id: string }) {
               <p className="ajuda" style={{ marginTop: 2 }}>Vieram da reunião gravada ou do histórico antigo. A loja só vê depois que você libera.</p>
               {f.rascunhos.map((c) => (
                 <div key={c.id} className="linha entre" style={{ padding: "6px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
-                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}</small></span>
+                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}</small><br /><Impacto c={c} /></span>
                   <span style={{ whiteSpace: "nowrap" }}>
                     <button className="btn p peq" onClick={() => mudar([c.id], "aberto")}>Liberar</button>{" "}
                     <button className="btn s peq" onClick={() => { if (confirm("Excluir este combinado?")) excluir(c.id); }}>Excluir</button>
@@ -130,7 +139,7 @@ function Ficha({ id }: { id: string }) {
             <Recolhivel id="ficha-combinados" titulo={`Combinados abertos · ${f.combinados.length}`}>
               {f.combinados.map((c) => (
                 <div key={c.id} className="linha entre" style={{ padding: "4px 0", borderTop: "1px solid var(--line)", gap: 8 }}>
-                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}{c.prazo && c.prazo < hoje() ? " (atrasado)" : ""}</small></span>
+                  <span>{c.texto} <small className="mudo">· {QUEM_C[c.quem] ?? c.quem}{c.prazo ? ` · até ${dataCurta(c.prazo)}` : ""}{c.prazo && c.prazo < hoje() ? " (atrasado)" : ""}</small><br /><Impacto c={c} /></span>
                   <button className="btn s peq" onClick={() => mudar([c.id], "feito")}>Feito</button>
                 </div>
               ))}

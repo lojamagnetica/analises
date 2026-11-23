@@ -24,6 +24,15 @@ export type Painel = {
 
 const sb = () => supabaseBrowser();
 
+// Senha do link: o link (vez_token) só abre a tela da senha; depois o aparelho guarda a chave (não expira).
+export type AcessoVez = { nome: string; loja: string; tem_senha: boolean };
+export const vezAcesso = async (link: string) => ((await sb().rpc("vez_acesso", { p_link: link })).data as AcessoVez | null) ?? null;
+const chaveOuErro = async (r: PromiseLike<{ data: unknown; error: { message: string } | null }>) => { const { data, error } = await r; if (error) throw new Error(error.message); return data as string; };
+export const vezCriarSenha = (link: string, senha: string) => chaveOuErro(sb().rpc("vez_criar_senha", { p_link: link, p_senha: senha }));
+export const vezEntrarSenha = (link: string, senha: string) => chaveOuErro(sb().rpc("vez_entrar_senha", { p_link: link, p_senha: senha }));
+export const vezZerarSenha = (pessoaId: string) => sb().rpc("vez_zerar_senha", { p_pessoa: pessoaId });
+export const vezSenhas = async (portalId: string) => (((await sb().rpc("vez_senhas", { p_portal: portalId })).data ?? []) as { pessoa_id: string; desde: string }[]);
+
 export const vezAbrir = async (token: string) => ((await sb().rpc("vez_painel", { p_token: token })).data as Painel | null) ?? null;
 export const vezEntrar = (token: string) => sb().rpc("vez_entrar", { p_token: token });
 export const vezSair = (token: string) => sb().rpc("vez_sair", { p_token: token });
@@ -80,7 +89,12 @@ export const atendExcluir = (id: string) => sb().from("loja_vez_atend").delete()
 export const missaoAdicionar = (portalId: string, dia: string, pessoas: string[], texto: string) =>
   sb().from("loja_missao_dia").insert(pessoas.map((pessoa_id) => ({ portal_id: portalId, dia, pessoa_id, texto })));
 export const missaoExcluir = (id: string) => sb().from("loja_missao_dia").delete().eq("id", id);
-export const novoLinkDaPessoa = (id: string) => sb().from("loja_equipe").update({ vez_token: crypto.randomUUID() }).eq("id", id);
+// Link novo: o antigo para de funcionar e os celulares conectados saem (ela cria a senha de novo).
+export const novoLinkDaPessoa = async (id: string) => {
+  const r = await sb().from("loja_equipe").update({ vez_token: crypto.randomUUID() }).eq("id", id);
+  if (!r.error) await sb().rpc("vez_zerar_senha", { p_pessoa: id });
+  return r;
+};
 
 /** Atendimentos de cada vendedora no dia e no mês, só de loja_vez_atend. loja = null: todas as lojas do portal. */
 export async function buscarContagemVez(portalId: string, loja: string | null) {

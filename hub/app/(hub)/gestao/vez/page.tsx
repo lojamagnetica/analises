@@ -12,7 +12,7 @@ import { Carregando, useDados, useLojaFoco, usePortal } from "@/lib/hub";
 import { hoje } from "@/lib/formato";
 import { quemVende } from "@/lib/pessoas";
 import { DIAS_FLUXO, MOTIVOS, filaDeEspera, fluxoSemanal, horaMin, ordenarFila, resumoDoDia, textoDoResumo } from "@/lib/vez-calculo";
-import { atendEditar, atendExcluir, buscarFluxo, buscarVezDoDia, linkDaVez, missaoAdicionar, missaoExcluir, novoLinkDaPessoa, tirarDaFila, type AtendGestao } from "@/lib/vez";
+import { atendEditar, atendExcluir, buscarFluxo, buscarVezDoDia, linkDaVez, missaoAdicionar, missaoExcluir, novoLinkDaPessoa, tirarDaFila, vezSenhas, vezZerarSenha, type AtendGestao } from "@/lib/vez";
 
 const somaDias = (d: string, n: number) => { const x = new Date(`${d}T12:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const pct = (n: number | null) => (n === null ? "—" : `${Math.round(n * 100)}%`);
@@ -33,6 +33,8 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
   const { portal } = usePortal();
   const { dados, recarregar } = useDados(() => buscarVezDoDia(portal.id, loja, dia), [portal.id, loja, dia]);
   const { dados: fluxoBruto } = useDados(() => buscarFluxo(portal.id, loja, dia), [portal.id, loja, dia]);
+  // Quem já criou a senha do link (a vendedora cria no primeiro acesso).
+  const { dados: senhas, recarregar: recarregarSenhas } = useDados(() => vezSenhas(portal.id), [portal.id]);
   useEffect(() => { if (!ehHoje) return; const t = setInterval(recarregar, 10000); return () => clearInterval(t); }, [ehHoje, recarregar]);
   const [editar, setEditar] = useState<string | null>(null);
   const [res, setRes] = useState<"vendeu" | "nao_vendeu" | "">("");
@@ -192,14 +194,16 @@ function PainelDaLoja({ loja, dia, ehHoje }: { loja: string | null; dia: string;
 
       <div className="secao">Links da equipe</div>
       <div className="card mb">
-        <p className="mudo" style={{ marginTop: 0 }}>Cada pessoa tem o seu link: abre no celular, sem senha, com a lista da vez, a meta e a missão do dia. Mande pelo WhatsApp e peça para adicionar à tela inicial.</p>
+        <p className="mudo" style={{ marginTop: 0 }}>Cada pessoa tem o seu link com a lista da vez, a meta e a missão do dia. No primeiro acesso ela cria a senha; depois o celular fica conectado. Esqueceu a senha? Toque em “Zerar senha” e ela cria outra.</p>
         {time.length ? time.map((p) => (
           <div key={p.id} className="linha entre" style={{ gap: 8, flexWrap: "wrap", padding: "8px 0", borderTop: "1px solid var(--line)" }}>
-            <span><b>{p.nome.split(" ")[0]}</b>{p.loja ? <span className="mudo"> · {p.loja}</span> : null}</span>
+            <span><b>{p.nome.split(" ")[0]}</b>{p.loja ? <span className="mudo"> · {p.loja}</span> : null}{" "}
+              {senhas?.some((x) => x.pessoa_id === p.id) ? <span className="selo feito">senha criada</span> : <span className="selo espera">ainda não entrou</span>}</span>
             <span className="linha" style={{ gap: 6, flexWrap: "wrap" }}>
               <Copiar texto={`Oi, ${p.nome.split(" ")[0]}! Este é o seu link da lista da vez, da meta e da missão do dia. Abre direto no celular: ${linkDaVez(origem, p.vez_token)}\n\nAntes de usar, veja o vídeo de 2 minutos que explica tudo: ${linkAula(aulaPorId("lista-da-vez"))}`} rotulo="Copiar para o WhatsApp" />
               <a className="btn s peq" href={linkDaVez(origem, p.vez_token)} target="_blank" rel="noopener">Abrir</a>
               <button type="button" className="btn s peq" onClick={async () => { if (confirm(`Gerar um link novo para ${p.nome.split(" ")[0]}? O link antigo deixa de funcionar.`)) falha((await novoLinkDaPessoa(p.id)).error); }}>Gerar novo</button>
+              {senhas?.some((x) => x.pessoa_id === p.id) && <button type="button" className="btn s peq" onClick={async () => { if (confirm(`Zerar a senha de ${p.nome.split(" ")[0]}? Os celulares dela saem e ela cria uma senha nova no próximo acesso.`)) { falha((await vezZerarSenha(p.id)).error); recarregarSenhas(); } }}>Zerar senha</button>}
             </span>
           </div>
         )) : <p className="mudo" style={{ margin: 0 }}>Cadastre a equipe em Gestão de pessoas, com a função de vendedora, para gerar os links.</p>}

@@ -52,6 +52,8 @@ function Barra({ rotulo, valor, meta, texto, cor }: { rotulo: string; valor: num
   );
 }
 
+const GAMIFICACAO_DESDE = "2026-12-01";
+
 function Vez() {
   const token = useSearchParams().get("t") ?? "";
   const valido = /^[0-9a-f-]{36}$/.test(token);
@@ -105,6 +107,8 @@ function Vez() {
   if (p === undefined) return <div className="carregando">Carregando…</div>;
   if (!p || !d) return <div className="card">Este link não vale mais. Peça o seu link para a gestora.</div>;
 
+  // Gamificação (pontos, estrelas, ranking, lojinha e desafios) liberada a partir de 01/12 em todas as lojas.
+  const gamificacao = p.hoje >= GAMIFICACAO_DESDE;
   const hora = horaDe(new Date(agora).toISOString());
   const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
   const { eu, espera, minha, meuAberto, md, resumo } = d;
@@ -151,7 +155,7 @@ function Vez() {
         <h1 style={{ margin: "2px 0 0", fontSize: 26 }}>{saudacao}, {p.pessoa.nome}!</h1>
       </div>
 
-      {toast && <div className="vez-toast" role="status">{toast}</div>}
+      {toast && gamificacao && <div className="vez-toast" role="status">{toast}</div>}
       {/* Meus números: meta, P.A. e ticket médio, atualizados pelo caixa lançado */}
       <div className="card mb">
         <b style={{ fontSize: 18 }}>Meus números do mês</b>
@@ -191,22 +195,13 @@ function Vez() {
               <label key={m.id} style={{ display: "flex", flexWrap: "nowrap", gap: 10, alignItems: "flex-start", marginTop: 8, fontSize: 17, cursor: "pointer" }}>
                 <input type="checkbox" checked={m.feito} className={m.feito ? "vez-pop" : "vez-pisca"} style={{ width: 24, height: 24, marginTop: 1, flex: "0 0 24px" }}
                   onChange={(e) => { const feito = e.target.checked; setP({ ...p, missoes: p.missoes.map((x) => (x.id === m.id ? { ...x, feito } : x)) }); vezMissaoMarcar(token, m.id, feito).then(carregar); }} />
-                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} />{!m.feito && <span className="vez-tag">+10 pontos</span>}</span>
+                <span style={{ flex: 1, textDecoration: m.feito ? "line-through" : undefined, opacity: m.feito ? 0.6 : 1 }}><TextoComLinks texto={m.texto} />{!m.feito && gamificacao && <span className="vez-tag">+10 pontos</span>}</span>
               </label>
             ))}
-            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏 +1 estrela ⭐</p>}
+            {p.missoes.every((m) => m.feito) && <p style={{ margin: "10px 0 0" }}>Missão cumprida! 👏{gamificacao ? " +1 estrela ⭐" : ""}</p>}
           </div>
         )}
       </div>
-
-      {extras && <PontosDaVez p={extras.pontos} vibrar={!!toast} />}
-      {ranking && <RankingDasLojas r={ranking} />}
-      {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
-      {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}
-      {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
-
-      <FaltaFazer missoes={p.missoes.filter((m) => !m.feito).length} desafios={desafios} chamar={extras?.chamar ?? []} semana={extras?.pontos.semana ?? null} />
-      <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
 
       {/* A lista da vez (some quando a loja não usa a fila: Lista da vez escondida no menu da loja) */}
       {!p.sem_fila && <div className="card mb">
@@ -250,7 +245,7 @@ function Vez() {
                     <textarea placeholder="O que a cliente queria? (se quiser anotar. Ex.: casaco P de lã)" value={obs} onChange={(e) => setObs(e.target.value)} maxLength={300} rows={2} style={{ width: "100%", marginTop: 10, fontSize: 16, fontFamily: "inherit" }} />
                   </>
                 )}
-                {fechando === "vendeu" && (extras?.colegas.length ?? 0) > 0 && p.hoje >= "2026-11-01" && p.hoje <= "2026-12-31" && (
+                {fechando === "vendeu" && gamificacao && (extras?.colegas.length ?? 0) > 0 && p.hoje >= "2026-11-01" && p.hoje <= "2026-12-31" && (
                   <div style={{ marginTop: 10 }}>
                     <b>Alguém da outra loja indicou essa cliente para você?</b> <small className="mudo">Quem indicou ganha +20 pontos e 5 estrelas</small>
                     <div className="linha" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
@@ -315,6 +310,35 @@ function Vez() {
           </div>
         )}
       </div>}
+
+      {/* Clientes para chamar: logo depois do resumo de hoje */}
+      {extras && <ClientesParaChamar lista={extras.chamar} marcar={(id, feito) => { setExtras({ ...extras, chamar: extras.chamar.map((c) => (c.id === id ? { ...c, feito } : c)) }); vezChamarMarcar(token, id, feito).then(carregar); }} />}
+
+      {/* Gamificação: liberada em todas as lojas a partir de 01/12. Antes disso, fica trancada para gerar desejo (o crachá aparece). */}
+      {gamificacao ? (
+        <>
+          {extras && <PontosDaVez p={extras.pontos} vibrar={!!toast} />}
+          {ranking && <RankingDasLojas r={ranking} />}
+          {lojinha && <LojinhaDaVez token={token} l={lojinha} aoMudar={carregar} />}
+          <FaltaFazer missoes={p.missoes.filter((m) => !m.feito).length} desafios={desafios} chamar={extras?.chamar ?? []} semana={extras?.pontos.semana ?? null} />
+          <DesafioDoDia token={token} lista={desafios} aoMudar={carregar} />
+        </>
+      ) : (
+        <div className="card mb" style={{ background: "#141210", color: "#F5F0EA", border: "none" }}>
+          <div style={{ fontSize: 30 }} aria-hidden>🔒</div>
+          <b style={{ fontSize: 19, display: "block", marginTop: 4 }}>A Gamificação será liberada a partir do dia 01/12 em todas as lojas!</b>
+          <p style={{ margin: "6px 0 0", fontSize: 16 }}>Prepare-se! Já te garanto que você vai se surpreender.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+            {["⭐ Pontos e estrelas", "🏆 Ranking das lojas", "🎁 Lojinha de prêmios", "🎯 Desafio do dia"].map((t) => (
+              <div key={t} style={{ border: "1px solid rgba(245,240,234,.25)", borderRadius: 12, padding: "12px 10px", textAlign: "center", fontSize: 14.5 }}>
+                <span style={{ filter: "blur(.6px)", opacity: 0.85 }}>{t}</span>
+                <div style={{ fontSize: 12.5, opacity: 0.7, marginTop: 4 }}>🔒 em breve</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {lojinha?.destaque && <CrachaDestaque mes={lojinha.destaque.mes} nome={lojinha.destaque.lider} estrelas={lojinha.destaque.estrelas} foto={lojinha.destaque.foto} loja={lojinha.destaque.loja} anterior={lojinha.destaque.anterior} />}
       <p className="ajuda" style={{ textAlign: "center" }}>Dica: no celular, toque em Compartilhar e em “Adicionar à tela inicial” para abrir {p.sem_fila ? "o seu link" : "a lista"} com um toque.</p>
     </>
   );

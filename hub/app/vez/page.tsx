@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Simbolo } from "@/components/Simbolo";
 import { metasDoTime } from "@/lib/plano-mes";
 import { MOTIVOS, corDaMeta, filaDeEspera, horaDe, horaMin, metaDoDia, ordenarFila, resumoDoDia } from "@/lib/vez-calculo";
-import { vezAbrir, vezRankingLojas, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel, type RankingDaLoja } from "@/lib/vez";
+import { vezAcesso, vezCriarSenha, vezEntrarSenha, type AcessoVez, vezAbrir, vezRankingLojas, vezAtender, vezChamarMarcar, vezCorrigir, vezEncerrar, vezEntrar, vezExtras, vezMissaoMarcar, vezPassar, vezSair, type Extras, type Painel, type RankingDaLoja } from "@/lib/vez";
 import { PontosDaVez } from "@/components/PontosDaVez";
 import { ClientesParaChamar } from "@/components/ClientesParaChamar";
 import { FaltaFazer } from "@/components/FaltaFazer";
@@ -54,9 +54,65 @@ function Barra({ rotulo, valor, meta, texto, cor }: { rotulo: string; valor: num
 
 const GAMIFICACAO_DESDE = "2026-12-01";
 
+// O link pessoal: no primeiro acesso a vendedora cria a senha; o aparelho fica conectado (a chave fica guardada e não expira).
 function Vez() {
-  const token = useSearchParams().get("t") ?? "";
-  const valido = /^[0-9a-f-]{36}$/.test(token);
+  const link = useSearchParams().get("t") ?? "";
+  const linkOk = /^[0-9a-f-]{36}$/.test(link);
+  const guardada = `vez-chave:${link}`;
+  const [chave, setChave] = useState<string | null | undefined>(undefined);
+  const [acesso, setAcesso] = useState<AcessoVez | null | undefined>(undefined);
+  const [senha, setSenha] = useState("");
+  const [senha2, setSenha2] = useState("");
+  const [erro, setErro] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  useEffect(() => {
+    let c: string | null = null;
+    try { c = localStorage.getItem(guardada); } catch { /* sem armazenamento */ }
+    setChave(c);
+    if (!c && linkOk) vezAcesso(link).then(setAcesso).catch(() => setAcesso(null));
+    if (!linkOk) setAcesso(null);
+  }, [guardada, link, linkOk]);
+  const sair = useCallback(() => { try { localStorage.removeItem(guardada); } catch { /* */ } setChave(null); if (linkOk) vezAcesso(link).then(setAcesso).catch(() => setAcesso(null)); }, [guardada, link, linkOk]);
+
+  if (chave === undefined) return <div className="carregando">Carregando…</div>;
+  if (chave) return <VezPainel token={chave} perdeu={sair} />;
+  if (acesso === undefined) return <div className="carregando">Carregando…</div>;
+  if (!acesso) return <div className="card">Este link não vale mais. Peça o seu link para a gestora.</div>;
+  const criar = !acesso.tem_senha;
+  const enviar = async () => {
+    setErro("");
+    if (senha.trim().length < 4) { setErro("A senha precisa ter pelo menos 4 números ou letras."); return; }
+    if (criar && senha !== senha2) { setErro("As duas senhas não estão iguais."); return; }
+    setEnviando(true);
+    try {
+      const c = criar ? await vezCriarSenha(link, senha) : await vezEntrarSenha(link, senha);
+      try { localStorage.setItem(guardada, c); } catch { /* sem armazenamento: pede a senha de novo na próxima vez */ }
+      setChave(c);
+    } catch (e) { setErro((e as Error).message); } finally { setEnviando(false); }
+  };
+  return (
+    <div className="card" style={{ maxWidth: 420 }}>
+      <h1 style={{ margin: "0 0 6px", fontSize: 24 }}>Oi, {acesso.nome}! 👋</h1>
+      {criar
+        ? <p style={{ marginTop: 0 }}>Este é o seu acesso ao Hub{acesso.loja ? `, da ${acesso.loja}` : ""}: os seus números, o objetivo do dia e a Lista da vez. <b>Crie a sua senha</b> para entrar. Depois, neste celular, você não precisa digitar de novo.</p>
+        : <p style={{ marginTop: 0 }}>Digite a sua senha para entrar neste celular. Depois ele fica conectado.</p>}
+      <form onSubmit={(e) => { e.preventDefault(); enviar(); }}>
+        <label className="rotulo">{criar ? "Crie a sua senha (pelo menos 4 números ou letras)" : "Sua senha"}</label>
+        <input type="password" inputMode="text" autoComplete={criar ? "new-password" : "current-password"} value={senha} onChange={(e) => setSenha(e.target.value)} style={{ width: "100%", fontSize: 18 }} autoFocus />
+        {criar && <>
+          <label className="rotulo">Repita a senha</label>
+          <input type="password" autoComplete="new-password" value={senha2} onChange={(e) => setSenha2(e.target.value)} style={{ width: "100%", fontSize: 18 }} />
+        </>}
+        {erro && <div className="aviso mt">{erro}</div>}
+        <button className="btn p mt" type="submit" disabled={enviando} style={{ width: "100%", fontSize: 17, padding: 14 }}>{enviando ? "Entrando…" : criar ? "Criar senha e entrar" : "Entrar"}</button>
+      </form>
+      {!criar && <p className="ajuda" style={{ marginBottom: 0 }}>Esqueceu a senha? Peça para a gestora zerar: você cria outra no próximo acesso.</p>}
+    </div>
+  );
+}
+
+function VezPainel({ token, perdeu }: { token: string; perdeu: () => void }) {
+  const valido = true;
   const [p, setP] = useState<Painel | null | undefined>(undefined);
   const [ocupado, setOcupado] = useState(false);
   const [fechando, setFechando] = useState<null | "vendeu" | "nao_vendeu">(null);
@@ -105,7 +161,7 @@ function Vez() {
   }, [p]);
 
   if (p === undefined) return <div className="carregando">Carregando…</div>;
-  if (!p || !d) return <div className="card">Este link não vale mais. Peça o seu link para a gestora.</div>;
+  if (!p || !d) return <div className="card">Este aparelho foi desconectado. <button type="button" className="btn p peq" onClick={perdeu}>Entrar de novo</button></div>;
 
   // Gamificação (pontos, estrelas, ranking, lojinha e desafios) liberada a partir de 01/12 em todas as lojas.
   const gamificacao = p.hoje >= GAMIFICACAO_DESDE;

@@ -19,12 +19,13 @@ const FORMATOS: { id: Formato; rotulo: string }[] = [
   { id: "tweet", rotulo: "Frase da semana" },
   { id: "live", rotulo: "Live · convite" },
   { id: "celular", rotulo: "Moldura de celular" },
+  { id: "ficha", rotulo: "Ficha do look" },
 ];
 const fotoVazia = (altura = 10): Foto => ({ img: null, zoom: 100, altura });
-type Slide = SlideModelo & { foto: Foto; foto2: Foto };
+type Slide = SlideModelo & { foto: Foto; foto2: Foto; n?: number };
 // Formatos em que o campo de baixo guarda itens separados por "|".
 const COM_ITENS: Formato[] = ["quiz", "manchete", "comparar", "roteiro", "passos", "motivo"];
-const DUAS_FOTOS: Formato[] = ["comparar", "tendencia"];
+const DUAS_FOTOS: Formato[] = ["comparar", "tendencia", "ficha"];
 
 function Ajuste({ foto, mudar }: { foto: Foto; mudar: (f: Foto) => void }) {
   return (
@@ -53,7 +54,7 @@ function Subir({ rotulo, foto, mudar }: { rotulo: string; foto: Foto; mudar: (f:
 function Miniatura({ slide, id, cta, fontes, tick }: { slide: Slide; id: Identidade; cta: string; fontes: boolean; tick: number }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
-    if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }, id);
+    if (ref.current) desenhar(ref.current, slide.tipo, { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2, n: slide.n }, id);
   }, [slide, id, cta, fontes, tick]);
   return <canvas ref={ref} style={{ width: 84, height: "auto", display: "block", borderRadius: 4, boxShadow: "0 2px 6px rgba(20,18,16,.15)" }} />;
 }
@@ -81,13 +82,16 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   const slide = modelo ? slides[atual] : null;
   const formatoAtual: Formato = slide ? slide.tipo : formato;
   const dados: Dados = slide
-    ? { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2 }
+    ? { kic: slide.kic, tit: slide.tit, pre: slide.pre, cta, f1: slide.foto, f2: slide.foto2, n: slide.n }
     : { kic, tit, pre, cta, f1, f2 };
 
   useEffect(() => { if (cv.current) desenhar(cv.current, formatoAtual, dados, id); });
 
   const usarModelo = (m: ModeloMes) => {
-    const lista = (m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10), foto2: fotoVazia(10) }));
+    // fichas do look numeradas na ordem; a enquete mostra um número para cada ficha
+    const fichas = (m.slides ?? []).filter((s) => s.tipo === "ficha").length;
+    let k = 0;
+    const lista = (m.slides ?? []).map((s) => ({ ...s, foto: fotoVazia(10), foto2: fotoVazia(10), n: s.tipo === "ficha" ? ++k : s.tipo === "enquete" ? fichas || 3 : undefined }));
     setModelo(m); setSlides(lista);
     setAtual(Math.max(0, lista.findIndex((s) => s.tipo !== "capa")));
     document.getElementById("montar")?.scrollIntoView({ behavior: "smooth" });
@@ -98,6 +102,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
     setKic(f === "dupla" ? id.linha_de_cima?.dupla ?? "" : f === "capa" ? id.linha_de_cima?.capa ?? id.linha_de_cima?.outros ?? "" : id.linha_de_cima?.outros ?? "");
     if (f === "tweet") { setKic(""); setTit("*Comece com a parte forte.* E termine a frase aqui."); setPre(id.perfil?.assinatura ?? ""); return; }
     if (f === "live") { setKic("Live · quarta · à noite"); setTit("O tema da live de hoje"); setPre("O que você vai mostrar, ao vivo."); return; }
+    if (f === "ficha") { setKic("Nome da loja · marca da peça"); setTit("Detalhe 1 | Detalhe 2"); setPre("Conte o que a peça tem de especial. | Diga como ela valoriza quem veste."); return; }
     if (f === "celular") { setKic("Uma das peças da live"); setTit("Preço só na live"); setPre("Peça única. Quem pedir primeiro na live, leva."); return; }
     if (f === "capa") { setTit(id.frase ?? tit); setPre(id.rodape ?? ""); } else if (pre === id.rodape) setPre(id.precos_exemplo ?? "");
   };
@@ -106,7 +111,7 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
     if (!cv.current || !modelo) return;
     for (let i = 0; i < slides.length; i++) {
       const s = slides[i];
-      desenhar(cv.current, s.tipo, { kic: s.kic, tit: s.tit, pre: s.pre, cta, f1: s.foto, f2: s.foto2 }, id);
+      desenhar(cv.current, s.tipo, { kic: s.kic, tit: s.tit, pre: s.pre, cta, f1: s.foto, f2: s.foto2, n: s.n }, id);
       await baixarCanvas(cv.current, `montador-slide-${i + 1}.png`);
       await new Promise((r) => setTimeout(r, 400));
     }
@@ -152,13 +157,13 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
             <div style={{ margin: "6px 0 12px" }}>
               {slide ? (
                 <>
-                  <Subir rotulo={DUAS_FOTOS.includes(slide.tipo) ? "Foto da esquerda" : slide.tipo === "celular" ? `Foto da peça · slide ${atual + 1} (vai na tela do celular)` : slide.tipo === "live" || slide.tipo === "motivo" ? `Slide ${atual + 1} não usa foto` : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
-                  {DUAS_FOTOS.includes(slide.tipo) && <div style={{ marginTop: 8 }}><Subir rotulo="Foto da direita" foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
+                  <Subir rotulo={slide.tipo === "ficha" ? `Foto do look no corpo · slide ${atual + 1} (os 3 detalhes saem dela)` : DUAS_FOTOS.includes(slide.tipo) ? "Foto da esquerda" : slide.tipo === "celular" ? `Foto da peça · slide ${atual + 1} (vai na tela do celular)` : slide.tipo === "live" || slide.tipo === "motivo" ? `Slide ${atual + 1} não usa foto` : `Foto do slide ${atual + 1}`} foto={slide.foto} mudar={(f) => mudarSlide({ foto: f })} />
+                  {DUAS_FOTOS.includes(slide.tipo) && <div style={{ marginTop: 8 }}><Subir rotulo={slide.tipo === "ficha" ? "Foto da peça sozinha (de preferência em fundo branco)" : "Foto da direita"} foto={slide.foto2} mudar={(f) => mudarSlide({ foto2: f })} /></div>}
                 </>
               ) : (
                 <>
                   <Subir rotulo={formato === "capa" ? "Foto da capa" : formato === "celular" ? "Foto da peça (vai na tela do celular)" : formato === "live" ? "Este formato não usa foto" : "Foto 1 · o look no corpo"} foto={f1} mudar={setF1} />
-                  {formato === "dupla" && <div style={{ marginTop: 8 }}><Subir rotulo="Foto 2 · a peça" foto={f2} mudar={setF2} /></div>}
+                  {(formato === "dupla" || formato === "ficha") && <div style={{ marginTop: 8 }}><Subir rotulo={formato === "ficha" ? "Foto 2 · a peça sozinha (de preferência em fundo branco)" : "Foto 2 · a peça"} foto={f2} mudar={setF2} /></div>}
                 </>
               )}
             </div>
@@ -171,9 +176,9 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
                 {id.frase && <option value={id.frase}>Frase da campanha</option>}
               </select>
             )}
-            <label className="rotulo">{formatoAtual === "tweet" ? "Frase (o que estiver entre *asteriscos* sai em negrito)" : formatoAtual === "celular" ? "Etiqueta na tela do celular" : "Título"}</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "ficha" ? "Nomes dos detalhes (até 2, separe com | )" : formatoAtual === "enquete" ? "Pergunta grande" : formatoAtual === "tweet" ? "Frase (o que estiver entre *asteriscos* sai em negrito)" : formatoAtual === "celular" ? "Etiqueta na tela do celular" : "Título"}</label><input type="text" value={slide ? slide.tit : tit} onChange={(e) => (slide ? mudarSlide({ tit: e.target.value }) : setTit(e.target.value))} />
             <label className="rotulo">{formatoAtual === "tweet" ? "Nome · @perfil (em branco usa o da loja)" : formatoAtual === "celular" ? "Frase em cima do celular" : formatoAtual === "live" || formatoAtual === "motivo" ? "Linha ao vivo (dia e horário)" : "Linha de cima"}</label><input type="text" value={slide ? slide.kic : kic} onChange={(e) => (slide ? mudarSlide({ kic: e.target.value }) : setKic(e.target.value))} />
-            <label className="rotulo">{formatoAtual === "capa" ? "Rodapé" : formatoAtual === "motivo" ? "Itens (separe com | ; a chamada final começa com →)" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : formatoAtual === "celular" ? "Recado embaixo do celular" : formatoAtual === "live" ? "Texto de apoio" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
+            <label className="rotulo">{formatoAtual === "ficha" ? "Texto da peça (2 parágrafos, separe com | )" : formatoAtual === "abertura" ? "Frase embaixo" : formatoAtual === "enquete" ? "Pergunta de apoio (o que estiver entre *asteriscos* sai em negrito)" : formatoAtual === "capa" ? "Rodapé" : formatoAtual === "motivo" ? "Itens (separe com | ; a chamada final começa com →)" : COM_ITENS.includes(formatoAtual) ? "Itens (separe com | )" : formatoAtual === "celular" ? "Recado embaixo do celular" : formatoAtual === "live" ? "Texto de apoio" : "Peças e preços"}</label><input type="text" value={slide ? slide.pre : pre} onChange={(e) => (slide ? mudarSlide({ pre: e.target.value }) : setPre(e.target.value))} />
             {formatoAtual === "story" && <><label className="rotulo">Chamada</label><input type="text" value={cta} onChange={(e) => setCta(e.target.value)} /></>}
             {id.aviso && <div className="ajuda mt">{id.aviso}</div>}
           </div>

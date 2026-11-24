@@ -94,7 +94,7 @@ export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tem
     chave: p.id, titulo: p.titulo, texto: p.ate ? `Até ${p.ate}` : p.texto, botao: "Ver", link: "/campanha", feito: false,
   })) : [];
   // Antes de a campanha começar, os posts do dia ficam só no Conteúdo: aqui entra só o que falta do Antes.
-  const doDia = dia >= c.preparo_desde && dia <= c.fim ? itensDoDia(c, posts, dia) : [];
+  const doDia = dia >= c.inicio && dia <= c.fim ? itensDoDia(c, posts, dia) : [];
   return [...doDia, ...doAntes];
 }
 
@@ -122,10 +122,7 @@ export function semanasDaCampanha(c: Campanha) {
   const dt = (t: number) => new Date(t).toISOString().slice(0, 10);
   const lista: { n: number; ini: string; fim: string; dias: string[] }[] = [];
   const diasEntre = (a: string, b: string) => { const r: string[] = []; for (let t = ms(a); t <= ms(b); t += DIA) r.push(dt(t)); return r; };
-  if (c.preparo_desde < c.inicio) {
-    const fimPrep = dt(ms(c.inicio) - DIA);
-    lista.push({ n: 0, ini: c.preparo_desde, fim: fimPrep, dias: diasEntre(c.preparo_desde, fimPrep) });
-  }
+  // O preparo não vira semana: o que se faz antes do início fica na aba Antes.
   const { total } = semanaDaCampanha(c);
   for (let n = 1; n <= total; n++) {
     const ini = dt(ms(c.inicio) + (n - 1) * 7 * DIA);
@@ -135,10 +132,10 @@ export function semanasDaCampanha(c: Campanha) {
   return lista;
 }
 
-/** Os posts da campanha inteira, do preparo ao fim (para a aba Semanas). */
+/** Os posts da campanha, do início ao fim (para a aba Semanas). */
 export async function buscarPostsDaCampanha(c: Campanha) {
   const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens")
-    .eq("portal_id", c.portal_id).gte("data", c.preparo_desde).lte("data", c.fim).order("data").order("hora");
+    .eq("portal_id", c.portal_id).gte("data", c.inicio).lte("data", c.fim).order("data").order("hora");
   return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }
 

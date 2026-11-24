@@ -3,7 +3,7 @@
 // Editor de um modelo de card: os campos à esquerda, a prévia ao vivo à direita.
 // A arte (cores, logo, letras) não muda; só os textos e a foto.
 import { useEffect, useRef, useState } from "react";
-import { SEM, aplicar, chaveAjuste, gerarImagem, htmlDoModelo, lerAjuste, lerFoto, montarNoFrame, nomeArquivo, posicaoDoModelo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
+import { POSICOES_LOGO, SEM, aplicar, chaveAjuste, logosDoCard, gerarImagem, htmlDoModelo, lerAjuste, lerFoto, montarNoFrame, nomeArquivo, posicaoDoModelo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
 
 type Props = {
   modelo: Modelo;
@@ -28,12 +28,13 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
   const caixa = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(0.3);
   const montado = useRef(false);
+  const [temLogo, setTemLogo] = useState(false);
 
   useEffect(() => { htmlDoModelo(modelo).then(setHtml).catch((e) => setMsg((e as Error).message)); }, [modelo]);
   useEffect(() => {
     if (!html || !frame.current) return;
     montado.current = false;
-    montarNoFrame(frame.current, html, modelo, v).then(() => { montado.current = true; });
+    montarNoFrame(frame.current, html, modelo, v).then((d) => { montado.current = true; setTemLogo(logosDoCard(d).length > 0); });
   }, [html]); // eslint-disable-line react-hooks/exhaustive-deps
   // Atualiza a prévia a cada letra, sem recarregar o modelo.
   useEffect(() => {
@@ -127,6 +128,15 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
             {c.tipo === "texto" && !(v[c.chave] ?? "").trim() && <small className="mudo">Vazio: sai do card (com o traço, se tiver).</small>}
           </div>
         ))}
+        {temLogo && (
+          <div style={{ display: "grid", gap: 4 }}>
+            <b style={{ fontSize: 13.5 }}>Logo</b>
+            <div className="chips">
+              {POSICOES_LOGO.map((o) => <button key={o.id} type="button" className={`chip${(v.__logo ?? "") === o.id ? " on" : ""}`} onClick={() => mudar("__logo", o.id)}>{o.rotulo}</button>)}
+            </div>
+            <small className="mudo">Se a logo atrapalhar a foto, mude de canto ou tire.</small>
+          </div>
+        )}
         <small className="mudo">As cores, a logo e as letras ficam iguais às da campanha. Para destacar uma palavra em itálico, escreva entre asteriscos: *você*.</small>
       </div>
       <div ref={caixa} style={{ display: "grid", gap: 10, justifyItems: "center" }}>

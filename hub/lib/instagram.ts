@@ -62,7 +62,8 @@ export type Post = {
   imagens?: ImagemPost[]; // imagens e vídeos prontos para baixar e postar
   fazer?: string; // "O que você precisa fazer": passos, um por linha
 };
-export type ImagemPost = { path: string; nome: string };
+/** modelo_id e valores: o card saiu de um modelo da campanha e pode ser editado no Hub. */
+export type ImagemPost = { path: string; nome: string; modelo_id?: string; valores?: Record<string, string> };
 
 export const STATUS: Status[] = ["Ideia", "Roteiro", "Gravado", "Programado", "Publicado"];
 export const OBJETIVOS: Objetivo[] = ["Atrair", "Conectar", "Vender"];

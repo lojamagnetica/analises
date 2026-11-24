@@ -93,7 +93,9 @@ export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tem
   const doAntes = sem <= 1 ? c.antes.filter((p) => !c.feitos[p.id]).slice(0, 3).map((p) => ({
     chave: p.id, titulo: p.titulo, texto: p.ate ? `Até ${p.ate}` : p.texto, botao: "Ver", link: "/campanha", feito: false,
   })) : [];
-  return [...itensDoDia(c, posts, dia), ...doAntes];
+  // Antes de a campanha começar, os posts do dia ficam só no Conteúdo: aqui entra só o que falta do Antes.
+  const doDia = dia >= c.preparo_desde && dia <= c.fim ? itensDoDia(c, posts, dia) : [];
+  return [...doDia, ...doAntes];
 }
 
 /** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */

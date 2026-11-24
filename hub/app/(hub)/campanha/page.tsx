@@ -121,7 +121,7 @@ function Antes({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: bool
 function Semanas({ c, marcar, volta }: { c: Campanha; marcar: (chave: string, feito: boolean) => void; volta: { semana: number; y: number } | null }) {
   const { dados: posts } = useDados(() => buscarPostsDaCampanha(c), [c.id]);
   const atual = semanaDaCampanha(c).atual;
-  const [aberta, setAberta] = useState<number>(volta?.semana ?? atual);
+  const [aberta, setAberta] = useState<number>(volta?.semana ?? (atual || 1));
   useEffect(() => { if (posts !== undefined && volta) requestAnimationFrame(() => window.scrollTo(0, volta.y)); }, [posts, volta]);
   if (posts === undefined) return <Carregando />;
   const guardar = () => { try { sessionStorage.setItem("campanha-volta", JSON.stringify({ aba: "semanas", semana: aberta, y: window.scrollY })); } catch { /* sem memória da aba */ } };

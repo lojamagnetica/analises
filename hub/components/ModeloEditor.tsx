@@ -12,10 +12,15 @@ type Props = {
   aoSalvar?: (png: Blob, valores: Valores) => Promise<void>;
   rotuloSalvar?: string;
   aoFechar?: () => void;
+  /** Rascunho guardado (fotos e textos ainda não salvos) e aviso a cada mudança, para não perder ao trocar de modelo. */
+  rascunho?: Valores;
+  aoMudar?: (v: Valores) => void;
 };
 
-export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar no post", aoFechar }: Props) {
-  const [v, setV] = useState<Valores>({ ...valoresPadrao(modelo), ...(inicial ?? {}) });
+export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar no post", aoFechar, rascunho, aoMudar }: Props) {
+  const [v, setV] = useState<Valores>({ ...valoresPadrao(modelo), ...(inicial ?? {}), ...(rascunho ?? {}) });
+  const primeira = useRef(true);
+  useEffect(() => { if (primeira.current) { primeira.current = false; return; } aoMudar?.(v); }, [v]); // eslint-disable-line react-hooks/exhaustive-deps
   const [html, setHtml] = useState("");
   const [msg, setMsg] = useState("");
   const [ocupado, setOcupado] = useState(false);

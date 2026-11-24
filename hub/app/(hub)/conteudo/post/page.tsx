@@ -22,6 +22,18 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
   const [editando, setEditando] = useState<{ img: ImagemPost; modelo: Modelo } | null>(null);
+  // Ver grande antes de baixar: toque na imagem abre em tela cheia, com as setas para passar.
+  const [ver, setVer] = useState<number | null>(null);
+  useEffect(() => {
+    if (ver === null) return;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setVer(null);
+      if (e.key === "ArrowRight") setVer((v) => (v === null ? v : Math.min(itens.length - 1, v + 1)));
+      if (e.key === "ArrowLeft") setVer((v) => (v === null ? v : Math.max(0, v - 1)));
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [ver, itens.length]);
   const abrirEditor = async (img: ImagemPost) => {
     if (!img.modelo_id) return;
     const m = await lerModelo(img.modelo_id);
@@ -74,7 +86,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
       </div>
       <p className="mudo" style={{ fontSize: 14 }}>
         {itens.length
-          ? "Na ordem de postagem. No celular, o botão abre o compartilhar: escolha “Salvar imagens”. Também dá para tocar e segurar em cada uma."
+          ? "Na ordem de postagem. Toque na imagem para ver grande antes de baixar. No celular, o botão abre o compartilhar: escolha “Salvar imagens”."
           : "Ainda não tem arquivo neste post. Se você aprovou uma arte ou um vídeo por fora, suba aqui para ficar tudo junto."}
       </p>
       {msg && <div className="aviso">{msg}</div>}
@@ -86,7 +98,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
                 ? ehVideo(i.nome)
                   ? <video src={urls[i.path]} controls playsInline style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, background: "#000" }} />
                   // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={urls[i.path]} alt={`Arquivo ${k + 1}`} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)" }} />
+                  : <img src={urls[i.path]} alt={`Arquivo ${k + 1}`} loading="lazy" onClick={() => setVer(k)} title="Ver grande" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)", cursor: "zoom-in" }} />
                 : <div style={{ width: "100%", aspectRatio: "4 / 5", background: "#e8e4dc", borderRadius: 8 }} />}
               <button type="button" className="btn s peq" onClick={() => postImagemBaixar(i).catch((e) => setMsg(e.message))}>Baixar {k + 1}</button>
               {i.modelo_id && <button type="button" className="btn s peq" onClick={() => abrirEditor(i)}>Editar o card</button>}
@@ -99,6 +111,22 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {ver !== null && itens[ver] && (
+        <div role="dialog" aria-label={`Arquivo ${ver + 1} de ${itens.length}`} onClick={() => setVer(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(12,12,12,.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 12px 16px" }}>
+          <button type="button" onClick={() => setVer(null)} aria-label="Fechar" style={{ position: "absolute", top: 10, right: 14, background: "none", border: 0, color: "#fff", fontSize: 30, cursor: "pointer" }}>×</button>
+          <div style={{ position: "absolute", top: 18, left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: 14 }}>{ver + 1} de {itens.length}</div>
+          <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 8, maxWidth: "100%", flex: 1, minHeight: 0 }}>
+            <button type="button" onClick={() => setVer(Math.max(0, ver - 1))} disabled={ver === 0} aria-label="Anterior" style={{ background: "none", border: 0, color: "#fff", fontSize: 34, cursor: "pointer", opacity: ver === 0 ? 0.25 : 1 }}>‹</button>
+            {ehVideo(itens[ver].nome)
+              ? <video src={urls[itens[ver].path]} controls playsInline autoPlay style={{ maxWidth: "calc(100vw - 100px)", maxHeight: "calc(100vh - 140px)", borderRadius: 6, background: "#000" }} />
+              // eslint-disable-next-line @next/next/no-img-element
+              : <img src={urls[itens[ver].path]} alt={`Arquivo ${ver + 1}`} style={{ maxWidth: "calc(100vw - 100px)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: 6 }} />}
+            <button type="button" onClick={() => setVer(Math.min(itens.length - 1, ver + 1))} disabled={ver === itens.length - 1} aria-label="Próximo" style={{ background: "none", border: 0, color: "#fff", fontSize: 34, cursor: "pointer", opacity: ver === itens.length - 1 ? 0.25 : 1 }}>›</button>
+          </div>
+          <button type="button" className="btn p peq" style={{ marginTop: 12 }} onClick={(e) => { e.stopPropagation(); postImagemBaixar(itens[ver]).catch((er) => setMsg(er.message)); }}>Baixar {ver + 1}</button>
         </div>
       )}
       {editando && (

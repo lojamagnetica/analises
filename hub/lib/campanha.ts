@@ -87,7 +87,7 @@ export const antesFeitos = (c: Campanha) => c.antes.filter((p) => c.feitos[p.id]
 export type ItemHoje = { chave: string; titulo: string; texto?: string; botao: string; link: string; feito: boolean; post?: boolean };
 
 /** O que a loja faz hoje na campanha: os itens do dia, os posts do dia e o "Antes" que ainda falta. */
-export function itensDeHoje(c: Campanha, posts: Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[], dia = hoje()): ItemHoje[] {
+export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[], dia = hoje()): ItemHoje[] {
   // Na semana do preparo (e na semana 1), o que falta do Antes também entra no dia.
   const sem = semanaDaCampanha(c, dia).atual;
   const doAntes = sem <= 1 ? c.antes.filter((p) => !c.feitos[p.id]).slice(0, 3).map((p) => ({
@@ -97,16 +97,17 @@ export function itensDeHoje(c: Campanha, posts: Pick<Post, "id" | "data" | "tema
 }
 
 /** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */
-export function itensDoDia(c: Campanha, posts: Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[], dia: string): ItemHoje[] {
+export function itensDoDia(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[], dia: string): ItemHoje[] {
   const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
     chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
   }));
   const dePost = posts.filter((p) => p.data === dia).map((p) => {
     const temArquivo = (p.imagens?.length ?? 0) > 0;
-    const passo = (p.fazer ?? "").split("\n").map((l) => l.trim()).filter(Boolean)[0];
+    // Formato e hora primeiro: dois posts com o mesmo tema (stories e carrossel) ficam fáceis de separar.
+    const hora = p.hora ? p.hora.slice(0, 5).replace(/^0/, "").replace(/:00$/, "h").replace(":", "h") : "";
     return {
       chave: `post:${p.id}`, titulo: `Postar: ${limparTema(p.tema)}`, post: true,
-      texto: passo ? passo : temArquivo ? "Pronto. É só salvar no celular e postar." : `${p.formato} · veja o roteiro e a legenda`,
+      texto: [p.formato, hora, temArquivo ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda"].filter(Boolean).join(" · "),
       botao: "Fazer", link: `/conteudo/post?id=${p.id}`, feito: p.status === "Publicado",
     };
   });
@@ -134,9 +135,9 @@ export function semanasDaCampanha(c: Campanha) {
 
 /** Os posts da campanha inteira, do preparo ao fim (para a aba Semanas). */
 export async function buscarPostsDaCampanha(c: Campanha) {
-  const { data } = await sb().from("loja_posts").select("id, data, tema, formato, status, fazer, imagens")
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens")
     .eq("portal_id", c.portal_id).gte("data", c.preparo_desde).lte("data", c.fim).order("data").order("hora");
-  return (data ?? []) as Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[];
+  return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }
 
 /** Tira o prefixo da campanha do tema do post ("ENCONTROS · Abertura · … · Look Traz #1" → "Look Traz #1"). */
@@ -147,6 +148,6 @@ export function limparTema(tema: string) {
 
 /** Posts de um dia (para o "Hoje na campanha"). */
 export async function buscarPostsDoDia(portalId: string, dia = hoje()) {
-  const { data } = await sb().from("loja_posts").select("id, data, tema, formato, status, fazer, imagens").eq("portal_id", portalId).eq("data", dia).order("hora");
-  return (data ?? []) as Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[];
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens").eq("portal_id", portalId).eq("data", dia).order("hora");
+  return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }

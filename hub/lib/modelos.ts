@@ -95,8 +95,54 @@ function acompanhantes(doc: Document, el: HTMLElement, chave: string): HTMLEleme
   return l;
 }
 
+/** A logo do card: marcada com data-logo no modelo ou, nos modelos antigos, a imagem pequena (até 400 px) fora dos campos. */
+export function logosDoCard(doc: Document): HTMLElement[] {
+  const marcadas = Array.from(doc.querySelectorAll<HTMLElement>("[data-logo]"));
+  if (marcadas.length) return marcadas;
+  const raiz = doc.body.firstElementChild;
+  const nivel = (el: Element) => { let n = 0; for (let x: Element | null = el; x && x !== raiz; x = x.parentElement) n++; return n; };
+  // Até 2 níveis abaixo do card: a logo solta ou ao lado de um texto. Mais fundo é enfeite dentro de um quadro.
+  return Array.from(doc.querySelectorAll<HTMLImageElement>("img:not([data-campo])"))
+    .filter((i) => !i.closest("[data-campo]") && (i.width || parseFloat(i.style.width)) <= 400 && nivel(i) <= 2);
+}
+const lugarOriginal = new WeakMap<HTMLElement, { pai: Node; depois: Node | null }>();
+export const POSICOES_LOGO = [
+  { id: "", rotulo: "Como no modelo" }, { id: "sup-esq", rotulo: "↖ Em cima, à esquerda" }, { id: "sup-dir", rotulo: "↗ Em cima, à direita" },
+  { id: "inf-esq", rotulo: "↙ Embaixo, à esquerda" }, { id: "inf-dir", rotulo: "↘ Embaixo, à direita" }, { id: "sem", rotulo: "Sem logo" },
+] as const;
+/** Muda a logo de lugar (4 cantos fixos) ou tira do card, conforme v.__logo. */
+function aplicarLogo(doc: Document, v: Valores) {
+  const logos = logosDoCard(doc);
+  if (!logos.length) return;
+  const raiz = doc.body.firstElementChild as HTMLElement | null;
+  const modo = v.__logo ?? "";
+  // A principal é a maior. Se ela está num grupo só de logo (ex.: o OB com o nome ao lado, sem campos), o grupo vai junto.
+  const principal = [...logos].sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+  const pai = principal.parentElement;
+  const alvo = pai && pai !== raiz && !pai.querySelector("[data-campo]") ? pai : principal;
+  const guardar = (el: HTMLElement) => {
+    if (el.dataset.estilo0 === undefined) { const r = el.getBoundingClientRect(); el.dataset.estilo0 = el.getAttribute("style") ?? ""; el.dataset.w0 = String(r.width); el.dataset.h0 = String(r.height); }
+    if (!lugarOriginal.has(el) && el.parentNode) lugarOriginal.set(el, { pai: el.parentNode, depois: el.nextSibling });
+  };
+  const restaurar = (el: HTMLElement) => {
+    el.setAttribute("style", el.dataset.estilo0 ?? "");
+    const orig = lugarOriginal.get(el);
+    if (orig && el.parentNode !== orig.pai) orig.pai.insertBefore(el, orig.depois);
+  };
+  [...logos, alvo].forEach(guardar);
+  [...logos, alvo].forEach(restaurar);
+  if (modo === "sem") { logos.forEach((el) => { el.style.display = "none"; }); if (alvo !== principal) alvo.style.display = "none"; return; }
+  if (!modo) return;
+  if (raiz && alvo.parentElement !== raiz) raiz.appendChild(alvo);
+  const m = 64;
+  Object.assign(alvo.style, { position: "absolute", width: `${alvo.dataset.w0}px`, height: `${alvo.dataset.h0}px`, left: "", right: "", top: "", bottom: "", inset: "", zIndex: "5", margin: "0" });
+  if (modo.startsWith("sup")) alvo.style.top = `${m}px`; else alvo.style.bottom = `${m}px`;
+  if (modo.endsWith("esq")) alvo.style.left = `${m}px`; else alvo.style.right = `${m}px`;
+}
+
 export function aplicar(doc: Document, m: Modelo, v: Valores): Promise<void> {
   const esperas: Promise<void>[] = [];
+  aplicarLogo(doc, v);
   for (const c of m.campos) {
     const bruto = v[c.chave] ?? c.valor ?? "";
     const sem = bruto === SEM;

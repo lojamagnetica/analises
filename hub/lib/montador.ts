@@ -6,7 +6,7 @@ import { supabaseBrowser } from "@/lib/supabase/client";
 export type Formato = "dupla" | "look" | "capa" | "story" | "frase" | "etiqueta" | "foto" | "cena" | "preco"
   | "numero" | "quiz" | "manchete" | "lista" | "comparar" | "roteiro"
   | "chamada" | "passos" | "post" | "meme" | "tendencia" | "destaque" | "tweet"
-  | "live" | "celular" | "motivo";
+  | "live" | "celular" | "motivo" | "abertura" | "ficha" | "enquete";
 
 export type Identidade = {
   cores?: { fundo?: string; apoio?: string; destaque?: string; texto?: string };
@@ -86,7 +86,7 @@ export function carregarFontes() {
 }
 
 export type Foto = { img: HTMLImageElement | null; zoom: number; altura: number };
-export type Dados = { kic: string; tit: string; pre: string; cta: string; f1: Foto; f2: Foto };
+export type Dados = { kic: string; tit: string; pre: string; cta: string; f1: Foto; f2: Foto; n?: number };
 
 const CORES = { fundo: "#F7F2EA", apoio: "#E8DCCB", destaque: "#A8743F", texto: "#3A2A20" };
 
@@ -551,6 +551,79 @@ export function desenhar(cv: HTMLCanvasElement, formato: Formato, d: Dados, id: 
       x.fillStyle = c.texto; x.font = "600 21px MontMS, Arial"; x.textAlign = "center"; x.fillText(d.tit, 540, PY + PH - 63, PW - 100);
     }
     if (d.pre) { const k = rico(d.pre, 28, 540, 0, 560, c.texto, c.destaque, "center", 1.3, false); rico(d.pre, 28, 540, 1350 - 70 - (k - 1) * 36, 560, c.texto, c.destaque, "center", 1.3); }
+  }
+  // Lookbook editorial (abertura, ficha do look e enquete): títulos em caixa alta, letras espaçadas e muito respiro.
+  const caixaAlta = (t: string, px: number, cx: number, y: number, max: number, cor: string, peso = 600) => {
+    x.font = `${peso} ${px}px MontMS, Arial`; x.fillStyle = cor; x.textAlign = "center";
+    const ls: string[] = []; let l = "";
+    (t || "").toUpperCase().split(" ").forEach((p) => { const tt = l ? `${l} ${p}` : p; if (x.measureText(tt).width > max && l) { ls.push(l); l = p; } else l = tt; });
+    ls.push(l); ls.forEach((ln, k) => x.fillText(ln, cx, y + k * px * 1.05)); return ls.length;
+  };
+  // Recorte de um pedaço da foto (os detalhes da ficha saem da própria foto do look).
+  const recorte = (f: Foto, fy: number, X: number, Y: number, W: number, H: number) => {
+    x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip(); x.fillStyle = c.apoio; x.fillRect(X, Y, W, H);
+    if (f.img) {
+      const s = Math.max(W / f.img.width, H / f.img.height) * 3.4, iw = f.img.width * s, ih = f.img.height * s;
+      x.drawImage(f.img, X + W / 2 - iw / 2, Y + H / 2 - ih * fy, iw, ih);
+    }
+    x.restore();
+  };
+  if (formato === "abertura") {
+    // Capa de lookbook: foto cheia, título grande em cima e a assinatura espaçada embaixo.
+    foto(d.f1, 0, 0, 1080, 1350);
+    let g = x.createLinearGradient(0, 0, 0, 520); g.addColorStop(0, "rgba(0,0,0,.5)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    x.fillStyle = g; x.fillRect(0, 0, 1080, 520);
+    g = x.createLinearGradient(0, 930, 0, 1350); g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(1, "rgba(0,0,0,.6)");
+    x.fillStyle = g; x.fillRect(0, 930, 1080, 420);
+    x.save(); x.shadowColor = "rgba(0,0,0,.35)"; x.shadowBlur = 18;
+    caixaAlta(d.tit, 104, 540, 230, 900, "#fff");
+    x.restore();
+    espacado(d.kic, 24, 540, 1150, "#fff", 400);
+    if (d.pre) rico(d.pre, 30, 540, 1215, 820, "#fff", "#fff", "center", 1.3);
+  }
+  if (formato === "ficha") {
+    // Ficha do look: número grande de fundo, 3 detalhes, o look, a peça sozinha com os nomes dos detalhes e o texto.
+    const n = String(d.n ?? 1);
+    x.save(); x.font = "600 1060px MontMS, Arial"; x.fillStyle = c.apoio; x.globalAlpha = .55; x.textAlign = "left";
+    x.fillText(n, 20, 1180, 1040); x.restore();
+    espacado(d.kic, 21, 540, 104, c.destaque, 400);
+    [0.3, 0.52, 0.8].forEach((fy, i) => recorte(d.f1, fy, 130, 330 + i * 212, 205, 202));
+    foto(d.f1, 300, 250, 420, 900, true);
+    foto(d.f2, 735, 380, 285, 470, true);
+    itens(d.tit).slice(0, 2).forEach((rot, i) => {
+      const X = i ? 1010 : 745, al: CanvasTextAlign = i ? "right" : "left";
+      x.font = "600 20px MontMS, Arial"; x.fillStyle = c.texto; x.textAlign = al;
+      const ps = rot.toUpperCase().split(" "), meio = Math.ceil(ps.length / 2);
+      const ls = ps.length > 1 ? [ps.slice(0, meio).join(" "), ps.slice(meio).join(" ")] : ps;
+      ls.forEach((ln, k) => x.fillText(ln, X, 268 + k * 24));
+      const lx = i ? X - 18 : X + 6;
+      x.fillStyle = c.texto; x.fillRect(lx, 268 + ls.length * 24 - 10, 2, 120);
+    });
+    let y = 910;
+    itens(d.pre).slice(0, 2).forEach((par) => { const k = rico(par, 25, 735, y, 285, "#4a4a4a", c.texto, "left", 1.38); y += k * 25 * 1.38 + 24; });
+    espacado(id.rodape || id.perfil?.nome || "", 21, 540, 1350 - 70, c.destaque, 400);
+  }
+  if (formato === "enquete") {
+    // Fechamento com enquete: a pergunta grande, os números dos looks para comentar e os ícones de interação.
+    espacado(d.kic, 22, 540, 380, c.destaque, 400);
+    const k = caixaAlta(d.tit, 78, 540, 490, 900, c.destaque);
+    const y = 490 + (k - 1) * 82 + 90;
+    const total = Math.min(4, Math.max(2, d.n ?? 3)), r = 70, esp = 190;
+    for (let i = 0; i < total; i++) {
+      const cx = 540 + (i - (total - 1) / 2) * esp, cy = y + r;
+      x.lineWidth = 6; x.strokeStyle = c.texto; x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.stroke();
+      x.font = "600 64px MontMS, Arial"; x.fillStyle = c.texto; x.textAlign = "center"; x.fillText(String(i + 1), cx, cy + 23);
+    }
+    const ny = rico(d.pre, 32, 540, y + 2 * r + 90, 720, "#4a4a4a", c.texto, "center", 1.35);
+    const iy = y + 2 * r + 90 + ny * 43 + 60;
+    x.save(); x.translate(540, iy); x.scale(1.7, 1.7); x.translate(-550, -iy);
+    x.fillStyle = c.destaque; x.strokeStyle = c.destaque; x.lineWidth = 4;
+    const ic = [480, 527, 574, 621];
+    x.save(); x.translate(ic[0] - 10, iy); x.beginPath(); x.moveTo(10, 16); x.bezierCurveTo(-14, 0, -2, -18, 10, -6); x.bezierCurveTo(22, -18, 34, 0, 10, 16); x.fill(); x.restore();
+    x.beginPath(); x.arc(ic[1], iy, 14, 0, Math.PI * 2); x.fill(); x.beginPath(); x.moveTo(ic[1] - 12, iy + 6); x.lineTo(ic[1] - 16, iy + 16); x.lineTo(ic[1] - 4, iy + 12); x.fill();
+    x.beginPath(); x.moveTo(ic[2] - 15, iy - 13); x.lineTo(ic[2] + 15, iy - 13); x.lineTo(ic[2], iy + 15); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(ic[3] - 11, iy - 15); x.lineTo(ic[3] + 11, iy - 15); x.lineTo(ic[3] + 11, iy + 15); x.lineTo(ic[3], iy + 6); x.lineTo(ic[3] - 11, iy + 15); x.closePath(); x.fill();
+    x.restore();
   }
   if (formato === "story") {
     foto(d.f1, 0, 0, 1080, 1440);

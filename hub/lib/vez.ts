@@ -48,7 +48,8 @@ export type PontosDaPessoa = {
   destaque: { mes: string; estrelas: number; posicao: number; lider: string; lider_estrelas: number };
   hist: { dia: string; tipo: string; pontos: number; estrelas: number; texto: string }[];
 };
-export type ClienteChamar = { id: string; nome: string; whatsapp: string; resumo: string; comprou: string; mensagem: string; feito: boolean };
+/** tipo: pos_venda = comprou ontem (carimbo de conexão, sem oferecer); resgate = cliente inativa da estratégia da semana. */
+export type ClienteChamar = { id: string; nome: string; whatsapp: string; resumo: string; comprou: string; mensagem: string; feito: boolean; tipo?: "pos_venda" | "resgate"; dia?: string | null };
 export type Extras = { pontos: PontosDaPessoa; chamar: ClienteChamar[]; colegas: { id: string; nome: string }[] };
 export const vezExtras = async (token: string) => ((await sb().rpc("vez_extras", { p_token: token })).data as Extras | null) ?? null;
 export const vezChamarMarcar = (token: string, id: string, feito: boolean) => sb().rpc("vez_chamar_marcar", { p_token: token, p_id: id, p_feito: feito });

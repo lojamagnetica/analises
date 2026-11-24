@@ -26,6 +26,16 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [criando, setCriando] = useState<Modelo | null>(null);
   const [outros, setOutros] = useState(false);
+  // Rascunhos por modelo: trocar de modelo antes de salvar não perde as fotos nem o texto (fica guardado nesta aba do navegador).
+  const chaveRasc = `rascunho-cards:${p.id}`;
+  const [rascunhos, setRascunhos] = useState<Record<string, Valores>>(() => {
+    try { return JSON.parse(sessionStorage.getItem(chaveRasc) ?? "{}"); } catch { return {}; }
+  });
+  const guardarRascunho = (id: string, val: Valores | null) => setRascunhos((r) => {
+    const n = { ...r }; if (val) n[id] = val; else delete n[id];
+    try { sessionStorage.setItem(chaveRasc, JSON.stringify(n)); } catch { /* foto grande demais para guardar: fica só na memória */ }
+    return n;
+  });
   useEffect(() => { listarModelos(p.portal_id).then(setModelos).catch(() => setModelos([])); }, [p.portal_id]);
   // Os modelos citados no roteiro, na ordem em que aparecem, vêm primeiro.
   const texto = `${p.roteiro ?? ""}\n${p.fazer ?? ""}`;
@@ -36,6 +46,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
     const base = `${String(itens.length + 1).padStart(2, "0")}-${criando.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").toLowerCase()}`;
     const novo = await postImagemSubir(p.portal_id, p.id, new File([png], `${base}.png`, { type: "image/png" }));
     await salvarLista([...itens, { ...novo, nome: `${base}.png`, modelo_id: criando.id, valores }]);
+    guardarRascunho(criando.id, null);
     setCriando(null);
   };
   // Ver grande antes de baixar: toque na imagem abre em tela cheia, com as setas para passar.
@@ -157,14 +168,15 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
           <b>Montar aqui no Hub</b>
           <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 8px" }}>Toque no modelo, coloque as suas fotos e o texto e salve: o card entra em “Pronto para postar”, na ordem. Monte um slide de cada vez.</p>
           <div className="chips">
-            {sugeridos.map((m, k) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{sugeridos.length > 1 ? `${k + 1} · ` : ""}{m.nome.replace(/^[^·]+·\s*/, "")}</button>)}
-            {(outros || !sugeridos.length) && resto.map((m) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{m.nome}</button>)}
+            {sugeridos.map((m, k) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{sugeridos.length > 1 ? `${k + 1} · ` : ""}{m.nome.replace(/^[^·]+·\s*/, "")}{rascunhos[m.id] ? " · não salvo" : ""}</button>)}
+            {(outros || !sugeridos.length) && resto.map((m) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{m.nome}{rascunhos[m.id] ? " · não salvo" : ""}</button>)}
             {sugeridos.length > 0 && resto.length > 0 && !outros && <button type="button" className="chip" onClick={() => setOutros(true)}>Outros modelos</button>}
           </div>
           {criando && (
             <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
               <b>{criando.nome}</b>
-              <ModeloEditor key={criando.id} modelo={criando} aoSalvar={criarCard} aoFechar={() => setCriando(null)} />
+              {rascunhos[criando.id] && <p className="mudo" style={{ fontSize: 13, margin: "4px 0 0" }}>Voltou de onde você parou. Toque em “Salvar no post” para o card entrar em “Pronto para postar”.</p>}
+              <ModeloEditor key={criando.id} modelo={criando} rascunho={rascunhos[criando.id]} aoMudar={(val) => guardarRascunho(criando.id, val)} aoSalvar={criarCard} aoFechar={() => setCriando(null)} />
             </div>
           )}
         </div>

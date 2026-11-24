@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
 import { ModeloEditor } from "@/components/ModeloEditor";
-import { lerModelo, type Modelo, type Valores } from "@/lib/modelos";
+import { lerModelo, listarModelos, type Modelo, type Valores } from "@/lib/modelos";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
@@ -22,6 +22,22 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
   const [editando, setEditando] = useState<{ img: ImagemPost; modelo: Modelo } | null>(null);
+  // Montar aqui: os modelos da loja abrem dentro do post e o card pronto entra em "Pronto para postar".
+  const [modelos, setModelos] = useState<Modelo[]>([]);
+  const [criando, setCriando] = useState<Modelo | null>(null);
+  const [outros, setOutros] = useState(false);
+  useEffect(() => { listarModelos(p.portal_id).then(setModelos).catch(() => setModelos([])); }, [p.portal_id]);
+  // Os modelos citados no roteiro, na ordem em que aparecem, vêm primeiro.
+  const texto = `${p.roteiro ?? ""}\n${p.fazer ?? ""}`;
+  const sugeridos = modelos.filter((m) => texto.includes(m.nome)).sort((a, b) => texto.indexOf(a.nome) - texto.indexOf(b.nome));
+  const resto = modelos.filter((m) => !sugeridos.includes(m));
+  const criarCard = async (png: Blob, valores: Valores) => {
+    if (!criando) return;
+    const base = `${String(itens.length + 1).padStart(2, "0")}-${criando.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").toLowerCase()}`;
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], `${base}.png`, { type: "image/png" }));
+    await salvarLista([...itens, { ...novo, nome: `${base}.png`, modelo_id: criando.id, valores }]);
+    setCriando(null);
+  };
   // Ver grande antes de baixar: toque na imagem abre em tela cheia, com as setas para passar.
   const [ver, setVer] = useState<number | null>(null);
   useEffect(() => {
@@ -136,8 +152,25 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
           <ModeloEditor key={editando.img.path} modelo={editando.modelo} inicial={editando.img.valores} aoSalvar={salvarCard} aoFechar={() => setEditando(null)} />
         </div>
       )}
+      {modelos.length > 0 && !editando && (
+        <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
+          <b>Montar aqui no Hub</b>
+          <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 8px" }}>Toque no modelo, coloque as suas fotos e o texto e salve: o card entra em “Pronto para postar”, na ordem. Monte um slide de cada vez.</p>
+          <div className="chips">
+            {sugeridos.map((m, k) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{sugeridos.length > 1 ? `${k + 1} · ` : ""}{m.nome.replace(/^[^·]+·\s*/, "")}</button>)}
+            {(outros || !sugeridos.length) && resto.map((m) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{m.nome}</button>)}
+            {sugeridos.length > 0 && resto.length > 0 && !outros && <button type="button" className="chip" onClick={() => setOutros(true)}>Outros modelos</button>}
+          </div>
+          {criando && (
+            <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+              <b>{criando.nome}</b>
+              <ModeloEditor key={criando.id} modelo={criando} aoSalvar={criarCard} aoFechar={() => setCriando(null)} />
+            </div>
+          )}
+        </div>
+      )}
       <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>
-        {itens.length ? "Adicionar arquivo" : "Subir arquivo"}
+        {itens.length ? "Adicionar arquivo" : "Subir arquivo pronto"}
         <input type="file" accept="image/*,video/*" multiple hidden onChange={(e) => { subir(e.target.files); e.target.value = ""; }} />
       </label>
     </div>

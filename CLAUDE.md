@@ -76,7 +76,7 @@ Valem para toda campanha nova, de qualquer loja. As ferramentas abaixo já exist
 - Horário de lançamento combinado com a Camilla (ex.: 16h, com a loja já fechada, para não atrapalhar as compras).
 - Divulgação para clientes pela lista de transmissão, com a mensagem pronta no post ("Aqui é a [seu nome], da {loja}"). Grupo VIP só se a loja já tiver um ativo.
 - Arte em dúvida: subir 2 opções no mesmo post para a loja escolher ("Escolha uma das 2 opções…"); feed e stories do mesmo dia com a mesma arte.
-- Carrossel e card que a loja monta com as próprias fotos: o roteiro cita o nome exato do modelo da loja (`loja_modelos`), slide a slide. Assim o post mostra "Montar aqui no Hub" com esses modelos, e o card pronto entra em "Pronto para postar". Card pronto que saiu de modelo leva `modelo_id`, para ter o botão "Editar o card".
+- Carrossel e card que a loja monta com as próprias fotos: o roteiro cita o nome exato do modelo da loja (`loja_modelos`), uma linha por slide, no formato `SLIDE 1 · <nome do modelo>: …` ou `SLIDES 2 a 4 · <nome do modelo>: …`. Assim o post mostra "Monte o carrossel aqui" com os slides numerados (1, 2, 3…), cada um abrindo o seu modelo, e os cards prontos entram em "Pronto para postar" na ordem. Card que não é carrossel mostra "Montar aqui no Hub". Card pronto que saiu de modelo leva `modelo_id`, para ter o botão "Editar o card".
 - Emoji das legendas: ✨. Linguagem da cliente: "look", nunca "composição".
 
 ## Gamificação Brasil

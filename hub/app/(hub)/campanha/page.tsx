@@ -3,7 +3,7 @@
 // Sua campanha: a casa da campanha da loja. Antes (uma vez só), Semanas (semana a semana) e Resultado.
 // As abas abrem por etapa (loja_campanhas.abas): a Camilla libera a próxima depois de testar a anterior.
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
@@ -18,7 +18,11 @@ const ABAS: { id: Aba; rotulo: string }[] = [
 export default function SuaCampanha() {
   const { portal, equipe } = usePortal();
   const { dados } = useDados(() => buscarCampanhaAtiva(portal.id), [portal.id]);
-  const [aba, setAba] = useState<Aba>("antes");
+  // Ao voltar de um post (botão Fazer), reabre a mesma aba e a mesma semana, no mesmo ponto da página.
+  const [volta] = useState<{ aba: Aba; semana: number; y: number } | null>(() => {
+    try { const v = sessionStorage.getItem("campanha-volta"); sessionStorage.removeItem("campanha-volta"); return v ? JSON.parse(v) : null; } catch { return null; }
+  });
+  const [aba, setAba] = useState<Aba>(volta?.aba ?? "antes");
   const [feitos, setFeitos] = useState<Record<string, string> | null>(null);
   const [erro, setErro] = useState("");
   if (dados === undefined) return <Carregando />;
@@ -68,7 +72,7 @@ export default function SuaCampanha() {
       ) : aba === "antes" ? (
         <Antes c={c} marcar={marcar} />
       ) : aba === "semanas" ? (
-        <Semanas c={c} marcar={marcar} />
+        <Semanas c={c} marcar={marcar} volta={volta} />
       ) : (
         <div className="card"><p className="mudo" style={{ margin: 0 }}>O resultado da campanha aparece aqui quando ela terminar: as vendas do período e o que funcionou.</p></div>
       )}
@@ -114,11 +118,13 @@ function Antes({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: bool
 }
 
 // Semanas: o foco de cada semana e, dia a dia, o que postar e o que fazer, cada um com o botão para onde se resolve.
-function Semanas({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: boolean) => void }) {
+function Semanas({ c, marcar, volta }: { c: Campanha; marcar: (chave: string, feito: boolean) => void; volta: { semana: number; y: number } | null }) {
   const { dados: posts } = useDados(() => buscarPostsDaCampanha(c), [c.id]);
   const atual = semanaDaCampanha(c).atual;
-  const [aberta, setAberta] = useState<number>(atual);
+  const [aberta, setAberta] = useState<number>(volta?.semana ?? atual);
+  useEffect(() => { if (posts !== undefined && volta) requestAnimationFrame(() => window.scrollTo(0, volta.y)); }, [posts, volta]);
   if (posts === undefined) return <Carregando />;
+  const guardar = () => { try { sessionStorage.setItem("campanha-volta", JSON.stringify({ aba: "semanas", semana: aberta, y: window.scrollY })); } catch { /* sem memória da aba */ } };
   const semanas = semanasDaCampanha(c);
   return (
     <>
@@ -158,7 +164,7 @@ function Semanas({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: bo
                         <span style={it.feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>{it.titulo}</span>
                         {it.texto && !it.feito && <small>{it.texto}</small>}
                       </div>
-                      {!it.feito && <Link className={`btn ${it.botao === "Fazer" ? "p" : "s"} peq`} href={it.link}>{it.botao}</Link>}
+                      {!it.feito && <Link className={`btn ${it.botao === "Fazer" ? "p" : "s"} peq`} href={it.post ? `${it.link}&de=campanha` : it.link} onClick={guardar}>{it.botao}</Link>}
                     </div>
                   ))}
                 </div>

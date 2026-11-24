@@ -201,7 +201,9 @@ function PostDaLoja() {
 
   return (
     <>
-      <Link className="voltar" href="/conteudo/semana">← Conteúdo da semana</Link>
+      {params.get("de") === "campanha"
+        ? <Link className="voltar" href="/campanha">← Voltar para a campanha</Link>
+        : <Link className="voltar" href="/conteudo/semana">← Conteúdo da semana</Link>}
       <Titulo titulo={p.gancho || p.tema || "Post"} sub={[`${DIAS_SEMANA[diaDaSemana(p.data)]} ${dia(p.data)}`, p.hora, p.formato].filter(Boolean).join(" · ")} />
 
       <div className="card mb">

@@ -42,13 +42,28 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const sugeridos = modelos.filter((m) => texto.includes(m.nome)).sort((a, b) => texto.indexOf(a.nome) - texto.indexOf(b.nome));
   const resto = modelos.filter((m) => !sugeridos.includes(m));
   // Carrossel montado slide a slide: o roteiro diz "SLIDE 1 · <modelo>:" ou "SLIDES 2 a 4 · <modelo>:".
-  const plano: { n: number; modelo: Modelo }[] = [];
+  // Cada slide já vem com o texto do roteiro: Rótulo do campo "valor" (ex.: Estilo "A vaidosa"). O campo "numero" sai sozinho (1, 2, 3…).
+  const plano: { n: number; modelo: Modelo; valores: Valores }[] = [];
   if (p.formato === "Carrossel") {
+    const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const contagem: Record<string, number> = {};
     for (const linha of (p.roteiro ?? "").split("\n")) {
       const r = linha.match(/^\s*SLIDES?\s+(\d+)(?:\s*(?:a|-|até)\s*(\d+))?\s*·/i);
       const m = r && modelos.find((x) => linha.includes(x.nome));
       if (!r || !m) continue;
-      for (let n = Number(r[1]); n <= Number(r[2] ?? r[1]); n++) plano.push({ n, modelo: m });
+      const resto = linha.slice(linha.indexOf(m.nome) + m.nome.length);
+      const base: Valores = {};
+      for (const c of m.campos) {
+        if (c.tipo === "foto") continue;
+        const v = resto.match(new RegExp(`${esc(c.rotulo)}\\s*[:=]?\\s*“?"([^"]*)"`, "i")) ?? resto.match(new RegExp(`${esc(c.rotulo)}\\s*[:=]?\\s*“([^”]*)”`, "i"));
+        if (v) base[c.chave] = v[1].replace(/\s+\/\s+/g, "\n");
+      }
+      for (let n = Number(r[1]); n <= Number(r[2] ?? r[1]); n++) {
+        contagem[m.id] = (contagem[m.id] ?? 0) + 1;
+        const valores = { ...base };
+        if (m.campos.some((c) => c.chave === "numero") && !valores.numero) valores.numero = String(contagem[m.id]);
+        plano.push({ n, modelo: m, valores });
+      }
     }
     plano.sort((a, b) => a.n - b.n);
   }
@@ -229,7 +244,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
             <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
               <b>Slide {vagaAtual.n} de {plano.length} · {vagaAtual.modelo.nome.replace(/^[^·]+·\s*/, "")}</b>
               {doSlide(vagaAtual.n) && <p className="mudo" style={{ fontSize: 13, margin: "4px 0 0" }}>Este slide já está pronto. Mude o que quiser e salve: o novo entra no lugar.</p>}
-              <ModeloEditor key={`slide-${vagaAtual.n}`} modelo={vagaAtual.modelo} inicial={doSlide(vagaAtual.n)?.valores} rascunho={rascunhos[`slide-${vagaAtual.n}`]}
+              <ModeloEditor key={`slide-${vagaAtual.n}`} modelo={vagaAtual.modelo} inicial={doSlide(vagaAtual.n)?.valores ?? vagaAtual.valores} rascunho={rascunhos[`slide-${vagaAtual.n}`]}
                 aoMudar={(val) => guardarRascunho(`slide-${vagaAtual.n}`, val)} rotuloSalvar={`Salvar o slide ${vagaAtual.n}`} aoSalvar={salvarSlide} aoFechar={() => setVaga(null)} />
             </div>
           )}

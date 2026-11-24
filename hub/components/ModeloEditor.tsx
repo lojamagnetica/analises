@@ -94,7 +94,7 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
         <div className="linha" style={{ gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
           <button type="button" className="btn p" disabled={ocupado || !html} onClick={salvar}>{aoSalvar ? rotuloSalvar : "Baixar imagem"}</button>
           {!aoSalvar && <button type="button" className="btn s" disabled={ocupado || !html} onClick={compartilhar}>Salvar no celular</button>}
-          <button type="button" className="btn s" disabled={ocupado} onClick={() => setV(valoresPadrao(modelo))}>Voltar ao texto do modelo</button>
+          <button type="button" className="btn s" disabled={ocupado} onClick={() => setV({ ...valoresPadrao(modelo), ...(inicial ?? {}) })}>{inicial ? "Desfazer as mudanças" : "Voltar ao texto do modelo"}</button>
           {aoFechar && <button type="button" className="btn s" onClick={aoFechar}>Fechar</button>}
         </div>
       </div>

@@ -195,6 +195,14 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
           <ModeloEditor key={editando.img.path} modelo={editando.modelo} inicial={editando.img.valores} aoSalvar={salvarCard} aoFechar={() => setEditando(null)} />
         </div>
       )}
+      {/^reels?$/i.test(p.formato) && !itens.some((i) => ehVideo(i.nome)) && (
+        // Reels sem o vídeo: um lugar claro para subir o vídeo pronto, junto da capa.
+        <label className="card mt" style={{ display: "block", cursor: "pointer", textAlign: "center", padding: 16, borderStyle: "dashed", borderColor: "var(--accent, #7A1E2A)" }}>
+          <b>Falta o vídeo do Reels</b>
+          <div className="mudo" style={{ fontSize: 13.5, marginTop: 4 }}>Toque aqui para subir o vídeo pronto. Ele fica junto da capa e você baixa tudo daqui na hora de postar.</div>
+          <input type="file" accept="video/*" hidden onChange={(e) => { subir(e.target.files); e.target.value = ""; }} />
+        </label>
+      )}
       {plano.length > 0 && !editando && (
         <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
           <div className="linha entre"><b>Monte o carrossel aqui</b><span className={`selo ${prontos === plano.length ? "feito" : "andamento"}`}>{prontos} de {plano.length} slides prontos</span></div>

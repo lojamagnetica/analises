@@ -3,7 +3,7 @@
 // Editor de um modelo de card: os campos à esquerda, a prévia ao vivo à direita.
 // A arte (cores, logo, letras) não muda; só os textos e a foto.
 import { useEffect, useRef, useState } from "react";
-import { aplicar, gerarImagem, htmlDoModelo, lerFoto, montarNoFrame, nomeArquivo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
+import { aplicar, chaveAjuste, gerarImagem, htmlDoModelo, lerAjuste, lerFoto, montarNoFrame, nomeArquivo, posicaoDoModelo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
 
 type Props = {
   modelo: Modelo;
@@ -41,6 +41,18 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
   }, [modelo.largura]);
 
   const mudar = (k: string, val: string) => setV((x) => ({ ...x, [k]: val }));
+  // Ajustar a foto: mexer para os lados, para cima e para baixo e dar zoom, a partir de onde a arte já deixava.
+  const ajuste = (campo: string) => {
+    const a = lerAjuste(v, campo);
+    if (a) return a;
+    const d = frame.current?.contentDocument;
+    const p = d ? posicaoDoModelo(d, campo) : { x: 50, y: 50 };
+    return { ...p, z: 1 };
+  };
+  const ajustar = (campo: string, parte: "x" | "y" | "z", n: number) => {
+    const a = { ...ajuste(campo), [parte]: n };
+    mudar(chaveAjuste(campo), `${a.x},${a.y},${a.z}`);
+  };
   const gerar = async () => gerarImagem(modelo, v);
   const salvar = async () => {
     setOcupado(true); setMsg("Gerando a imagem…");
@@ -70,19 +82,36 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
     <div className="grade" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18, alignItems: "start" }}>
       <div style={{ display: "grid", gap: 12 }}>
         {modelo.campos.map((c) => (
-          <label key={c.chave} style={{ display: "grid", gap: 4 }}>
+          <div key={c.chave} style={{ display: "grid", gap: 4 }}>
             <b style={{ fontSize: 13.5 }}>{c.rotulo}</b>
             {c.tipo === "foto" ? (
-              <span className="card" style={{ display: "block", cursor: "pointer", textAlign: "center", padding: 12, borderStyle: v[c.chave] ? "solid" : "dashed" }}>
-                <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) mudar(c.chave, await lerFoto(f)); e.target.value = ""; }} />
-                {v[c.chave] ? "✓ Foto escolhida · toque para trocar" : "Toque para escolher a foto"}
-              </span>
+              <>
+                <label className="card" style={{ display: "block", cursor: "pointer", textAlign: "center", padding: 12, borderStyle: v[c.chave] ? "solid" : "dashed" }}>
+                  <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setV((x) => { const y = { ...x, [c.chave]: "" }; delete y[chaveAjuste(c.chave)]; return y; }); if (f) mudar(c.chave, await lerFoto(f)); e.target.value = ""; }} />
+                  {v[c.chave] ? "✓ Foto escolhida · toque para trocar" : "Toque para escolher a foto"}
+                </label>
+                {v[c.chave] && (
+                  <div style={{ display: "grid", gap: 2, fontSize: 13, padding: "2px 4px" }}>
+                    <span className="linha entre"><span>Zoom</span>
+                      <span className="linha" style={{ gap: 12 }}>
+                        <button type="button" style={{ background: "none", border: 0, padding: 0, cursor: "pointer", fontSize: 12.5, textDecoration: "underline" }} onClick={() => setV((x) => { const y = { ...x }; delete y[chaveAjuste(c.chave)]; return y; })}>Voltar ao original</button>
+                        <button type="button" style={{ background: "none", border: 0, padding: 0, cursor: "pointer", fontSize: 12.5, textDecoration: "underline", color: "var(--red, #b42318)" }} onClick={() => { if (confirm("Tirar esta foto do card?")) setV((x) => { const y = { ...x, [c.chave]: "" }; delete y[chaveAjuste(c.chave)]; return y; }); }}>Tirar a foto</button>
+                      </span>
+                    </span>
+                    <input type="range" min={1} max={3} step={0.02} value={ajuste(c.chave).z} onChange={(e) => ajustar(c.chave, "z", Number(e.target.value))} />
+                    <span>Esquerda ↔ direita</span>
+                    <input type="range" min={0} max={100} step={1} value={ajuste(c.chave).x} onChange={(e) => ajustar(c.chave, "x", Number(e.target.value))} />
+                    <span>Cima ↕ baixo</span>
+                    <input type="range" min={0} max={100} step={1} value={ajuste(c.chave).y} onChange={(e) => ajustar(c.chave, "y", Number(e.target.value))} />
+                  </div>
+                )}
+              </>
             ) : (
               <textarea value={v[c.chave] ?? ""} rows={c.tipo === "linhas" ? 4 : Math.min(4, Math.max(1, (v[c.chave] ?? "").split("\n").length))}
                 onChange={(e) => mudar(c.chave, e.target.value)} style={{ width: "100%", font: "inherit", fontSize: 15, padding: 10, borderRadius: 10, border: "1px solid var(--linha, #e5e0d8)", resize: "vertical" }} />
             )}
             {c.tipo === "linhas" && <small className="mudo">Um item por linha.</small>}
-          </label>
+          </div>
         ))}
         <small className="mudo">As cores, a logo e as letras ficam iguais às da campanha. Para destacar uma palavra em itálico, escreva entre asteriscos: *você*.</small>
       </div>

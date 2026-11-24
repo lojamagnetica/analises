@@ -68,14 +68,50 @@ export async function apagarModelo(m: Modelo) {
 export const valoresPadrao = (m: Modelo): Valores => Object.fromEntries(m.campos.map((c) => [c.chave, c.valor ?? ""]));
 
 /** Põe os valores nos elementos com data-campo, dentro do documento do modelo. */
-export function aplicar(doc: Document, m: Modelo, v: Valores) {
+/** Ajuste da foto (posição e zoom), guardado no valor "<campo>__ajuste" como "x,y,zoom" (x e y de 0 a 100; zoom 1 a 3). */
+export const chaveAjuste = (campo: string) => `${campo}__ajuste`;
+export function lerAjuste(v: Valores, campo: string): { x: number; y: number; z: number } | null {
+  const n = (v[chaveAjuste(campo)] ?? "").split(",").map(Number);
+  return n.length === 3 && n.every((x) => Number.isFinite(x)) ? { x: n[0], y: n[1], z: n[2] } : null;
+}
+/** Posição original da foto no modelo (em %), para o ajuste começar de onde a arte já estava. */
+export function posicaoDoModelo(doc: Document, campo: string): { x: number; y: number } {
+  const el = doc.querySelector<HTMLElement>(`[data-campo="${campo}"]`);
+  const pos = el ? (el.dataset.pos0 ?? getComputedStyle(el).backgroundPosition) : "";
+  const pct = (t: string | undefined, pad: number) => { if (!t) return pad; if (t === "left" || t === "top") return 0; if (t === "right" || t === "bottom") return 100; if (t === "center") return 50; const n = parseFloat(t); return t.endsWith("%") && Number.isFinite(n) ? n : pad; };
+  const [a, b] = pos.split(/\s+/);
+  return { x: pct(a, 50), y: pct(b, 50) };
+}
+
+export function aplicar(doc: Document, m: Modelo, v: Valores): Promise<void> {
+  const esperas: Promise<void>[] = [];
   for (const c of m.campos) {
     const val = v[c.chave] ?? c.valor ?? "";
     doc.querySelectorAll<HTMLElement>(`[data-campo="${c.chave}"]`).forEach((el) => {
       if (c.tipo === "foto") {
-        if (!val) return;
-        if (el.tagName === "IMG") (el as HTMLImageElement).src = val;
-        else el.style.backgroundImage = `url("${val}")`;
+        if (el.tagName === "IMG") { if (val) (el as HTMLImageElement).src = val; return; }
+        // Sem foto (ou foto tirada): volta ao fundo do próprio modelo.
+        if (!val) { el.style.backgroundImage = ""; el.style.backgroundPosition = ""; el.style.backgroundSize = ""; return; }
+        el.style.backgroundImage = `url("${val}")`;
+        // Guarda como a arte posicionava a foto, antes de qualquer ajuste.
+        const cs = getComputedStyle(el);
+        el.dataset.pos0 ??= cs.backgroundPosition;
+        el.dataset.tam0 ??= cs.backgroundSize;
+        const aj = lerAjuste(v, c.chave);
+        if (!aj) { el.style.backgroundPosition = el.dataset.pos0; el.style.backgroundSize = el.dataset.tam0; return; }
+        el.style.backgroundPosition = `${aj.x}% ${aj.y}%`;
+        esperas.push(new Promise<void>((ok) => {
+          const img = new Image();
+          img.onload = () => {
+            const W = el.clientWidth, H = el.clientHeight;
+            const base = el.dataset.tam0 === "contain" ? Math.min(W / img.width, H / img.height) : Math.max(W / img.width, H / img.height);
+            const k = base * aj.z;
+            el.style.backgroundSize = `${Math.round(img.width * k)}px ${Math.round(img.height * k)}px`;
+            ok();
+          };
+          img.onerror = () => ok();
+          img.src = val;
+        }));
       } else if (c.tipo === "linhas") {
         el.replaceChildren(...val.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const li = doc.createElement("li"); li.textContent = l; return li; }));
       } else {
@@ -91,6 +127,7 @@ export function aplicar(doc: Document, m: Modelo, v: Valores) {
       }
     });
   }
+  return Promise.all(esperas).then(() => undefined);
 }
 
 /** Monta o modelo num iframe (fora da tela ou de prévia), aplica os valores e espera as letras. */
@@ -100,7 +137,7 @@ export async function montarNoFrame(frame: HTMLIFrameElement, html: string, m: M
     frame.srcdoc = html;
   });
   const doc = frame.contentDocument!;
-  aplicar(doc, m, v);
+  await aplicar(doc, m, v);
   await doc.fonts?.ready;
   await Promise.all(Array.from(doc.images).map((i) => (i.complete ? null : new Promise((r) => { i.onload = r; i.onerror = r; }))));
   return doc;

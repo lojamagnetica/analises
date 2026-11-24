@@ -78,6 +78,7 @@ Valem para toda campanha nova, de qualquer loja. As ferramentas abaixo já exist
 - Arte em dúvida: subir 2 opções no mesmo post para a loja escolher ("Escolha uma das 2 opções…"); feed e stories do mesmo dia com a mesma arte.
 - Carrossel e card que a loja monta com as próprias fotos: o roteiro cita o nome exato do modelo da loja (`loja_modelos`), uma linha por slide, no formato `SLIDE 1 · <nome do modelo>: …` ou `SLIDES 2 a 4 · <nome do modelo>: …`. Assim o post mostra "Monte o carrossel aqui" com os slides numerados (1, 2, 3…), cada um abrindo o seu modelo, e os cards prontos entram em "Pronto para postar" na ordem. Card que não é carrossel mostra "Montar aqui no Hub". Card pronto que saiu de modelo leva `modelo_id`, para ter o botão "Editar o card".
 - Emoji das legendas: ✨. Linguagem da cliente: "look", nunca "composição".
+- Destaque de produto (traço com o nome no card, legenda, roteiro) fala do benefício para a cliente ("espaçosa", "confortável", "ajustável"), nunca da cor ou de detalhe sem uso: cor não faz ninguém comprar.
 
 ## Gamificação Brasil
 Processo e agente em `.claude/skills/gamificacao-brasil/SKILL.md`: depois do diagnóstico e do plano de ação, transforma os principais desafios em processo medido pelo Hub e termina com a loja no ranking Brasil. A Lista da vez fica só nas lojas piloto.

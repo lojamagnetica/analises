@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dataCurta } from "@/lib/formato";
-import { antesFeitos, buscarCampanhaAtiva, marcarCampanha, semanaDaCampanha, type Aba, type Campanha } from "@/lib/campanha";
+import { antesFeitos, buscarCampanhaAtiva, buscarPostsDaCampanha, itensDoDia, marcarCampanha, semanaDaCampanha, semanasDaCampanha, type Aba, type Campanha } from "@/lib/campanha";
 
 const ABAS: { id: Aba; rotulo: string }[] = [
   { id: "antes", rotulo: "1 · Antes" },
@@ -67,8 +67,10 @@ export default function SuaCampanha() {
         </div>
       ) : aba === "antes" ? (
         <Antes c={c} marcar={marcar} />
+      ) : aba === "semanas" ? (
+        <Semanas c={c} marcar={marcar} />
       ) : (
-        <div className="card"><p className="mudo" style={{ margin: 0 }}>Em preparação.</p></div>
+        <div className="card"><p className="mudo" style={{ margin: 0 }}>O resultado da campanha aparece aqui quando ela terminar: as vendas do período e o que funcionou.</p></div>
       )}
 
       <p className="ajuda">Travou em algum passo? Toque em <Link className="link-loja" href="/assistente">Fale com a Camilla</Link> e diga qual.</p>
@@ -110,3 +112,65 @@ function Antes({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: bool
     </div>
   );
 }
+
+// Semanas: o foco de cada semana e, dia a dia, o que postar e o que fazer, cada um com o botão para onde se resolve.
+function Semanas({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: boolean) => void }) {
+  const { dados: posts } = useDados(() => buscarPostsDaCampanha(c), [c.id]);
+  const atual = semanaDaCampanha(c).atual;
+  const [aberta, setAberta] = useState<number>(atual);
+  if (posts === undefined) return <Carregando />;
+  const semanas = semanasDaCampanha(c);
+  return (
+    <>
+      <p className="ajuda">Semana a semana: o foco, o que postar em cada dia e o que fazer na loja. Toque na semana para abrir os dias.</p>
+      {semanas.map((s) => {
+        const foco = c.dias[`semana-${s.n}`]?.destaque;
+        const itens = s.dias.flatMap((d) => itensDoDia(c, posts ?? [], d));
+        const feitos = itens.filter((i) => i.feito).length;
+        const aberto = aberta === s.n;
+        const agora = s.n === atual;
+        return (
+          <div key={s.n} className="card card-borda mb" style={{ ["--c" as string]: agora ? "var(--red)" : "var(--line)" }}>
+            <button type="button" onClick={() => setAberta(aberto ? -1 : s.n)} className="linha entre"
+              style={{ width: "100%", background: "none", border: 0, padding: 0, textAlign: "left", cursor: "pointer", color: "inherit", font: "inherit" }}>
+              <b>{s.n ? `Semana ${s.n}` : "Preparo"} · {dataCurta(s.ini).slice(0, 5)} a {dataCurta(s.fim).slice(0, 5)}</b>
+              <span className="linha" style={{ gap: 8 }}>
+                {agora && <span className="selo andamento">esta semana</span>}
+                {itens.length > 0 && <small className="mudo">{feitos} de {itens.length}</small>}
+                <span aria-hidden>{aberto ? "▾" : "▸"}</span>
+              </span>
+            </button>
+            {foco && <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-line" }} dangerouslySetInnerHTML={{ __html: negrito(foco) }} />}
+            {aberto && s.dias.map((d) => {
+              const its = itensDoDia(c, posts ?? [], d);
+              const dest = c.dias[d]?.destaque;
+              if (!its.length && !dest) return null;
+              return (
+                <div key={d} style={{ marginTop: 14 }}>
+                  <div className="secao" style={{ margin: "0 0 4px", textTransform: "capitalize" }}>{diaDaSemana(d)}, {dataCurta(d).slice(0, 5)}</div>
+                  {dest && <div style={{ fontSize: 14, lineHeight: 1.4, marginBottom: 6 }} dangerouslySetInnerHTML={{ __html: negrito(dest) }} />}
+                  {its.map((it) => (
+                    <div key={it.chave} className="item-c">
+                      {it.post
+                        ? <span className={`num-c${it.feito ? " ok" : ""}`} style={{ cursor: "default", flexBasis: 26, width: 26, height: 26 }}>{it.feito ? "✓" : ""}</span>
+                        : <button className={`num-c${it.feito ? " ok" : ""}`} style={{ flexBasis: 26, width: 26, height: 26 }} onClick={() => marcar(it.chave, !it.feito)} aria-label={it.feito ? `Desmarcar: ${it.titulo}` : `Marcar como feito: ${it.titulo}`}>{it.feito ? "✓" : ""}</button>}
+                      <div className="t">
+                        <span style={it.feito ? { textDecoration: "line-through", opacity: 0.6 } : undefined}>{it.titulo}</span>
+                        {it.texto && !it.feito && <small>{it.texto}</small>}
+                      </div>
+                      {!it.feito && <Link className={`btn ${it.botao === "Fazer" ? "p" : "s"} peq`} href={it.link}>{it.botao}</Link>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+const diaDaSemana = (d: string) => new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC", weekday: "long" }).format(new Date(`${d}T12:00:00Z`));
+// O foco e o destaque podem ter **negrito**; o resto vai como texto.
+const negrito = (t: string) => t.replace(/[&<>"]/g, (x) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[x]!)).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");

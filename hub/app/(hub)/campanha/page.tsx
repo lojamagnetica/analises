@@ -119,6 +119,9 @@ function Antes({ c, marcar }: { c: Campanha; marcar: (chave: string, feito: bool
 
 // Semanas: o foco de cada semana e, dia a dia, o que postar e o que fazer, cada um com o botão para onde se resolve.
 function Semanas({ c, marcar, volta }: { c: Campanha; marcar: (chave: string, feito: boolean) => void; volta: { semana: number; y: number } | null }) {
+  const { portal, equipe } = usePortal();
+  // Semana que começa depois de portal.conteudo_ate fica fechada para a loja (a Camilla abre semana a semana).
+  const fechada = (ini: string) => !!portal.conteudo_ate && ini > portal.conteudo_ate;
   const { dados: posts } = useDados(() => buscarPostsDaCampanha(c), [c.id]);
   const atual = semanaDaCampanha(c).atual;
   const [aberta, setAberta] = useState<number>(volta?.semana ?? (atual || 1));
@@ -133,6 +136,14 @@ function Semanas({ c, marcar, volta }: { c: Campanha; marcar: (chave: string, fe
         const foco = c.dias[`semana-${s.n}`]?.destaque;
         const itens = s.dias.flatMap((d) => itensDoDia(c, posts ?? [], d));
         const feitos = itens.filter((i) => i.feito).length;
+        if (fechada(s.ini) && !equipe) {
+          return (
+            <div key={s.n} className="card card-borda mb" style={{ ["--c" as string]: "var(--line)", opacity: 0.75 }}>
+              <div className="linha entre"><b>Semana {s.n} · {dataCurta(s.ini).slice(0, 5)} a {dataCurta(s.fim).slice(0, 5)}</b><span className="selo espera">🔒 em preparo</span></div>
+              <p className="mudo" style={{ margin: "6px 0 0", fontSize: 13.5 }}>A Camilla abre esta semana com tudo pronto antes de ela começar.</p>
+            </div>
+          );
+        }
         const aberto = aberta === s.n;
         const agora = s.n === atual;
         return (
@@ -142,6 +153,7 @@ function Semanas({ c, marcar, volta }: { c: Campanha; marcar: (chave: string, fe
               <b>{s.n ? `Semana ${s.n}` : "Preparo"} · {dataCurta(s.ini).slice(0, 5)} a {dataCurta(s.fim).slice(0, 5)}</b>
               <span className="linha" style={{ gap: 8 }}>
                 {agora && <span className="selo andamento">esta semana</span>}
+                {fechada(s.ini) && equipe && <span className="selo espera">🔒 fechada para a loja</span>}
                 {itens.length > 0 && <small className="mudo">{feitos} de {itens.length}</small>}
                 <span aria-hidden>{aberto ? "▾" : "▸"}</span>
               </span>

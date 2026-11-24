@@ -26,6 +26,8 @@ export type Portal = {
   /** Grupos do menu que esta loja não vê (consultorias personalizadas). */
   menu_oculto?: string[] | null;
   menu_trancado?: string[] | null;
+  /** A loja só vê o conteúdo até esta data (campanha aberta semana a semana). */
+  conteudo_ate?: string | null;
   /** Código do link do formulário da rotina de gestão (sem login). */
   rotina_token?: string | null;
   plano_titulos?: Record<string, string> | null;

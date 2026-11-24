@@ -156,7 +156,9 @@ export default function Semana() {
     return { ...c, planos, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: [...acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })), ...doPlano] };
   }, [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
-  const { m, a, conteudo, posts } = dados;
+  const { m, a, conteudo } = dados;
+  // No "ver como loja", esconde o que a loja ainda não vê (o banco já esconde para a própria loja).
+  const posts = comoLoja && portal.conteudo_ate ? dados.posts.filter((p) => p.data <= portal.conteudo_ate!) : dados.posts;
   if (!a) return <Trancado titulo="Programação da semana" texto={m.textos.trancado} />;
 
   const aj: Ajustes = ajustes ?? conteudo.ajustes ?? {};

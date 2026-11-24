@@ -316,7 +316,7 @@ function Editar({ p, aoSalvar }: { p: Post; aoSalvar: () => void }) {
 }
 
 function PostDaLoja() {
-  const { portal } = usePortal();
+  const { portal, comoLoja } = usePortal();
   const params = useSearchParams();
   const id = params.get("id") ?? "";
   const { dados, recarregar } = useDados(async () => ({ post: id ? await lerPostLoja(id) : null }), [id]);
@@ -324,6 +324,7 @@ function PostDaLoja() {
   useEffect(() => { if (p) document.title = `${p.gancho || p.tema || "Post"} · magnética.hub`; }, [p]);
   if (!dados) return <Carregando />;
   if (!p || p.portal_id !== portal.id) return <p className="mudo">Post não encontrado. <Link href="/conteudo/semana">Voltar</Link></p>;
+  if (comoLoja && portal.conteudo_ate && p.data > portal.conteudo_ate) return <p className="mudo">Este post ainda está em preparo: a Camilla libera a semana dele antes de ela começar. <Link href="/conteudo/semana">Voltar</Link></p>;
 
   const proximo = STATUS[STATUS.indexOf(p.status) + 1];
   const passos = (p.fazer ?? "").split("\n").map((l) => l.replace(/^\s*[-•\d.)]+\s*/, "").trim()).filter(Boolean);

@@ -3,7 +3,7 @@
 // Editor de um modelo de card: os campos à esquerda, a prévia ao vivo à direita.
 // A arte (cores, logo, letras) não muda; só os textos e a foto.
 import { useEffect, useRef, useState } from "react";
-import { aplicar, chaveAjuste, gerarImagem, htmlDoModelo, lerAjuste, lerFoto, montarNoFrame, nomeArquivo, posicaoDoModelo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
+import { SEM, aplicar, chaveAjuste, gerarImagem, htmlDoModelo, lerAjuste, lerFoto, montarNoFrame, nomeArquivo, posicaoDoModelo, valoresPadrao, type Modelo, type Valores } from "@/lib/modelos";
 
 type Props = {
   modelo: Modelo;
@@ -91,11 +91,19 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
             <b style={{ fontSize: 13.5 }}>{c.rotulo}</b>
             {c.tipo === "foto" ? (
               <>
+                {v[c.chave] === SEM ? (
+                  <div className="card" style={{ textAlign: "center", padding: 12, borderStyle: "dashed" }}>
+                    <span className="mudo">Fora do card</span>{" · "}
+                    <button type="button" style={{ background: "none", border: 0, padding: 0, cursor: "pointer", textDecoration: "underline", font: "inherit" }} onClick={() => mudar(c.chave, "")}>usar de novo</button>
+                  </div>
+                ) : <>
                 <label className="card" style={{ display: "block", cursor: "pointer", textAlign: "center", padding: 12, borderStyle: v[c.chave] ? "solid" : "dashed" }}>
                   <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setV((x) => { const y = { ...x, [c.chave]: "" }; delete y[chaveAjuste(c.chave)]; return y; }); if (f) mudar(c.chave, await lerFoto(f)); e.target.value = ""; }} />
                   {v[c.chave] ? "✓ Foto escolhida · toque para trocar" : "Toque para escolher a foto"}
                 </label>
-                {v[c.chave] && (
+                {!v[c.chave] && <button type="button" style={{ background: "none", border: 0, padding: 0, cursor: "pointer", fontSize: 12.5, textDecoration: "underline", justifySelf: "start" }} onClick={() => mudar(c.chave, SEM)}>Não usar esta foto (sai do card)</button>}
+                </>}
+                {v[c.chave] && v[c.chave] !== SEM && (
                   <div style={{ display: "grid", gap: 2, fontSize: 13, padding: "2px 4px" }}>
                     <span className="linha entre"><span>Zoom</span>
                       <span className="linha" style={{ gap: 12 }}>
@@ -116,6 +124,7 @@ export function ModeloEditor({ modelo, inicial, aoSalvar, rotuloSalvar = "Salvar
                 onChange={(e) => mudar(c.chave, e.target.value)} style={{ width: "100%", font: "inherit", fontSize: 15, padding: 10, borderRadius: 10, border: "1px solid var(--linha, #e5e0d8)", resize: "vertical" }} />
             )}
             {c.tipo === "linhas" && <small className="mudo">Um item por linha.</small>}
+            {c.tipo === "texto" && !(v[c.chave] ?? "").trim() && <small className="mudo">Vazio: sai do card (com o traço, se tiver).</small>}
           </div>
         ))}
         <small className="mudo">As cores, a logo e as letras ficam iguais às da campanha. Para destacar uma palavra em itálico, escreva entre asteriscos: *você*.</small>

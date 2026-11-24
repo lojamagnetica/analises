@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { ModeloEditor } from "@/components/ModeloEditor";
+import { apagarModelo, listarModelos, subirModelo, type Modelo } from "@/lib/modelos";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
@@ -223,6 +225,52 @@ function Montar({ id, modelos }: { id: Identidade; modelos: ModeloMes[] }) {
   );
 }
 
+/** Modelos da campanha: os cards de série (lives, convites) prontos para trocar o texto e baixar. */
+function ModelosDaCampanha({ portalId, equipe }: { portalId: string; equipe: boolean }) {
+  const [lista, setLista] = useState<Modelo[] | null>(null);
+  const [aberto, setAberto] = useState<Modelo | null>(null);
+  const [msg, setMsg] = useState("");
+  const carregar = () => listarModelos(portalId).then(setLista).catch((e) => setMsg((e as Error).message));
+  useEffect(() => { carregar(); }, [portalId]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (!lista || (!lista.length && !equipe)) return null;
+  const grupos = Array.from(new Set(lista.map((m) => m.grupo || "Modelos")));
+  const subir = async (f?: File) => {
+    if (!f) return; setMsg("Subindo o modelo…");
+    try { await subirModelo(portalId, f); setMsg(""); carregar(); } catch (e) { setMsg((e as Error).message); }
+  };
+  const apagar = async (m: Modelo) => {
+    if (!confirm(`Excluir o modelo "${m.nome}"? Os cards que já estão nos posts continuam lá, mas não dá mais para editar.`)) return;
+    try { await apagarModelo(m); if (aberto?.id === m.id) setAberto(null); carregar(); } catch (e) { setMsg((e as Error).message); }
+  };
+  return (
+    <div className="card mb">
+      <h2 style={{ margin: 0 }}>Modelos da campanha</h2>
+      <p className="mudo" style={{ fontSize: 14, margin: "4px 0 10px" }}>Os cards da sua série, prontos: escolha um, troque o texto (e a foto, quando tiver) e baixe. As cores, a logo e as letras ficam as da campanha.</p>
+      {msg && <div className="aviso">{msg}</div>}
+      {grupos.map((g) => (
+        <div key={g} className="mt">
+          <small className="mudo" style={{ letterSpacing: ".08em", textTransform: "uppercase" }}>{g}</small>
+          <div className="chips mt">
+            {lista.filter((m) => (m.grupo || "Modelos") === g).map((m) => (
+              <span key={m.id} className="linha" style={{ gap: 4 }}>
+                <button type="button" className={`chip${aberto?.id === m.id ? " escolhido" : ""}`} onClick={() => setAberto(aberto?.id === m.id ? null : m)}>{m.nome}</button>
+                {equipe && <button type="button" className="link-loja" style={{ fontSize: 12 }} onClick={() => apagar(m)} aria-label={`Excluir ${m.nome}`}>excluir</button>}
+              </span>
+            ))}
+          </div>
+        </div>
+      ))}
+      {aberto && <div className="mt"><ModeloEditor key={aberto.id} modelo={aberto} aoFechar={() => setAberto(null)} /></div>}
+      {equipe && (
+        <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>
+          Subir modelo (.html)
+          <input type="file" accept=".html,text/html" hidden onChange={(e) => { subir(e.target.files?.[0]); e.target.value = ""; }} />
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function MontadorColecao() {
   const { portal, pers, equipe } = usePortal();
   const segmento = (pers.get(1)?.respostas?.segmento as string | undefined) ?? null;
@@ -236,6 +284,7 @@ export default function MontadorColecao() {
   return (
     <>
       <Titulo titulo={mont ? `Montador de carrossel · ${mont.colecao}` : "Montador de carrossel"} sub="Suba a foto que você fez com IA e baixe a imagem pronta, com as letras e as cores da sua campanha." />
+      <ModelosDaCampanha portalId={portal.id} equipe={equipe} />
       {!mont ? (
         <div className="card">
           <p style={{ margin: 0 }}>Quando a próxima campanha estiver pronta, o montador da sua coleção aparece aqui.</p>

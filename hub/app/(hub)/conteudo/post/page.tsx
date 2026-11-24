@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { ModeloEditor } from "@/components/ModeloEditor";
+import { lerModelo, type Modelo, type Valores } from "@/lib/modelos";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
@@ -19,6 +21,23 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const itens = p.imagens ?? [];
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
+  const [editando, setEditando] = useState<{ img: ImagemPost; modelo: Modelo } | null>(null);
+  const abrirEditor = async (img: ImagemPost) => {
+    if (!img.modelo_id) return;
+    const m = await lerModelo(img.modelo_id);
+    if (!m) { setMsg("Não encontrei o modelo deste card."); return; }
+    setEditando({ img, modelo: m });
+  };
+  // Salva o card editado no lugar do antigo, na mesma posição.
+  const salvarCard = async (png: Blob, valores: Valores) => {
+    if (!editando) return;
+    const base = editando.img.nome.replace(/\.[^.]+$/, "");
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], `${base}.png`, { type: "image/png" }));
+    const item: ImagemPost = { ...novo, nome: `${base}.png`, modelo_id: editando.modelo.id, valores };
+    await salvarLista(itens.map((x) => (x.path === editando.img.path ? item : x)));
+    await postImagemTirar(editando.img).catch(() => null);
+    setEditando(null);
+  };
   useEffect(() => {
     let vivo = true;
     Promise.all(itens.map(async (i) => [i.path, await postImagemUrl(i.path)] as const)).then((xs) => { if (vivo) setUrls(Object.fromEntries(xs)); });
@@ -70,6 +89,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
                   : <img src={urls[i.path]} alt={`Arquivo ${k + 1}`} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)" }} />
                 : <div style={{ width: "100%", aspectRatio: "4 / 5", background: "#e8e4dc", borderRadius: 8 }} />}
               <button type="button" className="btn s peq" onClick={() => postImagemBaixar(i).catch((e) => setMsg(e.message))}>Baixar {k + 1}</button>
+              {i.modelo_id && <button type="button" className="btn s peq" onClick={() => abrirEditor(i)}>Editar o card</button>}
               <div className="linha entre" style={{ fontSize: 11.5 }}>
                 <span className="linha" style={{ gap: 6 }}>
                   {k > 0 && <button type="button" className="link-loja" onClick={() => mover(k, -1)} aria-label="Mover para antes">←</button>}
@@ -79,6 +99,13 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {editando && (
+        <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+          <div className="linha entre"><b>Editar o card · {editando.modelo.nome}</b></div>
+          <p className="mudo" style={{ fontSize: 13.5 }}>Troque o texto e veja o card mudar ao lado. Ao salvar, o card novo entra no lugar deste, na mesma ordem.</p>
+          <ModeloEditor key={editando.img.path} modelo={editando.modelo} inicial={editando.img.valores} aoSalvar={salvarCard} aoFechar={() => setEditando(null)} />
         </div>
       )}
       <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>

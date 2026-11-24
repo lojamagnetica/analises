@@ -21,13 +21,14 @@ export type PaginaBio = {
 /** O que a página pública recebe. */
 export type BioPublica = Pick<PaginaBio, "slug" | "perfil" | "blocos" | "aparencia"> & { acao: AcaoBio };
 
-export type Modelo = { id: string; nome: string; fundo: string; texto: string; suave: string; botao: string; botaoTexto: string; principal: string; principalTexto: string };
+export type Modelo = { id: string; nome: string; fundo: string; texto: string; suave: string; botao: string; botaoTexto: string; principal: string; principalTexto: string; elegante?: boolean; dourado?: string };
 export const MODELOS: Modelo[] = [
   { id: "areia", nome: "Areia", fundo: "#F4EEE6", texto: "#2B2522", suave: "#7A6F66", botao: "#FFFFFF", botaoTexto: "#2B2522", principal: "#B7400E", principalTexto: "#FFFFFF" },
   { id: "noite", nome: "Noite", fundo: "#141210", texto: "#F7F2EC", suave: "#A8A098", botao: "#24211E", botaoTexto: "#F7F2EC", principal: "#D9622C", principalTexto: "#FFFFFF" },
   { id: "terracota", nome: "Terracota", fundo: "#B7400E", texto: "#FFF6EF", suave: "#F6D3BF", botao: "#FFF6EF", botaoTexto: "#7A2A08", principal: "#141210", principalTexto: "#FFFFFF" },
   { id: "rose", nome: "Rosé", fundo: "#F7E3E1", texto: "#4A2A2A", suave: "#8E6764", botao: "#FFFFFF", botaoTexto: "#4A2A2A", principal: "#9E4A4A", principalTexto: "#FFFFFF" },
   { id: "oliva", nome: "Oliva", fundo: "#E6E7D9", texto: "#2E3322", suave: "#6B7158", botao: "#FFFFFF", botaoTexto: "#2E3322", principal: "#4F5A2E", principalTexto: "#FFFFFF" },
+  { id: "linho", nome: "Linho (elegante)", fundo: "#F4F1EC", texto: "#404B44", suave: "#7C827B", botao: "transparent", botaoTexto: "#404B44", principal: "#404B44", principalTexto: "#F4F1EC", elegante: true, dourado: "#9C8048" },
   { id: "branco", nome: "Branco", fundo: "#FFFFFF", texto: "#141210", suave: "#7D7670", botao: "#F3F0EC", botaoTexto: "#141210", principal: "#141210", principalTexto: "#FFFFFF" },
 ];
 export const FORMATOS: { id: FormatoBotao; nome: string; raio: string }[] = [

@@ -20,6 +20,66 @@ export function BioPagina({ p, aoClicar, previa }: { p: BioPublica; aoClicar?: (
     return <a href={href} target="_blank" rel="noopener noreferrer" style={estilo} onClick={() => aoClicar?.(b.id)}>{filhos}</a>;
   };
 
+  // Visual elegante (modelo Linho): botões com fio fino, caixa alta espaçada, sem ícones nem emoji.
+  if (m.elegante) {
+    const ouro = m.dourado ?? m.suave;
+    const fonte = "var(--font-marca)";
+    const caixa = (principal: boolean): React.CSSProperties => ({
+      display: "block", width: "100%", padding: "17px 16px", borderRadius: 0, textAlign: "center", textDecoration: "none",
+      background: principal ? m.principal : "rgba(255,255,255,.35)", color: principal ? m.principalTexto : m.botaoTexto,
+      border: `1px solid ${principal ? m.principal : "rgba(64,75,68,.4)"}`, fontFamily: fonte, fontWeight: 400,
+      fontSize: 12.5, letterSpacing: ".28em", textTransform: "uppercase",
+    });
+    let primeiro = true;
+    return (
+      <div style={{ background: m.fundo, color: m.texto, minHeight: "100%", padding: "48px 26px 40px", fontFamily: fonte }}>
+        <div style={{ maxWidth: 420, margin: "0 auto", display: "grid", gap: 12 }}>
+          <div style={{ textAlign: "center", marginBottom: 16 }}>
+            {p.perfil?.foto && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.perfil.foto} alt="" style={{ width: 104, height: 104, borderRadius: "50%", objectFit: "cover", display: "block", margin: "0 auto 18px" }} />
+            )}
+            <div style={{ fontSize: 15, letterSpacing: ".34em", textTransform: "uppercase", fontWeight: 400 }}>{p.perfil?.nome}</div>
+            {p.perfil?.frase && <p style={{ margin: "12px 0 0", fontSize: 13.5, fontWeight: 300, letterSpacing: ".03em", color: m.texto }}>{p.perfil.frase}</p>}
+            <div style={{ width: 40, borderTop: `1px solid ${ouro}`, margin: "22px auto 4px" }} />
+          </div>
+          {(p.blocos ?? []).map((b) => {
+            switch (b.tipo) {
+              case "whatsapp": case "destaque": case "link": {
+                const cheio = b.tipo === "destaque" && primeiro; if (b.tipo === "destaque") primeiro = false;
+                return <div key={b.id}>{link(b, b.titulo || "WhatsApp", caixa(cheio))}</div>;
+              }
+              case "acao":
+                if (!p.acao) return null;
+                return <div key={b.id}>{link(b, b.titulo || p.acao.titulo, caixa(true), p.acao)}</div>;
+              case "texto":
+                return b.texto ? <div key={b.id} style={{ textAlign: "center", fontSize: 10.5, letterSpacing: ".42em", textTransform: "uppercase", color: ouro, margin: "16px 0 2px" }}>{b.texto}</div> : null;
+              case "local":
+                return (
+                  <div key={b.id} style={{ textAlign: "center", marginTop: 14 }}>
+                    <div style={{ width: 40, borderTop: `1px solid ${ouro}`, margin: "0 auto 16px" }} />
+                    {b.endereco && <div style={{ fontSize: 13, fontWeight: 300, letterSpacing: ".03em" }}>{b.endereco}</div>}
+                    {b.horario && <div style={{ fontSize: 13, fontWeight: 300, letterSpacing: ".03em", marginTop: 4, whiteSpace: "pre-wrap" }}>{b.horario}</div>}
+                    {b.endereco && <div style={{ marginTop: 16 }}>{link(b, b.titulo || "Como chegar", caixa(false))}</div>}
+                  </div>
+                );
+              case "faq":
+                return (
+                  <details key={b.id} style={{ borderBottom: "1px solid rgba(64,75,68,.25)", padding: "12px 2px" }} onToggle={(e) => { if ((e.target as HTMLDetailsElement).open) aoClicar?.(b.id); }}>
+                    <summary style={{ cursor: "pointer", fontSize: 12, letterSpacing: ".2em", textTransform: "uppercase" }}>{b.pergunta || "Pergunta"}</summary>
+                    <p style={{ margin: "8px 0 0", fontSize: 13.5, fontWeight: 300, whiteSpace: "pre-wrap" }}>{b.resposta}</p>
+                  </details>
+                );
+              default:
+                return null;
+            }
+          })}
+          <div style={{ textAlign: "center", fontSize: 10, letterSpacing: ".2em", color: m.suave, marginTop: 22 }}>feito com magnética.hub</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: m.fundo, color: m.texto, minHeight: "100%", padding: "34px 18px 40px", fontFamily: "var(--font)" }}>
       <div style={{ maxWidth: 460, margin: "0 auto", display: "grid", gap: 12 }}>

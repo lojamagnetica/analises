@@ -41,6 +41,38 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const texto = `${p.roteiro ?? ""}\n${p.fazer ?? ""}`;
   const sugeridos = modelos.filter((m) => texto.includes(m.nome)).sort((a, b) => texto.indexOf(a.nome) - texto.indexOf(b.nome));
   const resto = modelos.filter((m) => !sugeridos.includes(m));
+  // Carrossel montado slide a slide: o roteiro diz "SLIDE 1 · <modelo>:" ou "SLIDES 2 a 4 · <modelo>:".
+  const plano: { n: number; modelo: Modelo }[] = [];
+  if (p.formato === "Carrossel") {
+    for (const linha of (p.roteiro ?? "").split("\n")) {
+      const r = linha.match(/^\s*SLIDES?\s+(\d+)(?:\s*(?:a|-|até)\s*(\d+))?\s*·/i);
+      const m = r && modelos.find((x) => linha.includes(x.nome));
+      if (!r || !m) continue;
+      for (let n = Number(r[1]); n <= Number(r[2] ?? r[1]); n++) plano.push({ n, modelo: m });
+    }
+    plano.sort((a, b) => a.n - b.n);
+  }
+  const doSlide = (n: number) => itens.find((i) => i.valores?.__slide === String(n));
+  const prontos = plano.filter((v) => doSlide(v.n)).length;
+  const [vaga, setVaga] = useState<number | null>(null);
+  const vagaAtual = plano.find((v) => v.n === vaga) ?? null;
+  const salvarSlide = async (png: Blob, valores: Valores) => {
+    if (!vagaAtual) return;
+    const n = vagaAtual.n;
+    const nome = `${String(n).padStart(2, "0")}-slide.png`;
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], nome, { type: "image/png" }));
+    const antigo = doSlide(n);
+    const item: ImagemPost = { ...novo, nome, modelo_id: vagaAtual.modelo.id, valores: { ...valores, __slide: String(n) } };
+    // Mantém a ordem do carrossel: os slides numerados primeiro, na ordem; o resto depois.
+    const lista = [...itens.filter((x) => x !== antigo), item];
+    const num = (x: ImagemPost) => Number(x.valores?.__slide ?? 999);
+    await salvarLista(lista.sort((a, b) => num(a) - num(b)));
+    if (antigo) await postImagemTirar(antigo).catch(() => null);
+    guardarRascunho(`slide-${n}`, null);
+    // Vai para o próximo slide que ainda falta.
+    const prox = plano.find((v) => v.n > n && !doSlide(v.n)) ?? plano.find((v) => v.n !== n && !doSlide(v.n));
+    setVaga(prox ? prox.n : null);
+  };
   const criarCard = async (png: Blob, valores: Valores) => {
     if (!criando) return;
     const base = `${String(itens.length + 1).padStart(2, "0")}-${criando.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").toLowerCase()}`;
@@ -163,7 +195,39 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
           <ModeloEditor key={editando.img.path} modelo={editando.modelo} inicial={editando.img.valores} aoSalvar={salvarCard} aoFechar={() => setEditando(null)} />
         </div>
       )}
-      {modelos.length > 0 && !editando && (
+      {plano.length > 0 && !editando && (
+        <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
+          <div className="linha entre"><b>Monte o carrossel aqui</b><span className={`selo ${prontos === plano.length ? "feito" : "andamento"}`}>{prontos} de {plano.length} slides prontos</span></div>
+          <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 10px" }}>São {plano.length} slides, na ordem em que aparecem no Instagram. Toque em cada número, coloque as suas fotos e o texto e salve. Quando todos estiverem prontos, toque em qualquer imagem acima para ver o carrossel inteiro, passando com as setas, e depois é só salvar no celular e postar.</p>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
+            {plano.map((v) => {
+              const feito = doSlide(v.n);
+              const ativo = vaga === v.n;
+              return (
+                <button key={v.n} type="button" onClick={() => setVaga(ativo ? null : v.n)} aria-label={`Slide ${v.n}`}
+                  style={{ flex: "0 0 86px", height: 108, borderRadius: 8, padding: 0, cursor: "pointer", position: "relative", overflow: "hidden", background: feito ? "#fff" : "var(--bg2, #f6f2ec)",
+                    border: ativo ? "2px solid var(--accent, #7A1E2A)" : feito ? "1px solid var(--line, #e5e0d8)" : "1px dashed #b9b0a3" }}>
+                  {feito && urls[feito.path]
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={urls[feito.path]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ display: "grid", placeItems: "center", height: "100%", padding: 6 }}><b style={{ fontSize: 26 }}>{v.n}</b><small style={{ fontSize: 10.5, lineHeight: 1.2 }}>{v.modelo.nome.replace(/^[^·]+·\s*/, "")}</small></span>}
+                  <span style={{ position: "absolute", left: 4, top: 4, background: feito ? "var(--ok, #2e7d32)" : "rgba(0,0,0,.55)", color: "#fff", borderRadius: 10, fontSize: 11, padding: "1px 6px" }}>{feito ? `✓ ${v.n}` : v.n}</span>
+                  {rascunhos[`slide-${v.n}`] && !feito && <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "#fff8e1", fontSize: 10 }}>não salvo</span>}
+                </button>
+              );
+            })}
+          </div>
+          {vagaAtual && (
+            <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+              <b>Slide {vagaAtual.n} de {plano.length} · {vagaAtual.modelo.nome.replace(/^[^·]+·\s*/, "")}</b>
+              {doSlide(vagaAtual.n) && <p className="mudo" style={{ fontSize: 13, margin: "4px 0 0" }}>Este slide já está pronto. Mude o que quiser e salve: o novo entra no lugar.</p>}
+              <ModeloEditor key={`slide-${vagaAtual.n}`} modelo={vagaAtual.modelo} inicial={doSlide(vagaAtual.n)?.valores} rascunho={rascunhos[`slide-${vagaAtual.n}`]}
+                aoMudar={(val) => guardarRascunho(`slide-${vagaAtual.n}`, val)} rotuloSalvar={`Salvar o slide ${vagaAtual.n}`} aoSalvar={salvarSlide} aoFechar={() => setVaga(null)} />
+            </div>
+          )}
+        </div>
+      )}
+      {modelos.length > 0 && !editando && plano.length === 0 && (
         <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
           <b>Montar aqui no Hub</b>
           <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 8px" }}>Toque no modelo, coloque as suas fotos e o texto e salve: o card entra em “Pronto para postar”, na ordem. Monte um slide de cada vez.</p>

@@ -88,6 +88,16 @@ export type ItemHoje = { chave: string; titulo: string; texto?: string; botao: s
 
 /** O que a loja faz hoje na campanha: os itens do dia, os posts do dia e o "Antes" que ainda falta. */
 export function itensDeHoje(c: Campanha, posts: Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[], dia = hoje()): ItemHoje[] {
+  // Na semana do preparo (e na semana 1), o que falta do Antes também entra no dia.
+  const sem = semanaDaCampanha(c, dia).atual;
+  const doAntes = sem <= 1 ? c.antes.filter((p) => !c.feitos[p.id]).slice(0, 3).map((p) => ({
+    chave: p.id, titulo: p.titulo, texto: p.ate ? `Até ${p.ate}` : p.texto, botao: "Ver", link: "/campanha", feito: false,
+  })) : [];
+  return [...itensDoDia(c, posts, dia), ...doAntes];
+}
+
+/** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */
+export function itensDoDia(c: Campanha, posts: Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[], dia: string): ItemHoje[] {
   const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
     chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
   }));
@@ -100,12 +110,33 @@ export function itensDeHoje(c: Campanha, posts: Pick<Post, "id" | "data" | "tema
       botao: "Fazer", link: `/conteudo/post?id=${p.id}`, feito: p.status === "Publicado",
     };
   });
-  // Na semana do preparo (e na semana 1), o que falta do Antes também entra no dia.
-  const sem = semanaDaCampanha(c, dia).atual;
-  const doAntes = sem <= 1 ? c.antes.filter((p) => !c.feitos[p.id]).slice(0, 3).map((p) => ({
-    chave: p.id, titulo: p.titulo, texto: p.ate ? `Até ${p.ate}` : p.texto, botao: "Ver", link: "/campanha", feito: false,
-  })) : [];
-  return [...doDia, ...dePost, ...doAntes];
+  return [...doDia, ...dePost];
+}
+
+/** As semanas da campanha: o preparo (se houver) e as semanas 1, 2, … com os dias de cada uma.
+ *  O foco da semana fica em dias["semana-N"].destaque (semana-0 é o preparo). */
+export function semanasDaCampanha(c: Campanha) {
+  const dt = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const lista: { n: number; ini: string; fim: string; dias: string[] }[] = [];
+  const diasEntre = (a: string, b: string) => { const r: string[] = []; for (let t = ms(a); t <= ms(b); t += DIA) r.push(dt(t)); return r; };
+  if (c.preparo_desde < c.inicio) {
+    const fimPrep = dt(ms(c.inicio) - DIA);
+    lista.push({ n: 0, ini: c.preparo_desde, fim: fimPrep, dias: diasEntre(c.preparo_desde, fimPrep) });
+  }
+  const { total } = semanaDaCampanha(c);
+  for (let n = 1; n <= total; n++) {
+    const ini = dt(ms(c.inicio) + (n - 1) * 7 * DIA);
+    const fim = [dt(ms(ini) + 6 * DIA), c.fim].sort()[0];
+    lista.push({ n, ini, fim, dias: diasEntre(ini, fim) });
+  }
+  return lista;
+}
+
+/** Os posts da campanha inteira, do preparo ao fim (para a aba Semanas). */
+export async function buscarPostsDaCampanha(c: Campanha) {
+  const { data } = await sb().from("loja_posts").select("id, data, tema, formato, status, fazer, imagens")
+    .eq("portal_id", c.portal_id).gte("data", c.preparo_desde).lte("data", c.fim).order("data").order("hora");
+  return (data ?? []) as Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[];
 }
 
 /** Tira o prefixo da campanha do tema do post ("ENCONTROS · Abertura · … · Look Traz #1" → "Look Traz #1"). */

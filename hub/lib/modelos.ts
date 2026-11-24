@@ -83,11 +83,29 @@ export function posicaoDoModelo(doc: Document, campo: string): { x: number; y: n
   return { x: pct(a, 50), y: pct(b, 50) };
 }
 
+/** Valor que marca "não usar" (a foto ou o detalhe some do card). */
+export const SEM = "__sem__";
+/** Os traços e enfeites que acompanham um campo: data-se="campo" ou a linha fina (.ln) colada nele. */
+function acompanhantes(doc: Document, el: HTMLElement, chave: string): HTMLElement[] {
+  const l = Array.from(doc.querySelectorAll<HTMLElement>(`[data-se="${chave}"]`));
+  const prox = el.nextElementSibling as HTMLElement | null;
+  if (prox?.classList.contains("ln")) l.push(prox);
+  const ant = el.previousElementSibling as HTMLElement | null;
+  if (ant?.classList.contains("ln") && !(ant.previousElementSibling as HTMLElement | null)?.dataset.campo) l.push(ant);
+  return l;
+}
+
 export function aplicar(doc: Document, m: Modelo, v: Valores): Promise<void> {
   const esperas: Promise<void>[] = [];
   for (const c of m.campos) {
-    const val = v[c.chave] ?? c.valor ?? "";
+    const bruto = v[c.chave] ?? c.valor ?? "";
+    const sem = bruto === SEM;
+    const val = sem ? "" : bruto;
     doc.querySelectorAll<HTMLElement>(`[data-campo="${c.chave}"]`).forEach((el) => {
+      // Campo de texto vazio ou foto "não usar": some junto com o traço que aponta para ele.
+      const some = sem || (c.tipo !== "foto" && !val.trim());
+      el.style.display = sem ? "none" : "";
+      acompanhantes(doc, el, c.chave).forEach((a) => { a.style.display = some ? "none" : ""; });
       if (c.tipo === "foto") {
         if (el.tagName === "IMG") { if (val) (el as HTMLImageElement).src = val; return; }
         // Sem foto (ou foto tirada): volta ao fundo do próprio modelo.

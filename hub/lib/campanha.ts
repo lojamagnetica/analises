@@ -99,17 +99,33 @@ export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tem
 }
 
 /** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */
-export function itensDoDia(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[], dia: string): ItemHoje[] {
+/** Quantos slides o roteiro pede ("SLIDE 1 · …", "SLIDES 2 a 4 · …"); 0 quando não tem plano. */
+function slidesDoRoteiro(roteiro?: string | null): number {
+  let n = 0;
+  for (const l of (roteiro ?? "").split("\n")) {
+    const m = l.match(/^\s*SLIDES?\s+(\d+)(?:\s*(?:a|-|até)\s*(\d+))?\s*·/i);
+    if (m) n = Math.max(n, Number(m[2] ?? m[1]));
+  }
+  return n;
+}
+
+export function itensDoDia(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null; roteiro?: string | null })[], dia: string): ItemHoje[] {
   const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
     chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
   }));
   const dePost = posts.filter((p) => p.data === dia).map((p) => {
-    const temArquivo = (p.imagens?.length ?? 0) > 0;
+    const arquivos = p.imagens ?? [];
+    const slides = slidesDoRoteiro(p.roteiro);
+    const temVideo = arquivos.some((a) => /\.(mp4|mov|m4v|webm)$/i.test(a.nome || a.path || ""));
+    // "Arte pronta" só quando está tudo lá: reels com o vídeo, carrossel com todos os slides do roteiro.
+    let situacao = arquivos.length ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda";
+    if (p.formato === "Reels" && arquivos.length && !temVideo) situacao = "a capa está pronta, falta subir o vídeo";
+    else if (slides > arquivos.length && arquivos.length) situacao = `${arquivos.length} de ${slides} slides prontos, monte o resto no Hub`;
     // Formato e hora primeiro: dois posts com o mesmo tema (stories e carrossel) ficam fáceis de separar.
     const hora = p.hora ? p.hora.slice(0, 5).replace(/^0/, "").replace(/:00$/, "h").replace(":", "h") : "";
     return {
       chave: `post:${p.id}`, titulo: `Postar: ${limparTema(p.tema)}`, post: true,
-      texto: [p.formato, hora, temArquivo ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda"].filter(Boolean).join(" · "),
+      texto: [p.formato, hora, situacao].filter(Boolean).join(" · "),
       botao: "Fazer", link: `/conteudo/post?id=${p.id}`, feito: p.status === "Publicado",
     };
   });
@@ -134,7 +150,7 @@ export function semanasDaCampanha(c: Campanha) {
 
 /** Os posts da campanha, do início ao fim (para a aba Semanas). */
 export async function buscarPostsDaCampanha(c: Campanha) {
-  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens")
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens, roteiro")
     .eq("portal_id", c.portal_id).gte("data", c.inicio).lte("data", c.fim).order("data").order("hora");
   return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }
@@ -147,6 +163,6 @@ export function limparTema(tema: string) {
 
 /** Posts de um dia (para o "Hoje na campanha"). */
 export async function buscarPostsDoDia(portalId: string, dia = hoje()) {
-  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens").eq("portal_id", portalId).eq("data", dia).order("hora");
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens, roteiro").eq("portal_id", portalId).eq("data", dia).order("hora");
   return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }

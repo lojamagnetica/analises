@@ -332,6 +332,10 @@ function PostDaLoja() {
     await postSalvar(p.id, { [k]: e.target.value ? Number(e.target.value) : null }); recarregar();
   };
 
+  // "MENSAGEM DA LISTA DE TRANSMISSÃO:" no roteiro vira um quadro próprio, com botão de copiar.
+  const partesMsg = (p.roteiro ?? "").split(/\n?MENSAGEM DA LISTA DE TRANSMISSÃO:\s*/i);
+  const roteiroSemMsg = partesMsg[0].trim();
+  const msgLista = (partesMsg[1] ?? "").trim();
   return (
     <>
       {params.get("de") === "campanha"
@@ -358,15 +362,23 @@ function PostDaLoja() {
 
       <Arquivos p={p} aoMudar={recarregar} />
 
-      {p.roteiro && (
+      {roteiroSemMsg && (
         <div className="card mb">
-          <div className="linha entre"><h2 style={{ margin: 0 }}>Roteiro</h2><Copiar texto={p.roteiro} rotulo="Copiar roteiro" /></div>
-          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{p.roteiro}</div>
+          <div className="linha entre"><h2 style={{ margin: 0 }}>Roteiro</h2><Copiar texto={roteiroSemMsg} rotulo="Copiar roteiro" /></div>
+          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{roteiroSemMsg}</div>
+        </div>
+      )}
+
+      {msgLista && (
+        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--green, #3B4835)" }}>
+          <div className="linha entre"><h2 style={{ margin: 0 }}>Mensagem para a lista de transmissão</h2><Copiar texto={msgLista} rotulo="Copiar a mensagem" /></div>
+          <p className="ajuda">Cada pessoa da equipe manda pela lista de transmissão dela, trocando [seu nome] pelo próprio nome.</p>
+          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{msgLista}</div>
         </div>
       )}
 
       <div className="card mb">
-        <div className="linha entre"><h2 style={{ margin: 0 }}>Legenda</h2>{p.legenda && <Copiar texto={p.legenda} rotulo="Copiar legenda" />}</div>
+        <div className="linha entre"><h2 style={{ margin: 0 }}>{p.formato === "Stories" ? "Texto do story" : "Legenda"}</h2>{p.legenda && <Copiar texto={p.legenda} rotulo={p.formato === "Stories" ? "Copiar o texto" : "Copiar legenda"} />}</div>
         {p.legenda ? <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{p.legenda}</div> : <p className="mudo">Sem legenda ainda. Escreva em “Editar o post”.</p>}
       </div>
 

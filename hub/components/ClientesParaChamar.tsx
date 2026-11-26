@@ -3,8 +3,19 @@
 import { useState } from "react";
 import type { ClienteChamar } from "@/lib/vez";
 
-/** O card "Clientes para chamar" do link pessoal: nome, o que comprou, a mensagem pronta e o "chamei". */
+/** No link pessoal, todo dia: o pós-venda das clientes de ontem e as 10 clientes de resgate da semana, cada lista num card. */
 export function ClientesParaChamar({ lista, marcar }: { lista: ClienteChamar[]; marcar: (id: string, feito: boolean) => void }) {
+  const pos = lista.filter((c) => c.tipo === "pos_venda");
+  const resgate = lista.filter((c) => c.tipo !== "pos_venda");
+  return (
+    <>
+      <ListaChamar titulo="Pós-venda de ontem" ajuda="Clientes que compraram com você ontem. Mande hoje, sem oferecer nada: é para ela responder e salvar o seu número." lista={pos} marcar={marcar} />
+      <ListaChamar titulo="Clientes para chamar" ajuda="Clientes suas que não voltam há mais de 60 dias, da estratégia da semana. A mensagem já está pronta." lista={resgate} marcar={marcar} />
+    </>
+  );
+}
+
+function ListaChamar({ titulo, ajuda, lista, marcar }: { titulo: string; ajuda: string; lista: ClienteChamar[]; marcar: (id: string, feito: boolean) => void }) {
   const [copiada, setCopiada] = useState("");
   if (lista.length === 0) return null;
   const feitas = lista.filter((c) => c.feito).length;
@@ -14,13 +25,13 @@ export function ClientesParaChamar({ lista, marcar }: { lista: ClienteChamar[]; 
   return (
     <div className="card mb">
       <div className="linha entre" style={{ alignItems: "baseline" }}>
-        <b style={{ fontSize: 18 }}>Clientes para chamar</b>
+        <b style={{ fontSize: 18 }}>{titulo}</b>
         <small className="mudo">{feitas} de {lista.length} chamadas</small>
       </div>
       <div style={{ height: 8, borderRadius: 6, background: "var(--line)", margin: "8px 0 4px", overflow: "hidden" }}>
         <div style={{ width: `${(feitas / lista.length) * 100}%`, height: "100%", background: "#2E9D57", transition: "width .4s" }} />
       </div>
-      <p className="ajuda" style={{ margin: "0 0 4px" }}>Clientes suas que não voltam há mais de 60 dias. A mensagem já está pronta.</p>
+      <p className="ajuda" style={{ margin: "0 0 4px" }}>{ajuda}</p>
       {lista.map((c) => {
         const zap = c.whatsapp ? `https://wa.me/${c.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(c.mensagem)}` : "";
         return (

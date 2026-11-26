@@ -2,10 +2,13 @@
 
 // Página do post da loja, no mesmo jeito do calendário da Camilla:
 // o que falta fazer (quando falta) → arquivos prontos para baixar → roteiro → legenda → postado → resultado.
+import { faltaNoPost } from "@/lib/post-pronto";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Copiar } from "@/components/Copiar";
+import { ModeloEditor } from "@/components/ModeloEditor";
+import { lerModelo, listarModelos, type Modelo, type Valores } from "@/lib/modelos";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia } from "@/lib/formato";
@@ -19,6 +22,109 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   const itens = p.imagens ?? [];
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
+  const [editando, setEditando] = useState<{ img: ImagemPost; modelo: Modelo } | null>(null);
+  // Montar aqui: os modelos da loja abrem dentro do post e o card pronto entra em "Pronto para postar".
+  const [modelos, setModelos] = useState<Modelo[]>([]);
+  const [criando, setCriando] = useState<Modelo | null>(null);
+  const [outros, setOutros] = useState(false);
+  // Rascunhos por modelo: trocar de modelo antes de salvar não perde as fotos nem o texto (fica guardado nesta aba do navegador).
+  const chaveRasc = `rascunho-cards:${p.id}`;
+  const [rascunhos, setRascunhos] = useState<Record<string, Valores>>(() => {
+    try { return JSON.parse(sessionStorage.getItem(chaveRasc) ?? "{}"); } catch { return {}; }
+  });
+  const guardarRascunho = (id: string, val: Valores | null) => setRascunhos((r) => {
+    const n = { ...r }; if (val) n[id] = val; else delete n[id];
+    try { sessionStorage.setItem(chaveRasc, JSON.stringify(n)); } catch { /* foto grande demais para guardar: fica só na memória */ }
+    return n;
+  });
+  useEffect(() => { listarModelos(p.portal_id).then(setModelos).catch(() => setModelos([])); }, [p.portal_id]);
+  // Os modelos citados no roteiro, na ordem em que aparecem, vêm primeiro.
+  const texto = `${p.roteiro ?? ""}\n${p.fazer ?? ""}`;
+  const sugeridos = modelos.filter((m) => texto.includes(m.nome)).sort((a, b) => texto.indexOf(a.nome) - texto.indexOf(b.nome));
+  const resto = modelos.filter((m) => !sugeridos.includes(m));
+  // Carrossel montado slide a slide: o roteiro diz "SLIDE 1 · <modelo>:" ou "SLIDES 2 a 4 · <modelo>:".
+  // Cada slide já vem com o texto do roteiro: Rótulo do campo "valor" (ex.: Estilo "A vaidosa"). O campo "numero" sai sozinho (1, 2, 3…).
+  const plano: { n: number; modelo: Modelo; valores: Valores }[] = [];
+  if (p.formato === "Carrossel") {
+    const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const contagem: Record<string, number> = {};
+    for (const linha of (p.roteiro ?? "").split("\n")) {
+      const r = linha.match(/^\s*SLIDES?\s+(\d+)(?:\s*(?:a|-|até)\s*(\d+))?\s*·/i);
+      const m = r && modelos.find((x) => linha.includes(x.nome));
+      if (!r || !m) continue;
+      const resto = linha.slice(linha.indexOf(m.nome) + m.nome.length);
+      const base: Valores = {};
+      for (const c of m.campos) {
+        if (c.tipo === "foto") continue;
+        const v = resto.match(new RegExp(`${esc(c.rotulo)}\\s*[:=]?\\s*“?"([^"]*)"`, "i")) ?? resto.match(new RegExp(`${esc(c.rotulo)}\\s*[:=]?\\s*“([^”]*)”`, "i"));
+        if (v) base[c.chave] = v[1].replace(/\s+\/\s+/g, "\n");
+      }
+      for (let n = Number(r[1]); n <= Number(r[2] ?? r[1]); n++) {
+        contagem[m.id] = (contagem[m.id] ?? 0) + 1;
+        const valores = { ...base };
+        if (m.campos.some((c) => c.chave === "numero") && !valores.numero) valores.numero = String(contagem[m.id]);
+        plano.push({ n, modelo: m, valores });
+      }
+    }
+    plano.sort((a, b) => a.n - b.n);
+  }
+  const doSlide = (n: number) => itens.find((i) => i.valores?.__slide === String(n));
+  const prontos = plano.filter((v) => doSlide(v.n)).length;
+  const [vaga, setVaga] = useState<number | null>(null);
+  const vagaAtual = plano.find((v) => v.n === vaga) ?? null;
+  const salvarSlide = async (png: Blob, valores: Valores) => {
+    if (!vagaAtual) return;
+    const n = vagaAtual.n;
+    const nome = `${String(n).padStart(2, "0")}-slide.png`;
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], nome, { type: "image/png" }));
+    const antigo = doSlide(n);
+    const item: ImagemPost = { ...novo, nome, modelo_id: vagaAtual.modelo.id, valores: { ...valores, __slide: String(n) } };
+    // Mantém a ordem do carrossel: os slides numerados primeiro, na ordem; o resto depois.
+    const lista = [...itens.filter((x) => x !== antigo), item];
+    const num = (x: ImagemPost) => Number(x.valores?.__slide ?? 999);
+    await salvarLista(lista.sort((a, b) => num(a) - num(b)));
+    if (antigo) await postImagemTirar(antigo).catch(() => null);
+    guardarRascunho(`slide-${n}`, null);
+    // Vai para o próximo slide que ainda falta.
+    const prox = plano.find((v) => v.n > n && !doSlide(v.n)) ?? plano.find((v) => v.n !== n && !doSlide(v.n));
+    setVaga(prox ? prox.n : null);
+  };
+  const criarCard = async (png: Blob, valores: Valores) => {
+    if (!criando) return;
+    const base = `${String(itens.length + 1).padStart(2, "0")}-${criando.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").toLowerCase()}`;
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], `${base}.png`, { type: "image/png" }));
+    await salvarLista([...itens, { ...novo, nome: `${base}.png`, modelo_id: criando.id, valores }]);
+    guardarRascunho(criando.id, null);
+    setCriando(null);
+  };
+  // Ver grande antes de baixar: toque na imagem abre em tela cheia, com as setas para passar.
+  const [ver, setVer] = useState<number | null>(null);
+  useEffect(() => {
+    if (ver === null) return;
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setVer(null);
+      if (e.key === "ArrowRight") setVer((v) => (v === null ? v : Math.min(itens.length - 1, v + 1)));
+      if (e.key === "ArrowLeft") setVer((v) => (v === null ? v : Math.max(0, v - 1)));
+    };
+    window.addEventListener("keydown", tecla);
+    return () => window.removeEventListener("keydown", tecla);
+  }, [ver, itens.length]);
+  const abrirEditor = async (img: ImagemPost) => {
+    if (!img.modelo_id) return;
+    const m = await lerModelo(img.modelo_id);
+    if (!m) { setMsg("Não encontrei o modelo deste card."); return; }
+    setEditando({ img, modelo: m });
+  };
+  // Salva o card editado no lugar do antigo, na mesma posição.
+  const salvarCard = async (png: Blob, valores: Valores) => {
+    if (!editando) return;
+    const base = editando.img.nome.replace(/\.[^.]+$/, "");
+    const novo = await postImagemSubir(p.portal_id, p.id, new File([png], `${base}.png`, { type: "image/png" }));
+    const item: ImagemPost = { ...novo, nome: `${base}.png`, modelo_id: editando.modelo.id, valores };
+    await salvarLista(itens.map((x) => (x.path === editando.img.path ? item : x)));
+    await postImagemTirar(editando.img).catch(() => null);
+    setEditando(null);
+  };
   useEffect(() => {
     let vivo = true;
     Promise.all(itens.map(async (i) => [i.path, await postImagemUrl(i.path)] as const)).then((xs) => { if (vivo) setUrls(Object.fromEntries(xs)); });
@@ -50,12 +156,12 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   return (
     <div className="card mb">
       <div className="linha entre">
-        <h2 style={{ margin: 0 }}>{itens.length ? "Pronto para postar" : "Arquivos do post"}</h2>
+        <h2 style={{ margin: 0 }}>{itens.length && !faltaNoPost(p) ? "Pronto para postar" : "Arquivos do post"}</h2>
         {itens.length > 0 && <button type="button" className="btn p peq" onClick={salvarTodas}>Salvar no celular ({itens.length})</button>}
       </div>
       <p className="mudo" style={{ fontSize: 14 }}>
         {itens.length
-          ? "Na ordem de postagem. No celular, o botão abre o compartilhar: escolha “Salvar imagens”. Também dá para tocar e segurar em cada uma."
+          ? "Na ordem de postagem. Toque na imagem para ver grande antes de baixar. No celular, o botão abre o compartilhar: escolha “Salvar imagens”."
           : "Ainda não tem arquivo neste post. Se você aprovou uma arte ou um vídeo por fora, suba aqui para ficar tudo junto."}
       </p>
       {msg && <div className="aviso">{msg}</div>}
@@ -67,9 +173,10 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
                 ? ehVideo(i.nome)
                   ? <video src={urls[i.path]} controls playsInline style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, background: "#000" }} />
                   // eslint-disable-next-line @next/next/no-img-element
-                  : <img src={urls[i.path]} alt={`Arquivo ${k + 1}`} loading="lazy" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)" }} />
+                  : <img src={urls[i.path]} alt={`Arquivo ${k + 1}`} loading="lazy" onClick={() => setVer(k)} title="Ver grande" style={{ width: "100%", aspectRatio: "4 / 5", objectFit: "cover", borderRadius: 8, border: "1px solid var(--linha, #e5e0d8)", cursor: "zoom-in" }} />
                 : <div style={{ width: "100%", aspectRatio: "4 / 5", background: "#e8e4dc", borderRadius: 8 }} />}
               <button type="button" className="btn s peq" onClick={() => postImagemBaixar(i).catch((e) => setMsg(e.message))}>Baixar {k + 1}</button>
+              {i.modelo_id && <button type="button" className="btn s peq" onClick={() => abrirEditor(i)}>Editar o card</button>}
               <div className="linha entre" style={{ fontSize: 11.5 }}>
                 <span className="linha" style={{ gap: 6 }}>
                   {k > 0 && <button type="button" className="link-loja" onClick={() => mover(k, -1)} aria-label="Mover para antes">←</button>}
@@ -81,8 +188,89 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
           ))}
         </div>
       )}
+      {ver !== null && itens[ver] && (
+        <div role="dialog" aria-label={`Arquivo ${ver + 1} de ${itens.length}`} onClick={() => setVer(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(12,12,12,.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 12px 16px" }}>
+          <button type="button" onClick={() => setVer(null)} aria-label="Fechar" style={{ position: "absolute", top: 10, right: 14, background: "none", border: 0, color: "#fff", fontSize: 30, cursor: "pointer" }}>×</button>
+          <div style={{ position: "absolute", top: 18, left: 0, right: 0, textAlign: "center", color: "#fff", fontSize: 14 }}>{ver + 1} de {itens.length}</div>
+          <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 8, maxWidth: "100%", flex: 1, minHeight: 0 }}>
+            <button type="button" onClick={() => setVer(Math.max(0, ver - 1))} disabled={ver === 0} aria-label="Anterior" style={{ background: "none", border: 0, color: "#fff", fontSize: 34, cursor: "pointer", opacity: ver === 0 ? 0.25 : 1 }}>‹</button>
+            {ehVideo(itens[ver].nome)
+              ? <video src={urls[itens[ver].path]} controls playsInline autoPlay style={{ maxWidth: "calc(100vw - 100px)", maxHeight: "calc(100vh - 140px)", borderRadius: 6, background: "#000" }} />
+              // eslint-disable-next-line @next/next/no-img-element
+              : <img src={urls[itens[ver].path]} alt={`Arquivo ${ver + 1}`} style={{ maxWidth: "calc(100vw - 100px)", maxHeight: "calc(100vh - 140px)", objectFit: "contain", borderRadius: 6 }} />}
+            <button type="button" onClick={() => setVer(Math.min(itens.length - 1, ver + 1))} disabled={ver === itens.length - 1} aria-label="Próximo" style={{ background: "none", border: 0, color: "#fff", fontSize: 34, cursor: "pointer", opacity: ver === itens.length - 1 ? 0.25 : 1 }}>›</button>
+          </div>
+          <button type="button" className="btn p peq" style={{ marginTop: 12 }} onClick={(e) => { e.stopPropagation(); postImagemBaixar(itens[ver]).catch((er) => setMsg(er.message)); }}>Baixar {ver + 1}</button>
+        </div>
+      )}
+      {editando && (
+        <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+          <div className="linha entre"><b>Editar o card · {editando.modelo.nome}</b></div>
+          <p className="mudo" style={{ fontSize: 13.5 }}>Troque o texto e veja o card mudar ao lado. Ao salvar, o card novo entra no lugar deste, na mesma ordem.</p>
+          <ModeloEditor key={editando.img.path} modelo={editando.modelo} inicial={editando.img.valores} aoSalvar={salvarCard} aoFechar={() => setEditando(null)} />
+        </div>
+      )}
+      {/^reels?$/i.test(p.formato) && !itens.some((i) => ehVideo(i.nome)) && (
+        // Reels sem o vídeo: um lugar claro para subir o vídeo pronto, junto da capa.
+        <label className="card mt" style={{ display: "block", cursor: "pointer", textAlign: "center", padding: 16, borderStyle: "dashed", borderColor: "var(--accent, #7A1E2A)" }}>
+          <b>Falta o vídeo do Reels</b>
+          <div className="mudo" style={{ fontSize: 13.5, marginTop: 4 }}>Toque aqui para subir o vídeo pronto. Ele fica junto da capa e você baixa tudo daqui na hora de postar.</div>
+          <input type="file" accept="video/*" hidden onChange={(e) => { subir(e.target.files); e.target.value = ""; }} />
+        </label>
+      )}
+      {plano.length > 0 && !editando && (
+        <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
+          <div className="linha entre"><b>Monte o carrossel aqui</b><span className={`selo ${prontos === plano.length ? "feito" : "andamento"}`}>{prontos} de {plano.length} slides prontos</span></div>
+          <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 10px" }}>São {plano.length} slides, na ordem em que aparecem no Instagram. Toque em cada número, coloque as suas fotos e o texto e salve. Quando todos estiverem prontos, toque em qualquer imagem acima para ver o carrossel inteiro, passando com as setas, e depois é só salvar no celular e postar.</p>
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 6 }}>
+            {plano.map((v) => {
+              const feito = doSlide(v.n);
+              const ativo = vaga === v.n;
+              return (
+                <button key={v.n} type="button" onClick={() => setVaga(ativo ? null : v.n)} aria-label={`Slide ${v.n}`}
+                  style={{ flex: "0 0 86px", height: 108, borderRadius: 8, padding: 0, cursor: "pointer", position: "relative", overflow: "hidden", background: feito ? "#fff" : "var(--bg2, #f6f2ec)",
+                    border: ativo ? "2px solid var(--accent, #7A1E2A)" : feito ? "1px solid var(--line, #e5e0d8)" : "1px dashed #b9b0a3" }}>
+                  {feito && urls[feito.path]
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={urls[feito.path]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ display: "grid", placeItems: "center", height: "100%", padding: 6 }}><b style={{ fontSize: 26 }}>{v.n}</b><small style={{ fontSize: 10.5, lineHeight: 1.2 }}>{v.modelo.nome.replace(/^[^·]+·\s*/, "")}</small></span>}
+                  <span style={{ position: "absolute", left: 4, top: 4, background: feito ? "var(--ok, #2e7d32)" : "rgba(0,0,0,.55)", color: "#fff", borderRadius: 10, fontSize: 11, padding: "1px 6px" }}>{feito ? `✓ ${v.n}` : v.n}</span>
+                  {rascunhos[`slide-${v.n}`] && !feito && <span style={{ position: "absolute", left: 0, right: 0, bottom: 0, background: "#fff8e1", fontSize: 10 }}>não salvo</span>}
+                </button>
+              );
+            })}
+          </div>
+          {vagaAtual && (
+            <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+              <b>Slide {vagaAtual.n} de {plano.length} · {vagaAtual.modelo.nome.replace(/^[^·]+·\s*/, "")}</b>
+              {doSlide(vagaAtual.n) && <p className="mudo" style={{ fontSize: 13, margin: "4px 0 0" }}>Este slide já está pronto. Mude o que quiser e salve: o novo entra no lugar.</p>}
+              <ModeloEditor key={`slide-${vagaAtual.n}`} modelo={vagaAtual.modelo} inicial={doSlide(vagaAtual.n)?.valores ?? vagaAtual.valores} rascunho={rascunhos[`slide-${vagaAtual.n}`]}
+                aoMudar={(val) => guardarRascunho(`slide-${vagaAtual.n}`, val)} rotuloSalvar={`Salvar o slide ${vagaAtual.n}`} aoSalvar={salvarSlide} aoFechar={() => setVaga(null)} />
+            </div>
+          )}
+        </div>
+      )}
+      {modelos.length > 0 && !editando && plano.length === 0 && (
+        <div className="mt" style={{ borderTop: "1px solid var(--line, #e5e0d8)", paddingTop: 12 }}>
+          <b>Montar aqui no Hub</b>
+          <p className="mudo" style={{ fontSize: 13.5, margin: "4px 0 8px" }}>Toque no modelo, coloque as suas fotos e o texto e salve: o card entra em “Pronto para postar”, na ordem. Monte um slide de cada vez.</p>
+          <div className="chips">
+            {sugeridos.map((m, k) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{sugeridos.length > 1 ? `${k + 1} · ` : ""}{m.nome.replace(/^[^·]+·\s*/, "")}{rascunhos[m.id] ? " · não salvo" : ""}</button>)}
+            {(outros || !sugeridos.length) && resto.map((m) => <button key={m.id} type="button" className={`chip${criando?.id === m.id ? " on" : ""}`} onClick={() => setCriando(m)}>{m.nome}{rascunhos[m.id] ? " · não salvo" : ""}</button>)}
+            {sugeridos.length > 0 && resto.length > 0 && !outros && <button type="button" className="chip" onClick={() => setOutros(true)}>Outros modelos</button>}
+          </div>
+          {criando && (
+            <div className="card mt" style={{ borderColor: "var(--accent, #7A1E2A)" }}>
+              <b>{criando.nome}</b>
+              {rascunhos[criando.id] && <p className="mudo" style={{ fontSize: 13, margin: "4px 0 0" }}>Voltou de onde você parou. Toque em “Salvar no post” para o card entrar em “Pronto para postar”.</p>}
+              <ModeloEditor key={criando.id} modelo={criando} rascunho={rascunhos[criando.id]} aoMudar={(val) => guardarRascunho(criando.id, val)} aoSalvar={criarCard} aoFechar={() => setCriando(null)} />
+            </div>
+          )}
+        </div>
+      )}
       <label className="btn s peq mt" style={{ display: "inline-block", cursor: "pointer" }}>
-        {itens.length ? "Adicionar arquivo" : "Subir arquivo"}
+        {itens.length ? "Adicionar arquivo" : "Subir arquivo pronto"}
         <input type="file" accept="image/*,video/*" multiple hidden onChange={(e) => { subir(e.target.files); e.target.value = ""; }} />
       </label>
     </div>
@@ -129,7 +317,7 @@ function Editar({ p, aoSalvar }: { p: Post; aoSalvar: () => void }) {
 }
 
 function PostDaLoja() {
-  const { portal } = usePortal();
+  const { portal, comoLoja } = usePortal();
   const params = useSearchParams();
   const id = params.get("id") ?? "";
   const { dados, recarregar } = useDados(async () => ({ post: id ? await lerPostLoja(id) : null }), [id]);
@@ -137,6 +325,7 @@ function PostDaLoja() {
   useEffect(() => { if (p) document.title = `${p.gancho || p.tema || "Post"} · magnética.hub`; }, [p]);
   if (!dados) return <Carregando />;
   if (!p || p.portal_id !== portal.id) return <p className="mudo">Post não encontrado. <Link href="/conteudo/semana">Voltar</Link></p>;
+  if (comoLoja && portal.conteudo_ate && p.data > portal.conteudo_ate) return <p className="mudo">Este post ainda está em preparo: a Camilla libera a semana dele antes de ela começar. <Link href="/conteudo/semana">Voltar</Link></p>;
 
   const proximo = STATUS[STATUS.indexOf(p.status) + 1];
   const passos = (p.fazer ?? "").split("\n").map((l) => l.replace(/^\s*[-•\d.)]+\s*/, "").trim()).filter(Boolean);
@@ -144,9 +333,15 @@ function PostDaLoja() {
     await postSalvar(p.id, { [k]: e.target.value ? Number(e.target.value) : null }); recarregar();
   };
 
+  // "MENSAGEM DA LISTA DE TRANSMISSÃO:" no roteiro vira um quadro próprio, com botão de copiar.
+  const partesMsg = (p.roteiro ?? "").split(/\n?MENSAGEM DA LISTA DE TRANSMISSÃO:\s*/i);
+  const roteiroSemMsg = partesMsg[0].trim();
+  const msgLista = (partesMsg[1] ?? "").trim();
   return (
     <>
-      <Link className="voltar" href="/conteudo/semana">← Conteúdo da semana</Link>
+      {params.get("de") === "campanha"
+        ? <Link className="voltar" href="/campanha">← Voltar para a campanha</Link>
+        : <Link className="voltar" href="/conteudo/semana">← Conteúdo da semana</Link>}
       <Titulo titulo={p.gancho || p.tema || "Post"} sub={[`${DIAS_SEMANA[diaDaSemana(p.data)]} ${dia(p.data)}`, p.hora, p.formato].filter(Boolean).join(" · ")} />
 
       <div className="card mb">
@@ -168,15 +363,23 @@ function PostDaLoja() {
 
       <Arquivos p={p} aoMudar={recarregar} />
 
-      {p.roteiro && (
+      {roteiroSemMsg && (
         <div className="card mb">
-          <div className="linha entre"><h2 style={{ margin: 0 }}>Roteiro</h2><Copiar texto={p.roteiro} rotulo="Copiar roteiro" /></div>
-          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{p.roteiro}</div>
+          <div className="linha entre"><h2 style={{ margin: 0 }}>Roteiro</h2><Copiar texto={roteiroSemMsg} rotulo="Copiar roteiro" /></div>
+          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{roteiroSemMsg}</div>
+        </div>
+      )}
+
+      {msgLista && (
+        <div className="card mb card-borda" style={{ ["--c" as string]: "var(--green, #3B4835)" }}>
+          <div className="linha entre"><h2 style={{ margin: 0 }}>Mensagem para a lista de transmissão</h2><Copiar texto={msgLista} rotulo="Copiar a mensagem" /></div>
+          <p className="ajuda">Cada pessoa da equipe manda pela lista de transmissão dela, trocando [seu nome] pelo próprio nome.</p>
+          <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{msgLista}</div>
         </div>
       )}
 
       <div className="card mb">
-        <div className="linha entre"><h2 style={{ margin: 0 }}>Legenda</h2>{p.legenda && <Copiar texto={p.legenda} rotulo="Copiar legenda" />}</div>
+        <div className="linha entre"><h2 style={{ margin: 0 }}>{p.formato === "Stories" ? "Texto do story" : "Legenda"}</h2>{p.legenda && <Copiar texto={p.legenda} rotulo={p.formato === "Stories" ? "Copiar o texto" : "Copiar legenda"} />}</div>
         {p.legenda ? <div style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 15, lineHeight: 1.5 }}>{p.legenda}</div> : <p className="mudo">Sem legenda ainda. Escreva em “Editar o post”.</p>}
       </div>
 

@@ -68,6 +68,19 @@ senhas, chaves ou tokens. Dados de clientes ficam só no Supabase.
   Os pontos de desenvolvimento falam do jeito do perfil, nunca da pessoa, para ela refletir sem se sentir apontada. Textos em `hub/lib/perfil-pessoa.ts`.
 - Fuso: America/Recife.
 
+## Campanhas no Hub (padrão de toda campanha)
+Valem para toda campanha nova, de qualquer loja. As ferramentas abaixo já existem no Hub para todas as lojas; a campanha só precisa vir montada para usá-las.
+- A campanha começa no dia do lançamento (`loja_campanhas.inicio`). O que vem antes (convite, prévia, teaser) fica só no Conteúdo; antes do início, "Sua campanha" mostra só o Antes. A aba Semanas começa na semana 1.
+- Cada semana tem o foco em `dias["semana-N"].destaque`: o tema, o CRM da semana com a mensagem pronta e o que fazer na loja. Os dias importantes têm o resumo em `dias[data].destaque`.
+- Cada post diz a mesma coisa em todos os campos: hora do post, "O que você precisa fazer" (com o dia e a hora), roteiro (começa com "DIA, DD/MM, ÀS HH") e legenda pronta para copiar. Mudou um, muda os outros e o resumo do dia e da semana.
+- Filme da campanha: a loja só grava (narração e cenas, sem editar) e manda na pasta do Drive da campanha; a equipe da Camilla edita (música, legenda, assinatura) e sobe o filme pronto no post. A capa do filme é uma cena do próprio filme com o nome da campanha por cima (o roteiro traz a "cena da capa"), nunca um card liso: o feed precisa de vida. O roteiro diz isso, com as cenas pensadas para o lugar e as pessoas reais da gravação.
+- Horário de lançamento combinado com a Camilla (ex.: 16h, com a loja já fechada, para não atrapalhar as compras).
+- Divulgação para clientes pela lista de transmissão, com a mensagem pronta no post ("Aqui é a [seu nome], da {loja}"), no fim do roteiro depois da linha `MENSAGEM DA LISTA DE TRANSMISSÃO:` (vira um quadro com "Copiar a mensagem"). A legenda do story é o texto do story, nunca a mensagem. A mensagem fala do momento do post (ex.: no lançamento, "Hoje chegou…"). Grupo VIP só se a loja já tiver um ativo.
+- Arte em dúvida: subir 2 opções no mesmo post para a loja escolher ("Escolha uma das 2 opções…"); feed e stories do mesmo dia com a mesma arte.
+- Carrossel e card que a loja monta com as próprias fotos: o roteiro cita o nome exato do modelo da loja (`loja_modelos`), uma linha por slide, no formato `SLIDE 1 · <nome do modelo>: …` ou `SLIDES 2 a 4 · <nome do modelo>: …`. Assim o post mostra "Monte o carrossel aqui" com os slides numerados (1, 2, 3…), cada um abrindo o seu modelo, e os cards prontos entram em "Pronto para postar" na ordem. Card que não é carrossel mostra "Montar aqui no Hub". Card pronto que saiu de modelo leva `modelo_id`, para ter o botão "Editar o card".
+- Emoji das legendas: ✨. Linguagem da cliente: "look", nunca "composição".
+- Destaque de produto (traço com o nome no card, legenda, roteiro) fala do benefício para a cliente ("espaçosa", "confortável", "ajustável"), nunca da cor ou de detalhe sem uso: cor não faz ninguém comprar.
+
 ## Gamificação Brasil
 Processo e agente em `.claude/skills/gamificacao-brasil/SKILL.md`: depois do diagnóstico e do plano de ação, transforma os principais desafios em processo medido pelo Hub e termina com a loja no ranking Brasil. A Lista da vez fica só nas lojas piloto.
 

@@ -10,6 +10,7 @@ import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje } from "@/lib/formato";
 import { MESES } from "@/lib/conteudo";
 import { somarDias } from "@/lib/acoes-mes";
+import { faltaNoPost } from "@/lib/post-pronto";
 import { variaveisDaLoja } from "@/lib/scripts";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { buscarPlanos, mesDoPlano, semanaDoDia } from "@/lib/plano-mes";
@@ -94,7 +95,9 @@ function CartaoPost({ p, m, aoMudar }: { p: Post; m: MetodoConteudo; aoMudar: ()
       </div>
       <div style={{ fontWeight: 700, margin: "6px 0 2px", fontSize: 14 }}>{p.gancho || p.tema}</div>
       <small className="mudo">{p.tema}</small>
-      {(p.imagens?.length ?? 0) > 0 && <div className="mt"><span className="selo feito" style={{ fontSize: 11 }}>✅ Pronto para postar · {p.imagens!.length} {p.imagens!.length === 1 ? "arquivo" : "arquivos"}</span></div>}
+      {(p.imagens?.length ?? 0) > 0 && (faltaNoPost(p)
+        ? <div className="mt"><span className="selo andamento" style={{ fontSize: 11 }}>Falta: {faltaNoPost(p)}</span></div>
+        : <div className="mt"><span className="selo feito" style={{ fontSize: 11 }}>✅ Pronto para postar · {p.imagens!.length} {p.imagens!.length === 1 ? "arquivo" : "arquivos"}</span></div>)}
       {!!p.fazer?.trim() && p.status !== "Publicado" && <div className="mt"><span className="selo alerta" style={{ fontSize: 11 }}>Tem um passo para você</span></div>}
       <div className="linha mt" style={{ gap: 6 }}>
         <Link className="btn p peq" href={`/conteudo/post?id=${p.id}`}>Abrir</Link>
@@ -156,7 +159,9 @@ export default function Semana() {
     return { ...c, planos, datas: (datas.data ?? []) as { mes: number; dia: number | null; titulo: string }[], lancamentos: [...acoes.map((x) => ({ titulo: x.titulo as string, data: (x.venda_inicio ?? x.data_acao) as string })), ...doPlano] };
   }, [portal.id, comoLoja]);
   if (!dados) return <Carregando />;
-  const { m, a, conteudo, posts } = dados;
+  const { m, a, conteudo } = dados;
+  // No "ver como loja", esconde o que a loja ainda não vê (o banco já esconde para a própria loja).
+  const posts = comoLoja && portal.conteudo_ate ? dados.posts.filter((p) => p.data <= portal.conteudo_ate!) : dados.posts;
   if (!a) return <Trancado titulo="Programação da semana" texto={m.textos.trancado} />;
 
   const aj: Ajustes = ajustes ?? conteudo.ajustes ?? {};

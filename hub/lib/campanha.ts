@@ -1,4 +1,5 @@
 "use client";
+import { faltaNoPost } from "@/lib/post-pronto";
 
 // Campanha da loja (datas grandes): a "casa" da campanha no Hub.
 // A equipe monta e libera; a loja vê a liberada, segue o "Antes" e as semanas, e marca o que fez.
@@ -87,25 +88,58 @@ export const antesFeitos = (c: Campanha) => c.antes.filter((p) => c.feitos[p.id]
 export type ItemHoje = { chave: string; titulo: string; texto?: string; botao: string; link: string; feito: boolean; post?: boolean };
 
 /** O que a loja faz hoje na campanha: os itens do dia, os posts do dia e o "Antes" que ainda falta. */
-export function itensDeHoje(c: Campanha, posts: Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[], dia = hoje()): ItemHoje[] {
-  const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
-    chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
-  }));
-  const dePost = posts.filter((p) => p.data === dia).map((p) => {
-    const temArquivo = (p.imagens?.length ?? 0) > 0;
-    const passo = (p.fazer ?? "").split("\n").map((l) => l.trim()).filter(Boolean)[0];
-    return {
-      chave: `post:${p.id}`, titulo: `Postar: ${limparTema(p.tema)}`, post: true,
-      texto: passo ? passo : temArquivo ? "Pronto. É só salvar no celular e postar." : `${p.formato} · veja o roteiro e a legenda`,
-      botao: "Fazer", link: `/conteudo/post?id=${p.id}`, feito: p.status === "Publicado",
-    };
-  });
+export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[], dia = hoje()): ItemHoje[] {
   // Na semana do preparo (e na semana 1), o que falta do Antes também entra no dia.
   const sem = semanaDaCampanha(c, dia).atual;
   const doAntes = sem <= 1 ? c.antes.filter((p) => !c.feitos[p.id]).slice(0, 3).map((p) => ({
     chave: p.id, titulo: p.titulo, texto: p.ate ? `Até ${p.ate}` : p.texto, botao: "Ver", link: "/campanha", feito: false,
   })) : [];
-  return [...doDia, ...dePost, ...doAntes];
+  // Antes de a campanha começar, os posts do dia ficam só no Conteúdo: aqui entra só o que falta do Antes.
+  const doDia = dia >= c.inicio && dia <= c.fim ? itensDoDia(c, posts, dia) : [];
+  return [...doDia, ...doAntes];
+}
+
+/** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */
+export function itensDoDia(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null; roteiro?: string | null })[], dia: string): ItemHoje[] {
+  const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
+    chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
+  }));
+  const dePost = posts.filter((p) => p.data === dia).map((p) => {
+    // "Arte pronta" só quando está tudo lá: reels com o vídeo, carrossel com todos os slides do roteiro.
+    const falta = faltaNoPost(p);
+    const situacao = falta ?? ((p.imagens?.length ?? 0) ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda");
+    // Formato e hora primeiro: dois posts com o mesmo tema (stories e carrossel) ficam fáceis de separar.
+    const hora = p.hora ? p.hora.slice(0, 5).replace(/^0/, "").replace(/:00$/, "h").replace(":", "h") : "";
+    return {
+      chave: `post:${p.id}`, titulo: `Postar: ${limparTema(p.tema)}`, post: true,
+      texto: [p.formato, hora, situacao].filter(Boolean).join(" · "),
+      botao: "Fazer", link: `/conteudo/post?id=${p.id}`, feito: p.status === "Publicado",
+    };
+  });
+  return [...doDia, ...dePost];
+}
+
+/** As semanas da campanha: o preparo (se houver) e as semanas 1, 2, … com os dias de cada uma.
+ *  O foco da semana fica em dias["semana-N"].destaque (semana-0 é o preparo). */
+export function semanasDaCampanha(c: Campanha) {
+  const dt = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const lista: { n: number; ini: string; fim: string; dias: string[] }[] = [];
+  const diasEntre = (a: string, b: string) => { const r: string[] = []; for (let t = ms(a); t <= ms(b); t += DIA) r.push(dt(t)); return r; };
+  // O preparo não vira semana: o que se faz antes do início fica na aba Antes.
+  const { total } = semanaDaCampanha(c);
+  for (let n = 1; n <= total; n++) {
+    const ini = dt(ms(c.inicio) + (n - 1) * 7 * DIA);
+    const fim = [dt(ms(ini) + 6 * DIA), c.fim].sort()[0];
+    lista.push({ n, ini, fim, dias: diasEntre(ini, fim) });
+  }
+  return lista;
+}
+
+/** Os posts da campanha, do início ao fim (para a aba Semanas). */
+export async function buscarPostsDaCampanha(c: Campanha) {
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens, roteiro")
+    .eq("portal_id", c.portal_id).gte("data", c.inicio).lte("data", c.fim).order("data").order("hora");
+  return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }
 
 /** Tira o prefixo da campanha do tema do post ("ENCONTROS · Abertura · … · Look Traz #1" → "Look Traz #1"). */
@@ -116,6 +150,6 @@ export function limparTema(tema: string) {
 
 /** Posts de um dia (para o "Hoje na campanha"). */
 export async function buscarPostsDoDia(portalId: string, dia = hoje()) {
-  const { data } = await sb().from("loja_posts").select("id, data, tema, formato, status, fazer, imagens").eq("portal_id", portalId).eq("data", dia).order("hora");
-  return (data ?? []) as Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens">[];
+  const { data } = await sb().from("loja_posts").select("id, data, hora, tema, formato, status, fazer, imagens, roteiro").eq("portal_id", portalId).eq("data", dia).order("hora");
+  return (data ?? []) as (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null })[];
 }

@@ -5,4 +5,4 @@ rm -rf dist
 mkdir -p dist/analises
 cp -r portal dist/analises/portal
 cp portal/404.html dist/404.html 2>/dev/null || true
-printf '/ /analises/portal/login/ 302\n/analises /analises/portal/ 302\n' > dist/_redirects
+printf '/ /analises/portal/login/ 302\n/analises /analises/portal/ 302\n/b/:loja /analises/portal/bio/?l=:loja 302\n' > dist/_redirects

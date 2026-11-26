@@ -55,5 +55,28 @@ ok(true, "inclui uma pessoa na escala");
 await esc.locator("b").filter({ hasText: "Vendedor Outra" }).getByRole("button", { name: "tirar" }).click();
 await page.waitForTimeout(400);
 ok(await esc.locator("tbody tr").filter({ hasText: "Vendedor Outra" }).count() === 0, "tira uma pessoa da escala");
+// Almoço: a loja fecha 2h; a soma da semana conta contra o teto da regra e "usar as 42h" estica a saída.
+await esc.getByText("A loja fecha no almoço").click();
+await esc.getByText(/reabre às 14h/).waitFor();
+ok(true, "a loja fecha no almoço (2h) e reabre às 14h");
+await esc.getByText("A loja fecha no almoço").click();
+const vt = esc.locator("div.linha").filter({ has: page.locator("b", { hasText: "Vendedora Teste" }) }).first();
+await vt.getByRole("button", { name: "2h" }).click();
+await page.waitForTimeout(300);
+ok(/7h por dia/.test(await vt.innerText()), "2h de almoço: 7h por dia");
+await esc.getByRole("button", { name: "Fechar" }).click();
+await esc.getByRole("button", { name: "‹" }).click();
+await esc.getByRole("button", { name: "Time e horários" }).click();
+const vt2 = esc.locator("div.linha").filter({ has: page.locator("b", { hasText: "Vendedora Teste" }) }).first();
+await vt2.getByRole("button", { name: "1h", exact: true }).click();
+await page.waitForTimeout(300);
+const txt = await vt2.innerText();
+ok(/semana de \d\d\/\d\d: \d+h(\d\d)? de 4[24]h/.test(txt), "mostra as horas da semana e o teto: " + txt.replace(/\s+/g, " ").slice(0, 160));
+if (await vt2.getByRole("button", { name: /usar as 42h/ }).count()) {
+  await vt2.getByRole("button", { name: /usar as 42h/ }).click();
+  await page.waitForTimeout(300);
+  ok(/42h de 42h/.test(await vt2.innerText()), "usar as 42h fecha a semana no teto");
+}
+await vt2.screenshot({ path: `${process.argv[3] ?? "."}/mural-almoco.png` });
 await page.screenshot({ path: `${process.argv[3] ?? "."}/mural.png`, fullPage: true });
 await browser.close();

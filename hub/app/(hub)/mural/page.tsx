@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Titulo } from "@/components/Titulo";
 import { Carregando, useDados, usePortal, useLojaFoco } from "@/lib/hub";
-import { ESCALA, avisoDoMes, ehDona, codigoDoDia, conferirEscala, horasDoDia, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
+import { ESCALA, avisoDoMes, ehDona, codigoDoDia, comAlmocoDaLoja, conferirEscala, horasDasSemanas, horasDoDia, somarHora, lojaFechada, pessoaVazia, pessoasDaEscala, trocarCodigo, type EscalaMes, type PessoaEscala } from "@/lib/escala";
 import { feriadoNacional } from "@/lib/feriados";
 import { MesDaCliente } from "@/components/MesDaCliente";
 import { datasDoMes, seloDaData } from "@/lib/calendario-varejo";
@@ -452,12 +452,12 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
   const semana = (dd: string) => new Date(Date.UTC(a, m - 1, Number(dd))).getUTCDay();
   const LETRA = ["D", "S", "T", "Q", "Q", "S", "S"];
   const anterior = d.escala?.[somarMes(mes, -1)];
-  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {}, fora: anterior?.fora ?? [], extras: anterior?.extras ?? [] };
+  const doMes: EscalaMes = d.escala?.[mes] ?? { abreDomingo: anterior?.abreDomingo ?? false, fecha: anterior?.fecha ?? [], pessoas: {}, fora: anterior?.fora ?? [], extras: anterior?.extras ?? [], almocoLoja: anterior?.almocoLoja ?? null };
   const nomes = pessoasDaEscala(time ?? [], doMes);
   const [nova, setNova] = useState("");
   const incluir = () => { const n = nova.trim(); if (!n) return; salvarMes({ ...doMes, extras: [...new Set([...(doMes.extras ?? []), n])], fora: (doMes.fora ?? []).filter((x) => x !== n) }); setNova(""); };
   const tirar = (n: string) => { if (!confirm(`Tirar ${n.split(" ")[0]} da escala de ${nomeMes(mes).toLowerCase()}?`)) return; salvarMes({ ...doMes, extras: (doMes.extras ?? []).filter((x) => x !== n), fora: (time ?? []).includes(n) ? [...new Set([...(doMes.fora ?? []), n])] : doMes.fora ?? [] }); };
-  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, sabado: anterior.pessoas[n].sabado } : {}) };
+  const pessoa = (n: string): PessoaEscala => doMes.pessoas[n] ?? { ...pessoaVazia(), ...(anterior?.pessoas[n] ? { entrada: anterior.pessoas[n].entrada, saida: anterior.pessoas[n].saida, almoco: anterior.pessoas[n].almoco, almocoDe: anterior.pessoas[n].almocoDe, sabado: anterior.pessoas[n].sabado } : {}) };
   const salvarMes = (x: EscalaMes) => guardar({ ...d, escala: { ...(d.escala ?? {}), [mes]: x } });
   const mudar = (n: string, x: PessoaEscala) => salvarMes({ ...doMes, pessoas: { ...doMes.pessoas, [n]: x } });
   const estilo = (c: string) => { const x = ESCALA.find((y) => y.c === c); return x ? { background: x.cor, color: x.letra } : undefined; };
@@ -472,6 +472,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
     salvarMes({ ...doMes, fecha: [...f].sort() });
   };
   const hora = (h: string) => { const [hh, mm] = h.split(":"); return `${Number(hh)}h${mm && mm !== "00" ? mm : ""}`; };
+  const horas = (h: number) => { const t = Math.round(h * 60); return `${Math.floor(t / 60)}h${t % 60 ? String(t % 60).padStart(2, "0") : ""}`; };
   return (
     <div className="card mb mu-folha" data-folha="escala">
       <div className="linha entre mb" style={{ flexWrap: "wrap", gap: 8 }}>
@@ -490,20 +491,41 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
           <div className="linha" style={{ gap: 10, flexWrap: "wrap", margin: "4px 0 10px" }}>
             {DIAS_FECHA.map(([r, wd]) => <label key={wd} className="marcar"><input type="checkbox" checked={lojaFechada(doMes, wd)} onChange={(e) => marcarFecha(wd, e.target.checked)} /><span>{r}</span></label>)}
           </div>
-          {nomes.map((n) => { const x = pessoa(n); return (
+          <b>Almoço</b>
+          <div className="linha" style={{ gap: 10, flexWrap: "wrap", margin: "4px 0 10px", alignItems: "center" }}>
+            <label className="marcar"><input type="checkbox" checked={!!doMes.almocoLoja} onChange={(e) => salvarMes({ ...doMes, almocoLoja: e.target.checked ? { de: "12:00", minutos: 120 } : null })} /><span>A loja fecha no almoço</span></label>
+            {doMes.almocoLoja && <>
+              <label className="ajuda">Fecha às<input type="time" value={doMes.almocoLoja.de} onChange={(e) => salvarMes({ ...doMes, almocoLoja: { ...doMes.almocoLoja!, de: e.target.value } })} /></label>
+              <Intervalo min={doMes.almocoLoja.minutos} mudar={(m) => salvarMes({ ...doMes, almocoLoja: { ...doMes.almocoLoja!, minutos: m } })} />
+              <small className="mudo">reabre às {hora(somarHora(doMes.almocoLoja.de, doMes.almocoLoja.minutos))} · vale para todo o time</small>
+            </>}
+            {!doMes.almocoLoja && <small className="mudo">A loja não fecha: cada pessoa tem o seu horário de almoço (abaixo).</small>}
+          </div>
+          {nomes.map((n) => { const x0 = pessoa(n); const x = comAlmocoDaLoja(doMes, x0); const sem = horasDasSemanas(mes, doMes, x0); const ult = sem[sem.length - 1]; return (
             <div key={n} className="linha" style={{ gap: 6, flexWrap: "wrap", marginBottom: 6, alignItems: "center" }}>
               <b style={{ width: 140 }}>{n.split(" ").slice(0, 2).join(" ")} <button type="button" className="link-loja" style={{ color: "var(--red)", fontWeight: 400, fontSize: 12 }} onClick={() => tirar(n)}>tirar</button></b>
-              <label className="ajuda">Entra<input type="time" value={x.entrada} onChange={(e) => mudar(n, { ...x, entrada: e.target.value })} /></label>
-              <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x, saida: e.target.value })} /></label>
-              <label className="ajuda">Almoço (min)<input type="number" min={0} step={15} value={x.almoco} onChange={(e) => mudar(n, { ...x, almoco: Number(e.target.value) || 0 })} style={{ width: 80 }} /></label>
-              <small className="mudo">{String(horasDoDia(x)).replace(".", ",")}h por dia</small>
+              <label className="ajuda">Entra<input type="time" value={x.entrada} onChange={(e) => mudar(n, { ...x0, entrada: e.target.value })} /></label>
+              <label className="ajuda">Sai<input type="time" value={x.saida} onChange={(e) => mudar(n, { ...x0, saida: e.target.value })} /></label>
+              {doMes.almocoLoja ? <small className="mudo">almoço da loja ({hora(x.almocoDe ?? "12:00")} às {hora(somarHora(x.almocoDe ?? "12:00", x.almoco))})</small> : <>
+                <label className="ajuda">Almoço às<input type="time" value={x0.almocoDe ?? "12:00"} onChange={(e) => mudar(n, { ...x0, almocoDe: e.target.value })} /></label>
+                <Intervalo min={x0.almoco} mudar={(m) => mudar(n, { ...x0, almoco: m })} />
+              </>}
+              <small className="mudo">{horas(horasDoDia(x))} por dia{ult ? ` · semana de ${ult.seg.slice(8)}/${ult.seg.slice(5, 7)}: ${horas(ult.horas)} de ${ult.teto}h` : ""}</small>
+              {ult && ult.horas < ult.teto - 0.01 && ult.dias > 0 && (
+                <button type="button" className="link-loja" title="Estica a saída dos dias de semana para fechar o teto da regra" onClick={() => {
+                  const uteis = x.sabado ? ult.dias - ult.sabados : ult.dias;
+                  if (uteis <= 0) return;
+                  const mais = Math.round(((ult.teto - ult.horas) / uteis) * 60);
+                  mudar(n, { ...x0, saida: somarHora(x0.saida, mais) });
+                }}>usar as {ult.teto}h</button>
+              )}
               {!lojaFechada(doMes, 6) && (x.sabado ? <>
                 <span className="mudo">· Sábado:</span>
-                <label className="ajuda">Entra<input type="time" value={x.sabado.entrada} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, entrada: e.target.value } })} /></label>
-                <label className="ajuda">Sai<input type="time" value={x.sabado.saida} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, saida: e.target.value } })} /></label>
-                <label className="ajuda">Almoço<input type="number" min={0} step={15} value={x.sabado.almoco} onChange={(e) => mudar(n, { ...x, sabado: { ...x.sabado!, almoco: Number(e.target.value) || 0 } })} style={{ width: 70 }} /></label>
-                <button type="button" className="link-loja" onClick={() => { const y = { ...x }; delete y.sabado; mudar(n, y); }}>igual aos outros dias</button>
-              </> : <button type="button" className="link-loja" onClick={() => mudar(n, { ...x, sabado: { entrada: x.entrada, saida: x.saida, almoco: x.almoco } })}>Sábado com outro horário</button>)}
+                <label className="ajuda">Entra<input type="time" value={x.sabado.entrada} onChange={(e) => mudar(n, { ...x0, sabado: { ...x0.sabado!, entrada: e.target.value } })} /></label>
+                <label className="ajuda">Sai<input type="time" value={x.sabado.saida} onChange={(e) => mudar(n, { ...x0, sabado: { ...x0.sabado!, saida: e.target.value } })} /></label>
+                {!doMes.almocoLoja && <Intervalo min={x.sabado.almoco} mudar={(m) => mudar(n, { ...x0, sabado: { ...x0.sabado!, almoco: m } })} />}
+                <button type="button" className="link-loja" onClick={() => { const y = { ...x0 }; delete y.sabado; mudar(n, y); }}>igual aos outros dias</button>
+              </> : <button type="button" className="link-loja" onClick={() => mudar(n, { ...x0, sabado: { entrada: x0.entrada, saida: x0.saida, almoco: x0.almoco, almocoDe: x0.almocoDe } })}>Sábado com outro horário</button>)}
             </div>
           ); })}
           <div className="linha" style={{ gap: 6, flexWrap: "wrap", margin: "10px 0 6px", alignItems: "center" }}>
@@ -511,7 +533,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
             <button type="button" className="btn s peq" disabled={!nova.trim()} onClick={incluir}>+ Incluir na escala</button>
           </div>
           {(doMes.fora ?? []).length > 0 && <p className="ajuda" style={{ margin: "0 0 6px" }}>Fora da escala deste mês: {(doMes.fora ?? []).map((n) => <button key={n} type="button" className="link-loja" style={{ marginRight: 8 }} onClick={() => salvarMes({ ...doMes, fora: (doMes.fora ?? []).filter((x) => x !== n) })}>{n.split(" ")[0]} (voltar)</button>)}</p>}
-          <p className="ajuda" style={{ marginBottom: 0 }}>O horário vale para o mês todo. Na escala, toque no dia para marcar folga, feriado ou férias.</p>
+          <p className="ajuda" style={{ marginBottom: 0 }}>O almoço é de 1h a 2h (CLT); mais de 2h só com acordo escrito ou convenção. As horas da semana já descontam o almoço e contam folgas, loja fechada e feriados. O horário vale para o mês todo. Na escala, toque no dia para marcar folga, feriado ou férias.</p>
         </div>
       )}
       <div className="mu-moldura"><EscalaA4>
@@ -525,7 +547,7 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
               {nomes.map((n) => { const x = pessoa(n); return (
                 <tr key={n}>
                   <td className="mu-nome">{n.split(" ").slice(0, 2).join(" ")}{lojaDaPessoa.current[n] ? <small><br />{lojaDaPessoa.current[n]}</small> : null}</td>
-                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
+                  <td className="mu-hor">{hora(x.entrada)} às {hora(x.saida)}{x.almocoDe || doMes.almocoLoja ? <small><br />alm. {hora(comAlmocoDaLoja(doMes, x).almocoDe ?? "12:00")} às {hora(somarHora(comAlmocoDaLoja(doMes, x).almocoDe ?? "12:00", comAlmocoDaLoja(doMes, x).almoco))}</small> : null}{x.sabado && !lojaFechada(doMes, 6) ? <small><br />sáb. {hora(x.sabado.entrada)} às {hora(x.sabado.saida)}</small> : null}</td>
                   {dias.map((dd) => { const dia = `${mes}-${dd}`; const c = codigoDoDia(doMes, x, dia); return (
                     <td key={dd} style={estilo(c)} onClick={() => mudar(n, { ...x, dias: trocarCodigo(doMes, x, dia) })}
                       title={fechado(dd) && c === "F" ? "Loja fechada: conta como folga" : feriadoNacional(dia) ? `${feriadoNacional(dia)} · toque para trocar` : "Toque para trocar"}>{c}</td>
@@ -552,6 +574,17 @@ function EscalaDoMes({ portalId, varias, d, guardar }: { portalId: string; loja:
       )}
       <p className="ajuda" style={{ marginBottom: 0 }}>Toque no dia para trocar: T (trabalha), F (folga), FE (feriado) e FS (férias). Loja fechada já sai como folga e feriado nacional como FE. Salva sozinho. A conferência segue a transição do fim da escala 6x1 (PEC 221/2019); a convenção coletiva da sua categoria pode ter regras próprias para domingo, feriado e banco de horas: confirme com o seu contador.</p>
     </div>
+  );
+}
+
+/** Duração do almoço: 1h, 1h30 ou 2h (ou outro valor em minutos). */
+function Intervalo({ min, mudar }: { min: number; mudar: (m: number) => void }) {
+  return (
+    <span className="chips" style={{ gap: 4 }}>
+      {[[60, "1h"], [90, "1h30"], [120, "2h"]].map(([m, r]) => <button key={m} type="button" className="chip" aria-pressed={min === m} onClick={() => mudar(Number(m))}
+        style={min === m ? { background: "var(--ink)", color: "var(--card)", borderColor: "var(--ink)" } : undefined}>{r}</button>)}
+      {![60, 90, 120].includes(min) && <span className="mudo" style={{ fontSize: 12 }}>{min} min</span>}
+    </span>
   );
 }
 

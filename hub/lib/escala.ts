@@ -27,12 +27,23 @@ export function trocarCodigo(e: Pick<EscalaMes, "abreDomingo" | "fecha">, p: Pic
   return dias;
 }
 
-export type Horario = { entrada: string; saida: string; almoco: number };
+/** `almoco` em minutos (1h a 2h pela CLT); `almocoDe` é a hora em que o almoço começa (ex.: "12:00"). */
+export type Horario = { entrada: string; saida: string; almoco: number; almocoDe?: string };
 /** O horário da pessoa no mês; `sabado` quando o sábado tem outro horário (ex.: a loja fecha mais cedo). */
 export type PessoaEscala = Horario & { dias: Record<string, string>; sabado?: Horario };
 /** `fecha`: os dias da semana em que a loja fica fechada (0 = domingo, 1 = segunda...), além do domingo quando não abre. */
 /** `fora`: quem do time a loja tirou da escala do mês; `extras`: quem a loja incluiu à mão (sem cadastro no time). */
-export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala>; fora?: string[]; extras?: string[] };
+/** `almocoLoja`: a loja fecha no almoço (vale para todo o time, no lugar do almoço de cada pessoa). */
+export type EscalaMes = { abreDomingo: boolean; fecha?: number[]; pessoas: Record<string, PessoaEscala>; fora?: string[]; extras?: string[]; almocoLoja?: { de: string; minutos: number } | null };
+/** O horário da pessoa com o almoço que vale: o da loja, quando ela fecha no almoço; senão, o dela. */
+export function comAlmocoDaLoja(e: Pick<EscalaMes, "almocoLoja">, p: PessoaEscala): PessoaEscala {
+  const l = e.almocoLoja;
+  if (!l) return p;
+  const al = { almoco: l.minutos, almocoDe: l.de };
+  return { ...p, ...al, ...(p.sabado ? { sabado: { ...p.sabado, ...al } } : {}) };
+}
+/** "12:00" + 60 min → "13:00". */
+export const somarHora = (h: string, minutos: number) => { const t = min(h) + minutos; return `${String(Math.floor(t / 60) % 24).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
 /** Dona, dono e sócios não entram na escala (dá para incluir à mão, se a loja quiser). */
 export const ehDona = (funcao: string | null | undefined) => /\b(dona|dono|s[óo]ci[ao]|propriet[áa]ri[ao])\b/i.test(funcao ?? "");
 /** Quem entra na escala do mês: o time (menos quem saiu) e quem a loja incluiu. */
@@ -42,7 +53,7 @@ export const pessoasDaEscala = (time: string[], e: Pick<EscalaMes, "fora" | "ext
 export const lojaFechada = (e: Pick<EscalaMes, "abreDomingo" | "fecha">, diaDaSemana: number) => (diaDaSemana === 0 && !e.abreDomingo) || !!e.fecha?.includes(diaDaSemana);
 /** O horário da pessoa naquele dia da semana. */
 export const horarioDoDia = (p: PessoaEscala, diaDaSemana: number): Horario => (diaDaSemana === 6 && p.sabado ? p.sabado : p);
-export const pessoaVazia = (): PessoaEscala => ({ entrada: "09:00", saida: "18:00", almoco: 60, dias: {} });
+export const pessoaVazia = (): PessoaEscala => ({ entrada: "09:00", saida: "18:00", almoco: 60, almocoDe: "12:00", dias: {} });
 
 /** As fases da lei: a partir da segunda-feira depois de cada data, vale a regra nova. */
 export const FASES = [
@@ -56,7 +67,7 @@ export function regraDaSemana(seg: string) {
   return r;
 }
 
-const min = (h: string) => { const [a, b] = (h || "0:0").split(":").map(Number); return (a || 0) * 60 + (b || 0); };
+function min(h: string) { const [a, b] = (h || "0:0").split(":").map(Number); return (a || 0) * 60 + (b || 0); }
 /** Horas trabalhadas num dia inteiro, sem o almoço. */
 export const horasDoDia = (p: Horario) => Math.max(0, (min(p.saida) - min(p.entrada) - (Number(p.almoco) || 0)) / 60);
 const fmtH = (h: number) => (Number.isInteger(h) ? `${h}h` : `${h.toFixed(1).replace(".", ",")}h`);
@@ -71,11 +82,23 @@ export function diasDoMes(mes: string) {
 }
 const diaSemana = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
 
+/** As horas de cada semana inteira do mês (segunda a domingo) e o teto da regra daquela semana. */
+export function horasDasSemanas(mes: string, e: EscalaMes, p0: PessoaEscala) {
+  const p = comAlmocoDaLoja(e, p0);
+  const dias = diasDoMes(mes);
+  return dias.filter((d) => diaSemana(d) === 1).map((seg) => dias.slice(dias.indexOf(seg), dias.indexOf(seg) + 7)).filter((s) => s.length === 7)
+    .map((s) => {
+      const trab = s.filter((d) => codigoDoDia(e, p, d) === "T");
+      return { seg: s[0], sabados: trab.filter((d) => diaSemana(d) === 6).length, horas: trab.reduce((t, d) => t + horasDoDia(horarioDoDia(p, diaSemana(d))), 0), dias: trab.length, teto: regraDaSemana(s[0]).horas, folgas: regraDaSemana(s[0]).folgas };
+    });
+}
+
 /** Confere a escala do mês, regra por regra. As regras da semana valem para as semanas inteiras (segunda a domingo) do mês. */
 export function conferirEscala(mes: string, e: EscalaMes): Alerta[] {
   const dias = diasDoMes(mes);
   const out: Alerta[] = [];
-  for (const [nome, p] of Object.entries(e.pessoas)) {
+  for (const [nome, p0] of Object.entries(e.pessoas)) {
+    const p = comAlmocoDaLoja(e, p0);
     const primeiro = nome.split(" ")[0];
     const add = (regra: string, texto: string, erro = true) => out.push({ pessoa: nome, regra, texto, erro });
     // O que cada dia é para a pessoa: horas trabalhadas (0 = folga, loja fechada ou férias).
@@ -88,6 +111,7 @@ export function conferirEscala(mes: string, e: EscalaMes): Alerta[] {
       if (h > 10) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} ${qual}. Nem com acordo de compensação passa de 10h.`);
       else if (h > 8) add("Até 8h por dia", `${primeiro} fica ${fmtH(h)} ${qual}. Acima de 8h só com acordo de compensação (até 10h).`, false);
       if (h > 6 && (Number(x.almoco) || 0) < 60) add("Almoço", `${primeiro} trabalha mais de 6h ${qual} e o almoço tem ${x.almoco || 0} minutos. O mínimo é 1 hora.`);
+      if ((Number(x.almoco) || 0) > 120) add("Almoço", `${primeiro} tem ${fmtH((Number(x.almoco) || 0) / 60)} de almoço ${qual}. Acima de 2h só com acordo escrito ou convenção coletiva.`, false);
       const descanso = 24 - (min(x.saida) - min(x.entrada)) / 60;
       if (descanso < 11) add("11h de descanso", `${primeiro} sai às ${x.saida} e volta às ${x.entrada}: só ${fmtH(descanso)} de descanso entre um dia e outro. O mínimo é 11h.`);
     }

@@ -4,7 +4,13 @@ import { useState } from "react";
 import { semAcento } from "@/lib/clientes";
 import { novaCliente, type ClienteSimples } from "@/lib/loja-na-mao";
 
-/** Busca a cliente pelo nome ou WhatsApp; se não acha, cadastra na hora com nome, WhatsApp e aniversário. */
+/** Máscara dd/mm: aceita só números e a barra entra sozinha. */
+export function mascaraDia(v: string) {
+  const d = v.replace(/\D/g, "").slice(0, 4);
+  return d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
+}
+
+/** Busca a cliente pelo nome ou WhatsApp; se não acha, cadastra na hora com nome, WhatsApp e aniversário (opcional). */
 export function EscolherCliente({ portalId, clientes, valor, mudar, aoCadastrar }: {
   portalId: string; clientes: ClienteSimples[]; valor: ClienteSimples | null; mudar: (c: ClienteSimples | null) => void; aoCadastrar?: () => void;
 }) {
@@ -29,7 +35,7 @@ export function EscolherCliente({ portalId, clientes, valor, mudar, aoCadastrar 
       {cadastrando && (
         <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
           <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} style={{ flex: "1 1 160px" }} />
-          <input type="text" inputMode="numeric" placeholder="Aniversário (dia/mês)" value={aniv} onChange={(e) => setAniv(e.target.value)} style={{ flex: "1 1 140px" }} />
+          <input type="text" inputMode="numeric" autoComplete="off" placeholder="Aniversário (dd/mm, opcional)" value={aniv} onChange={(e) => setAniv(mascaraDia(e.target.value))} maxLength={5} style={{ flex: "1 1 140px" }} />
           <button type="button" className="btn p peq" onClick={async () => {
             setErro("");
             try { const c = await novaCliente(portalId, busca, whats, aniv); mudar(c); setBusca(""); setWhats(""); setAniv(""); setCadastrando(false); aoCadastrar?.(); }

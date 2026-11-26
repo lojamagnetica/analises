@@ -9,6 +9,7 @@ import { Copiar } from "@/components/Copiar";
 import { Carregando, useDados, usePortal } from "@/lib/hub";
 import { dia, hoje, moeda } from "@/lib/formato";
 import { linkWhats, semAcento } from "@/lib/clientes";
+import { mascaraDia } from "@/components/EscolherCliente";
 import {
   FORMAS, listasDaLoja, buscarCrediario, buscarEstoque, buscarClientesSimples, emAberto, buscarVendas, gerarParcelas, nomeForma, mensagemVenda, novaCliente, removerVenda, salvarConta, salvarVenda, somarMeses,
   type ClienteSimples, type ItemVenda, type Venda, descreverItens,
@@ -185,7 +186,7 @@ export default function VendasDoDia() {
               {cadastrando && (
                 <div className="linha mt" style={{ gap: 8, flexWrap: "wrap" }}>
                   <input type="text" inputMode="tel" placeholder="WhatsApp (com DDD)" value={whats} onChange={(e) => setWhats(e.target.value)} style={{ flex: "1 1 160px" }} />
-                  <input type="text" inputMode="numeric" placeholder="Aniversário (dia/mês)" value={aniv} onChange={(e) => setAniv(e.target.value)} style={{ flex: "1 1 140px" }} />
+                  <input type="text" inputMode="numeric" autoComplete="off" placeholder="Aniversário (dd/mm, opcional)" value={aniv} onChange={(e) => setAniv(mascaraDia(e.target.value))} maxLength={5} style={{ flex: "1 1 140px" }} />
                   <button type="button" className="btn p peq" onClick={cadastrar}>Cadastrar</button>
                 </div>
               )}

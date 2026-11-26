@@ -45,10 +45,10 @@ export type ClienteSimples = Awaited<ReturnType<typeof buscarClientesSimples>>[n
 export async function novaCliente(portalId: string, nome: string, whatsapp: string, aniversario: string) {
   const n = arrumarNome(nome).slice(0, 120);
   if (!n) throw new Error("Escreva o nome da cliente.");
-  // Cadastro completo: sem WhatsApp e aniversário não dá para fazer pós-venda nem o presente do mês.
+  // WhatsApp é o essencial para o pós-venda. Aniversário é opcional: sem ele, a cliente entra mesmo assim.
   if (whatsapp.replace(/\D/g, "").length < 10) throw new Error("Escreva o WhatsApp da cliente com DDD.");
   const aniv = lerData(aniversario, true);
-  if (!aniv) throw new Error("Escreva o aniversário da cliente (dia/mês, ex.: 25/11).");
+  if (aniversario.trim() && !aniv) throw new Error("Aniversário: escreva o dia e o mês, por exemplo 25/11.");
   const data = await ok(sb().from("loja_clientes").insert({ portal_id: portalId, nome: n, whatsapp: whatsapp.trim().slice(0, 40), aniversario: aniv }).select("id, nome, whatsapp, aniversario, ultima_compra, n_compras, total").single());
   return data as ClienteSimples;
 }

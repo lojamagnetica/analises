@@ -2,6 +2,7 @@
 
 // Página do post da loja, no mesmo jeito do calendário da Camilla:
 // o que falta fazer (quando falta) → arquivos prontos para baixar → roteiro → legenda → postado → resultado.
+import { faltaNoPost } from "@/lib/post-pronto";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -155,7 +156,7 @@ function Arquivos({ p, aoMudar }: { p: Post; aoMudar: () => void }) {
   return (
     <div className="card mb">
       <div className="linha entre">
-        <h2 style={{ margin: 0 }}>{itens.length ? "Pronto para postar" : "Arquivos do post"}</h2>
+        <h2 style={{ margin: 0 }}>{itens.length && !faltaNoPost(p) ? "Pronto para postar" : "Arquivos do post"}</h2>
         {itens.length > 0 && <button type="button" className="btn p peq" onClick={salvarTodas}>Salvar no celular ({itens.length})</button>}
       </div>
       <p className="mudo" style={{ fontSize: 14 }}>

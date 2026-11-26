@@ -1,4 +1,5 @@
 "use client";
+import { faltaNoPost } from "@/lib/post-pronto";
 
 // Campanha da loja (datas grandes): a "casa" da campanha no Hub.
 // A equipe monta e libera; a loja vê a liberada, segue o "Antes" e as semanas, e marca o que fez.
@@ -99,28 +100,14 @@ export function itensDeHoje(c: Campanha, posts: (Pick<Post, "id" | "data" | "tem
 }
 
 /** Os itens e os posts de um dia da campanha (sem o Antes): usado no Hoje e na aba Semanas. */
-/** Quantos slides o roteiro pede ("SLIDE 1 · …", "SLIDES 2 a 4 · …"); 0 quando não tem plano. */
-function slidesDoRoteiro(roteiro?: string | null): number {
-  let n = 0;
-  for (const l of (roteiro ?? "").split("\n")) {
-    const m = l.match(/^\s*SLIDES?\s+(\d+)(?:\s*(?:a|-|até)\s*(\d+))?\s*·/i);
-    if (m) n = Math.max(n, Number(m[2] ?? m[1]));
-  }
-  return n;
-}
-
 export function itensDoDia(c: Campanha, posts: (Pick<Post, "id" | "data" | "tema" | "formato" | "status" | "fazer" | "imagens"> & { hora?: string | null; roteiro?: string | null })[], dia: string): ItemHoje[] {
   const doDia = (c.dias[dia]?.itens ?? []).map((p) => ({
     chave: `${dia}:${p.id}`, titulo: p.titulo, texto: p.texto, botao: p.botao || "Ver", link: p.link || "/campanha", feito: !!c.feitos[`${dia}:${p.id}`],
   }));
   const dePost = posts.filter((p) => p.data === dia).map((p) => {
-    const arquivos = p.imagens ?? [];
-    const slides = slidesDoRoteiro(p.roteiro);
-    const temVideo = arquivos.some((a) => /\.(mp4|mov|m4v|webm)$/i.test(a.nome || a.path || ""));
     // "Arte pronta" só quando está tudo lá: reels com o vídeo, carrossel com todos os slides do roteiro.
-    let situacao = arquivos.length ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda";
-    if (p.formato === "Reels" && arquivos.length && !temVideo) situacao = "a capa está pronta, falta subir o vídeo";
-    else if (slides > arquivos.length && arquivos.length) situacao = `${arquivos.length} de ${slides} slides prontos, monte o resto no Hub`;
+    const falta = faltaNoPost(p);
+    const situacao = falta ?? ((p.imagens?.length ?? 0) ? "arte pronta, é só baixar e postar" : "veja o roteiro e a legenda");
     // Formato e hora primeiro: dois posts com o mesmo tema (stories e carrossel) ficam fáceis de separar.
     const hora = p.hora ? p.hora.slice(0, 5).replace(/^0/, "").replace(/:00$/, "h").replace(":", "h") : "";
     return {

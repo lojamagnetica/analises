@@ -1,6 +1,6 @@
 // Rode com: node --experimental-strip-types lib/escala.test.ts
 import assert from "node:assert/strict";
-import { ehDona, codigoDoDia, trocarCodigo, conferirEscala, regraDaSemana, horasDoDia, pessoaVazia, pessoasDaEscala } from "./escala.ts";
+import { horasDasSemanas, comAlmocoDaLoja, somarHora, ehDona, codigoDoDia, trocarCodigo, conferirEscala, regraDaSemana, horasDoDia, pessoaVazia, pessoasDaEscala } from "./escala.ts";
 
 assert.equal(regraDaSemana("2026-12-14").horas, 44);   // semana que começa antes de 16/12: regra de hoje
 assert.equal(regraDaSemana("2026-12-21").horas, 42);   // primeira semana inteira da fase 1
@@ -50,3 +50,18 @@ console.log("incluir e tirar da escala ok");
 }
 assert.ok(ehDona("Dona (também vende)") && ehDona("Sócia") && !ehDona("Vendedora") && !ehDona("Estoque, cadastro e envios"));
 console.log("dona fora da escala ok");
+// Almoço: a loja fecha 2h no almoço (vale para todos); semanas com o teto da regra.
+{
+  const e = { abreDomingo: false, fecha: [0, 1], almocoLoja: { de: "12:00", minutos: 120 }, pessoas: {} };
+  const p = comAlmocoDaLoja(e, pessoaVazia());
+  assert.equal(horasDoDia(p), 7);
+  assert.equal(somarHora("12:00", 90), "13:30");
+  const s = horasDasSemanas("2026-12", e, pessoaVazia());
+  const s21 = s.find((x) => x.seg === "2026-12-21")!;
+  assert.equal(s21.teto, 42);
+  assert.equal(s21.dias, 4);   // 25/12 é feriado (FE)
+  assert.equal(horasDasSemanas("2027-01", { abreDomingo: false, fecha: [0, 1], pessoas: {} }, pessoaVazia()).find((x) => x.seg === "2027-01-04")!.horas, 40);
+  // Mais de 2h de almoço: aviso.
+  assert.ok(conferirEscala("2026-11", { abreDomingo: false, pessoas: { Ana: { ...pessoaVazia(), almoco: 180 } } }).some((x) => /2h/.test(x.texto)));
+  console.log("almoço ok");
+}
